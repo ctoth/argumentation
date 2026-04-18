@@ -1,5 +1,5 @@
 """Finite formal argumentation objects and algorithms."""
 
-from argumentation import aspic, bipolar, dung, partial_af, preference
+from argumentation import af_revision, aspic, bipolar, dung, partial_af, preference
 
-__all__ = ["aspic", "bipolar", "dung", "partial_af", "preference"]
+__all__ = ["af_revision", "aspic", "bipolar", "dung", "partial_af", "preference"]
