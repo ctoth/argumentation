@@ -1,37 +1,51 @@
 # argumentation
 
-Draft README for the future external package.
+A finite, citation-anchored Python library for formal argumentation.
 
-`argumentation` is a small Python package for finite formal argumentation
-systems.
+`argumentation` implements the standard objects and algorithms of computational
+argumentation theory as a small, dependency-free kernel:
 
-It provides citation-anchored implementations of:
+- **Dung** abstract argumentation frameworks and extension semantics
+- **ASPIC+** structured argumentation
+- **Cayrol-style bipolar** argumentation frameworks
+- **Partial** argumentation frameworks with completion-based reasoning
+- **AF revision** under formula and framework constraints
+- **Probabilistic** argumentation frameworks (PrAFs) with Monte Carlo,
+  exact enumeration, tree-decomposition DP, and DF-QuAD gradual semantics
+- An optional **Z3-backed** backend for extension enumeration
 
-- Dung abstract argumentation frameworks
-- ASPIC+ structured argumentation
-- Cayrol-style bipolar argumentation frameworks
-
-It does not know about propstore claims, stances, repositories, sidecars,
-contexts, provenance, source promotion, worldlines, or CLI policy.
+Every algorithm cites the paper, definition, and (where useful) page that fixes
+its behaviour. The pure-Python implementation is the reference; solver backends
+must agree with it.
 
 ## Install
 
-During early development, install from Git:
-
 ```powershell
-uv add "argumentation @ git+https://github.com/ctoth/argumentation@<commit>"
+uv add "argumentation @ git+https://github.com/ctoth/argumentation"
 ```
 
-After package publication, the intended install shape is:
+To enable the Z3-backed Dung backend:
 
 ```powershell
-uv add argumentation
+uv add "argumentation[z3] @ git+https://github.com/ctoth/argumentation"
 ```
 
-## Dung Abstract Argumentation
+Requires Python 3.11 or later.
+
+## Dung abstract argumentation
+
+An argumentation framework is a set of arguments together with a defeat
+relation. Extensions are sets of arguments that survive together under a chosen
+semantics.
 
 ```python
-from argumentation.dung import ArgumentationFramework, grounded_extension
+from argumentation.dung import (
+    ArgumentationFramework,
+    grounded_extension,
+    preferred_extensions,
+    stable_extensions,
+    complete_extensions,
+)
 
 framework = ArgumentationFramework(
     arguments=frozenset({"a", "b", "c"}),
@@ -42,18 +56,30 @@ framework = ArgumentationFramework(
     }),
 )
 
-accepted = grounded_extension(framework)
+grounded_extension(framework)      # frozenset()
+preferred_extensions(framework)    # [frozenset({"a", "c"}), frozenset({"b"})]
+stable_extensions(framework)       # [frozenset({"a", "c"}), frozenset({"b"})]
+complete_extensions(framework)     # [frozenset(), frozenset({"a", "c"}), frozenset({"b"})]
 ```
 
-The Dung module computes:
+The framework dataclass tracks `defeats` (the post-preference attack relation
+used by Dung's defence) and an optional pre-preference `attacks` relation used
+by conflict-freeness, following Modgil & Prakken (2018) Def 14.
 
-- grounded extensions
-- complete extensions
-- preferred extensions
-- stable extensions
-- conflict-free and admissibility predicates
+`grounded` / `complete` / `preferred` / `stable` semantics are all provided.
+`complete`, `preferred`, and `stable` accept a `backend` argument; the default
+`"auto"` selects brute-force enumeration for small frameworks (≤12 arguments)
+and Z3 above that threshold.
 
-## ASPIC+ Structured Argumentation
+> Dung, P. M. (1995). On the acceptability of arguments and its fundamental
+> role in nonmonotonic reasoning, logic programming and *n*-person games.
+> *Artificial Intelligence*, 77(2), 321–357.
+
+## ASPIC+ structured argumentation
+
+ASPIC+ builds arguments from a knowledge base and a set of strict and
+defeasible rules over a logical language with a contrariness function, then
+derives attacks and defeats between those arguments.
 
 ```python
 from argumentation.aspic import (
@@ -85,18 +111,37 @@ system = ArgumentationSystem(
 kb = KnowledgeBase(axioms=frozenset({p}), premises=frozenset())
 arguments = build_arguments(system, kb)
 attacks = compute_attacks(arguments, system)
+defeats = compute_defeats(arguments, attacks, system)
 ```
 
-The ASPIC+ module implements the formal argumentation kernel only. Domain
-translation belongs in caller packages.
+The module provides:
 
-## Bipolar Argumentation
+- `GroundAtom`, `Literal`, `ContrarinessFn`, `Rule`, `KnowledgeBase`,
+  `ArgumentationSystem`, `PreferenceConfig`
+- `PremiseArg`, `StrictArg`, `DefeasibleArg` and the `Argument` union
+- `build_arguments`, `compute_attacks`, `compute_defeats`
+- Argument accessors `conc`, `prem`, `sub`, `top_rule`, `def_rules`,
+  `last_def_rules`, `prem_p`, `is_firm`, `is_strict`
+- `transposition_closure`, `strict_closure`, `is_c_consistent`
+- A `CSAF` type packaging the constructed structured AF
+
+> Modgil, S. & Prakken, H. (2018). A general account of argumentation with
+> preferences. *Artificial Intelligence*, 248, 51–104.
+
+## Bipolar argumentation
+
+Bipolar frameworks add an explicit support relation alongside defeats. Support
+chains induce *derived* defeats (supported and indirect), computed to a
+fixpoint, and yield d-, s-, and c-admissibility variants.
 
 ```python
 from argumentation.bipolar import (
     BipolarArgumentationFramework,
     cayrol_derived_defeats,
     d_preferred_extensions,
+    s_preferred_extensions,
+    c_preferred_extensions,
+    stable_extensions,
 )
 
 framework = BipolarArgumentationFramework(
@@ -105,55 +150,206 @@ framework = BipolarArgumentationFramework(
     supports=frozenset({("a", "b")}),
 )
 
-derived = cayrol_derived_defeats(framework.defeats, framework.supports)
-extensions = d_preferred_extensions(framework)
+cayrol_derived_defeats(framework.defeats, framework.supports)  # {("a", "c")}
+d_preferred_extensions(framework)
 ```
 
-## Non-Goals
+> Cayrol, C. & Lagasquie-Schiex, M.-C. (2005). On the acceptability of
+> arguments in bipolar argumentation frameworks. In *ECSQARU 2005*.
 
-`argumentation` does not provide:
+## Partial argumentation frameworks
 
-- a claim store
-- a scientific knowledge model
-- YAML or repository loading
-- source promotion
-- context/CEL reasoning
-- sidecar SQLite compilation
-- worldline materialization
-- CLI commands
-- propstore compatibility import shims
+A partial AF leaves some attack pairs *uncertain*. Pairs over A × A are
+partitioned into `attacks`, `ignorance`, and `non_attacks`; the partition is
+checked at construction. Reasoning is by enumerating *completions* — the Dung
+AFs obtained by resolving each ignorance pair as attack or non-attack.
 
-Those concerns belong in adapter packages such as propstore.
+```python
+from argumentation.partial_af import (
+    PartialArgumentationFramework,
+    enumerate_completions,
+    skeptically_accepted_arguments,
+    credulously_accepted_arguments,
+    sum_merge_frameworks,
+    max_merge_frameworks,
+    leximax_merge_frameworks,
+)
 
-## Optional Backends
+partial = PartialArgumentationFramework(
+    arguments=frozenset({"a", "b"}),
+    attacks=frozenset({("a", "b")}),
+    ignorance=frozenset({("b", "a")}),
+    non_attacks=frozenset({("a", "a"), ("b", "b")}),
+)
 
-The base package does not require Z3.
+enumerate_completions(partial)
+skeptically_accepted_arguments(partial, semantics="grounded")
+credulously_accepted_arguments(partial, semantics="preferred")
+```
 
-`argumentation.dung_z3` provides solver-backed extension enumeration using
-local solver-result and timeout handling. Install the `z3` extra or use the
-development environment to run those tests.
+Multiple sources can be merged into a single AF by minimising edit distance
+(Hamming over pair labels) under three aggregation rules: `sum_merge_frameworks`,
+`max_merge_frameworks`, and `leximax_merge_frameworks`. `consensual_expand`
+lifts a Dung AF onto a wider argument universe by marking out-of-scope pairs as
+ignorance.
 
-## Citation Discipline
+## AF revision
 
-Implementations should cite the formal source they implement in module
-docstrings and tests.
+Add arguments and attacks to an existing framework, or revise an extension
+state by a formula or by a target framework, while preserving rationality
+postulates.
 
-Core references:
+```python
+from argumentation.af_revision import (
+    ExtensionRevisionState,
+    baumann_2015_kernel_union_expand,
+    diller_2015_revise_by_formula,
+    diller_2015_revise_by_framework,
+    cayrol_2014_classify_grounded_argument_addition,
+    AFChangeKind,
+)
 
-- Dung, P. M. 1995. On the acceptability of arguments and its fundamental role
-  in nonmonotonic reasoning, logic programming and n-person games.
-- Modgil, S. and Prakken, H. 2018. A general account of argumentation with
-  preferences.
-- Cayrol, C. and Lagasquie-Schiex, M.-C. 2005. On the acceptability of
-  arguments in bipolar argumentation frameworks.
+merged = baumann_2015_kernel_union_expand(base_af, incoming_af)
 
-## Relationship To Propstore
+kind = cayrol_2014_classify_grounded_argument_addition(
+    framework=base_af,
+    argument="x",
+    attacks=frozenset({("x", "a")}),
+)
+# AFChangeKind.DECISIVE | RESTRICTIVE | QUESTIONING |
+# DESTRUCTIVE | EXPANSIVE | CONSERVATIVE | ALTERING
+```
 
-Propstore uses `argumentation` as a formal kernel.
+> Baumann, R. (2015). Context-free and context-sensitive kernels: update and
+> deletion equivalence in abstract argumentation. In *ECAI 2014*.
+> Diller, M., Haret, A., Linsbichler, T., Rümmele, S., & Woltran, S. (2015).
+> An extension-based approach to belief revision in abstract argumentation.
+> Cayrol, C., de Saint-Cyr, F. D., & Lagasquie-Schiex, M.-C. (2014).
+> Change in abstract argumentation frameworks: adding an argument.
 
-Propstore-owned adapters translate active claims, justifications, stances,
-grounded rule bundles, and source metadata into formal objects, then use
-`argumentation` to compute attacks, defeats, and extensions.
+## Probabilistic argumentation
 
-That split keeps the formal algorithms reusable and keeps scientific-claim
-policy in propstore.
+A probabilistic argumentation framework (PrAF) attaches an existence
+probability to each argument and a presence probability to each defeat (and
+optionally to each attack and support). Acceptance is then a probability over
+*sampled worlds*: the realised Dung framework drawn by sampling each
+argument and each edge from its primitive opinion.
+
+```python
+from argumentation.dung import ArgumentationFramework
+from argumentation.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
+
+framework = ArgumentationFramework(
+    arguments=frozenset({"a", "b", "c"}),
+    defeats=frozenset({("a", "b"), ("b", "c")}),
+)
+
+praf = ProbabilisticAF(
+    framework=framework,
+    p_args={"a": 0.9, "b": 0.7, "c": 1.0},
+    p_defeats={("a", "b"): 0.8, ("b", "c"): 1.0},
+)
+
+result = compute_probabilistic_acceptance(praf, semantics="grounded")
+result.acceptance_probs    # {"a": 0.9, "b": ..., "c": ...}
+result.strategy_used       # "exact_enum" | "mc" | "exact_dp" | "deterministic"
+```
+
+`compute_probabilistic_acceptance` dispatches across five strategies:
+
+- `deterministic` — fast path when every probability is 0 or 1; collapses
+  to standard Dung evaluation (Li et al. 2012, p. 2).
+- `exact_enum` — brute-force enumeration over induced Dung AFs; default
+  when the framework has at most thirteen arguments (Li et al. 2012, p. 3).
+- `mc` — Monte Carlo sampling with Agresti–Coull stopping per Li et al.
+  (2012, Algorithm 1), decomposed across connected components per Hunter
+  & Thimm (2017, Proposition 18).
+- `exact_dp` — tree-decomposition dynamic programming per Popescu &
+  Wallner (2024) for grounded semantics on defeat-only frameworks.
+- `dfquad_quad` and `dfquad_baf` — DF-QuAD gradual semantics for
+  quantitative bipolar frameworks (Freedman et al. 2025).
+
+Two query kinds are supported. Per-argument acceptance is the default;
+exact-set extension probability is opt-in:
+
+```python
+result = compute_probabilistic_acceptance(
+    praf,
+    semantics="preferred",
+    query_kind="extension_probability",
+    queried_set={"a", "c"},
+)
+result.extension_probability   # P({a, c} is a preferred extension)
+```
+
+Probabilities are plain floats in `[0, 1]`. Calling code that owns richer
+uncertainty objects, subjective opinions, or beta posteriors converts them to
+probabilities before constructing the kernel object.
+
+`compute_probabilistic_acceptance` also accepts an explicit `strategy=` to
+force a backend; `summarize_defeat_relations` exposes exact defeat marginals
+as a diagnostic.
+
+> Li, H., Oren, N., & Norman, T. J. (2012). Probabilistic argumentation
+> frameworks. In *TAFA 2011*.
+> Hunter, A. & Thimm, M. (2017). Probabilistic reasoning with abstract
+> argumentation frameworks. *JAIR*, 59, 565–611.
+> Popescu, A. & Wallner, J. P. (2024). Tree-decomposition-based dynamic
+> programming for probabilistic abstract argumentation.
+> Freedman, G., Rago, A., Albini, E., Toni, F., & Cocarascu, O. (2025).
+> Argumentative Large Language Models for explainable and contestable
+> claim verification.
+
+## Optional Z3 backend
+
+`argumentation.dung_z3` provides SAT-encoded enumeration of complete,
+preferred, and stable extensions. It is automatically selected by the `"auto"`
+backend on larger frameworks and can be requested explicitly:
+
+```python
+preferred_extensions(framework, backend="z3")
+```
+
+Z3 results are surfaced through three local result types — `SolverSat`,
+`SolverUnsat`, `SolverUnknown` — with a default 30-second timeout. A two-valued
+caller that cannot represent unknown receives `Z3UnknownError`. Install the
+`z3` extra to enable the backend.
+
+## Preferences
+
+`argumentation.preference` provides preference primitives shared by ASPIC+ and
+revision code:
+
+- `strict_partial_order_closure` — transitive closure with cycle and
+  reflexivity rejection.
+- `strictly_weaker` — elitist and democratic comparisons over numeric strength
+  vectors (Modgil & Prakken Def 19).
+- `defeat_holds` — generic attack-to-defeat resolution for undercutting,
+  rebutting, undermining, and supersedes attacks.
+
+## Design
+
+- Pure-Python algorithms are the reference implementation. Optional solver
+  backends must produce the same formal results on the same finite framework,
+  except where the solver explicitly reports unknown.
+- Frameworks, rules, arguments, and extensions are immutable frozen
+  dataclasses over frozensets. Equality is structural.
+- Conflict-freeness is checked against the pre-preference attack relation;
+  defence is checked against defeats. Both are tracked separately on
+  `ArgumentationFramework`.
+- Algorithms cite their formal source in module and function docstrings.
+
+## Development
+
+```powershell
+uv sync
+uv run pyright src
+uv run pytest -vv
+```
+
+Tests are tagged `unit`, `property`, and `differential`. Property tests use
+Hypothesis. Differential tests cross-check the brute-force and Z3 backends on
+the same frameworks.

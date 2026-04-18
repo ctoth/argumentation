@@ -13,8 +13,9 @@ from __future__ import annotations
 
 import math
 import random as _random_mod
-from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any
 
 from argumentation.probabilistic_components import connected_components
 
@@ -61,19 +62,19 @@ from argumentation.dung import (
 )
 
 
-@runtime_checkable
-class SupportsExpectation(Protocol):
-    def expectation(self) -> float: ...
+ProbabilityValue = float
 
 
-ProbabilityValue = float | SupportsExpectation
+def _validate_probability(value: ProbabilityValue, name: str) -> float:
+    probability = float(value)
+    if not 0.0 <= probability <= 1.0:
+        raise ValueError(f"{name} must be in [0,1], got {probability}")
+    return probability
 
 
 def _expectation(value: ProbabilityValue | None) -> float:
     if value is None:
         return 1.0
-    if isinstance(value, SupportsExpectation):
-        return float(value.expectation())
     return float(value)
 
 @dataclass(frozen=True)
@@ -81,44 +82,68 @@ class ProbabilisticAF:
     """Probabilistic AF with primitive-relation uncertainty.
 
     framework: the semantic AF envelope used for deterministic evaluation.
-    p_args: dict[str, ProbabilityValue] — P_A per argument.
-    p_defeats: dict[tuple[str, str], ProbabilityValue] — direct defeat probabilities.
+    p_args: P_A per argument.
+    p_defeats: direct defeat probabilities.
     p_attacks: optional primitive attack probabilities when attacks and defeats differ.
     supports / p_supports: optional primitive support relations with existence probabilities.
     base_defeats: optional direct defeats before Cayrol closure; defaults to framework.defeats.
-    The MC sampler accepts plain floats and any value object exposing an
-    ``expectation()`` method. The latter lets adapters keep provenance-bearing
-    uncertainty objects outside the formal kernel without this package importing
-    them.
     """
 
     framework: ArgumentationFramework
-    p_args: dict[str, ProbabilityValue]
-    p_defeats: dict[tuple[str, str], ProbabilityValue]
-    p_attacks: dict[tuple[str, str], ProbabilityValue] | None = None
+    p_args: Mapping[str, ProbabilityValue]
+    p_defeats: Mapping[tuple[str, str], ProbabilityValue]
+    p_attacks: Mapping[tuple[str, str], ProbabilityValue] | None = None
     supports: frozenset[tuple[str, str]] = frozenset()
-    p_supports: dict[tuple[str, str], ProbabilityValue] | None = None
+    p_supports: Mapping[tuple[str, str], ProbabilityValue] | None = None
     base_defeats: frozenset[tuple[str, str]] | None = None
-    attack_relations: tuple[Any, ...] = ()
-    support_relations: tuple[Any, ...] = ()
-    direct_defeat_relations: tuple[Any, ...] = ()
-    omitted_arguments: dict[str, Any] = field(default_factory=dict)
-    omitted_relations: dict[tuple[str, str], Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "p_args",
+            {str(arg): _validate_probability(probability, f"p_args[{arg!r}]") for arg, probability in self.p_args.items()},
+        )
+        object.__setattr__(
+            self,
+            "p_defeats",
+            {
+                (str(src), str(tgt)): _validate_probability(probability, f"p_defeats[{(src, tgt)!r}]")
+                for (src, tgt), probability in self.p_defeats.items()
+            },
+        )
+        if self.p_attacks is not None:
+            object.__setattr__(
+                self,
+                "p_attacks",
+                {
+                    (str(src), str(tgt)): _validate_probability(probability, f"p_attacks[{(src, tgt)!r}]")
+                    for (src, tgt), probability in self.p_attacks.items()
+                },
+            )
+        if self.p_supports is not None:
+            object.__setattr__(
+                self,
+                "p_supports",
+                {
+                    (str(src), str(tgt)): _validate_probability(probability, f"p_supports[{(src, tgt)!r}]")
+                    for (src, tgt), probability in self.p_supports.items()
+                },
+            )
 
     @property
-    def argument_probabilities(self) -> dict[str, ProbabilityValue]:
+    def argument_probabilities(self) -> Mapping[str, ProbabilityValue]:
         return self.p_args
 
     @property
-    def direct_defeat_probabilities(self) -> dict[tuple[str, str], ProbabilityValue]:
+    def direct_defeat_probabilities(self) -> Mapping[tuple[str, str], ProbabilityValue]:
         return self.p_defeats
 
     @property
-    def attack_probabilities(self) -> dict[tuple[str, str], ProbabilityValue] | None:
+    def attack_probabilities(self) -> Mapping[tuple[str, str], ProbabilityValue] | None:
         return self.p_attacks
 
     @property
-    def support_probabilities(self) -> dict[tuple[str, str], ProbabilityValue] | None:
+    def support_probabilities(self) -> Mapping[tuple[str, str], ProbabilityValue] | None:
         return self.p_supports
 
 
@@ -189,9 +214,6 @@ def _attack_opinion(
     praf: ProbabilisticAF,
     edge: tuple[str, str],
 ) -> ProbabilityValue | None:
-    for relation in praf.attack_relations:
-        if relation.edge == edge:
-            return relation.opinion
     if praf.p_attacks is not None and edge in praf.p_attacks:
         return praf.p_attacks[edge]
     if edge in _direct_defeats(praf) and edge in praf.p_defeats:
@@ -203,9 +225,6 @@ def _support_opinion(
     praf: ProbabilisticAF,
     edge: tuple[str, str],
 ) -> ProbabilityValue | None:
-    for relation in praf.support_relations:
-        if relation.edge == edge:
-            return relation.opinion
     if praf.p_supports is not None and edge in praf.p_supports:
         return praf.p_supports[edge]
     return None
@@ -501,7 +520,7 @@ def _enumerate_worlds(
             )
 
 
-def compute_praf_acceptance(
+def _compute_probabilistic_acceptance(
     praf: ProbabilisticAF,
     *,
     semantics: str = "grounded",
@@ -1246,18 +1265,19 @@ def _compute_dfquad(
     )
 
 
-compute_probabilistic_acceptance = compute_praf_acceptance
+def compute_probabilistic_acceptance(*args: Any, **kwargs: Any) -> PrAFResult:
+    return _compute_probabilistic_acceptance(*args, **kwargs)
+
+
 ProbabilisticResult = PrAFResult
 
 
 __all__ = [
-    "SupportsExpectation",
     "ProbabilityValue",
     "ProbabilisticAF",
     "ProbabilisticArgumentationFramework",
     "PrAFResult",
     "ProbabilisticResult",
-    "compute_praf_acceptance",
     "compute_probabilistic_acceptance",
     "summarize_defeat_relations",
 ]

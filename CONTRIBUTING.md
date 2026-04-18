@@ -1,7 +1,7 @@
 # Contributing
 
-`argumentation` is the finite formal argumentation kernel extracted from
-propstore. Contributions must keep that boundary intact.
+`argumentation` is a finite formal argumentation kernel. Contributions must
+keep that boundary intact.
 
 ## Development
 
@@ -18,12 +18,13 @@ module genuinely requires one.
 
 ## Boundary
 
-Package code and tests must not import `propstore`.
+Package code and tests must not import application-layer storage, provenance,
+calibration, source workflow, worldline, sidecar, or CLI code.
 
 Use `argumentation` for Dung abstract argumentation frameworks, ASPIC+
-structured arguments, Cayrol-style bipolar argumentation frameworks, and
-generic formal helper code. Do not add propstore storage, provenance, CEL,
-worldline, sidecar, source workflow, or CLI code here.
+structured arguments, Cayrol-style bipolar frameworks, partial AFs, AF-level
+revision, probabilistic AF kernels, gradual semantics, and generic formal
+helper code.
 
 ## Citation Discipline
 

@@ -3,7 +3,7 @@
 Implements the foundational data structures for ASPIC+ structured
 argumentation, following Modgil & Prakken (2018) Definitions 1-2.
 
-This is a leaf module with no dependency on propstore.
+This is a leaf module with no application-layer dependency.
 
 References:
     Modgil, S. & Prakken, H. (2018). A general account of argumentation

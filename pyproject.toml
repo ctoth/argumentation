@@ -1,11 +1,46 @@
 [project]
 name = "argumentation"
 version = "0.1.0"
-description = "Finite formal argumentation frameworks and semantics"
+description = "Finite formal argumentation frameworks and semantics: Dung, ASPIC+, bipolar, partial, and revision"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
     { name = "ctoth" },
+]
+keywords = [
+    "argumentation",
+    "formal-argumentation",
+    "abstract-argumentation",
+    "dung",
+    "aspic",
+    "bipolar-argumentation",
+    "partial-argumentation",
+    "probabilistic-argumentation",
+    "qbaf",
+    "df-quad",
+    "gradual-semantics",
+    "belief-revision",
+    "nonmonotonic-reasoning",
+    "knowledge-representation",
+    "monte-carlo",
+    "tree-decomposition",
+    "z3",
+    "sat",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
 ]
 dependencies = []
 
@@ -13,6 +48,11 @@ dependencies = []
 z3 = [
     "z3-solver>=4.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ctoth/argumentation"
+Repository = "https://github.com/ctoth/argumentation"
+Issues = "https://github.com/ctoth/argumentation/issues"
 
 [build-system]
 requires = ["hatchling"]
