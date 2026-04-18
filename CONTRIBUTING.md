@@ -26,6 +26,11 @@ structured arguments, Cayrol-style bipolar frameworks, partial AFs, AF-level
 revision, probabilistic AF kernels, gradual semantics, and generic formal
 helper code.
 
+Do not add application provenance, source calibration, subjective-logic
+opinion calculus, persistent storage, repository workflow, or CLI ownership to
+this package. Convert those concerns to finite formal argumentation objects at
+the caller boundary.
+
 ## Citation Discipline
 
 Formal behavior should be anchored to the relevant literature in docstrings,

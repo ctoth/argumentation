@@ -12,6 +12,7 @@ argumentation theory as a small, dependency-free kernel:
 - **AF revision** under formula and framework constraints
 - **Probabilistic** argumentation frameworks (PrAFs) with Monte Carlo,
   exact enumeration, tree-decomposition DP, and DF-QuAD gradual semantics
+- **Generic semantics dispatch** over Dung, bipolar, and partial AF objects
 - An optional **Z3-backed** backend for extension enumeration
 
 Every algorithm cites the paper, definition, and (where useful) page that fixes
@@ -193,6 +194,9 @@ Multiple sources can be merged into a single AF by minimising edit distance
 lifts a Dung AF onto a wider argument universe by marking out-of-scope pairs as
 ignorance.
 
+Completion-based semantics are also available through the generic
+`argumentation.semantics` dispatcher.
+
 ## AF revision
 
 Add arguments and attacks to an existing framework, or revise an extension
@@ -318,6 +322,23 @@ Z3 results are surfaced through three local result types — `SolverSat`,
 caller that cannot represent unknown receives `Z3UnknownError`. Install the
 `z3` extra to enable the backend.
 
+## Generic semantics dispatch
+
+`argumentation.semantics` provides a small set-returning dispatcher for callers
+that work across framework families:
+
+```python
+from argumentation.semantics import accepted_arguments, extensions
+
+extensions(framework, semantics="grounded")
+accepted_arguments(framework, semantics="preferred", mode="credulous")
+accepted_arguments(partial_framework, semantics="stable", mode="skeptical")
+```
+
+Supported inputs are argumentation-owned Dung, bipolar, and partial-AF
+dataclasses. The dispatcher does not know about application records, storage
+rows, projection policy, or command-line rendering.
+
 ## Preferences
 
 `argumentation.preference` provides preference primitives shared by ASPIC+ and
@@ -341,6 +362,13 @@ revision code:
   defence is checked against defeats. Both are tracked separately on
   `ArgumentationFramework`.
 - Algorithms cite their formal source in module and function docstrings.
+
+## Non-goals
+
+`argumentation` does not own application provenance, source calibration,
+subjective-logic opinion calculi, persistent storage, repository workflow, or
+CLI presentation. Callers should translate those concerns into finite formal
+objects before invoking this package.
 
 ## Development
 

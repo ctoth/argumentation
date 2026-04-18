@@ -35,6 +35,8 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.probabilistic_treedecomp` — Min-degree treewidth
   estimation, tree decomposition computation, nice tree decomposition
   conversion, and grounded-semantics DP.
+- `argumentation.semantics` — Generic set-returning semantics dispatch over
+  argumentation-owned Dung, bipolar, and partial-AF dataclasses.
 - `argumentation.preference` — Strict-partial-order helpers and elitist
   and democratic preference comparisons (Modgil & Prakken 2018 Def 19).
 - `argumentation.solver` — Solver-result wrappers (`SolverSat`,
@@ -89,6 +91,15 @@ semantics; they are never selected by `auto` and require explicit
 selection. The DP backend currently supports only credulous grounded
 acceptance on defeat-only frameworks; calling it on richer queries raises.
 
+## Generic semantics dispatch
+
+`argumentation.semantics.extensions` returns extension sets for Dung,
+bipolar, and partial AFs under their supported semantics names.
+`accepted_arguments` derives credulous or skeptical accepted-argument sets
+from that extension relation. The dispatcher is intentionally limited to
+argumentation-owned dataclasses and does not accept application records,
+storage rows, projection contexts, or presentation flags.
+
 ## Invariants
 
 - Frameworks, rules, arguments, and extensions are immutable frozen
@@ -103,6 +114,14 @@ acceptance on defeat-only frameworks; calling it on richer queries raises.
   when present (Modgil & Prakken 2018 Def 14); defence is checked against
   defeats (Dung 1995 Def 6). `ArgumentationFramework` carries both as
   separate fields.
+
+## Non-goals
+
+The package does not own application provenance, source calibration,
+subjective-logic opinion calculi, persistent storage, repository workflow,
+or CLI presentation. Those concerns belong outside the formal kernel and
+must be projected into finite argumentation objects before calling these
+algorithms.
 
 ## Citation discipline
 
