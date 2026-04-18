@@ -22,14 +22,18 @@ must agree with it.
 ## Install
 
 ```powershell
-uv add "argumentation @ git+https://github.com/ctoth/argumentation"
+uv add formal-argumentation
 ```
 
 To enable the Z3-backed Dung backend:
 
 ```powershell
-uv add "argumentation[z3] @ git+https://github.com/ctoth/argumentation"
+uv add "formal-argumentation[z3]"
 ```
+
+The distribution name on PyPI is `formal-argumentation`; the import name is
+`argumentation` (the name `argumentation` on PyPI was already taken by an
+unrelated project).
 
 Requires Python 3.11 or later.
 
