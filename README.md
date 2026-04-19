@@ -93,6 +93,7 @@ from argumentation.aspic import (
     GroundAtom,
     KnowledgeBase,
     Literal,
+    PreferenceConfig,
     Rule,
     build_arguments,
     compute_attacks,
@@ -114,9 +115,16 @@ system = ArgumentationSystem(
 )
 
 kb = KnowledgeBase(axioms=frozenset({p}), premises=frozenset())
+pref = PreferenceConfig(
+    rule_order=frozenset(),
+    premise_order=frozenset(),
+    comparison="elitist",
+    link="last",
+)
+
 arguments = build_arguments(system, kb)
 attacks = compute_attacks(arguments, system)
-defeats = compute_defeats(arguments, attacks, system)
+defeats = compute_defeats(attacks, arguments, system, kb, pref)
 ```
 
 The module provides:
