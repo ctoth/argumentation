@@ -60,6 +60,55 @@ def test_probabilities_are_plain_bounded_floats() -> None:
         ProbabilisticAF(framework=framework, p_args={"a": 1.2}, p_defeats={})
 
 
+def test_p_args_must_match_framework_arguments() -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"a", "b"}), defeats=frozenset())
+
+    with pytest.raises(ValueError, match="p_args"):
+        ProbabilisticAF(framework=framework, p_args={"a": 1.0}, p_defeats={})
+
+    with pytest.raises(ValueError, match="p_args"):
+        ProbabilisticAF(
+            framework=framework,
+            p_args={"a": 1.0, "b": 1.0, "c": 1.0},
+            p_defeats={},
+        )
+
+
+def test_probabilistic_relation_probabilities_must_reference_declared_relations() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    with pytest.raises(ValueError, match="p_defeats"):
+        ProbabilisticAF(
+            framework=framework,
+            p_args={"a": 1.0, "b": 1.0},
+            p_defeats={("b", "a"): 0.5},
+        )
+
+    with pytest.raises(ValueError, match="p_supports"):
+        ProbabilisticAF(
+            framework=framework,
+            p_args={"a": 1.0, "b": 1.0},
+            p_defeats={("a", "b"): 1.0},
+            supports=frozenset(),
+            p_supports={("a", "b"): 0.5},
+        )
+
+
+def test_probabilistic_supports_must_reference_declared_arguments() -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"a"}), defeats=frozenset())
+
+    with pytest.raises(ValueError, match="supports"):
+        ProbabilisticAF(
+            framework=framework,
+            p_args={"a": 1.0},
+            p_defeats={},
+            supports=frozenset({("a", "b")}),
+        )
+
+
 def test_summarize_defeat_relations_returns_exact_marginals() -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),

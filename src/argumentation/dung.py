@@ -36,8 +36,39 @@ class ArgumentationFramework:
     defeats: frozenset[tuple[str, str]]
     attacks: frozenset[tuple[str, str]] | None = None
 
+    def __post_init__(self) -> None:
+        arguments = frozenset(self.arguments)
+        defeats = _normalize_relation("defeats", self.defeats, arguments)
+        attacks = (
+            None
+            if self.attacks is None
+            else _normalize_relation("attacks", self.attacks, arguments)
+        )
+
+        object.__setattr__(self, "arguments", arguments)
+        object.__setattr__(self, "defeats", defeats)
+        object.__setattr__(self, "attacks", attacks)
+
 
 _AUTO_BACKEND_MAX_ARGS = 12
+
+
+def _normalize_relation(
+    name: str,
+    relation: frozenset[tuple[str, str]],
+    arguments: frozenset[str],
+) -> frozenset[tuple[str, str]]:
+    normalized = frozenset((attacker, target) for attacker, target in relation)
+    unknown = sorted(
+        (attacker, target)
+        for attacker, target in normalized
+        if attacker not in arguments or target not in arguments
+    )
+    if unknown:
+        raise ValueError(
+            f"{name} must only contain pairs over arguments: {unknown!r}"
+        )
+    return normalized
 
 
 def _attackers_index(

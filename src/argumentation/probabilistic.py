@@ -72,6 +72,34 @@ def _validate_probability(value: ProbabilityValue, name: str) -> float:
     return probability
 
 
+def _normalize_relation(
+    name: str,
+    relation: frozenset[tuple[str, str]],
+    arguments: frozenset[str],
+) -> frozenset[tuple[str, str]]:
+    normalized = frozenset((str(source), str(target)) for source, target in relation)
+    unknown = sorted(
+        (source, target)
+        for source, target in normalized
+        if source not in arguments or target not in arguments
+    )
+    if unknown:
+        raise ValueError(
+            f"{name} must only contain pairs over framework arguments: {unknown!r}"
+        )
+    return normalized
+
+
+def _validate_probability_keys(
+    name: str,
+    probabilities: Mapping[tuple[str, str], ProbabilityValue],
+    relation: frozenset[tuple[str, str]],
+) -> None:
+    extra = sorted(edge for edge in probabilities if edge not in relation)
+    if extra:
+        raise ValueError(f"{name} contains undeclared relation pairs: {extra!r}")
+
+
 def _expectation(value: ProbabilityValue | None) -> float:
     if value is None:
         return 1.0
@@ -98,11 +126,46 @@ class ProbabilisticAF:
     base_defeats: frozenset[tuple[str, str]] | None = None
 
     def __post_init__(self) -> None:
+        framework_args = frozenset(self.framework.arguments)
+        supports = _normalize_relation("supports", self.supports, framework_args)
+        object.__setattr__(self, "supports", supports)
+
+        if self.base_defeats is not None:
+            base_defeats = _normalize_relation(
+                "base_defeats",
+                self.base_defeats,
+                framework_args,
+            )
+            primitive_attacks = _primitive_attacks(self)
+            extra_base_defeats = sorted(
+                edge for edge in base_defeats if edge not in primitive_attacks
+            )
+            if extra_base_defeats:
+                raise ValueError(
+                    "base_defeats must be a subset of primitive attacks: "
+                    f"{extra_base_defeats!r}"
+                )
+            object.__setattr__(self, "base_defeats", base_defeats)
+
         object.__setattr__(
             self,
             "p_args",
             {str(arg): _validate_probability(probability, f"p_args[{arg!r}]") for arg, probability in self.p_args.items()},
         )
+        p_arg_keys = set(self.p_args)
+        if p_arg_keys != set(framework_args):
+            missing = sorted(framework_args - p_arg_keys)
+            extra = sorted(p_arg_keys - framework_args)
+            details: list[str] = []
+            if missing:
+                details.append(f"missing={missing!r}")
+            if extra:
+                details.append(f"extra={extra!r}")
+            raise ValueError(
+                "p_args must contain exactly the framework arguments"
+                f": {', '.join(details)}"
+            )
+
         object.__setattr__(
             self,
             "p_defeats",
@@ -111,6 +174,7 @@ class ProbabilisticAF:
                 for (src, tgt), probability in self.p_defeats.items()
             },
         )
+        _validate_probability_keys("p_defeats", self.p_defeats, _direct_defeats(self))
         if self.p_attacks is not None:
             object.__setattr__(
                 self,
@@ -119,6 +183,11 @@ class ProbabilisticAF:
                     (str(src), str(tgt)): _validate_probability(probability, f"p_attacks[{(src, tgt)!r}]")
                     for (src, tgt), probability in self.p_attacks.items()
                 },
+            )
+            _validate_probability_keys(
+                "p_attacks",
+                self.p_attacks,
+                _primitive_attacks(self),
             )
         if self.p_supports is not None:
             object.__setattr__(
@@ -129,6 +198,7 @@ class ProbabilisticAF:
                     for (src, tgt), probability in self.p_supports.items()
                 },
             )
+            _validate_probability_keys("p_supports", self.p_supports, self.supports)
 
     @property
     def argument_probabilities(self) -> Mapping[str, ProbabilityValue]:

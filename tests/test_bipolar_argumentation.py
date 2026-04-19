@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from argumentation.bipolar import (
     BipolarArgumentationFramework,
     c_preferred_extensions,
@@ -75,6 +77,23 @@ class TestCayrolDerivedDefeats:
         defeats = frozenset({("A", "C")})
         derived = cayrol_derived_defeats(defeats, supports)
         assert ("B", "C") in derived
+
+
+class TestBipolarFrameworkValidation:
+    def test_defeats_must_reference_declared_arguments(self) -> None:
+        with pytest.raises(ValueError, match="defeats"):
+            BipolarArgumentationFramework(
+                arguments=frozenset({"A"}),
+                defeats=frozenset({("A", "B")}),
+            )
+
+    def test_supports_must_reference_declared_arguments(self) -> None:
+        with pytest.raises(ValueError, match="supports"):
+            BipolarArgumentationFramework(
+                arguments=frozenset({"A"}),
+                defeats=frozenset(),
+                supports=frozenset({("B", "A")}),
+            )
 
 
 class TestAttackBasedConflictFree:

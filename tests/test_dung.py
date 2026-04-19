@@ -136,6 +136,23 @@ class TestGroundedConcrete:
         assert grounded_extension(fw) == frozenset({"A", "B"})
 
 
+class TestFrameworkValidation:
+    def test_defeats_must_reference_declared_arguments(self) -> None:
+        with pytest.raises(ValueError, match="defeats"):
+            ArgumentationFramework(
+                arguments=frozenset({"A"}),
+                defeats=frozenset({("A", "B")}),
+            )
+
+    def test_attacks_must_reference_declared_arguments(self) -> None:
+        with pytest.raises(ValueError, match="attacks"):
+            ArgumentationFramework(
+                arguments=frozenset({"A"}),
+                defeats=frozenset(),
+                attacks=frozenset({("B", "A")}),
+            )
+
+
 class TestPreferredConcrete:
     """Concrete examples for preferred extensions."""
 

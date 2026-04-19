@@ -18,6 +18,33 @@ class BipolarArgumentationFramework:
     defeats: frozenset[tuple[str, str]]
     supports: frozenset[tuple[str, str]] = frozenset()
 
+    def __post_init__(self) -> None:
+        arguments = frozenset(self.arguments)
+        defeats = _normalize_relation("defeats", self.defeats, arguments)
+        supports = _normalize_relation("supports", self.supports, arguments)
+
+        object.__setattr__(self, "arguments", arguments)
+        object.__setattr__(self, "defeats", defeats)
+        object.__setattr__(self, "supports", supports)
+
+
+def _normalize_relation(
+    name: str,
+    relation: frozenset[tuple[str, str]],
+    arguments: frozenset[str],
+) -> frozenset[tuple[str, str]]:
+    normalized = frozenset((source, target) for source, target in relation)
+    unknown = sorted(
+        (source, target)
+        for source, target in normalized
+        if source not in arguments or target not in arguments
+    )
+    if unknown:
+        raise ValueError(
+            f"{name} must only contain pairs over arguments: {unknown!r}"
+        )
+    return normalized
+
 
 def _support_successors(supports: frozenset[tuple[str, str]]) -> dict[str, frozenset[str]]:
     successors: dict[str, set[str]] = {}
