@@ -61,6 +61,16 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/argumentation"]
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/CONTRIBUTING.md",
+    "/README.md",
+    "/docs",
+    "/pyproject.toml",
+    "/src/argumentation",
+    "/uv.lock",
+]
+
 [tool.pyright]
 typeCheckingMode = "basic"
 venvPath = "."
