@@ -9,6 +9,7 @@ from hypothesis import strategies as st
 
 from argumentation.dung import ArgumentationFramework
 from argumentation.partial_af import (
+    EnumerationExceeded,
     consensual_expand,
     leximax_merge_frameworks,
     max_merge_frameworks,
@@ -103,6 +104,20 @@ def test_sum_merge_matches_majority_profile_on_shared_universe():
     result = sum_merge_frameworks({"left": left, "middle": middle, "right": right})
 
     assert result == [_af({"A", "B"}, {("A", "B")})]
+
+
+def test_sum_merge_returns_enumeration_exceeded_past_candidate_ceiling():
+    profile = {
+        "left": _af({"A", "B"}, {("A", "B")}),
+        "right": _af({"A", "B"}, {("B", "A")}),
+    }
+
+    result = sum_merge_frameworks(profile, max_candidates=1)
+
+    assert isinstance(result, EnumerationExceeded)
+    assert result.partial_count == 1
+    assert result.max_candidates == 1
+    assert result.remainder_provenance == "vacuous"
 
 
 @settings(
