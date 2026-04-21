@@ -927,7 +927,11 @@ def build_arguments_for(
 
         result = frozenset(args)
         in_progress.discard(target)
-        if target not in cycle_tainted:
+        if target not in cycle_tainted or depth == 0:
+            # Modgil & Prakken 2018 Def 5 admits only finite argument trees.
+            # A depth-zero request has no unresolved caller context, so cycles
+            # detected below it are invalid branches and the completed result is
+            # reusable for later attacker-fixpoint requests.
             memo[target] = result
         return result
 
