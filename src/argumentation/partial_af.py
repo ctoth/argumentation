@@ -282,6 +282,43 @@ def _shared_universe(profile: dict[str, ArgumentationFramework]) -> frozenset[st
     return frozenset().union(*(framework.arguments for framework in profile.values()))
 
 
+def _strict_bipartition_sum_merge(
+    universe: frozenset[str],
+    expanded: dict[str, PartialArgumentationFramework],
+) -> list[ArgumentationFramework] | None:
+    """Return the unique pairwise Sum median for a strict bipartition profile.
+
+    Coste-Marquis et al. 2007 define AF merge distances over attack statuses.
+    For complete shared-universe profiles with no ignorance and a strict
+    attack/non-attack majority on every ordered pair, the Sum objective
+    decomposes per pair, so the unique winner is obtained without enumerating
+    the 2^(|A|^2) candidate AF space.
+    """
+
+    if any(framework.ignorance for framework in expanded.values()):
+        return None
+
+    attacks: set[AttackPair] = set()
+    for pair in product(universe, universe):
+        attack_votes = sum(1 for framework in expanded.values() if pair in framework.attacks)
+        non_attack_votes = sum(
+            1 for framework in expanded.values() if pair in framework.non_attacks
+        )
+        if attack_votes == non_attack_votes:
+            return None
+        if attack_votes > non_attack_votes:
+            attacks.add(pair)
+
+    attack_relation = frozenset(attacks)
+    return [
+        ArgumentationFramework(
+            arguments=universe,
+            defeats=attack_relation,
+            attacks=attack_relation,
+        )
+    ]
+
+
 def sum_merge_frameworks(
     profile: dict[str, ArgumentationFramework],
     *,
@@ -290,6 +327,10 @@ def sum_merge_frameworks(
     """Return exact Sum-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
     expanded = _expanded_profile(profile, universe)
+    strict_bipartition_winners = _strict_bipartition_sum_merge(universe, expanded)
+    if strict_bipartition_winners is not None:
+        return strict_bipartition_winners
+
     candidates = _candidate_frameworks(universe, max_candidates=max_candidates)
     if isinstance(candidates, EnumerationExceeded):
         return candidates
