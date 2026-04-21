@@ -10,6 +10,7 @@ from hypothesis import strategies as st
 from argumentation.af_revision import (
     AFChangeKind,
     ExtensionRevisionState,
+    _classify_extension_change,
     baumann_2015_kernel_union_expand,
     cayrol_2014_classify_grounded_argument_addition,
     diller_2015_revise_by_formula,
@@ -160,6 +161,32 @@ def test_baumann_2015_kernel_union_removes_stable_kernel_redundant_attacks() -> 
     assert ("self_attacker", "self_attacker") in expanded.defeats
     assert ("self_attacker", "target") not in expanded.defeats
     assert stable_extensions(expanded) == stable_extensions(base)
+
+
+def test_cayrol_2010_restrictive_classification_for_strict_extension_shrink() -> None:
+    before = (
+        frozenset({"a"}),
+        frozenset({"b"}),
+        frozenset({"c"}),
+        frozenset({"d"}),
+    )
+    after = (
+        frozenset({"a"}),
+        frozenset({"b"}),
+        frozenset({"c"}),
+    )
+
+    assert _classify_extension_change(before, after) == AFChangeKind.RESTRICTIVE
+
+
+def test_cayrol_2010_questioning_classification_for_more_extensions() -> None:
+    before = (frozenset({"accepted"}),)
+    after = (
+        frozenset({"accepted"}),
+        frozenset(),
+    )
+
+    assert _classify_extension_change(before, after) == AFChangeKind.QUESTIONING
 
 
 @given(st_revision_state(), st_formula)
