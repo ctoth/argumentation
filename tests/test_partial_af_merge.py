@@ -166,6 +166,20 @@ def test_leximax_refines_max_results():
     assert set(leximax_results).issubset(set(max_results))
 
 
+def test_leximax_merge_returns_enumeration_exceeded_past_candidate_ceiling():
+    profile = {
+        "left": _af({"A", "B"}, {("A", "B")}),
+        "right": _af({"A", "B"}, {("B", "A")}),
+    }
+
+    result = leximax_merge_frameworks(profile, max_candidates=1)
+
+    assert isinstance(result, EnumerationExceeded)
+    assert result.partial_count == 1
+    assert result.max_candidates == 1
+    assert result.remainder_provenance == "vacuous"
+
+
 def test_sum_and_max_diverge_on_tiny_exact_profile():
     found = None
     for left_attacks in ALL_ATTACK_SETS:
