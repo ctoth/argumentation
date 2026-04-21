@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Final
+
 from argumentation.bipolar import (
     BipolarArgumentationFramework,
     c_preferred_extensions,
@@ -20,6 +22,18 @@ from argumentation.partial_af import (
     PartialArgumentationFramework,
     enumerate_completions,
 )
+
+
+class SemanticsUndefinedType:
+    """Sentinel for acceptance queries with no extension family."""
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "SemanticsUndefined"
+
+
+SemanticsUndefined: Final = SemanticsUndefinedType()
 
 
 def _sorted_extensions(
@@ -105,14 +119,14 @@ def accepted_arguments(
     *,
     semantics: str,
     mode: str = "credulous",
-) -> frozenset[str]:
+) -> frozenset[str] | SemanticsUndefinedType:
     """Return credulously or skeptically accepted arguments."""
     if mode not in {"credulous", "skeptical"}:
         raise ValueError("mode must be 'credulous' or 'skeptical'")
 
     extension_sets = extensions(framework, semantics=semantics)
     if not extension_sets:
-        return frozenset()
+        return SemanticsUndefined
 
     if mode == "credulous":
         accepted: set[str] = set()
@@ -126,4 +140,4 @@ def accepted_arguments(
     return frozenset(skeptical)
 
 
-__all__ = ["accepted_arguments", "extensions"]
+__all__ = ["SemanticsUndefined", "accepted_arguments", "extensions"]
