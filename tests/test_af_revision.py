@@ -137,6 +137,26 @@ def test_baumann_brewka_2015_kernel_union_expansion_success_and_inclusion(
     assert baumann_2015_kernel_union_expand(expanded, new) == expanded
 
 
+def test_baumann_2015_kernel_union_removes_stable_kernel_redundant_attacks() -> None:
+    """Baumann 2014 stable kernels delete non-self attacks from self-attackers."""
+    base = ArgumentationFramework(
+        arguments=frozenset({"self_attacker", "target"}),
+        defeats=frozenset(
+            {
+                ("self_attacker", "self_attacker"),
+                ("self_attacker", "target"),
+            }
+        ),
+    )
+    new = ArgumentationFramework(arguments=base.arguments, defeats=frozenset())
+
+    expanded = baumann_2015_kernel_union_expand(base, new)
+
+    assert ("self_attacker", "self_attacker") in expanded.defeats
+    assert ("self_attacker", "target") not in expanded.defeats
+    assert stable_extensions(expanded) == stable_extensions(base)
+
+
 @given(st_revision_state(), st_formula)
 @settings(deadline=None)
 def test_diller_2015_p_star_1_p_star_6_formula_revision(
