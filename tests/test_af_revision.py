@@ -9,8 +9,10 @@ from hypothesis import strategies as st
 
 from argumentation.af_revision import (
     AFChangeKind,
+    AFKernelSemantics,
     ExtensionRevisionState,
     _classify_extension_change,
+    baumann_2015_kernel,
     baumann_2015_kernel_union_expand,
     cayrol_2014_classify_grounded_argument_addition,
     diller_2015_revise_by_formula,
@@ -161,6 +163,40 @@ def test_baumann_2015_kernel_union_removes_stable_kernel_redundant_attacks() -> 
     assert ("self_attacker", "self_attacker") in expanded.defeats
     assert ("self_attacker", "target") not in expanded.defeats
     assert stable_extensions(expanded) == stable_extensions(base)
+
+
+def test_baumann_2015_classical_kernels_are_semantics_specific() -> None:
+    """Classical Baumann kernels keep self-loops but delete different non-self attacks."""
+
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "x"}),
+        defeats=frozenset(
+            {
+                ("a", "a"),
+                ("a", "b"),
+                ("a", "x"),
+                ("b", "b"),
+                ("x", "a"),
+            }
+        ),
+    )
+
+    assert baumann_2015_kernel(
+        framework,
+        semantics=AFKernelSemantics.STABLE,
+    ).defeats == frozenset({("a", "a"), ("b", "b"), ("x", "a")})
+    assert baumann_2015_kernel(
+        framework,
+        semantics=AFKernelSemantics.ADMISSIBLE,
+    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b"), ("x", "a")})
+    assert baumann_2015_kernel(
+        framework,
+        semantics=AFKernelSemantics.GROUNDED,
+    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b")})
+    assert baumann_2015_kernel(
+        framework,
+        semantics=AFKernelSemantics.COMPLETE,
+    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b"), ("x", "a")})
 
 
 def test_cayrol_2010_restrictive_classification_for_strict_extension_shrink() -> None:
