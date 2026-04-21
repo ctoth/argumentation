@@ -35,6 +35,27 @@ class AFKernelSemantics(StrEnum):
     COMPLETE = "complete"
 
 
+class UnknownArgumentRank(Exception):
+    """Raised when an extension revision state lacks a required old rank."""
+
+    def __init__(
+        self,
+        extension: frozenset[str],
+        *,
+        candidate: frozenset[str],
+        added_arguments: frozenset[str],
+    ) -> None:
+        self.extension = extension
+        self.candidate = candidate
+        self.added_arguments = added_arguments
+        added = ", ".join(sorted(added_arguments)) or "<none>"
+        super().__init__(
+            "unknown rank for projected extension "
+            f"{sorted(extension)!r} while extending with {added}; "
+            f"new candidate was {sorted(candidate)!r}"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class ExtensionRevisionState:
     arguments: frozenset[str]
@@ -309,10 +330,17 @@ def _extend_state(
     arguments: frozenset[str],
 ) -> ExtensionRevisionState:
     extras = arguments - state.arguments
-    ranking = {
-        candidate: state.ranking.get(frozenset(item for item in candidate if item not in extras), 0)
-        for candidate in ExtensionRevisionState.all_extensions(arguments)
-    }
+    ranking: dict[frozenset[str], int] = {}
+    for candidate in ExtensionRevisionState.all_extensions(arguments):
+        projected = frozenset(item for item in candidate if item not in extras)
+        try:
+            ranking[candidate] = state.ranking[projected]
+        except KeyError:
+            raise UnknownArgumentRank(
+                projected,
+                candidate=candidate,
+                added_arguments=extras,
+            ) from None
     extensions = tuple(frozenset(extension) for extension in state.extensions)
     return ExtensionRevisionState.from_extensions(arguments, extensions, ranking=ranking)
 
@@ -323,6 +351,7 @@ __all__ = [
     "AFKernelSemantics",
     "ExtensionRevisionState",
     "ExtensionRevisionResult",
+    "UnknownArgumentRank",
     "baumann_2015_kernel",
     "baumann_2015_kernel_union_expand",
     "stable_kernel",
