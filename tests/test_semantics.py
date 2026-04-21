@@ -5,7 +5,7 @@ import pytest
 from argumentation.bipolar import BipolarArgumentationFramework
 from argumentation.dung import ArgumentationFramework
 from argumentation.partial_af import PartialArgumentationFramework
-from argumentation.semantics import accepted_arguments, extensions
+from argumentation.semantics import SemanticsUndefined, accepted_arguments, extensions
 
 
 def test_dung_extensions_dispatches_standard_semantics() -> None:
@@ -36,6 +36,20 @@ def test_accepted_arguments_supports_credulous_and_skeptical_modes() -> None:
         semantics="preferred",
         mode="skeptical",
     ) == frozenset()
+
+
+def test_empty_stable_extension_family_returns_sentinel() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b"), ("b", "c"), ("c", "a")}),
+    )
+
+    assert extensions(framework, semantics="stable") == ()
+    assert accepted_arguments(framework, semantics="stable") is SemanticsUndefined
+    assert (
+        accepted_arguments(framework, semantics="stable", mode="skeptical")
+        is SemanticsUndefined
+    )
 
 
 def test_bipolar_extensions_dispatch_preferred_and_stable_variants() -> None:
