@@ -138,6 +138,20 @@ def test_max_merge_profile_order_invariant(
     assert forward == reverse
 
 
+def test_max_merge_returns_enumeration_exceeded_past_candidate_ceiling():
+    profile = {
+        "left": _af({"A", "B"}, {("A", "B")}),
+        "right": _af({"A", "B"}, {("B", "A")}),
+    }
+
+    result = max_merge_frameworks(profile, max_candidates=1)
+
+    assert isinstance(result, EnumerationExceeded)
+    assert result.partial_count == 1
+    assert result.max_candidates == 1
+    assert result.remainder_provenance == "vacuous"
+
+
 def test_leximax_refines_max_results():
     left = _af({"A", "B"}, {("A", "B")})
     middle = _af({"A", "B"}, {("B", "A")})
