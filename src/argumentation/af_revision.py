@@ -28,6 +28,13 @@ class AFChangeKind(StrEnum):
     ALTERING = "altering"
 
 
+class AFKernelSemantics(StrEnum):
+    STABLE = "stable"
+    ADMISSIBLE = "admissible"
+    GROUNDED = "grounded"
+    COMPLETE = "complete"
+
+
 @dataclass(frozen=True, slots=True)
 class ExtensionRevisionState:
     arguments: frozenset[str]
@@ -146,19 +153,36 @@ def stable_kernel(framework: ArgumentationFramework) -> ArgumentationFramework:
     The self-attack itself is retained because it records that ``a`` is
     conflicting.
     """
+    return baumann_2015_kernel(framework, semantics=AFKernelSemantics.STABLE)
+
+
+def baumann_2015_kernel(
+    framework: ArgumentationFramework,
+    *,
+    semantics: AFKernelSemantics | str = AFKernelSemantics.STABLE,
+) -> ArgumentationFramework:
+    """Return Baumann's classical kernel for the selected semantics.
+
+    Baumann 2015, Definition 5.10, gives context-free kernels for
+    stable, admissible, grounded, and complete semantics. All variants
+    preserve arguments and self-loops while removing the semantics-specific
+    non-self attacks that cannot affect the corresponding extensions.
+    """
+    normalized_semantics = AFKernelSemantics(semantics)
     return ArgumentationFramework(
         arguments=framework.arguments,
-        defeats=_stable_kernel_relation(framework.defeats),
+        defeats=_baumann_kernel_relation(framework.defeats, normalized_semantics),
         attacks=(
             None
             if framework.attacks is None
-            else _stable_kernel_relation(framework.attacks)
+            else _baumann_kernel_relation(framework.attacks, normalized_semantics)
         ),
     )
 
 
-def _stable_kernel_relation(
+def _baumann_kernel_relation(
     relation: frozenset[tuple[str, str]],
+    semantics: AFKernelSemantics,
 ) -> frozenset[tuple[str, str]]:
     self_attackers = frozenset(
         attacker for attacker, target in relation if attacker == target
@@ -166,10 +190,38 @@ def _stable_kernel_relation(
     return frozenset(
         (attacker, target)
         for attacker, target in relation
-        # Baumann stable-kernel invariant: keep the self-conflict marker,
-        # delete only its non-self outgoing attacks.
-        if attacker == target or attacker not in self_attackers
+        if not _is_baumann_kernel_redundant(
+            attacker,
+            target,
+            relation,
+            self_attackers,
+            semantics,
+        )
     )
+
+
+def _is_baumann_kernel_redundant(
+    attacker: str,
+    target: str,
+    relation: frozenset[tuple[str, str]],
+    self_attackers: frozenset[str],
+    semantics: AFKernelSemantics,
+) -> bool:
+    if attacker == target:
+        return False
+    if semantics is AFKernelSemantics.STABLE:
+        return attacker in self_attackers
+    if semantics is AFKernelSemantics.ADMISSIBLE:
+        return attacker in self_attackers and (
+            (target, attacker) in relation or target in self_attackers
+        )
+    if semantics is AFKernelSemantics.GROUNDED:
+        return target in self_attackers and (
+            attacker in self_attackers or (target, attacker) in relation
+        )
+    if semantics is AFKernelSemantics.COMPLETE:
+        return attacker in self_attackers and target in self_attackers
+    raise AssertionError(f"Unhandled Baumann kernel semantics: {semantics}")
 
 
 def diller_2015_revise_by_formula(
@@ -268,8 +320,10 @@ def _extend_state(
 __all__ = [
     "ExtensionConstraint",
     "AFChangeKind",
+    "AFKernelSemantics",
     "ExtensionRevisionState",
     "ExtensionRevisionResult",
+    "baumann_2015_kernel",
     "baumann_2015_kernel_union_expand",
     "stable_kernel",
     "diller_2015_revise_by_formula",

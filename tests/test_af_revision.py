@@ -169,12 +169,13 @@ def test_baumann_2015_classical_kernels_are_semantics_specific() -> None:
     """Classical Baumann kernels keep self-loops but delete different non-self attacks."""
 
     framework = ArgumentationFramework(
-        arguments=frozenset({"a", "b", "x"}),
+        arguments=frozenset({"a", "b", "x", "y"}),
         defeats=frozenset(
             {
                 ("a", "a"),
                 ("a", "b"),
                 ("a", "x"),
+                ("a", "y"),
                 ("b", "b"),
                 ("x", "a"),
             }
@@ -188,15 +189,17 @@ def test_baumann_2015_classical_kernels_are_semantics_specific() -> None:
     assert baumann_2015_kernel(
         framework,
         semantics=AFKernelSemantics.ADMISSIBLE,
-    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b"), ("x", "a")})
+    ).defeats == frozenset({("a", "a"), ("a", "y"), ("b", "b"), ("x", "a")})
     assert baumann_2015_kernel(
         framework,
         semantics=AFKernelSemantics.GROUNDED,
-    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b")})
+    ).defeats == frozenset({("a", "a"), ("a", "x"), ("a", "y"), ("b", "b")})
     assert baumann_2015_kernel(
         framework,
         semantics=AFKernelSemantics.COMPLETE,
-    ).defeats == frozenset({("a", "a"), ("a", "x"), ("b", "b"), ("x", "a")})
+    ).defeats == frozenset(
+        {("a", "a"), ("a", "x"), ("a", "y"), ("b", "b"), ("x", "a")}
+    )
 
 
 def test_cayrol_2010_restrictive_classification_for_strict_extension_shrink() -> None:
