@@ -11,7 +11,9 @@ from argumentation.af_revision import (
     AFChangeKind,
     AFKernelSemantics,
     ExtensionRevisionState,
+    UnknownArgumentRank,
     _classify_extension_change,
+    _extend_state,
     baumann_2015_kernel,
     baumann_2015_kernel_union_expand,
     cayrol_2014_classify_grounded_argument_addition,
@@ -226,6 +228,18 @@ def test_cayrol_2010_questioning_classification_for_more_extensions() -> None:
     )
 
     assert _classify_extension_change(before, after) == AFChangeKind.QUESTIONING
+
+
+def test_extend_state_unknown_rank_raises() -> None:
+    state = object.__new__(ExtensionRevisionState)
+    object.__setattr__(state, "arguments", frozenset({"a"}))
+    object.__setattr__(state, "extensions", (frozenset({"a"}),))
+    object.__setattr__(state, "ranking", {frozenset({"a"}): 0})
+
+    with pytest.raises(UnknownArgumentRank) as exc_info:
+        _extend_state(state, frozenset({"a", "x"}))
+
+    assert "x" in str(exc_info.value)
 
 
 @given(st_revision_state(), st_formula)
