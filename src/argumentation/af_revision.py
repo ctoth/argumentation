@@ -229,12 +229,24 @@ def _classify_extension_change(
     before: tuple[frozenset[str], ...],
     after: tuple[frozenset[str], ...],
 ) -> AFChangeKind:
+    """Classify structural extension change after an AF update.
+
+    Cayrol, de Saint-Cyr, and Lagasquie-Schiex 2010, JAIR 38, Table 3
+    distinguish seven extension-family changes: conservative, decisive,
+    destructive, expansive, restrictive, questioning, and altering.
+    """
     if before == after:
         return AFChangeKind.CONSERVATIVE
     if not after or after == (frozenset(),):
         return AFChangeKind.DESTRUCTIVE
     if len(after) == 1 and (not before or before == (frozenset(),) or len(before) > 2):
         return AFChangeKind.DECISIVE
+    if len(before) > len(after) > 2:
+        # Cayrol et al.'s restrictive case is a strict cardinality shrink
+        # that does not collapse to the decisive or destructive cases above.
+        return AFChangeKind.RESTRICTIVE
+    if len(before) < len(after):
+        return AFChangeKind.QUESTIONING
     if len(after) == len(before) and all(any(old < new for new in after) for old in before):
         return AFChangeKind.EXPANSIVE
     return AFChangeKind.ALTERING
