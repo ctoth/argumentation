@@ -93,6 +93,15 @@ class PartialArgumentationFramework:
         return enumerate_completions(self)
 
 
+@dataclass(frozen=True)
+class EnumerationExceeded:
+    """Anytime result for exact AF enumerators stopped by a candidate ceiling."""
+
+    partial_count: int
+    max_candidates: int
+    remainder_provenance: str = "vacuous"
+
+
 FrameworkLike: TypeAlias = PartialArgumentationFramework | ArgumentationFramework
 
 
@@ -228,11 +237,20 @@ def consensual_expand(
     )
 
 
-def _candidate_frameworks(arguments: frozenset[str]) -> list[ArgumentationFramework]:
+def _candidate_frameworks(
+    arguments: frozenset[str],
+    *,
+    max_candidates: int | None = None,
+) -> list[ArgumentationFramework] | EnumerationExceeded:
     ordered_pairs = sorted(product(arguments, arguments))
     candidates: list[ArgumentationFramework] = []
     for size in range(len(ordered_pairs) + 1):
         for selected in combinations(ordered_pairs, size):
+            if max_candidates is not None and len(candidates) >= max_candidates:
+                return EnumerationExceeded(
+                    partial_count=len(candidates),
+                    max_candidates=max_candidates,
+                )
             attacks = frozenset(selected)
             candidates.append(
                 ArgumentationFramework(
@@ -266,11 +284,15 @@ def _shared_universe(profile: dict[str, ArgumentationFramework]) -> frozenset[st
 
 def sum_merge_frameworks(
     profile: dict[str, ArgumentationFramework],
-) -> list[ArgumentationFramework]:
+    *,
+    max_candidates: int | None = None,
+) -> list[ArgumentationFramework] | EnumerationExceeded:
     """Return exact Sum-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
     expanded = _expanded_profile(profile, universe)
-    candidates = _candidate_frameworks(universe)
+    candidates = _candidate_frameworks(universe, max_candidates=max_candidates)
+    if isinstance(candidates, EnumerationExceeded):
+        return candidates
 
     best_score: int | None = None
     winners: list[ArgumentationFramework] = []
@@ -294,6 +316,8 @@ def max_merge_frameworks(
     universe = _shared_universe(profile)
     expanded = _expanded_profile(profile, universe)
     candidates = _candidate_frameworks(universe)
+    if isinstance(candidates, EnumerationExceeded):
+        raise AssertionError("unbounded candidate enumeration cannot exceed a ceiling")
 
     best_score: int | None = None
     winners: list[ArgumentationFramework] = []
@@ -339,6 +363,7 @@ def leximax_merge_frameworks(
 
 
 __all__ = [
+    "EnumerationExceeded",
     "PairState",
     "PartialArgumentationFramework",
     "enumerate_completions",
