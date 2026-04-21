@@ -14,6 +14,7 @@ from argumentation.af_revision import (
     cayrol_2014_classify_grounded_argument_addition,
     diller_2015_revise_by_formula,
     diller_2015_revise_by_framework,
+    stable_kernel,
 )
 from argumentation.dung import ArgumentationFramework, grounded_extension, stable_extensions
 
@@ -129,11 +130,15 @@ def test_baumann_brewka_2015_kernel_union_expansion_success_and_inclusion(
     new: ArgumentationFramework,
 ) -> None:
     expanded = baumann_2015_kernel_union_expand(base, new)
+    union = ArgumentationFramework(
+        arguments=base.arguments | new.arguments,
+        defeats=frozenset(base.defeats | new.defeats),
+        attacks=frozenset((base.attacks or base.defeats) | (new.attacks or new.defeats)),
+    )
 
     assert base.arguments <= expanded.arguments
     assert new.arguments <= expanded.arguments
-    assert base.defeats <= expanded.defeats
-    assert new.defeats <= expanded.defeats
+    assert expanded == stable_kernel(union)
     assert baumann_2015_kernel_union_expand(expanded, new) == expanded
 
 

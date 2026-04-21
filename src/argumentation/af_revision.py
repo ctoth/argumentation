@@ -122,11 +122,53 @@ def baumann_2015_kernel_union_expand(
     base: ArgumentationFramework,
     new: ArgumentationFramework,
 ) -> ArgumentationFramework:
+    """Union-expand two AFs through Baumann's stable kernel.
+
+    Baumann 2014, ECAI pp. 63-68, characterizes update/deletion
+    equivalence by kernels. For stable semantics, non-self attacks from
+    a self-attacking source are kernel-redundant and are removed before
+    the expanded AF is exposed.
+    """
     arguments = base.arguments | new.arguments
-    return ArgumentationFramework(
+    union = ArgumentationFramework(
         arguments=arguments,
         defeats=frozenset(base.defeats | new.defeats),
         attacks=frozenset((base.attacks or base.defeats) | (new.attacks or new.defeats)),
+    )
+    return stable_kernel(union)
+
+
+def stable_kernel(framework: ArgumentationFramework) -> ArgumentationFramework:
+    """Return Baumann's stable-semantics kernel for an AF.
+
+    Baumann 2014, ECAI pp. 63-68: for stable semantics, attacks
+    ``(a, b)`` with ``a != b`` are redundant when ``(a, a)`` is present.
+    The self-attack itself is retained because it records that ``a`` is
+    conflicting.
+    """
+    return ArgumentationFramework(
+        arguments=framework.arguments,
+        defeats=_stable_kernel_relation(framework.defeats),
+        attacks=(
+            None
+            if framework.attacks is None
+            else _stable_kernel_relation(framework.attacks)
+        ),
+    )
+
+
+def _stable_kernel_relation(
+    relation: frozenset[tuple[str, str]],
+) -> frozenset[tuple[str, str]]:
+    self_attackers = frozenset(
+        attacker for attacker, target in relation if attacker == target
+    )
+    return frozenset(
+        (attacker, target)
+        for attacker, target in relation
+        # Baumann stable-kernel invariant: keep the self-conflict marker,
+        # delete only its non-self outgoing attacks.
+        if attacker == target or attacker not in self_attackers
     )
 
 
@@ -217,6 +259,7 @@ __all__ = [
     "ExtensionRevisionState",
     "ExtensionRevisionResult",
     "baumann_2015_kernel_union_expand",
+    "stable_kernel",
     "diller_2015_revise_by_formula",
     "diller_2015_revise_by_framework",
     "cayrol_2014_classify_grounded_argument_addition",
