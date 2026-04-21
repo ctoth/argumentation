@@ -10,6 +10,8 @@ Concrete regression tests use known examples from the paper.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from hypothesis import given, settings, assume
 from hypothesis import strategies as st
@@ -217,6 +219,30 @@ class TestStableConcrete:
         """No attacks. Stable = [all args] (defeats all outsiders vacuously)."""
         exts = stable_extensions(af({"A", "B"}, set()))
         assert exts == [frozenset({"A", "B"})]
+
+    def test_attack_metadata_blocks_preference_filtered_joint_stable_extension(self):
+        """Stable sets are attack-conflict-free and defeat every outsider."""
+        framework = ArgumentationFramework(
+            arguments=frozenset({"A", "B"}),
+            defeats=frozenset(),
+            attacks=frozenset({("A", "B")}),
+        )
+
+        assert stable_extensions(framework) == []
+
+
+class TestCitationDocumentation:
+    """Documentation pins semantics choices that combine literature definitions."""
+
+    def test_stable_extension_attack_defeat_choice_is_cited(self):
+        text = Path("CITATIONS.md").read_text(encoding="utf-8")
+
+        assert "stable_extensions" in text
+        assert "Dung 1995" in text
+        assert "Modgil" in text
+        assert "Prakken" in text
+        assert "attack-conflict-free" in text
+        assert "defeat every argument outside" in text
 
 
 class TestCompleteConcrete:
