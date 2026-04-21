@@ -338,13 +338,15 @@ def max_merge_frameworks(
 
 def leximax_merge_frameworks(
     profile: dict[str, ArgumentationFramework],
-) -> list[ArgumentationFramework]:
+    *,
+    max_candidates: int | None = None,
+) -> list[ArgumentationFramework] | EnumerationExceeded:
     """Return exact Leximax-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
     expanded = _expanded_profile(profile, universe)
-    max_winners = max_merge_frameworks(profile)
+    max_winners = max_merge_frameworks(profile, max_candidates=max_candidates)
     if isinstance(max_winners, EnumerationExceeded):
-        raise AssertionError("unbounded max merge cannot exceed a ceiling")
+        return max_winners
 
     best_vector: tuple[int, ...] | None = None
     winners: list[ArgumentationFramework] = []
