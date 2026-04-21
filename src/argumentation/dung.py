@@ -296,8 +296,13 @@ def stable_extensions(
     """Compute all stable extensions.
 
     A stable extension is conflict-free and defeats every argument not in it.
+    When ``framework.attacks`` is present, conflict-freeness is checked against
+    attacks while outsider coverage is checked against defeats.
 
-    Reference: Dung 1995, Definition 12.
+    References:
+        Dung 1995, Definition 12.
+        Modgil & Prakken 2018, Definition 14.
+
     WARNING: Stable extensions may not exist.
     """
     backend = _resolve_backend(framework, backend)
