@@ -15,6 +15,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings, assume
 from hypothesis import strategies as st
 
+import argumentation.aspic as aspic
 from argumentation.aspic import (
     Literal,
     GroundAtom,
@@ -277,6 +278,57 @@ class TestAttackerInclusion:
         assert neg_p in conclusions
         assert neg_q in conclusions
         assert neg_r in conclusions
+
+    def test_cycle_tainted_attacker_literal_is_not_recomputed_for_each_target(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """Cycle-tainted attacker searches are idempotent across the fixpoint.
+
+        Modgil & Prakken 2018 Def 5 requires finite argument trees, so the
+        c <-> d rule cycle below must not create cyclic arguments. The valid
+        premise argument for c is still reusable each time c attacks another
+        relevant subargument.
+        """
+
+        goal = Literal(GroundAtom("goal"))
+        attacker = Literal(GroundAtom("c"))
+        cycle_peer = Literal(GroundAtom("d"))
+        targets = tuple(Literal(GroundAtom(f"x{i}")) for i in range(5))
+        goal_rule = Rule(
+            antecedents=targets,
+            consequent=goal,
+            kind="strict",
+        )
+        attacker_cycle = [
+            Rule(antecedents=(cycle_peer,), consequent=attacker, kind="strict"),
+            Rule(antecedents=(attacker,), consequent=cycle_peer, kind="strict"),
+        ]
+        system, _ = _make_system(
+            ["goal", "c", "d", *(f"x{i}" for i in range(5))],
+            strict_rules=[goal_rule, *attacker_cycle],
+            extra_contraries=frozenset((attacker, target) for target in targets),
+        )
+        kb = KnowledgeBase(
+            axioms=frozenset(),
+            premises=frozenset({attacker, *targets}),
+        )
+
+        attacker_premise_checks = 0
+        original_is_c_consistent = aspic.is_c_consistent
+
+        def counting_is_c_consistent(premises, strict_rules, contrariness):
+            nonlocal attacker_premise_checks
+            if premises == frozenset({attacker}):
+                attacker_premise_checks += 1
+            return original_is_c_consistent(premises, strict_rules, contrariness)
+
+        monkeypatch.setattr(aspic, "is_c_consistent", counting_is_c_consistent)
+
+        result = build_arguments_for(system, kb, goal, include_attackers=True)
+
+        assert any(conc(arg) == attacker for arg in result)
+        assert attacker_premise_checks == 1
 
 
 # ── Test: depth limiting ───────────────────────────────────────────
