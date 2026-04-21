@@ -106,6 +106,20 @@ def test_sum_merge_matches_majority_profile_on_shared_universe():
     assert result == [_af({"A", "B"}, {("A", "B")})]
 
 
+def test_sum_merge_strict_bipartition_profile_bypasses_candidate_ceiling():
+    arguments = {f"A{index}" for index in range(6)}
+    majority_attacks = {("A0", "A1"), ("A2", "A3"), ("A4", "A5")}
+    profile = {
+        "left": _af(arguments, majority_attacks),
+        "middle": _af(arguments, majority_attacks),
+        "right": _af(arguments, set()),
+    }
+
+    result = sum_merge_frameworks(profile, max_candidates=1)
+
+    assert result == [_af(arguments, majority_attacks)]
+
+
 def test_sum_merge_returns_enumeration_exceeded_past_candidate_ceiling():
     profile = {
         "left": _af({"A", "B"}, {("A", "B")}),
