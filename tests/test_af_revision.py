@@ -220,6 +220,20 @@ def test_cayrol_2010_restrictive_classification_for_strict_extension_shrink() ->
     assert _classify_extension_change(before, after) == AFChangeKind.RESTRICTIVE
 
 
+def test_cayrol_2010_restrictive_classification_allows_two_remaining_extensions() -> None:
+    before = (
+        frozenset({"a"}),
+        frozenset({"b"}),
+        frozenset({"c"}),
+    )
+    after = (
+        frozenset({"a"}),
+        frozenset({"b"}),
+    )
+
+    assert _classify_extension_change(before, after) == AFChangeKind.RESTRICTIVE
+
+
 def test_cayrol_2010_questioning_classification_for_more_extensions() -> None:
     before = (frozenset({"accepted"}),)
     after = (
