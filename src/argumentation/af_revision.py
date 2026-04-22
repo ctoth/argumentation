@@ -314,7 +314,7 @@ def _classify_extension_change(
         return AFChangeKind.DESTRUCTIVE
     if len(after) == 1 and (not before or before == (frozenset(),) or len(before) > 2):
         return AFChangeKind.DECISIVE
-    if len(before) > len(after) > 2:
+    if len(before) > len(after) >= 2:
         # Cayrol et al.'s restrictive case is a strict cardinality shrink
         # that does not collapse to the decisive or destructive cases above.
         return AFChangeKind.RESTRICTIVE
