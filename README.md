@@ -12,6 +12,9 @@ argumentation theory as a small, dependency-free kernel:
 - **AF revision** under formula and framework constraints
 - **Probabilistic** argumentation frameworks (PrAFs) with Monte Carlo,
   exact enumeration, tree-decomposition DP, and DF-QuAD gradual semantics
+- **Ranking, weighted, and gradual** quantitative argumentation services
+- **Value-based and accrual** helpers for ASPIC+ input filtering and
+  same-conclusion support envelopes
 - **Generic semantics dispatch** over Dung, bipolar, and partial AF objects
 - An optional **Z3-backed** backend for extension enumeration
 
@@ -283,8 +286,9 @@ result.strategy_used       # "exact_enum" | "mc" | "exact_dp" | "deterministic"
 - `mc` — Monte Carlo sampling with Agresti–Coull stopping per Li et al.
   (2012, Algorithm 1), decomposed across connected components per Hunter
   & Thimm (2017, Proposition 18).
-- `exact_dp` — tree-decomposition dynamic programming per Popescu &
-  Wallner (2024) for grounded semantics on defeat-only frameworks.
+- `exact_dp` — an adapted grounded edge-tracking TD backend using
+  tree decompositions for defeat-only frameworks. It is exact for the
+  supported grounded PrAF route, but not the full Popescu & Wallner I/O/U witness-table DP.
 - `dfquad_quad` and `dfquad_baf` — DF-QuAD gradual semantics for
   quantitative bipolar frameworks (Freedman et al. 2025).
 
@@ -318,6 +322,46 @@ as a diagnostic.
 > Freedman, G., Rago, A., Albini, E., Toni, F., & Cocarascu, O. (2025).
 > Argumentative Large Language Models for explainable and contestable
 > claim verification.
+
+## Ranking, weighted, gradual, and value-based services
+
+`argumentation.ranking` provides non-binary acceptability rankings for Dung
+AFs, including Categoriser scores and iterative Burden numbers:
+
+```python
+from argumentation.ranking import categoriser_ranking
+
+ranking = categoriser_ranking(framework)
+ranking.ordered_tiers
+```
+
+`argumentation.weighted` implements Dunne-style weighted argument systems by
+enumerating attack sets whose deleted weight fits an inconsistency budget:
+
+```python
+from argumentation.weighted import weighted_grounded_extensions
+
+weighted_grounded_extensions(weighted_framework, budget=1.0)
+```
+
+`argumentation.gradual` computes Potyka-style quadratic-energy strengths for
+weighted bipolar graphs and exposes revised direct-impact attribution:
+
+```python
+from argumentation.gradual import quadratic_energy_strengths, revised_direct_impact
+
+strengths = quadratic_energy_strengths(graph)
+impact = revised_direct_impact(graph, influencers=frozenset({"a"}), target="b")
+```
+
+`argumentation.value_based` implements Wallner-style value filtering before
+ASPIC+ argument construction: subjective knowledge bases add complementary
+literals for rejected propositions, and defeasible rules are filtered by body,
+head, and rule name.
+
+`argumentation.accrual` exposes Prakken-style weak/strong applicability checks
+and accrual envelopes for same-conclusion arguments. It does not yet implement
+the full labelling-relative defeat engine.
 
 ## Optional Z3 backend
 
