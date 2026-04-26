@@ -25,6 +25,7 @@ from argumentation.dung import (
     complete_extensions,
     defends,
     grounded_extension,
+    ideal_extension,
     preferred_extensions,
     range_of,
     semi_stable_extensions,
@@ -288,6 +289,66 @@ class TestRangeSemanticsConcrete:
             frozenset({"B"}),
             frozenset({"C"}),
         )
+
+
+class TestIdealConcrete:
+    """Concrete examples for ideal semantics."""
+
+    def test_ideal_can_be_less_skeptical_than_grounded(self):
+        """Grounded in Dung, Mancarella, Toni 2007 page-image page 4."""
+        framework = af(
+            {"a", "b", "c", "d"},
+            {
+                ("a", "a"),
+                ("a", "b"),
+                ("b", "a"),
+                ("c", "d"),
+                ("d", "c"),
+            },
+        )
+
+        assert grounded_extension(framework) == frozenset()
+        assert set(preferred_extensions(framework, backend="brute")) == {
+            frozenset({"b", "c"}),
+            frozenset({"b", "d"}),
+        }
+        assert ideal_extension(framework, backend="brute") == frozenset({"b"})
+
+    def test_ideal_can_be_proper_subset_of_preferred_intersection(self):
+        """Grounded in Dung, Mancarella, Toni 2007 page-image pages 4-5."""
+        framework = af(
+            {"a", "b", "c", "d", "e", "f"},
+            {
+                ("a", "a"),
+                ("a", "b"),
+                ("b", "a"),
+                ("c", "d"),
+                ("d", "c"),
+                ("c", "e"),
+                ("d", "e"),
+                ("e", "f"),
+            },
+        )
+
+        assert set(preferred_extensions(framework, backend="brute")) == {
+            frozenset({"b", "c", "f"}),
+            frozenset({"b", "d", "f"}),
+        }
+        assert ideal_extension(framework, backend="brute") == frozenset({"b"})
+
+    def test_dispatch_supports_ideal(self):
+        framework = af(
+            {"a", "b", "c", "d"},
+            {
+                ("a", "a"),
+                ("a", "b"),
+                ("b", "a"),
+                ("c", "d"),
+                ("d", "c"),
+            },
+        )
+
+        assert extensions(framework, semantics="ideal") == (frozenset({"b"}),)
 
 
 class TestCitationDocumentation:
