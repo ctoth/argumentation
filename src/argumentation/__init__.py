@@ -10,6 +10,7 @@ from argumentation import (
     partial_af,
     preference,
     probabilistic,
+    ranking,
     sat_encoding,
     semantics,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "partial_af",
     "preference",
     "probabilistic",
+    "ranking",
     "sat_encoding",
     "semantics",
 ]
