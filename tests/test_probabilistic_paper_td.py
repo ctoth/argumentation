@@ -224,6 +224,31 @@ def test_paper_td_evaluator_lifts_witness_metadata_for_rejected_arguments() -> N
     assert result.argument_witnesses["b"].witnesses
 
 
+def test_probabilistic_acceptance_routes_paper_td_without_old_exact_dp_backend() -> None:
+    praf = ProbabilisticAF(
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a", "b", "c"}),
+            defeats=frozenset({("a", "b"), ("b", "c")}),
+        ),
+        p_args={"a": 1.0, "b": 1.0, "c": 1.0},
+        p_defeats={("a", "b"): 0.7, ("b", "c"): 0.4},
+    )
+
+    result = compute_probabilistic_acceptance(
+        praf,
+        semantics="complete",
+        strategy="paper_td",
+        query_kind="extension_probability",
+        queried_set=frozenset({"a", "c"}),
+    )
+
+    assert result.strategy_used == "paper_td"
+    assert result.extension_probability == pytest.approx(0.7)
+    assert result.strategy_metadata is not None
+    assert result.strategy_metadata["backend"] == "popescu_wallner_iou_witness_td"
+    assert result.strategy_metadata["paper_conformance"] == "popescu_wallner_2024_algorithm_1"
+
+
 @pytest.mark.differential
 def test_paper_td_evaluator_matches_enumeration_on_low_treewidth_queries() -> None:
     frameworks = (
