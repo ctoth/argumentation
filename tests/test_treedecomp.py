@@ -5,6 +5,8 @@ import pytest
 from argumentation.dung import ArgumentationFramework
 from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 from argumentation.probabilistic_treedecomp import (
+    compute_exact_dp,
+    compute_exact_dp_with_diagnostics,
     compute_tree_decomposition,
     estimate_treewidth,
     supports_exact_dp,
@@ -82,6 +84,26 @@ def test_exact_dp_matches_exact_enumeration_on_grounded_path() -> None:
 
     assert dp.strategy_used == "exact_dp"
     assert dp.acceptance_probs == pytest.approx(exact.acceptance_probs)
+
+
+def test_exact_dp_diagnostics_expose_grounded_table_summaries() -> None:
+    praf = _praf({"a", "b", "c"}, {("a", "b"), ("b", "c")}, p_defeat=0.5)
+
+    diagnostics = compute_exact_dp_with_diagnostics(praf, semantics="grounded")
+
+    assert diagnostics.acceptance_probs == pytest.approx(compute_exact_dp(praf))
+    assert diagnostics.treewidth == 1
+    assert diagnostics.node_count >= 1
+    assert diagnostics.component_count == 1
+    assert diagnostics.root_table_rows >= 1
+    assert diagnostics.root_probability_mass == pytest.approx(1.0)
+    assert diagnostics.table_summaries
+    assert {summary.node_type for summary in diagnostics.table_summaries} >= {
+        "leaf",
+        "introduce",
+        "forget",
+    }
+    assert all(summary.row_count >= 1 for summary in diagnostics.table_summaries)
 
 
 def test_exact_dp_rejects_richer_support_worlds() -> None:
