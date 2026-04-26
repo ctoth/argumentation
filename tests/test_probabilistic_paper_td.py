@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import pytest
 
+from argumentation.dung import ArgumentationFramework
+from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 from argumentation.probabilistic_treedecomp import (
     PaperTDLabel,
     PaperTDRow,
+    compute_paper_exact_extension_probability,
     paper_forget_rows,
     paper_introduce_rows,
     paper_join_rows,
@@ -170,3 +173,71 @@ def test_paper_td_join_divides_out_common_bag_probability() -> None:
             probability=pytest.approx(0.25),
         ),
     )
+
+
+def test_paper_td_evaluator_matches_enumeration_on_complete_extension_query() -> None:
+    praf = ProbabilisticAF(
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a", "b", "c"}),
+            defeats=frozenset({("a", "b"), ("b", "c")}),
+        ),
+        p_args={"a": 1.0, "b": 1.0, "c": 1.0},
+        p_defeats={("a", "b"): 0.7, ("b", "c"): 0.4},
+    )
+
+    expected = compute_probabilistic_acceptance(
+        praf,
+        semantics="complete",
+        strategy="exact_enum",
+        query_kind="extension_probability",
+        queried_set=frozenset({"a", "c"}),
+    )
+    result = compute_paper_exact_extension_probability(
+        praf,
+        queried_set=frozenset({"a", "c"}),
+    )
+
+    assert result.extension_probability == pytest.approx(expected.extension_probability)
+    assert result.backend == "popescu_wallner_iou_witness_td"
+    assert result.table_summaries
+
+
+@pytest.mark.differential
+def test_paper_td_evaluator_matches_enumeration_on_low_treewidth_queries() -> None:
+    frameworks = (
+        (
+            frozenset({"a", "b"}),
+            frozenset({("a", "b")}),
+            {"a": 0.9, "b": 0.8},
+            {("a", "b"): 0.5},
+            frozenset({"a"}),
+        ),
+        (
+            frozenset({"a", "b", "c"}),
+            frozenset({("a", "b"), ("c", "b")}),
+            {"a": 1.0, "b": 0.75, "c": 0.8},
+            {("a", "b"): 0.6, ("c", "b"): 0.7},
+            frozenset({"a", "c"}),
+        ),
+    )
+
+    for arguments, defeats, p_args, p_defeats, queried_set in frameworks:
+        praf = ProbabilisticAF(
+            framework=ArgumentationFramework(arguments=arguments, defeats=defeats),
+            p_args=p_args,
+            p_defeats=p_defeats,
+        )
+
+        expected = compute_probabilistic_acceptance(
+            praf,
+            semantics="complete",
+            strategy="exact_enum",
+            query_kind="extension_probability",
+            queried_set=queried_set,
+        )
+        result = compute_paper_exact_extension_probability(
+            praf,
+            queried_set=queried_set,
+        )
+
+        assert result.extension_probability == pytest.approx(expected.extension_probability)
