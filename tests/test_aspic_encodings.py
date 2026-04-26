@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import importlib
+
+import argumentation
+
 from argumentation.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
@@ -10,6 +14,12 @@ from argumentation.aspic import (
     Rule,
 )
 from argumentation.aspic_encoding import encode_aspic_theory
+
+
+def test_aspic_encoding_module_is_exported_from_package() -> None:
+    package = importlib.reload(argumentation)
+
+    assert "aspic_encoding" in package.__all__
 
 
 def test_aspic_encoding_assigns_deterministic_facts_and_signature() -> None:
