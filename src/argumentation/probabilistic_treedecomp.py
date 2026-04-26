@@ -1,8 +1,8 @@
-"""Tree decomposition and exact DP for probabilistic argumentation.
+"""Tree decomposition and exact grounded DP for probabilistic argumentation.
 
-Implements the tree-decomposition-based dynamic programming algorithm
-from Popescu & Wallner (2024) for exact computation of extension
-probabilities in PrAFs.
+This module reuses the tree-decomposition setup used by Popescu & Wallner
+(2024), but the executable DP is currently an adapted grounded-semantics
+edge-tracking backend, not their full I/O/U witness-table algorithm.
 
 Current native support is intentionally narrower than the paper:
 grounded semantics on defeat-only probabilistic worlds where
@@ -509,22 +509,19 @@ def compute_exact_dp(
     praf: ProbabilisticAF,
     semantics: str = "grounded",
 ) -> dict[str, float]:
-    """Exact acceptance probabilities via tree decomposition DP.
+    """Exact grounded acceptance via the adapted edge-tracking TD backend.
 
-    # Tree-decomposition DP for grounded semantics only.
-    # Per Popescu & Wallner (2024): P_ext = P_acc for grounded (unique extension).
-    # For preferred/stable/complete, P_acc is #.NP-complete — use MC instead.
-    # See reports/research-popescu-pacc-report.md for the analysis.
-
-    For grounded semantics, implements the I/O/U labelling DP with witness
-    mechanism (Popescu & Wallner 2024, Algorithms 1-3, p.5-7). The DP
-    processes a nice tree decomposition bottom-up, maintaining tables of
-    partial labellings weighted by probability.
+    For grounded semantics, the current backend processes a nice tree
+    decomposition bottom-up while tracking realized edge configurations and
+    present forgotten arguments. It then computes the grounded fixpoint for
+    each root row. This is exact for the supported defeat-only constellation
+    PrAFs, but it is not the full Popescu & Wallner I/O/U witness-table DP.
 
     Unsupported semantics or relation structures are rejected.
 
-    Complexity: O(3^k * n * 2^d_bag) where k is treewidth, n is number
-    of nodes, d_bag is max defeats per bag (Popescu & Wallner 2024, Theorem 7).
+    Known limitation: table keys include accumulated edge configurations and
+    forgotten arguments, so this implementation does not yet achieve the
+    paper's treewidth-sensitive asymptotic bound.
     """
     if not supports_exact_dp(praf, semantics):
         raise ValueError(
@@ -549,7 +546,8 @@ def compute_exact_dp_with_diagnostics(
 
 # ===================================================================
 # Grounded-semantics tree-decomposition DP
-# Per Popescu & Wallner (2024, Algorithms 1-3, p.5-7)
+# Reuses Popescu & Wallner-style nice tree decompositions, but the executable
+# grounded backend below is edge-tracking rather than their I/O/U witness DP.
 #
 # Adapted for grounded semantics: instead of tracking I/O/U labels
 # (which enumerate ALL complete labellings including non-grounded),
