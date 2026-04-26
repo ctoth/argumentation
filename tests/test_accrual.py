@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argumentation
 from argumentation.accrual import (
     AccrualArgument,
     accrual_envelope,
@@ -11,6 +12,11 @@ from argumentation.labelling import Label, Labelling
 
 def _labelling(statuses: dict[str, Label]) -> Labelling:
     return Labelling.from_statuses(arguments=frozenset(statuses), statuses=statuses)
+
+
+def test_accrual_module_is_exported() -> None:
+    assert argumentation.accrual.AccrualArgument is AccrualArgument
+    assert "accrual" in argumentation.__all__
 
 
 def test_weak_and_strong_applicability_follow_labelling_statuses() -> None:
