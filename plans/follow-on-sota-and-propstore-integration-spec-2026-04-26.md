@@ -2,7 +2,7 @@
 
 Date: 2026-04-26
 
-Status: package tracks executed; propstore integration gated by Semantic OS readiness
+Status: package tracks executed; propstore Track E integration executed
 
 This spec picks up the work that remains after
 `plans/package-first-argumentation-sota-workstream-2026-04-26.md`.
@@ -34,13 +34,23 @@ Package-first execution completed Tracks A through D in this repository:
 - Track D landed exact Shapley-style gradual attack impact, accrual grounded
   labelling, and Wallner-style subjective ASPIC+ theory projection.
 
-Propstore readiness was checked against
-`../propstore/plans/epistemic-os-workstreams-2026-04-25.md`,
-`../propstore/plans`, `../propstore/proposals`, and the
-`../propstore/papers` inventory. The gate is not open: the active propstore
-control surface still places argumentation behind situated assertions and the
-typed projection boundary, and it does not delegate this argumentation child
-scope now. No propstore production code was changed by this workstream.
+Propstore readiness was checked again after the Semantic OS workstream reached
+WS14. The Track E gate opened: situated assertions, typed projection lifting,
+merge/revision repointing, policy ownership, process management, and public
+observability were present in
+`../propstore/plans/epistemic-os-workstreams-2026-04-25.md`.
+
+Propstore Track E integration then landed under propstore's active control
+surface:
+
+- red commit `5a44e04a`;
+- dependency commit `e0c9eb9a`;
+- green implementation commit `ac696d1e`;
+- ledger commits `feed83a1` and `206d5e2a`.
+
+Final propstore verification passed:
+`logs/test-runs/argumentation-track-e-full-20260426-105337.log` reported 2971
+tests passed, and `uv run pyright propstore` reported 0 errors.
 
 ## Control Rules
 
