@@ -815,13 +815,127 @@ adapter.
 
 Status as of spec commit:
 
-- Spec written. No code changed.
-- Baseline pytest count to be recorded by the executing agent on
-  the first edit of this section.
+- Spec committed as `eda2678` (`Add SOTA completeness workstream
+  spec`). No production code changed in that commit.
+
+Phase 0 baseline checkpoint, 2026-04-26:
+
+- `uv run pytest -q --timeout=300` failed with `379 passed, 1
+  failed in 30.92s`.
+- Failing baseline test:
+  `tests/test_docs_surface.py::test_readme_documents_new_package_surfaces`.
+  The assertion expects the README to contain
+  `adapted grounded edge-tracking TD backend`; current `README.md`
+  does not contain that phrase.
+- `uv run pyright src` passed with `0 errors, 0 warnings, 0
+  informations`.
+
+Paper-availability checkpoint, 2026-04-26:
+
+- Used the `research-papers:paper-retriever` workflow instructions for
+  the availability pass.
+- `rg --files -g "*.pdf"` found no local PDF files under this
+  repository.
+- `C:\Users\Q\code\research-papers-plugin\papers` contains local
+  PDFs, but only for unrelated biomedical/scientific-documentation
+  papers; no cited argumentation PDFs were found there.
+- The availability status below is therefore web/PDF availability, not
+  local page-image availability. No paper was reread in this slice.
+- First plan defect: the Phase 1 gate names Meier, Niskanen, Mailly
+  2024 for arXiv `2407.05058`, but the arXiv/KR record for
+  `2407.05058` is Popescu and Wallner, *Advancing Algorithmic
+  Approaches to Probabilistic Argumentation under the Constellation
+  Approach*. Update the gate before Track 1.1 implementation.
+- Second plan defect: the Phase 10 gate names Bona-Hunter-Vesic 2019
+  for polynomial-time epistemic updates, but the matching paper found
+  is Potyka, Polberg, Hunter 2019, *Polynomial-time Updates of
+  Epistemic States in a Fragment of Probabilistic Epistemic
+  Argumentation*. Update the gate before Track 10 implementation.
+
+Web/PDF availability notes:
+
+- Popescu and Wallner 2024, probabilistic constellation DP:
+  KR/arXiv PDF found (`https://arxiv.org/abs/2407.05058`,
+  `https://proceedings.kr.org/2024/55/`).
+- Lehtonen, Odekerken, Wallner, Järvisalo 2024, preferential ASPIC+:
+  KR PDF found (`https://proceedings.kr.org/2024/49/`).
+- Lehtonen, Wallner, Järvisalo 2020/2021 ASPIC+/ABA ASP papers:
+  author/arXiv/Cambridge PDFs found for the ASPIC+ and ABA surfaces.
+- Niskanen, Wallner, Järvisalo 2020, mu-toksia: author PDF found
+  (`https://www.cs.helsinki.fi/u/mjarvisa/papers/nj.kr20b.pdf`).
+- Bistarelli, Kotthoff, Lagniez et al. ICCMA report: author PDF found
+  for the third/fourth ICCMA report; exact 2025 AAC citation metadata
+  should be rechecked at the Phase 2 gate.
+- ICCMA 2025 tracks/rules: official HTML pages found at
+  `https://argumentationcompetition.org/2025/tracks.html` and
+  `/2025/rules.html`.
+- Brewka and Woltran 2010 ADF: CiteSeerX PDF found.
+- Brewka, Strass, Ellmauthaler, Wallner, Woltran 2013 ADF Revisited:
+  CiteSeerX PDF/DBLP record found.
+- Linsbichler, Pichler, Spendier 2022 ADF algorithms: ScienceDirect
+  page and open university PDF found.
+- Keshavarzi-Zafarghandi, Verbrugge, Verheij 2022 strong ADF
+  admissibility: arXiv/author PDFs found.
+- Bondarenko, Dung, Kowalski, Toni 1997 ABA: ScienceDirect open
+  archive page found.
+- Toni 2014 ABA tutorial: Sage open-access PDF page found.
+- Cyras and Toni 2016 ABA+: arXiv PDF found.
+- Apostolakis, Saribatur, Wallner 2024 ABA abstraction: KR PDF found;
+  the plan currently names Toni/Rapberger, which should be checked
+  before implementation.
+- Dimopoulos, Dvorak, König, Rapberger, Ulbricht, Woltran 2024 ABA+
+  set-to-set attacks: AAAI/reposiTUm record found.
+- Nielsen and Parsons 2006 SETAF: Aalborg/ArgMAS records found; direct
+  PDF still needs to be downloaded or otherwise verified before Phase
+  5.
+- Dvorak, König, Ulbricht, Woltran 2024 SETAF principles: journal page
+  found; direct author PDF not confirmed in this pass.
+- Dvorak, König, Woltran 2025 SETAF parameterized complexity: Sage
+  open-access PDF page found.
+- Flouris and Bikakis 2024 collective-attack justification: no direct
+  PDF confirmed in this pass; must be retrieved or replaced before
+  Phase 5 work that depends on it.
+- Buraglio, Dvorak, König, Woltran 2024 SETAF splitting: CEUR PDF
+  found (`https://ceur-ws.org/Vol-3757/paper3.pdf`).
+- Baumann 2012 argument enforcement: exact PDF not confirmed in this
+  pass; retrieve before Phase 6.
+- Wallner, Niskanen, Järvisalo 2017 extension enforcement: reposiTUm
+  and author PDFs found.
+- Baumann, Doutre, Mailly, Wallner 2021 enforcement survey/chapter:
+  author PDF found.
+- Mailly 2024 constrained incomplete AFs: Sage page found; direct PDF
+  not confirmed in this pass.
+- Dvorak, Gressler, Rapberger, Woltran 2023 CAF complexity: open
+  ScienceDirect article found.
+- Dvorak, Rapberger, Woltran 2020 claim-centric semantics: author PDF
+  found.
+- Alfano, Greco, Parisi, Trubitsyna 2025 Featured AF: IJCAI PDF found.
+- Dynamic reasoning source in Phase 8 is under-specified
+  ("Greenwood et al. or Alfano-Greco-Parisi 2018"); exact paper must
+  be chosen before implementation.
+- Fichte, Hecher, Meier 2024 counting complexity: JAIR/arXiv records
+  found.
+- Skiba and Thimm 2024 k-stable approximation: author PDF found.
+- Thimm/ranking-based 2014 approximate semantics: author PDFs found,
+  but exact citation should be pinned before Phase 9.
+- Kuhlmann and Thimm 2019 GCN approximation: author PDF found.
+- Hunter, Polberg, Thimm epistemic graphs: arXiv/ScienceDirect/author
+  PDFs found.
+- Hunter and Thimm 2014 epistemic probabilistic argumentation: arXiv
+  and author PDFs found.
+- Potyka, Polberg, Hunter 2019 polynomial-time epistemic updates:
+  arXiv/UCL/Cardiff PDFs found; replaces the apparent
+  Bona-Hunter-Vesic citation defect above.
+- Freedman, Dejl, Gorur, Yin, Rago, Toni 2024/2025 argumentative
+  LLMs: arXiv and AAAI/ResearchGate PDF records found.
+- Track 1.3's broad SAT-encoding author families
+  (Besnard-Doutre, Caminada, Gaggl-Woltran,
+  Wallner-Niskanen-Järvisalo) are not unique paper identities. Pin
+  exact titles before the first Track 1.3 page-image gate.
 
 Page-image checkpoints expected during execution: per-track gates
-listed above. Each must be honored before the implementation
-slice that depends on it.
+listed above, amended by the citation defects recorded here. Each must
+be honored before the implementation slice that depends on it.
 
 ## First Executable Slice
 
