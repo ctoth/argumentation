@@ -2,7 +2,28 @@
 
 from __future__ import annotations
 
-from argumentation.aspic import GroundAtom, KnowledgeBase, Literal, Rule
+from dataclasses import dataclass
+
+from argumentation.aspic import (
+    ASPICAbstractProjection,
+    ArgumentationSystem,
+    GroundAtom,
+    KnowledgeBase,
+    Literal,
+    PreferenceConfig,
+    Rule,
+    build_abstract_framework,
+)
+
+
+@dataclass(frozen=True)
+class SubjectiveArgumentationTheory:
+    """A value-filtered ASPIC+ theory plus its abstract projection."""
+
+    system: ArgumentationSystem
+    knowledge_base: KnowledgeBase
+    preference: PreferenceConfig
+    projection: ASPICAbstractProjection
 
 
 def complementary_literals(
@@ -65,6 +86,62 @@ def subjective_defeasible_rules(
         if required <= clean:
             surviving.add(rule)
     return frozenset(surviving)
+
+
+def subjective_argumentation_theory(
+    system: ArgumentationSystem,
+    knowledge_base: KnowledgeBase,
+    preference: PreferenceConfig,
+    *,
+    propositions: frozenset[Literal],
+    clean: frozenset[Literal],
+) -> SubjectiveArgumentationTheory:
+    """Build a subjective ASPIC+ theory and projected AF for one value filter.
+
+    Wallner et al. 2024, Definitions 12-14: ordinary premises are filtered and
+    complemented, defeasible rules are filtered by body/head/name, and strict
+    rules are preserved.
+    """
+    subjective_kb = subjective_knowledge_base(
+        knowledge_base,
+        propositions=propositions,
+        clean=clean,
+    )
+    subjective_rules = subjective_defeasible_rules(
+        system.defeasible_rules,
+        clean=clean,
+    )
+    subjective_system = ArgumentationSystem(
+        language=system.language,
+        contrariness=system.contrariness,
+        strict_rules=system.strict_rules,
+        defeasible_rules=subjective_rules,
+    )
+    subjective_preference = PreferenceConfig(
+        rule_order=frozenset(
+            (weaker, stronger)
+            for weaker, stronger in preference.rule_order
+            if weaker in subjective_rules and stronger in subjective_rules
+        ),
+        premise_order=frozenset(
+            (weaker, stronger)
+            for weaker, stronger in preference.premise_order
+            if weaker in subjective_kb.premises and stronger in subjective_kb.premises
+        ),
+        comparison=preference.comparison,
+        link=preference.link,
+    )
+    projection = build_abstract_framework(
+        subjective_system,
+        subjective_kb,
+        subjective_preference,
+    )
+    return SubjectiveArgumentationTheory(
+        system=subjective_system,
+        knowledge_base=subjective_kb,
+        preference=subjective_preference,
+        projection=projection,
+    )
 
 
 def _rule_name_literal(rule: Rule) -> Literal:

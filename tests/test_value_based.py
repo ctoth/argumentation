@@ -97,7 +97,7 @@ def test_subjective_defeasible_rules_reject_unnamed_defeasible_rules() -> None:
 
 
 def test_subjective_argumentation_theory_returns_filtered_projection() -> None:
-    d1 = rule("d1", ("a",), "b")
+    d1 = rule("d1", ("a",), "c")
     d2 = rule("d2", ("b",), "c")
     system = ArgumentationSystem(
         language=frozenset({
