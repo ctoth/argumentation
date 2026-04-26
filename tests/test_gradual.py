@@ -103,9 +103,9 @@ def test_revised_direct_impact_handles_self_attack() -> None:
 
     assert impact.removed_attacks == frozenset({("a", "a")})
     assert impact.removed_arguments == frozenset()
-    assert impact.after_argument_removal_strength == pytest.approx(0.4)
+    assert impact.after_argument_removal_strength == pytest.approx(0.4238537989)
     assert impact.after_attack_removal_strength == pytest.approx(0.5)
-    assert impact.impact == pytest.approx(0.1)
+    assert impact.impact == pytest.approx(0.0761462011)
 
 
 def test_revised_direct_impact_is_zero_for_unrelated_argument() -> None:

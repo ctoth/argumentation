@@ -57,6 +57,20 @@ class GradualStrengthResult:
     tolerance: float
 
 
+@dataclass(frozen=True)
+class RevisedImpactResult:
+    """Revised direct-impact attribution for one target argument."""
+
+    influencers: frozenset[str]
+    target: str
+    removed_attacks: frozenset[tuple[str, str]]
+    removed_arguments: frozenset[str]
+    original_strength: float
+    after_attack_removal_strength: float
+    after_argument_removal_strength: float
+    impact: float
+
+
 def quadratic_energy_strengths(
     graph: WeightedBipolarGraph,
     *,
@@ -118,6 +132,66 @@ def quadratic_impact(value: float) -> float:
     return (positive * positive) / (1.0 + positive * positive)
 
 
+def revised_direct_impact(
+    graph: WeightedBipolarGraph,
+    *,
+    influencers: frozenset[str],
+    target: str,
+    tolerance: float = 1e-9,
+    max_iterations: int = 10_000,
+) -> RevisedImpactResult:
+    """Compute the revised removal-based impact of ``influencers`` on ``target``.
+
+    Al Anaissy et al. 2024, Definition 12: remove direct attacks from the
+    influencer set to the target, and compare against target-preserving argument
+    deletion. The latter keeps ``target`` when it is also in ``influencers``,
+    which makes self-attack attribution defined.
+    """
+    normalized_influencers = frozenset(str(argument) for argument in influencers)
+    target = str(target)
+    unknown = sorted((normalized_influencers | {target}) - graph.arguments)
+    if unknown:
+        raise ValueError(f"unknown arguments: {unknown!r}")
+
+    original = quadratic_energy_strengths(
+        graph,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+    )
+    removed_attacks = frozenset(
+        (source, attacked)
+        for source, attacked in graph.attacks
+        if source in normalized_influencers and attacked == target
+    )
+    attack_removed = _without_attacks(graph, removed_attacks)
+    after_attack_removal = quadratic_energy_strengths(
+        attack_removed,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+    )
+
+    removed_arguments = normalized_influencers - {target}
+    argument_removed = _without_arguments(graph, removed_arguments)
+    after_argument_removal = quadratic_energy_strengths(
+        argument_removed,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+    )
+
+    attack_removed_strength = after_attack_removal.strengths[target]
+    argument_removed_strength = after_argument_removal.strengths[target]
+    return RevisedImpactResult(
+        influencers=normalized_influencers,
+        target=target,
+        removed_attacks=removed_attacks,
+        removed_arguments=removed_arguments,
+        original_strength=original.strengths[target],
+        after_attack_removal_strength=attack_removed_strength,
+        after_argument_removal_strength=argument_removed_strength,
+        impact=attack_removed_strength - argument_removed_strength,
+    )
+
+
 def _equilibrium_strength(initial_weight: float, energy: float) -> float:
     if energy >= 0.0:
         return initial_weight + (1.0 - initial_weight) * quadratic_impact(energy)
@@ -151,3 +225,39 @@ def _predecessors(
         argument: frozenset(values)
         for argument, values in predecessors.items()
     }
+
+
+def _without_attacks(
+    graph: WeightedBipolarGraph,
+    removed_attacks: frozenset[tuple[str, str]],
+) -> WeightedBipolarGraph:
+    return WeightedBipolarGraph(
+        arguments=graph.arguments,
+        initial_weights=graph.initial_weights,
+        attacks=graph.attacks - removed_attacks,
+        supports=graph.supports,
+    )
+
+
+def _without_arguments(
+    graph: WeightedBipolarGraph,
+    removed_arguments: frozenset[str],
+) -> WeightedBipolarGraph:
+    remaining = graph.arguments - removed_arguments
+    return WeightedBipolarGraph(
+        arguments=remaining,
+        initial_weights={
+            argument: graph.initial_weights[argument]
+            for argument in remaining
+        },
+        attacks=frozenset(
+            (source, target)
+            for source, target in graph.attacks
+            if source in remaining and target in remaining
+        ),
+        supports=frozenset(
+            (source, target)
+            for source, target in graph.supports
+            if source in remaining and target in remaining
+        ),
+    )
