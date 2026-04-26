@@ -13,6 +13,7 @@ from argumentation.bipolar import (
 )
 from argumentation.dung import (
     ArgumentationFramework,
+    cf2_extensions,
     complete_extensions,
     grounded_extension,
     ideal_extension,
@@ -71,6 +72,8 @@ def _dung_extensions(
         return _sorted_extensions(tuple(semi_stable_extensions(framework)))
     if semantics == "stage":
         return _sorted_extensions(tuple(stage_extensions(framework)))
+    if semantics == "cf2":
+        return _sorted_extensions(tuple(cf2_extensions(framework)))
     if semantics == "stable":
         return _sorted_extensions(tuple(stable_extensions(framework)))
     raise ValueError(f"Unknown Dung semantics: {semantics}")

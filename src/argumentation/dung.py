@@ -398,6 +398,148 @@ def stage_extensions(
     return _range_maximal_extensions(candidates, framework.defeats)
 
 
+def _strongly_connected_components(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> list[frozenset[str]]:
+    index = 0
+    stack: list[str] = []
+    on_stack: set[str] = set()
+    indices: dict[str, int] = {}
+    lowlinks: dict[str, int] = {}
+    components: list[frozenset[str]] = []
+    outgoing: dict[str, list[str]] = {argument: [] for argument in arguments}
+    for attacker, target in defeats:
+        outgoing.setdefault(attacker, []).append(target)
+
+    def connect(argument: str) -> None:
+        nonlocal index
+        indices[argument] = index
+        lowlinks[argument] = index
+        index += 1
+        stack.append(argument)
+        on_stack.add(argument)
+
+        for target in sorted(outgoing.get(argument, [])):
+            if target not in indices:
+                connect(target)
+                lowlinks[argument] = min(lowlinks[argument], lowlinks[target])
+            elif target in on_stack:
+                lowlinks[argument] = min(lowlinks[argument], indices[target])
+
+        if lowlinks[argument] == indices[argument]:
+            component: set[str] = set()
+            while True:
+                member = stack.pop()
+                on_stack.remove(member)
+                component.add(member)
+                if member == argument:
+                    break
+            components.append(frozenset(component))
+
+    for argument in sorted(arguments):
+        if argument not in indices:
+            connect(argument)
+
+    return sorted(components, key=lambda component: tuple(sorted(component)))
+
+
+def _subframework(
+    framework: ArgumentationFramework,
+    arguments: frozenset[str],
+) -> ArgumentationFramework:
+    defeats = frozenset(
+        (attacker, target)
+        for attacker, target in framework.defeats
+        if attacker in arguments and target in arguments
+    )
+    attacks = (
+        None
+        if framework.attacks is None
+        else frozenset(
+            (attacker, target)
+            for attacker, target in framework.attacks
+            if attacker in arguments and target in arguments
+        )
+    )
+    return ArgumentationFramework(arguments=arguments, defeats=defeats, attacks=attacks)
+
+
+def naive_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
+    """Compute all maximal conflict-free sets."""
+    candidates = [
+        candidate
+        for candidate in _all_subsets(framework.arguments)
+        if conflict_free(candidate, framework.defeats)
+    ]
+    return [
+        candidate
+        for candidate in candidates
+        if not any(candidate < other for other in candidates)
+    ]
+
+
+def _component_defeated(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+    components: list[frozenset[str]],
+) -> frozenset[str]:
+    component_by_argument = {
+        argument: component
+        for component in components
+        for argument in component
+    }
+    return frozenset(
+        target
+        for attacker, target in framework.defeats
+        if attacker in candidate
+        and component_by_argument[attacker] != component_by_argument[target]
+    )
+
+
+def _is_cf2_extension(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    if not candidate <= framework.arguments:
+        return False
+
+    components = _strongly_connected_components(
+        framework.arguments,
+        framework.defeats,
+    )
+    if len(components) <= 1:
+        return candidate in naive_extensions(framework)
+
+    defeated = _component_defeated(framework, candidate, components)
+    for component in components:
+        sub_arguments = component - defeated
+        subframework = _subframework(framework, sub_arguments)
+        if not _is_cf2_extension(subframework, candidate & component):
+            return False
+    return True
+
+
+def cf2_extensions(
+    framework: ArgumentationFramework, *, backend: str = "auto"
+) -> list[frozenset[str]]:
+    """Compute all CF2 extensions by recursive SCC decomposition.
+
+    The base case for a single strongly connected component is the naive
+    semantics. Solver-backed CF2 reasoning is a later workstream item.
+
+    Reference:
+        Gaggl and Woltran 2013, Definition 2.7.
+    """
+    if backend not in {"auto", "brute"}:
+        raise ValueError(f"Unknown or unsupported CF2 backend: {backend}")
+    return [
+        candidate
+        for candidate in _all_subsets(framework.arguments)
+        if _is_cf2_extension(framework, candidate)
+    ]
+
+
 def ideal_extension(
     framework: ArgumentationFramework, *, backend: str = "auto"
 ) -> frozenset[str]:
