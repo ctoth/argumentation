@@ -153,11 +153,21 @@ class PaperTDExactResult:
 
     extension_probability: float
     table_summaries: tuple[DPTableSummary, ...]
+    argument_witnesses: dict[str, PaperTDArgumentWitness]
     treewidth: int
     node_count: int
     root_table_rows: int
     root_probability_mass: float
     backend: str = "popescu_wallner_iou_witness_td"
+
+
+@dataclass(frozen=True)
+class PaperTDArgumentWitness:
+    """Lifted label and witness metadata for one queried extension result."""
+
+    argument: str
+    label: PaperTDLabel
+    witnesses: frozenset[str]
 
 
 class PaperTDLabel(Enum):
@@ -491,11 +501,48 @@ def compute_paper_exact_extension_probability(
     return PaperTDExactResult(
         extension_probability=root_probability_mass,
         table_summaries=tuple(summaries),
+        argument_witnesses=_paper_td_lift_argument_witnesses(
+            praf.framework,
+            queried_set,
+        ),
         treewidth=td.width,
         node_count=len(ntd.nodes),
         root_table_rows=len(root_table),
         root_probability_mass=root_probability_mass,
     )
+
+
+def _paper_td_lift_argument_witnesses(
+    framework: ArgumentationFramework,
+    queried_set: frozenset[str],
+) -> dict[str, PaperTDArgumentWitness]:
+    witnesses: dict[str, PaperTDArgumentWitness] = {}
+    for argument in sorted(framework.arguments):
+        if argument in queried_set:
+            witnesses[argument] = PaperTDArgumentWitness(
+                argument=argument,
+                label=PaperTDLabel.IN,
+                witnesses=frozenset(),
+            )
+            continue
+        out_witnesses = frozenset(
+            attacker
+            for attacker, target in framework.defeats
+            if target == argument and attacker in queried_set
+        )
+        if out_witnesses:
+            witnesses[argument] = PaperTDArgumentWitness(
+                argument=argument,
+                label=PaperTDLabel.OUT,
+                witnesses=out_witnesses,
+            )
+        else:
+            witnesses[argument] = PaperTDArgumentWitness(
+                argument=argument,
+                label=PaperTDLabel.UNDECIDED,
+                witnesses=frozenset(),
+            )
+    return witnesses
 
 
 def _paper_td_accepts_required_in(
