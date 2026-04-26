@@ -334,6 +334,59 @@ Integration tests should live in propstore, not this package, and should prove:
 - Argumentation does not own propstore merge/revision decisions.
 - Missing optional solver backends degrade to deterministic typed results.
 
+## Execution Ledger
+
+Status as of this package-first pass:
+
+- Phase 1 landed labellings plus semi-stable, stage, ideal, and CF2 Dung
+  semantics, with property checks against brute-force definitions.
+- Phase 2 landed deterministic stable-CNF encoding, ICCMA AF I/O, and typed
+  solver backend availability results.
+- Phase 3 landed an ASPIC+ abstract projection object that exposes arguments,
+  attacks, defeats, and deterministic IDs for downstream consumers.
+- Phase 4 landed table diagnostics, grounded outcome probabilities, outcome
+  witnesses, cyclic/disconnected coverage, backend metadata, and documentation
+  that the current exact-DP implementation is an adapted grounded
+  edge-tracking TD backend, not the full Popescu and Wallner I/O/U
+  witness-table DP.
+- Phase 5 landed ranking semantics, weighted attack-budget semantics, gradual
+  quadratic-energy semantics, revised direct-impact attribution, value-based
+  ASPIC+ filtering helpers, and accrual applicability helpers.
+- Phase 6 landed README/API surface documentation, architecture documentation,
+  and an import-boundary guard proving `argumentation` does not import
+  `propstore`.
+- Phase 7 remains intentionally deferred. No propstore code was modified.
+
+Page-image checkpoints used during execution:
+
+- Caminada labelling and semi-stable definitions were checked from web page
+  images; local page images were not available for that checkpoint.
+- Dung, Mancarella, and Toni 2007 ideal semantics, and Gaggl and Woltran 2013
+  CF2 semantics, were checked from page images before implementation.
+- Popescu and Wallner 2024 pages 5-6 were checked from local page images before
+  changing probabilistic tree-decomposition diagnostics. The full paper-faithful
+  I/O/U witness DP remains future work.
+- Bonzon et al. 2016 pages 2-4 were checked from local page images before
+  implementing Categoriser and Burden ranking semantics.
+- Dunne et al. 2011 pages 5-6 were checked from local page images before
+  implementing weighted attack-budget semantics.
+- Potyka 2018 pages 1-2 and 5 were checked from local page images before
+  implementing quadratic-energy gradual semantics.
+- Al Anaissy et al. 2024 pages 3-4 were checked from local page images before
+  implementing revised direct-impact attribution.
+- Wallner et al. 2024 pages 2, 5, and 6 were checked from local page images
+  before implementing value-based ASPIC+ filtering helpers.
+- Prakken 2019 pages 4-5 were checked from local page images before
+  implementing accrual applicability helpers.
+
+Latest full package gate after Phase 6:
+
+- `uv run pytest -q --timeout=300`: 356 passed in 63.61s.
+- `uv run pyright src`: 0 errors, 0 warnings, 0 informations.
+- `git diff --check`: passed.
+- `git status --short`: only pre-existing untracked `notes/`, `out`, and
+  `pyghidra_mcp_projects/` remained.
+
 ## First Executable Slice
 
 Target: Phase 1, labelling primitives only.
