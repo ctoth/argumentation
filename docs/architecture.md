@@ -34,7 +34,19 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   strength propagation for QBAFs.
 - `argumentation.probabilistic_treedecomp` — Min-degree treewidth
   estimation, tree decomposition computation, nice tree decomposition
-  conversion, and grounded-semantics DP.
+  conversion, and an adapted grounded edge-tracking DP. This is exact for
+  the supported grounded PrAF route, but not the full Popescu & Wallner I/O/U witness-table DP.
+- `argumentation.ranking` — Categoriser and Burden ranking-based semantics
+  over Dung AFs.
+- `argumentation.weighted` — Dunne-style weighted argument systems with
+  inconsistency-budget grounded semantics and deleted-attack witnesses.
+- `argumentation.gradual` — Potyka-style quadratic-energy gradual
+  strengths for weighted bipolar graphs, plus revised direct-impact
+  attribution.
+- `argumentation.value_based` — Wallner-style value filtering helpers for
+  ASPIC+ subjective knowledge bases and defeasible rules.
+- `argumentation.accrual` — Prakken-style weak/strong applicability
+  helpers and same-conclusion accrual envelopes.
 - `argumentation.semantics` — Generic set-returning semantics dispatch over
   argumentation-owned Dung, bipolar, and partial-AF dataclasses.
 - `argumentation.preference` — Strict-partial-order helpers and elitist
@@ -83,7 +95,8 @@ policy is:
    Agresti–Coull stopping.
 4. Otherwise, estimate primal-graph treewidth via the min-degree
    heuristic. If treewidth is at most the cutoff (default twelve) and the
-   query is credulous-grounded acceptance, run the tree-decomposition DP.
+   query is credulous-grounded acceptance, run the adapted edge-tracking
+   tree-decomposition DP.
 5. Otherwise, fall back to Monte Carlo.
 
 `dfquad_quad` and `dfquad_baf` are gradual semantics rather than Dung
