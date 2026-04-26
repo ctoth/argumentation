@@ -15,6 +15,7 @@ from argumentation.dung import (
     ArgumentationFramework,
     complete_extensions,
     grounded_extension,
+    ideal_extension,
     preferred_extensions,
     semi_stable_extensions,
     stage_extensions,
@@ -60,6 +61,8 @@ def _dung_extensions(
 ) -> tuple[frozenset[str], ...]:
     if semantics == "grounded":
         return (grounded_extension(framework),)
+    if semantics == "ideal":
+        return (ideal_extension(framework),)
     if semantics == "complete":
         return _sorted_extensions(tuple(complete_extensions(framework)))
     if semantics == "preferred":

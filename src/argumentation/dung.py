@@ -336,6 +336,14 @@ def stable_extensions(
     return results
 
 
+def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
+    ordered = sorted(arguments)
+    return [
+        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
+        for mask in range(1 << len(ordered))
+    ]
+
+
 def _range_maximal_extensions(
     candidates: list[frozenset[str]],
     defeats: frozenset[tuple[str, str]],
@@ -388,3 +396,48 @@ def stage_extensions(
                 candidates.append(s)
 
     return _range_maximal_extensions(candidates, framework.defeats)
+
+
+def ideal_extension(
+    framework: ArgumentationFramework, *, backend: str = "auto"
+) -> frozenset[str]:
+    """Compute the unique maximal ideal extension.
+
+    An ideal set is admissible and contained in every preferred extension. The
+    ideal extension is the unique maximal ideal set.
+
+    Reference:
+        Dung, Mancarella, and Toni 2007, Definition 2.2 and Theorem 2.1.
+    """
+    preferred = preferred_extensions(framework, backend=backend)
+    if not preferred:
+        return frozenset()
+
+    common = set(preferred[0])
+    for extension in preferred[1:]:
+        common.intersection_update(extension)
+
+    attackers_index = _attackers_index(framework.defeats)
+    candidates = [
+        candidate
+        for candidate in _all_subsets(frozenset(common))
+        if admissible(
+            candidate,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+            attackers_index=attackers_index,
+        )
+    ]
+    maximal = [
+        candidate
+        for candidate in candidates
+        if not any(candidate < other for other in candidates)
+    ]
+    if len(maximal) == 1:
+        return maximal[0]
+
+    result: frozenset[str] = frozenset()
+    for candidate in maximal:
+        result = result | candidate
+    return result
