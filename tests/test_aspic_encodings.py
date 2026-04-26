@@ -12,8 +12,12 @@ from argumentation.aspic import (
     Literal,
     PreferenceConfig,
     Rule,
+    build_abstract_framework,
+    conc,
 )
 from argumentation.aspic_encoding import encode_aspic_theory
+from argumentation.aspic_encoding import solve_aspic_grounded
+from argumentation.dung import grounded_extension
 
 
 def test_aspic_encoding_module_is_exported_from_package() -> None:
@@ -91,3 +95,58 @@ def test_aspic_encoding_signature_is_stable_under_input_set_ordering() -> None:
     assert "preferred(d2,d1)." in first.facts
     assert first.metadata["comparison"] == "democratic"
     assert first.metadata["link"] == "last"
+
+
+def test_solve_aspic_grounded_returns_accepted_conclusions() -> None:
+    p = Literal(GroundAtom("p"))
+    q = Literal(GroundAtom("q"))
+    rule = Rule((p,), q, "defeasible", "d_q")
+    system = ArgumentationSystem(
+        language=frozenset({p, q}),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({rule}),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+
+    result = solve_aspic_grounded(system, kb, pref)
+
+    assert result.status == "success"
+    assert result.semantics == "grounded"
+    assert result.accepted_conclusions == frozenset({p, q})
+    assert result.backend == "materialized_reference"
+
+
+def test_solve_aspic_grounded_matches_materialized_pipeline() -> None:
+    p = Literal(GroundAtom("p"))
+    q = Literal(GroundAtom("q"))
+    not_q = q.contrary
+    rule_q = Rule((p,), q, "defeasible", "d_q")
+    system = ArgumentationSystem(
+        language=frozenset({p, q, not_q}),
+        contrariness=ContrarinessFn(contradictories=frozenset({(q, not_q)})),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({rule_q}),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, not_q}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+
+    projection = build_abstract_framework(system, kb, pref)
+    grounded_ids = grounded_extension(projection.framework)
+    expected = frozenset(conc(projection.id_to_argument[arg_id]) for arg_id in grounded_ids)
+
+    result = solve_aspic_grounded(system, kb, pref)
+
+    assert result.accepted_conclusions == expected
+    assert result.accepted_argument_ids == grounded_ids
