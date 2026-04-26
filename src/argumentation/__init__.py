@@ -9,6 +9,7 @@ from argumentation import (
     partial_af,
     preference,
     probabilistic,
+    sat_encoding,
     semantics,
 )
 
@@ -21,5 +22,6 @@ __all__ = [
     "partial_af",
     "preference",
     "probabilistic",
+    "sat_encoding",
     "semantics",
 ]

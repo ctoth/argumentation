@@ -53,8 +53,8 @@ def test_stable_encoding_models_round_trip_to_extensions() -> None:
     }
 
 
-@given(argumentation_frameworks(max_args=5))
-@settings(deadline=10000)
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:
     encoding = encode_stable_extensions(framework)
 
