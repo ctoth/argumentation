@@ -17,6 +17,7 @@ from argumentation.aspic import (
 )
 from argumentation.aspic_encoding import encode_aspic_theory
 from argumentation.aspic_encoding import solve_aspic_grounded
+from argumentation.aspic_encoding import solve_aspic_with_backend
 from argumentation.dung import grounded_extension
 
 
@@ -150,3 +151,27 @@ def test_solve_aspic_grounded_matches_materialized_pipeline() -> None:
 
     assert result.accepted_conclusions == expected
     assert result.accepted_argument_ids == grounded_ids
+
+
+def test_optional_aspic_backend_absence_is_typed() -> None:
+    p = Literal(GroundAtom("p"))
+    system = ArgumentationSystem(
+        language=frozenset({p}),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset(),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+
+    result = solve_aspic_with_backend(system, kb, pref, backend="missing-test-backend")
+
+    assert result.status == "unavailable_backend"
+    assert result.backend == "missing-test-backend"
+    assert result.accepted_argument_ids == frozenset()
+    assert result.metadata["reason"] == "backend is not installed or registered"
