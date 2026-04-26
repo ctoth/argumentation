@@ -62,22 +62,18 @@ def test_paper_td_introduce_branches_absent_and_unattacked_present_argument() ->
         queried_in=frozenset(),
     )
 
-    assert rows == (
-        PaperTDRow(
-            present_arguments=frozenset(),
-            active_defeats=frozenset(),
-            labels={},
-            witnesses={},
-            probability=pytest.approx(0.25),
-        ),
-        PaperTDRow(
-            present_arguments=frozenset({"b"}),
-            active_defeats=frozenset(),
-            labels={"b": PaperTDLabel.IN},
-            witnesses={},
-            probability=pytest.approx(0.75),
-        ),
+    assert rows[0] == PaperTDRow(
+        present_arguments=frozenset(),
+        active_defeats=frozenset(),
+        labels={},
+        witnesses={},
+        probability=pytest.approx(0.25),
     )
+    assert {
+        row.labels["b"]
+        for row in rows[1:]
+    } == {PaperTDLabel.IN, PaperTDLabel.OUT, PaperTDLabel.UNDECIDED}
+    assert all(row.probability == pytest.approx(0.75) for row in rows[1:])
 
 
 def test_paper_td_introduce_records_out_witness_for_attacked_argument() -> None:
@@ -99,7 +95,11 @@ def test_paper_td_introduce_records_out_witness_for_attacked_argument() -> None:
         queried_in=frozenset(),
     )
 
-    out_rows = [row for row in rows if row.labels.get("b") is PaperTDLabel.OUT]
+    out_rows = [
+        row
+        for row in rows
+        if row.labels.get("b") is PaperTDLabel.OUT and row.witnesses
+    ]
     assert len(out_rows) == 1
     assert out_rows[0].active_defeats == frozenset({("a", "b")})
     assert out_rows[0].witnesses == {"b": "a"}

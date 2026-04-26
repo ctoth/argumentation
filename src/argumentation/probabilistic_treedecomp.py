@@ -23,7 +23,6 @@ from enum import Enum
 from itertools import product
 from typing import TYPE_CHECKING
 
-from argumentation.labelling import Label, Labelling
 from argumentation.dung import ArgumentationFramework
 
 if TYPE_CHECKING:
@@ -148,6 +147,19 @@ class ExactDPDiagnostics:
     root_probability_mass: float
 
 
+@dataclass(frozen=True)
+class PaperTDExactResult:
+    """Exact complete-extension probability from the paper-style TD evaluator."""
+
+    extension_probability: float
+    table_summaries: tuple[DPTableSummary, ...]
+    treewidth: int
+    node_count: int
+    root_table_rows: int
+    root_probability_mass: float
+    backend: str = "popescu_wallner_iou_witness_td"
+
+
 class PaperTDLabel(Enum):
     """The I/O/U labels used by Popescu and Wallner's TD tables."""
 
@@ -216,7 +228,7 @@ def paper_introduce_rows(
                 witnesses=dict(row.witnesses),
                 probability=row.probability * (1.0 - p_argument),
             )
-            if _paper_td_accepts_required_in(absent_row, queried_in):
+            if argument not in queried_in and _paper_td_accepts_required_in(absent_row, queried_in):
                 introduced_rows.append(absent_row)
 
         present_arguments = row.present_arguments | frozenset({argument})
@@ -243,10 +255,11 @@ def paper_introduce_rows(
             if p_edges < 1e-18:
                 continue
 
-            for labels in _paper_td_complete_labels(
-                present_arguments,
+            for labels in _paper_td_introduced_labelings(
+                argument,
                 frozenset(active_defeats),
                 prior_labels=row.labels,
+                queried_in=queried_in,
             ):
                 witnesses = _paper_td_update_witnesses(
                     labels,
@@ -275,6 +288,7 @@ def paper_forget_rows(
     child_rows: tuple[PaperTDRow, ...],
     *,
     argument: str,
+    exact_extension: frozenset[str] | None = None,
 ) -> tuple[PaperTDRow, ...]:
     """Apply the paper TD forget transition for one argument.
 
@@ -285,7 +299,12 @@ def paper_forget_rows(
     forgotten_rows: list[PaperTDRow] = []
     for row in child_rows:
         label = row.labels.get(argument)
-        if label in {PaperTDLabel.OUT, PaperTDLabel.UNDECIDED} and argument not in row.witnesses:
+        if exact_extension is not None:
+            if argument in exact_extension and label is not PaperTDLabel.IN:
+                continue
+            if argument not in exact_extension and label is PaperTDLabel.IN:
+                continue
+        if not _paper_td_forget_accepts(row, argument):
             continue
 
         labels = {
@@ -296,7 +315,7 @@ def paper_forget_rows(
         witnesses = {
             row_argument: witness
             for row_argument, witness in row.witnesses.items()
-            if row_argument != argument and witness != argument
+            if row_argument != argument
         }
         forgotten_rows.append(
             PaperTDRow(
@@ -349,14 +368,8 @@ def paper_join_rows(
     for left in left_rows:
         for right in right_by_structure.get(_paper_td_structure_key(left), ()):
             witnesses = dict(left.witnesses)
-            compatible = True
             for argument, witness in right.witnesses.items():
-                if argument in witnesses and witnesses[argument] != witness:
-                    compatible = False
-                    break
-                witnesses[argument] = witness
-            if not compatible:
-                continue
+                witnesses.setdefault(argument, witness)
 
             common_probability = _paper_td_common_probability(
                 left,
@@ -385,43 +398,175 @@ def paper_join_rows(
     )
 
 
+def compute_paper_exact_extension_probability(
+    praf: ProbabilisticAF,
+    *,
+    queried_set: frozenset[str],
+    semantics: str = "complete",
+) -> PaperTDExactResult:
+    """Compute exact `P-Ext` for complete semantics via paper-style TD rows.
+
+    Popescu and Wallner 2024, Algorithm 1 evaluates a nice tree decomposition
+    bottom-up using I/O/U-labelled rows with witnesses. This public surface is
+    intentionally scoped to the paper's complete-semantics extension query.
+    """
+    if semantics != "complete":
+        raise ValueError("paper TD exact extension probability currently supports complete semantics")
+    if getattr(praf, "supports", frozenset()):
+        raise ValueError("paper TD exact extension probability does not support support relations")
+    if praf.framework.attacks is not None and praf.framework.attacks != praf.framework.defeats:
+        raise ValueError("paper TD exact extension probability requires attacks == defeats")
+
+    unknown = sorted(queried_set - praf.framework.arguments)
+    if unknown:
+        raise ValueError(f"queried_set contains unknown arguments: {unknown!r}")
+
+    from argumentation.probabilistic import _expectation
+
+    p_arguments = {
+        argument: _expectation(praf.p_args[argument])
+        for argument in praf.framework.arguments
+    }
+    p_defeats = {
+        defeat: _expectation(praf.p_defeats[defeat])
+        for defeat in praf.framework.defeats
+    }
+
+    td = compute_tree_decomposition(praf.framework)
+    ntd = to_nice_tree_decomposition(td)
+    post_order = _nice_td_post_order(ntd)
+    tables: dict[int, tuple[PaperTDRow, ...]] = {}
+    summaries: list[DPTableSummary] = []
+
+    for node_id in post_order:
+        node = ntd.nodes[node_id]
+        if node.node_type == "leaf":
+            table = paper_leaf_rows()
+        elif node.node_type == "introduce":
+            assert node.introduced is not None
+            table = paper_introduce_rows(
+                tables[node.children[0]],
+                argument=node.introduced,
+                bag=node.bag,
+                all_defeats=praf.framework.defeats,
+                p_argument=p_arguments[node.introduced],
+                p_defeats=p_defeats,
+                queried_in=queried_set,
+            )
+        elif node.node_type == "forget":
+            assert node.forgotten is not None
+            table = paper_forget_rows(
+                tables[node.children[0]],
+                argument=node.forgotten,
+                exact_extension=queried_set,
+            )
+        elif node.node_type == "join":
+            table = paper_join_rows(
+                tables[node.children[0]],
+                tables[node.children[1]],
+                bag=node.bag,
+                p_arguments=p_arguments,
+                p_defeats=p_defeats,
+                all_defeats=praf.framework.defeats,
+            )
+        else:
+            raise ValueError(f"Unknown nice TD node type: {node.node_type!r}")
+
+        tables[node_id] = table
+        summaries.append(
+            DPTableSummary(
+                component_index=0,
+                node_id=node_id,
+                node_type=node.node_type,
+                bag=node.bag,
+                row_count=len(table),
+                probability_mass=sum(row.probability for row in table),
+            )
+        )
+        for child in node.children:
+            tables.pop(child, None)
+
+    root_table = tables.get(ntd.root, ())
+    root_probability_mass = sum(row.probability for row in root_table)
+    return PaperTDExactResult(
+        extension_probability=root_probability_mass,
+        table_summaries=tuple(summaries),
+        treewidth=td.width,
+        node_count=len(ntd.nodes),
+        root_table_rows=len(root_table),
+        root_probability_mass=root_probability_mass,
+    )
+
+
 def _paper_td_accepts_required_in(
     row: PaperTDRow,
     queried_in: frozenset[str],
 ) -> bool:
-    return all(row.labels.get(argument) is PaperTDLabel.IN for argument in queried_in)
+    return all(
+        argument not in row.labels or row.labels[argument] is PaperTDLabel.IN
+        for argument in queried_in
+    )
 
 
-def _paper_td_complete_labels(
-    present_arguments: frozenset[str],
+def _paper_td_introduced_labelings(
+    argument: str,
     active_defeats: frozenset[tuple[str, str]],
     *,
     prior_labels: dict[str, PaperTDLabel],
+    queried_in: frozenset[str],
 ) -> tuple[dict[str, PaperTDLabel], ...]:
-    framework = ArgumentationFramework(
-        arguments=present_arguments,
-        defeats=active_defeats,
+    choices = (
+        (PaperTDLabel.IN,)
+        if argument in queried_in
+        else (PaperTDLabel.IN, PaperTDLabel.OUT, PaperTDLabel.UNDECIDED)
     )
     rows: list[dict[str, PaperTDLabel]] = []
-    from argumentation.dung import complete_extensions
+    for choice in choices:
+        labels = dict(prior_labels)
+        labels[argument] = choice
+        if choice is PaperTDLabel.IN and not _paper_td_conflict_free_in_label(
+            argument,
+            labels,
+            active_defeats,
+        ):
+            continue
+        rows.append(labels)
+    return tuple(rows)
 
-    for extension in complete_extensions(framework, backend="brute"):
-        labelling = Labelling.from_extension(framework, extension)
-        labels = {
-            argument: _paper_td_label_from_dung(label)
-            for argument, label in labelling.statuses.items()
-        }
-        if all(labels.get(argument) is label for argument, label in prior_labels.items()):
-            rows.append(labels)
-    return tuple(sorted(rows, key=lambda labels: tuple(sorted(labels.items()))))
+
+def _paper_td_conflict_free_in_label(
+    argument: str,
+    labels: dict[str, PaperTDLabel],
+    active_defeats: frozenset[tuple[str, str]],
+) -> bool:
+    for source, target in active_defeats:
+        if source == argument and labels.get(target) is PaperTDLabel.IN:
+            return False
+        if target == argument and labels.get(source) is PaperTDLabel.IN:
+            return False
+    return True
 
 
-def _paper_td_label_from_dung(label: Label) -> PaperTDLabel:
-    if label is Label.IN:
-        return PaperTDLabel.IN
-    if label is Label.OUT:
-        return PaperTDLabel.OUT
-    return PaperTDLabel.UNDECIDED
+def _paper_td_forget_accepts(row: PaperTDRow, argument: str) -> bool:
+    label = row.labels.get(argument)
+    if label is None:
+        return True
+    if label is PaperTDLabel.IN:
+        return all(
+            labels_attacker is PaperTDLabel.OUT
+            for source, target in row.active_defeats
+            if target == argument
+            for labels_attacker in (row.labels.get(source),)
+        )
+    if label is PaperTDLabel.OUT:
+        return argument in row.witnesses
+    return (
+        argument in row.witnesses
+        and not any(
+            target == argument and row.labels.get(source) is PaperTDLabel.IN
+            for source, target in row.active_defeats
+        )
+    )
 
 
 def _paper_td_update_witnesses(
@@ -909,6 +1054,21 @@ def to_nice_tree_decomposition(
     final_top = _build_forget_chain(frozenset(), root_bag, top)
 
     return NiceTreeDecomposition(nodes=nodes, root=final_top)
+
+
+def _nice_td_post_order(ntd: NiceTreeDecomposition) -> list[int]:
+    post_order: list[int] = []
+    visit_stack: list[tuple[int, bool]] = [(ntd.root, False)]
+    while visit_stack:
+        node_id, processed = visit_stack.pop()
+        if processed:
+            post_order.append(node_id)
+            continue
+        visit_stack.append((node_id, True))
+        node = ntd.nodes[node_id]
+        for child in reversed(node.children):
+            visit_stack.append((child, False))
+    return post_order
 
 
 def compute_exact_dp(
