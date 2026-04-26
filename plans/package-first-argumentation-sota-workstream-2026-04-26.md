@@ -16,6 +16,11 @@ testable, and solver-friendly without making this package depend on propstore.
 - Red/green TDD is the control surface. Each implementation slice starts with a
   failing test commit, followed by the smallest implementation commit that makes
   the target tests pass.
+- Commit frequently and mechanically: red test commit first, green implementation
+  commit second, then no new slice while edited files remain uncommitted.
+- After every green implementation commit, reread this workstream before reporting
+  status or choosing the next slice. The next unchecked workstream item, not local
+  momentum, controls what happens next.
 - Do most work here first. `argumentation` must not import `propstore`, know about
   propstore storage, or know about Semantic OS situated assertions.
 - Propstore integration is deferred until propstore has its assertion/projection
@@ -25,6 +30,11 @@ testable, and solver-friendly without making this package depend on propstore.
   `../propstore/papers/*/description.md`, `notes.md`, and `claims.yaml` may guide
   prioritization, but formal algorithms, complexity claims, and edge-case examples
   must be checked against page images before being treated as source of truth.
+- Each paper-sensitive slice gets its own short reading log in the commit or PR
+  notes: which paper pages were reread, what definitions/examples were implemented,
+  what was intentionally left out, and what remains uncertain.
+- If a paper reread changes the plan, update and commit this workstream before
+  continuing implementation.
 - Keep optional heavy dependencies optional. SAT, ASP, clingo, or external solver
   integration should live behind extras or adapters, with pure-Python references
   where feasible.
