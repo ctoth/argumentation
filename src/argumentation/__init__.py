@@ -13,6 +13,7 @@ from argumentation import (
     ranking,
     sat_encoding,
     semantics,
+    weighted,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "ranking",
     "sat_encoding",
     "semantics",
+    "weighted",
 ]
