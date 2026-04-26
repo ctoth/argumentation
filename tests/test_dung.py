@@ -21,6 +21,7 @@ from argumentation.dung import (
     attackers_of,
     characteristic_fn,
     admissible,
+    cf2_extensions,
     conflict_free,
     complete_extensions,
     defends,
@@ -349,6 +350,68 @@ class TestIdealConcrete:
         )
 
         assert extensions(framework, semantics="ideal") == (frozenset({"b"}),)
+
+
+class TestCF2Concrete:
+    """Concrete examples for CF2 semantics."""
+
+    def test_cf2_uses_naive_sets_inside_a_single_scc(self):
+        """Grounded in Gaggl and Woltran 2013 page-image pages 3 and 5."""
+        framework = af(
+            {"a", "b", "c"},
+            {("a", "b"), ("b", "c"), ("c", "a")},
+        )
+
+        assert set(cf2_extensions(framework, backend="brute")) == {
+            frozenset({"a"}),
+            frozenset({"b"}),
+            frozenset({"c"}),
+        }
+
+    def test_cf2_respects_component_defeat_across_sccs(self):
+        """A selected upstream argument removes downstream arguments it defeats."""
+        framework = af({"a", "b"}, {("a", "b")})
+
+        assert cf2_extensions(framework, backend="brute") == [frozenset({"a"})]
+
+    def test_cf2_matches_gaggl_woltran_2013_example_2_8(self):
+        """Grounded in Gaggl and Woltran 2013 page-image page 5."""
+        framework = af(
+            {"a", "b", "c", "d", "e", "f", "g", "h", "i"},
+            {
+                ("a", "b"),
+                ("b", "c"),
+                ("c", "a"),
+                ("b", "d"),
+                ("b", "e"),
+                ("d", "f"),
+                ("e", "f"),
+                ("f", "e"),
+                ("f", "g"),
+                ("g", "h"),
+                ("h", "i"),
+                ("i", "f"),
+            },
+        )
+
+        assert set(cf2_extensions(framework, backend="brute")) == {
+            frozenset({"a", "d", "e", "g", "i"}),
+            frozenset({"b", "f", "h"}),
+            frozenset({"b", "g", "i"}),
+            frozenset({"c", "d", "e", "g", "i"}),
+        }
+
+    def test_dispatch_supports_cf2(self):
+        framework = af(
+            {"a", "b", "c"},
+            {("a", "b"), ("b", "c"), ("c", "a")},
+        )
+
+        assert extensions(framework, semantics="cf2") == (
+            frozenset({"a"}),
+            frozenset({"b"}),
+            frozenset({"c"}),
+        )
 
 
 class TestCitationDocumentation:
