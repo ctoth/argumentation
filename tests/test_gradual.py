@@ -7,6 +7,7 @@ from argumentation.gradual import (
     WeightedBipolarGraph,
     quadratic_energy_strengths,
     revised_direct_impact,
+    shapley_attack_impacts,
 )
 
 
@@ -119,3 +120,28 @@ def test_revised_direct_impact_is_zero_for_unrelated_argument() -> None:
 
     assert impact.removed_attacks == frozenset()
     assert impact.impact == pytest.approx(0.0)
+
+
+def test_shapley_attack_impacts_sum_to_total_attack_removal_gain() -> None:
+    graph = WeightedBipolarGraph(
+        arguments=frozenset({"a", "b", "c"}),
+        initial_weights={"a": 0.5, "b": 0.5, "c": 0.5},
+        attacks=frozenset({("b", "a"), ("c", "a")}),
+    )
+
+    result = shapley_attack_impacts(graph, target="a")
+
+    original = quadratic_energy_strengths(graph).strengths["a"]
+    without_attacks = quadratic_energy_strengths(
+        WeightedBipolarGraph(
+            arguments=graph.arguments,
+            initial_weights=graph.initial_weights,
+            attacks=frozenset(),
+        )
+    ).strengths["a"]
+
+    assert result.target == "a"
+    assert set(result.attack_impacts) == {("b", "a"), ("c", "a")}
+    assert sum(result.attack_impacts.values()) == pytest.approx(without_attacks - original)
+    assert result.exact is True
+    assert result.coalition_count == 4
