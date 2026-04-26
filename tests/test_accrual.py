@@ -4,6 +4,7 @@ import argumentation
 from argumentation.accrual import (
     AccrualArgument,
     accrual_envelope,
+    accrual_grounded_labelling,
     strongly_applicable,
     weakly_applicable,
 )
@@ -57,3 +58,19 @@ def test_accrual_envelope_groups_same_conclusion_arguments_without_subset_blowup
     assert envelope.weakly_applicable == frozenset({"a", "b"})
     assert envelope.minimal_required == frozenset({"a"})
     assert envelope.maximal_available == frozenset({"a", "b"})
+
+
+def test_accrual_grounded_labelling_reaches_fixed_point() -> None:
+    arguments = frozenset({
+        AccrualArgument("a", "p"),
+        AccrualArgument("b", "p", immediate_subarguments=frozenset({"a"})),
+        AccrualArgument("u", "not-p"),
+        AccrualArgument("c", "p", undercutters=frozenset({"u"})),
+    })
+
+    labelling = accrual_grounded_labelling(arguments)
+
+    assert labelling.statuses["a"] is Label.IN
+    assert labelling.statuses["b"] is Label.IN
+    assert labelling.statuses["u"] is Label.IN
+    assert labelling.statuses["c"] is Label.OUT
