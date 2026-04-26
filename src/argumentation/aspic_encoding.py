@@ -11,6 +11,8 @@ from argumentation.aspic import (
     Literal,
     PreferenceConfig,
     Rule,
+    build_abstract_framework,
+    conc,
 )
 
 
@@ -25,6 +27,19 @@ class ASPICEncoding:
 
     facts: tuple[str, ...]
     signature: str
+    metadata: dict[str, str]
+
+
+@dataclass(frozen=True)
+class ASPICQueryResult:
+    """Result for a package-native ASPIC+ query surface."""
+
+    status: str
+    semantics: str
+    backend: str
+    accepted_argument_ids: frozenset[str]
+    accepted_conclusions: frozenset[Literal]
+    encoding: ASPICEncoding
     metadata: dict[str, str]
 
 
@@ -86,6 +101,40 @@ def encode_aspic_theory(
     )
 
 
+def solve_aspic_grounded(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+    pref: PreferenceConfig,
+) -> ASPICQueryResult:
+    """Evaluate grounded ASPIC+ acceptance through the reference projection.
+
+    This is the tested direct package query surface. Its current backend is the
+    materialized ASPIC-to-Dung reference path; optional ASP/clingo backends can
+    attach to the same encoding/result contract in later slices.
+    """
+    from argumentation.dung import grounded_extension
+
+    encoding = encode_aspic_theory(system, kb, pref)
+    projection = build_abstract_framework(system, kb, pref)
+    accepted_argument_ids = grounded_extension(projection.framework)
+    accepted_conclusions = frozenset(
+        conc(projection.id_to_argument[argument_id])
+        for argument_id in accepted_argument_ids
+    )
+    return ASPICQueryResult(
+        status="success",
+        semantics="grounded",
+        backend="materialized_reference",
+        accepted_argument_ids=accepted_argument_ids,
+        accepted_conclusions=accepted_conclusions,
+        encoding=encoding,
+        metadata={
+            "encoding": encoding.metadata["encoding"],
+            "projection": "aspic_abstract_framework",
+        },
+    )
+
+
 def _literal_id(literal: Literal) -> str:
     return repr(literal)
 
@@ -114,4 +163,9 @@ def _rule_id(
     return defeasible_rule_ids[rule]
 
 
-__all__ = ["ASPICEncoding", "encode_aspic_theory"]
+__all__ = [
+    "ASPICEncoding",
+    "ASPICQueryResult",
+    "encode_aspic_theory",
+    "solve_aspic_grounded",
+]
