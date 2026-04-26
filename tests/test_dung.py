@@ -26,8 +26,12 @@ from argumentation.dung import (
     defends,
     grounded_extension,
     preferred_extensions,
+    range_of,
+    semi_stable_extensions,
+    stage_extensions,
     stable_extensions,
 )
+from argumentation.semantics import extensions
 
 
 # ── Hypothesis strategies ───────────────────────────────────────────
@@ -229,6 +233,61 @@ class TestStableConcrete:
         )
 
         assert stable_extensions(framework) == []
+
+
+class TestRangeSemanticsConcrete:
+    """Concrete examples for range-based semantics."""
+
+    def test_range_of_extension_is_extension_plus_defeated_arguments(self):
+        """Grounded in Caminada 2011 page-image page 3, Definition 2.3."""
+        assert range_of(
+            frozenset({"A", "C"}),
+            frozenset({("A", "B"), ("B", "C")}),
+        ) == frozenset({"A", "B", "C"})
+
+    def test_semi_stable_coincides_with_stable_when_stable_exists(self):
+        """Semi-stable should agree with stable on stable-friendly AFs."""
+        framework = af({"A", "B"}, {("A", "B"), ("B", "A")})
+
+        assert set(semi_stable_extensions(framework, backend="brute")) == set(
+            stable_extensions(framework, backend="brute")
+        )
+
+    def test_semi_stable_is_complete_with_maximal_range_when_no_stable_exists(self):
+        """Odd cycles have no stable extension but still have semi-stable ones."""
+        framework = af(
+            {"A", "B", "C"},
+            {("A", "B"), ("B", "C"), ("C", "A")},
+        )
+
+        assert stable_extensions(framework, backend="brute") == []
+        assert semi_stable_extensions(framework, backend="brute") == [frozenset()]
+
+    def test_stage_extensions_are_conflict_free_sets_with_maximal_range(self):
+        """Stage does not require completeness, so an odd cycle has singleton stages."""
+        framework = af(
+            {"A", "B", "C"},
+            {("A", "B"), ("B", "C"), ("C", "A")},
+        )
+
+        assert set(stage_extensions(framework, backend="brute")) == {
+            frozenset({"A"}),
+            frozenset({"B"}),
+            frozenset({"C"}),
+        }
+
+    def test_dispatch_supports_semi_stable_and_stage(self):
+        framework = af(
+            {"A", "B", "C"},
+            {("A", "B"), ("B", "C"), ("C", "A")},
+        )
+
+        assert extensions(framework, semantics="semi-stable") == (frozenset(),)
+        assert extensions(framework, semantics="stage") == (
+            frozenset({"A"}),
+            frozenset({"B"}),
+            frozenset({"C"}),
+        )
 
 
 class TestCitationDocumentation:
