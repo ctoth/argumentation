@@ -106,6 +106,39 @@ def test_exact_dp_diagnostics_expose_grounded_table_summaries() -> None:
     assert all(summary.row_count >= 1 for summary in diagnostics.table_summaries)
 
 
+def test_exact_dp_diagnostics_expose_grounded_status_witnesses() -> None:
+    praf = _praf(
+        {"a", "b", "c", "x", "y"},
+        {("a", "b"), ("b", "c"), ("x", "y"), ("y", "x")},
+        p_defeat=1.0,
+    )
+
+    diagnostics = compute_exact_dp_with_diagnostics(praf, semantics="grounded")
+
+    assert diagnostics.acceptance_probs == pytest.approx(compute_exact_dp(praf))
+    assert diagnostics.component_count == 2
+    assert diagnostics.status_probabilities["a"].accepted == pytest.approx(1.0)
+    assert diagnostics.status_probabilities["b"].rejected == pytest.approx(1.0)
+    assert diagnostics.status_probabilities["x"].undecided == pytest.approx(1.0)
+    assert diagnostics.status_probabilities["y"].undecided == pytest.approx(1.0)
+
+    accepted_witness = diagnostics.status_witnesses["a"].accepted
+    rejected_witness = diagnostics.status_witnesses["b"].rejected
+    undecided_witness = diagnostics.status_witnesses["x"].undecided
+
+    assert accepted_witness is not None
+    assert accepted_witness.argument == "a"
+    assert accepted_witness.present_arguments >= frozenset({"a", "b", "c"})
+
+    assert rejected_witness is not None
+    assert rejected_witness.argument == "b"
+    assert ("a", "b") in rejected_witness.active_defeats
+
+    assert undecided_witness is not None
+    assert undecided_witness.argument == "x"
+    assert {("x", "y"), ("y", "x")} <= undecided_witness.active_defeats
+
+
 def test_exact_dp_rejects_richer_support_worlds() -> None:
     praf = ProbabilisticAF(
         framework=ArgumentationFramework(arguments=frozenset({"a", "b"}), defeats=frozenset()),
