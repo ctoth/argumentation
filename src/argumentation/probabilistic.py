@@ -240,6 +240,7 @@ class PrAFResult:
     query_kind: str = "argument_acceptance"
     inference_mode: str | None = "credulous"
     queried_set: tuple[str, ...] | None = None
+    strategy_metadata: Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if self.strategy_requested is None:
@@ -1213,6 +1214,10 @@ def _compute_exact_dp(
         query_kind=query_kind,
         inference_mode=inference_mode,
         queried_set=None,
+        strategy_metadata={
+            "backend": "grounded_edge_tracking_td",
+            "paper_conformance": "adapted_not_popescu_iou_witness_dp",
+        },
     )
 
 
