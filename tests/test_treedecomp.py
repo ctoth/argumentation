@@ -84,6 +84,10 @@ def test_exact_dp_matches_exact_enumeration_on_grounded_path() -> None:
 
     assert dp.strategy_used == "exact_dp"
     assert dp.acceptance_probs == pytest.approx(exact.acceptance_probs)
+    assert dp.strategy_metadata == {
+        "backend": "grounded_edge_tracking_td",
+        "paper_conformance": "adapted_not_popescu_iou_witness_dp",
+    }
 
 
 def test_exact_dp_diagnostics_expose_grounded_table_summaries() -> None:
