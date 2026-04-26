@@ -29,6 +29,7 @@ _ALLOWED_STRATEGIES = frozenset({
     "exact",
     "exact_enum",
     "exact_dp",
+    "paper_td",
     "dfquad",
     "dfquad_quad",
     "dfquad_baf",
@@ -688,6 +689,18 @@ def _compute_probabilistic_acceptance(
             _with_strategy_override(result, strategy_requested=requested_strategy)
             if requested_strategy != normalized_strategy else result
         )
+    if normalized_strategy == "paper_td":
+        result = _compute_paper_td(
+            praf,
+            semantics,
+            query_kind=normalized_query_kind,
+            inference_mode=normalized_inference_mode,
+            queried_set=normalized_queried_set,
+        )
+        return (
+            _with_strategy_override(result, strategy_requested=requested_strategy)
+            if requested_strategy != normalized_strategy else result
+        )
     if normalized_strategy == "dfquad":
         raise ValueError(
             "strategy='dfquad' is ambiguous; use 'dfquad_quad' or 'dfquad_baf'"
@@ -1217,6 +1230,54 @@ def _compute_exact_dp(
         strategy_metadata={
             "backend": "grounded_edge_tracking_td",
             "paper_conformance": "adapted_not_popescu_iou_witness_dp",
+        },
+    )
+
+
+def _compute_paper_td(
+    praf: ProbabilisticAF,
+    semantics: str,
+    *,
+    query_kind: str,
+    inference_mode: str | None,
+    queried_set: tuple[str, ...] | None,
+) -> PrAFResult:
+    """Exact complete-extension probability via the paper-faithful TD backend."""
+    if query_kind != "extension_probability" or inference_mode is not None:
+        raise ValueError("paper_td currently only supports extension_probability queries")
+    if queried_set is None:
+        raise ValueError("paper_td requires queried_set")
+
+    from argumentation.probabilistic_treedecomp import (
+        compute_paper_exact_extension_probability,
+    )
+
+    result = compute_paper_exact_extension_probability(
+        praf,
+        queried_set=frozenset(queried_set),
+        semantics=semantics,
+    )
+    return PrAFResult(
+        acceptance_probs=None,
+        extension_probability=result.extension_probability,
+        strategy_used="paper_td",
+        strategy_requested="paper_td",
+        downgraded_from=None,
+        samples=None,
+        confidence_interval_half=None,
+        semantics=semantics,
+        query_kind=query_kind,
+        inference_mode=None,
+        queried_set=queried_set,
+        strategy_metadata={
+            "backend": result.backend,
+            "paper_conformance": "popescu_wallner_2024_algorithm_1",
+            "treewidth": result.treewidth,
+            "node_count": result.node_count,
+            "root_table_rows": result.root_table_rows,
+            "root_probability_mass": result.root_probability_mass,
+            "table_summaries": result.table_summaries,
+            "argument_witnesses": result.argument_witnesses,
         },
     )
 
