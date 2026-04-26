@@ -271,6 +271,120 @@ def paper_introduce_rows(
     )
 
 
+def paper_forget_rows(
+    child_rows: tuple[PaperTDRow, ...],
+    *,
+    argument: str,
+) -> tuple[PaperTDRow, ...]:
+    """Apply the paper TD forget transition for one argument.
+
+    Popescu and Wallner 2024, Algorithm 3 filters rows whose forgotten
+    out/undecided label lacks a witness, then removes the forgotten argument,
+    incident defeats, and witness facts from the row state.
+    """
+    forgotten_rows: list[PaperTDRow] = []
+    for row in child_rows:
+        label = row.labels.get(argument)
+        if label in {PaperTDLabel.OUT, PaperTDLabel.UNDECIDED} and argument not in row.witnesses:
+            continue
+
+        labels = {
+            row_argument: row_label
+            for row_argument, row_label in row.labels.items()
+            if row_argument != argument
+        }
+        witnesses = {
+            row_argument: witness
+            for row_argument, witness in row.witnesses.items()
+            if row_argument != argument and witness != argument
+        }
+        forgotten_rows.append(
+            PaperTDRow(
+                present_arguments=row.present_arguments - frozenset({argument}),
+                active_defeats=frozenset(
+                    defeat
+                    for defeat in row.active_defeats
+                    if argument not in defeat
+                ),
+                labels=labels,
+                witnesses=witnesses,
+                probability=row.probability,
+            )
+        )
+
+    return tuple(
+        sorted(
+            _paper_td_merge_rows(forgotten_rows),
+            key=_paper_td_row_sort_key,
+        )
+    )
+
+
+def paper_join_rows(
+    left_rows: tuple[PaperTDRow, ...],
+    right_rows: tuple[PaperTDRow, ...],
+    *,
+    bag: frozenset[str],
+    p_arguments: dict[str, float],
+    p_defeats: dict[tuple[str, str], float],
+    all_defeats: frozenset[tuple[str, str]],
+) -> tuple[PaperTDRow, ...]:
+    """Apply the paper TD join transition for two child tables.
+
+    Popescu and Wallner 2024, Algorithm 4 combines compatible rows and divides
+    out the probability mass common to both child tables for the current bag.
+    """
+    joined_rows: list[PaperTDRow] = []
+    right_by_structure: dict[
+        tuple[
+            frozenset[str],
+            frozenset[tuple[str, str]],
+            tuple[tuple[str, PaperTDLabel], ...],
+        ],
+        list[PaperTDRow],
+    ] = {}
+    for right in right_rows:
+        right_by_structure.setdefault(_paper_td_structure_key(right), []).append(right)
+
+    for left in left_rows:
+        for right in right_by_structure.get(_paper_td_structure_key(left), ()):
+            witnesses = dict(left.witnesses)
+            compatible = True
+            for argument, witness in right.witnesses.items():
+                if argument in witnesses and witnesses[argument] != witness:
+                    compatible = False
+                    break
+                witnesses[argument] = witness
+            if not compatible:
+                continue
+
+            common_probability = _paper_td_common_probability(
+                left,
+                bag=bag,
+                p_arguments=p_arguments,
+                p_defeats=p_defeats,
+                all_defeats=all_defeats,
+            )
+            if common_probability < 1e-18:
+                continue
+            joined_rows.append(
+                PaperTDRow(
+                    present_arguments=left.present_arguments,
+                    active_defeats=left.active_defeats,
+                    labels=dict(left.labels),
+                    witnesses=witnesses,
+                    probability=left.probability * right.probability / common_probability,
+                )
+            )
+
+    return tuple(
+        sorted(
+            _paper_td_merge_rows(joined_rows),
+            key=_paper_td_row_sort_key,
+        )
+    )
+
+
 def _paper_td_accepts_required_in(
     row: PaperTDRow,
     queried_in: frozenset[str],
@@ -345,6 +459,50 @@ def _paper_td_update_witnesses(
             if attacker is not None:
                 witnesses[argument] = attacker
     return witnesses
+
+
+def _paper_td_structure_key(
+    row: PaperTDRow,
+) -> tuple[
+    frozenset[str],
+    frozenset[tuple[str, str]],
+    tuple[tuple[str, PaperTDLabel], ...],
+]:
+    return (
+        row.present_arguments,
+        row.active_defeats,
+        tuple(sorted(row.labels.items())),
+    )
+
+
+def _paper_td_common_probability(
+    row: PaperTDRow,
+    *,
+    bag: frozenset[str],
+    p_arguments: dict[str, float],
+    p_defeats: dict[tuple[str, str], float],
+    all_defeats: frozenset[tuple[str, str]],
+) -> float:
+    probability = 1.0
+    for argument in sorted(bag):
+        p_argument = p_arguments.get(argument, 1.0)
+        if argument in row.present_arguments:
+            probability *= p_argument
+        else:
+            probability *= 1.0 - p_argument
+
+    bag_defeats = sorted(
+        defeat
+        for defeat in all_defeats
+        if defeat[0] in bag and defeat[1] in bag
+    )
+    for defeat in bag_defeats:
+        p_defeat = p_defeats.get(defeat, 1.0)
+        if defeat in row.active_defeats:
+            probability *= p_defeat
+        else:
+            probability *= 1.0 - p_defeat
+    return probability
 
 
 def _paper_td_merge_rows(rows: list[PaperTDRow]) -> tuple[PaperTDRow, ...]:
