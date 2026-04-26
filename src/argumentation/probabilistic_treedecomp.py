@@ -19,8 +19,11 @@ only local state per bag, achieving the theoretical O(2^tw) bound.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
+from itertools import product
 from typing import TYPE_CHECKING
 
+from argumentation.labelling import Label, Labelling
 from argumentation.dung import ArgumentationFramework
 
 if TYPE_CHECKING:
@@ -143,6 +146,251 @@ class ExactDPDiagnostics:
     component_count: int
     root_table_rows: int
     root_probability_mass: float
+
+
+class PaperTDLabel(Enum):
+    """The I/O/U labels used by Popescu and Wallner's TD tables."""
+
+    IN = "I"
+    OUT = "O"
+    UNDECIDED = "U"
+
+
+@dataclass
+class PaperTDRow:
+    """One row `(s, w, p)` in the paper-faithful TD dynamic program.
+
+    Popescu and Wallner 2024, p.590 defines a row as a structure `s`, a
+    witness `w`, and a probability `p`. The structure is represented here by
+    the visible subframework components and its partial labelling.
+    """
+
+    present_arguments: frozenset[str]
+    active_defeats: frozenset[tuple[str, str]]
+    labels: dict[str, PaperTDLabel]
+    witnesses: dict[str, str]
+    probability: float
+
+
+def paper_leaf_rows() -> tuple[PaperTDRow, ...]:
+    """Return the unit table for a nice-TD leaf node.
+
+    Popescu and Wallner 2024, Algorithm 1 line 4 initializes a leaf table with
+    the empty structure, empty witness, and probability 1.
+    """
+    return (
+        PaperTDRow(
+            present_arguments=frozenset(),
+            active_defeats=frozenset(),
+            labels={},
+            witnesses={},
+            probability=1.0,
+        ),
+    )
+
+
+def paper_introduce_rows(
+    child_rows: tuple[PaperTDRow, ...],
+    *,
+    argument: str,
+    bag: frozenset[str],
+    all_defeats: frozenset[tuple[str, str]],
+    p_argument: float,
+    p_defeats: dict[tuple[str, str], float],
+    queried_in: frozenset[str],
+) -> tuple[PaperTDRow, ...]:
+    """Apply the paper TD introduce transition for one argument.
+
+    This implements the first narrow part of Popescu and Wallner 2024,
+    Algorithm 2: branch on whether the introduced argument is present, branch
+    on incident defeats when present, label resulting structures, update simple
+    OUT/UNDEC witnesses, and filter rows that violate required in-arguments.
+    """
+    introduced_rows: list[PaperTDRow] = []
+    for row in child_rows:
+        if p_argument != 1.0:
+            absent_row = PaperTDRow(
+                present_arguments=row.present_arguments,
+                active_defeats=row.active_defeats,
+                labels=dict(row.labels),
+                witnesses=dict(row.witnesses),
+                probability=row.probability * (1.0 - p_argument),
+            )
+            if _paper_td_accepts_required_in(absent_row, queried_in):
+                introduced_rows.append(absent_row)
+
+        present_arguments = row.present_arguments | frozenset({argument})
+        incident_defeats = tuple(
+            sorted(
+                defeat
+                for defeat in all_defeats
+                if argument in defeat
+                and defeat[0] in present_arguments
+                and defeat[1] in present_arguments
+            )
+        )
+        for selected in product((False, True), repeat=len(incident_defeats)):
+            active_defeats = set(row.active_defeats)
+            p_edges = 1.0
+            for included, defeat in zip(selected, incident_defeats, strict=True):
+                probability = p_defeats.get(defeat, 1.0)
+                if included:
+                    active_defeats.add(defeat)
+                    p_edges *= probability
+                else:
+                    p_edges *= 1.0 - probability
+
+            if p_edges < 1e-18:
+                continue
+
+            for labels in _paper_td_complete_labels(
+                present_arguments,
+                frozenset(active_defeats),
+                prior_labels=row.labels,
+            ):
+                witnesses = _paper_td_update_witnesses(
+                    labels,
+                    frozenset(active_defeats),
+                    row.witnesses,
+                )
+                present_row = PaperTDRow(
+                    present_arguments=present_arguments,
+                    active_defeats=frozenset(active_defeats),
+                    labels=labels,
+                    witnesses=witnesses,
+                    probability=row.probability * p_argument * p_edges,
+                )
+                if _paper_td_accepts_required_in(present_row, queried_in):
+                    introduced_rows.append(present_row)
+
+    return tuple(
+        sorted(
+            _paper_td_merge_rows(introduced_rows),
+            key=_paper_td_row_sort_key,
+        )
+    )
+
+
+def _paper_td_accepts_required_in(
+    row: PaperTDRow,
+    queried_in: frozenset[str],
+) -> bool:
+    return all(row.labels.get(argument) is PaperTDLabel.IN for argument in queried_in)
+
+
+def _paper_td_complete_labels(
+    present_arguments: frozenset[str],
+    active_defeats: frozenset[tuple[str, str]],
+    *,
+    prior_labels: dict[str, PaperTDLabel],
+) -> tuple[dict[str, PaperTDLabel], ...]:
+    framework = ArgumentationFramework(
+        arguments=present_arguments,
+        defeats=active_defeats,
+    )
+    rows: list[dict[str, PaperTDLabel]] = []
+    from argumentation.dung import complete_extensions
+
+    for extension in complete_extensions(framework, backend="brute"):
+        labelling = Labelling.from_extension(framework, extension)
+        labels = {
+            argument: _paper_td_label_from_dung(label)
+            for argument, label in labelling.statuses.items()
+        }
+        if all(labels.get(argument) is label for argument, label in prior_labels.items()):
+            rows.append(labels)
+    return tuple(sorted(rows, key=lambda labels: tuple(sorted(labels.items()))))
+
+
+def _paper_td_label_from_dung(label: Label) -> PaperTDLabel:
+    if label is Label.IN:
+        return PaperTDLabel.IN
+    if label is Label.OUT:
+        return PaperTDLabel.OUT
+    return PaperTDLabel.UNDECIDED
+
+
+def _paper_td_update_witnesses(
+    labels: dict[str, PaperTDLabel],
+    active_defeats: frozenset[tuple[str, str]],
+    prior_witnesses: dict[str, str],
+) -> dict[str, str]:
+    witnesses = dict(prior_witnesses)
+    for argument, label in sorted(labels.items()):
+        if label is PaperTDLabel.IN:
+            witnesses.pop(argument, None)
+            continue
+        if argument in witnesses:
+            continue
+        if label is PaperTDLabel.OUT:
+            attacker = next(
+                (
+                    source
+                    for source, target in sorted(active_defeats)
+                    if target == argument and labels.get(source) is PaperTDLabel.IN
+                ),
+                None,
+            )
+            if attacker is not None:
+                witnesses[argument] = attacker
+        elif label is PaperTDLabel.UNDECIDED:
+            attacker = next(
+                (
+                    source
+                    for source, target in sorted(active_defeats)
+                    if target == argument and labels.get(source) is PaperTDLabel.UNDECIDED
+                ),
+                None,
+            )
+            if attacker is not None:
+                witnesses[argument] = attacker
+    return witnesses
+
+
+def _paper_td_merge_rows(rows: list[PaperTDRow]) -> tuple[PaperTDRow, ...]:
+    merged: dict[
+        tuple[
+            frozenset[str],
+            frozenset[tuple[str, str]],
+            tuple[tuple[str, PaperTDLabel], ...],
+            tuple[tuple[str, str], ...],
+        ],
+        PaperTDRow,
+    ] = {}
+    for row in rows:
+        key = (
+            row.present_arguments,
+            row.active_defeats,
+            tuple(sorted(row.labels.items())),
+            tuple(sorted(row.witnesses.items())),
+        )
+        if key in merged:
+            merged[key].probability += row.probability
+        else:
+            merged[key] = PaperTDRow(
+                present_arguments=row.present_arguments,
+                active_defeats=row.active_defeats,
+                labels=dict(row.labels),
+                witnesses=dict(row.witnesses),
+                probability=row.probability,
+            )
+    return tuple(merged.values())
+
+
+def _paper_td_row_sort_key(
+    row: PaperTDRow,
+) -> tuple[
+    tuple[str, ...],
+    tuple[tuple[str, str], ...],
+    tuple[tuple[str, str], ...],
+    tuple[tuple[str, str], ...],
+]:
+    return (
+        tuple(sorted(row.present_arguments)),
+        tuple(sorted(row.active_defeats)),
+        tuple(sorted((argument, label.value) for argument, label in row.labels.items())),
+        tuple(sorted(row.witnesses.items())),
+    )
 
 
 # ===================================================================
