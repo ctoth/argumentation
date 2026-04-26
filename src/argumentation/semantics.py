@@ -16,6 +16,8 @@ from argumentation.dung import (
     complete_extensions,
     grounded_extension,
     preferred_extensions,
+    semi_stable_extensions,
+    stage_extensions,
     stable_extensions,
 )
 from argumentation.partial_af import (
@@ -62,6 +64,10 @@ def _dung_extensions(
         return _sorted_extensions(tuple(complete_extensions(framework)))
     if semantics == "preferred":
         return _sorted_extensions(tuple(preferred_extensions(framework)))
+    if semantics == "semi-stable":
+        return _sorted_extensions(tuple(semi_stable_extensions(framework)))
+    if semantics == "stage":
+        return _sorted_extensions(tuple(stage_extensions(framework)))
     if semantics == "stable":
         return _sorted_extensions(tuple(stable_extensions(framework)))
     raise ValueError(f"Unknown Dung semantics: {semantics}")

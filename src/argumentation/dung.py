@@ -153,6 +153,15 @@ def characteristic_fn(
     )
 
 
+def range_of(
+    s: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    """Return ``s`` plus every argument defeated by an argument in ``s``."""
+    defeated = frozenset(target for attacker, target in defeats if attacker in s)
+    return s | defeated
+
+
 def admissible(
     s: frozenset[str],
     all_args: frozenset[str],
@@ -325,3 +334,57 @@ def stable_extensions(
                 results.append(s)
 
     return results
+
+
+def _range_maximal_extensions(
+    candidates: list[frozenset[str]],
+    defeats: frozenset[tuple[str, str]],
+) -> list[frozenset[str]]:
+    maximal: list[frozenset[str]] = []
+    ranges = {
+        candidate: range_of(candidate, defeats)
+        for candidate in candidates
+    }
+    for candidate in candidates:
+        candidate_range = ranges[candidate]
+        if not any(candidate_range < other_range for other_range in ranges.values()):
+            maximal.append(candidate)
+    return maximal
+
+
+def semi_stable_extensions(
+    framework: ArgumentationFramework, *, backend: str = "auto"
+) -> list[frozenset[str]]:
+    """Compute all semi-stable extensions.
+
+    A semi-stable extension is a complete extension whose range is maximal
+    under set inclusion.
+
+    Reference:
+        Caminada 2011, Definition 2.3.
+    """
+    completes = complete_extensions(framework, backend=backend)
+    return _range_maximal_extensions(completes, framework.defeats)
+
+
+def stage_extensions(
+    framework: ArgumentationFramework, *, backend: str = "auto"
+) -> list[frozenset[str]]:
+    """Compute all stage extensions by range-maximal conflict-free sets.
+
+    Stage semantics is implemented by brute-force subset enumeration in this
+    slice. Solver-backed stage reasoning is a later workstream item.
+    """
+    if backend not in {"auto", "brute"}:
+        raise ValueError(f"Unknown or unsupported stage backend: {backend}")
+
+    args = framework.arguments
+    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    candidates: list[frozenset[str]] = []
+    for size in range(len(args) + 1):
+        for subset in combinations(sorted(args), size):
+            s = frozenset(subset)
+            if conflict_free(s, cf_relation):
+                candidates.append(s)
+
+    return _range_maximal_extensions(candidates, framework.defeats)
