@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import argumentation
 from argumentation.dung import ArgumentationFramework
 from argumentation.ranking import (
     burden_numbers,
@@ -9,6 +10,11 @@ from argumentation.ranking import (
     categoriser_ranking,
     categoriser_scores,
 )
+
+
+def test_ranking_module_is_exported() -> None:
+    assert argumentation.ranking.categoriser_scores is categoriser_scores
+    assert "ranking" in argumentation.__all__
 
 
 def _bonzon_example() -> ArgumentationFramework:
