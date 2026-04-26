@@ -92,6 +92,48 @@ def accrual_envelope(
     )
 
 
+def accrual_grounded_labelling(
+    arguments: frozenset[AccrualArgument],
+    *,
+    max_iterations: int = 1_000,
+) -> Labelling:
+    """Compute the least fixed point of the accrual labelling operator.
+
+    Prakken 2019 studies the Dung-style relation between ordinary labellings
+    and accrual-aware labellings. This operator keeps the existing package
+    applicability definitions explicit: strongly applicable arguments become
+    in, arguments that are not weakly applicable become out, and the remainder
+    stay undecided until the least fixed point is reached.
+    """
+    if max_iterations <= 0:
+        raise ValueError("max_iterations must be positive")
+    identifiers = frozenset(argument.identifier for argument in arguments)
+    by_identifier = {argument.identifier: argument for argument in arguments}
+    labelling = Labelling.from_statuses(
+        arguments=identifiers,
+        statuses={identifier: Label.UNDEC for identifier in identifiers},
+    )
+
+    for _ in range(max_iterations):
+        statuses: dict[str, Label] = {}
+        for identifier, argument in by_identifier.items():
+            if strongly_applicable(argument, labelling):
+                statuses[identifier] = Label.IN
+            elif not weakly_applicable(argument, labelling):
+                statuses[identifier] = Label.OUT
+            else:
+                statuses[identifier] = Label.UNDEC
+        next_labelling = Labelling.from_statuses(
+            arguments=identifiers,
+            statuses=statuses,
+        )
+        if next_labelling.statuses == labelling.statuses:
+            return next_labelling
+        labelling = next_labelling
+
+    raise RuntimeError("accrual labelling did not converge")
+
+
 def _validate_known(argument: AccrualArgument, labelling: Labelling) -> None:
     required = {argument.identifier} | set(argument.undercutters) | set(argument.immediate_subarguments)
     unknown = sorted(required - labelling.arguments)
