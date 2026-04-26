@@ -135,6 +135,33 @@ def solve_aspic_grounded(
     )
 
 
+def solve_aspic_with_backend(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+    pref: PreferenceConfig,
+    *,
+    backend: str,
+    semantics: str = "grounded",
+) -> ASPICQueryResult:
+    """Dispatch an ASPIC+ query to a named optional backend."""
+    if backend == "materialized_reference" and semantics == "grounded":
+        return solve_aspic_grounded(system, kb, pref)
+
+    encoding = encode_aspic_theory(system, kb, pref)
+    return ASPICQueryResult(
+        status="unavailable_backend",
+        semantics=semantics,
+        backend=backend,
+        accepted_argument_ids=frozenset(),
+        accepted_conclusions=frozenset(),
+        encoding=encoding,
+        metadata={
+            "reason": "backend is not installed or registered",
+            "encoding": encoding.metadata["encoding"],
+        },
+    )
+
+
 def _literal_id(literal: Literal) -> str:
     return repr(literal)
 
@@ -168,4 +195,5 @@ __all__ = [
     "ASPICQueryResult",
     "encode_aspic_theory",
     "solve_aspic_grounded",
+    "solve_aspic_with_backend",
 ]
