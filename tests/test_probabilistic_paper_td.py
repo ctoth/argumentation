@@ -202,6 +202,28 @@ def test_paper_td_evaluator_matches_enumeration_on_complete_extension_query() ->
     assert result.table_summaries
 
 
+def test_paper_td_evaluator_lifts_witness_metadata_for_rejected_arguments() -> None:
+    praf = ProbabilisticAF(
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a", "b", "c"}),
+            defeats=frozenset({("a", "b"), ("c", "b")}),
+        ),
+        p_args={"a": 1.0, "b": 1.0, "c": 1.0},
+        p_defeats={("a", "b"): 1.0, ("c", "b"): 1.0},
+    )
+
+    result = compute_paper_exact_extension_probability(
+        praf,
+        queried_set=frozenset({"a", "c"}),
+    )
+
+    assert result.argument_witnesses["a"].label is PaperTDLabel.IN
+    assert result.argument_witnesses["c"].label is PaperTDLabel.IN
+    assert result.argument_witnesses["b"].label is PaperTDLabel.OUT
+    assert result.argument_witnesses["b"].witnesses <= frozenset({"a", "c"})
+    assert result.argument_witnesses["b"].witnesses
+
+
 @pytest.mark.differential
 def test_paper_td_evaluator_matches_enumeration_on_low_treewidth_queries() -> None:
     frameworks = (
