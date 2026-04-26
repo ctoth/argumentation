@@ -2,7 +2,7 @@
 
 Date: 2026-04-26
 
-Status: executable specification for the next package-first workstream
+Status: package tracks executed; propstore integration gated by Semantic OS readiness
 
 This spec picks up the work that remains after
 `plans/package-first-argumentation-sota-workstream-2026-04-26.md`.
@@ -20,6 +20,27 @@ remaining high-payoff work is:
   intentionally narrow package surfaces;
 - integrate into propstore only after propstore's Semantic OS plan reaches the
   situated assertion and projection boundary.
+
+## Execution Ledger
+
+Package-first execution completed Tracks A through D in this repository:
+
+- Track A landed the paper-faithful Popescu and Wallner I/O/U witness-table
+  dynamic program behind the explicit `paper_td` probabilistic strategy.
+- Track B landed deterministic ASPIC+ encoding objects, a materialized
+  reference grounded query surface, and typed backend absence metadata.
+- Track C landed a package-native incomplete ASPIC+ completion oracle with
+  stable, relevant, unknown, and unsupported classifications plus witnesses.
+- Track D landed exact Shapley-style gradual attack impact, accrual grounded
+  labelling, and Wallner-style subjective ASPIC+ theory projection.
+
+Propstore readiness was checked against
+`../propstore/plans/epistemic-os-workstreams-2026-04-25.md`,
+`../propstore/plans`, `../propstore/proposals`, and the
+`../propstore/papers` inventory. The gate is not open: the active propstore
+control surface still places argumentation behind situated assertions and the
+typed projection boundary, and it does not delegate this argumentation child
+scope now. No propstore production code was changed by this workstream.
 
 ## Control Rules
 
