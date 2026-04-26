@@ -87,6 +87,31 @@ class NiceTreeDecomposition:
     root: int
 
 
+@dataclass(frozen=True)
+class DPTableSummary:
+    """Summary of one dynamic-programming table built for a nice TD node."""
+
+    component_index: int
+    node_id: int
+    node_type: str
+    bag: frozenset[str]
+    row_count: int
+    probability_mass: float
+
+
+@dataclass(frozen=True)
+class ExactDPDiagnostics:
+    """Acceptance probabilities plus auditable table-level DP diagnostics."""
+
+    acceptance_probs: dict[str, float]
+    table_summaries: tuple[DPTableSummary, ...]
+    treewidth: int
+    node_count: int
+    component_count: int
+    root_table_rows: int
+    root_probability_mass: float
+
+
 # ===================================================================
 # Treewidth estimation: min-degree heuristic
 # ===================================================================
@@ -476,6 +501,19 @@ def compute_exact_dp(
     return _compute_grounded_dp(praf)
 
 
+def compute_exact_dp_with_diagnostics(
+    praf: ProbabilisticAF,
+    semantics: str = "grounded",
+) -> ExactDPDiagnostics:
+    """Exact grounded acceptance with diagnostics for the current DP tables."""
+    if not supports_exact_dp(praf, semantics):
+        raise ValueError(
+            "exact_dp only supports grounded semantics on defeat-only probabilistic frameworks"
+        )
+
+    return _compute_grounded_dp_with_diagnostics(praf)
+
+
 # ===================================================================
 # Grounded-semantics tree-decomposition DP
 # Per Popescu & Wallner (2024, Algorithms 1-3, p.5-7)
@@ -500,6 +538,16 @@ _RowKey = tuple[
     frozenset[str],                    # present_forgotten
 ]
 DPTable = dict[_RowKey, float]
+
+
+@dataclass(frozen=True)
+class _GroundedDPComponentResult:
+    acceptance_probs: dict[str, float]
+    table_summaries: tuple[DPTableSummary, ...]
+    treewidth: int
+    node_count: int
+    root_table_rows: int
+    root_probability_mass: float
 
 
 def _make_key(
@@ -539,13 +587,24 @@ def _compute_grounded_dp(praf: ProbabilisticAF) -> dict[str, float]:
     For grounded semantics, each subframework has exactly one grounded
     extension (Dung 1995, Theorem 25), so P_ext = P_acc.
     """
+    return _compute_grounded_dp_with_diagnostics(praf).acceptance_probs
+
+
+def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagnostics:
     af = praf.framework
     args_list = sorted(af.arguments)
 
     if not args_list:
-        return {}
+        return ExactDPDiagnostics(
+            acceptance_probs={},
+            table_summaries=(),
+            treewidth=0,
+            node_count=0,
+            component_count=0,
+            root_table_rows=0,
+            root_probability_mass=1.0,
+        )
 
-    # Extract probabilities as floats.
     from argumentation.probabilistic import _expectation
 
     p_arg: dict[str, float] = {
@@ -555,13 +614,17 @@ def _compute_grounded_dp(praf: ProbabilisticAF) -> dict[str, float]:
         d: _expectation(praf.p_defeats[d]) for d in af.defeats
     }
 
-    # Decompose into connected components.
-    # Per Hunter & Thimm (2017, Prop 18): components are independent.
     from argumentation.probabilistic_components import connected_components
     components = connected_components(praf)
 
     acceptance: dict[str, float] = {}
-    for comp_args in components:
+    summaries: list[DPTableSummary] = []
+    treewidth = 0
+    node_count = 0
+    root_table_rows = 0
+    root_probability_mass = 1.0
+
+    for component_index, comp_args in enumerate(components):
         comp_defeats = frozenset(
             (f, t) for f, t in af.defeats
             if f in comp_args and t in comp_args
@@ -576,12 +639,25 @@ def _compute_grounded_dp(praf: ProbabilisticAF) -> dict[str, float]:
                 ) if af.attacks is not None else None
             ),
         )
-        comp_result = _compute_grounded_dp_component(
-            comp_af, p_arg, p_defeat,
+        comp_result = _compute_grounded_dp_component_result(
+            comp_af, p_arg, p_defeat, component_index,
         )
-        acceptance.update(comp_result)
+        acceptance.update(comp_result.acceptance_probs)
+        summaries.extend(comp_result.table_summaries)
+        treewidth = max(treewidth, comp_result.treewidth)
+        node_count += comp_result.node_count
+        root_table_rows += comp_result.root_table_rows
+        root_probability_mass *= comp_result.root_probability_mass
 
-    return acceptance
+    return ExactDPDiagnostics(
+        acceptance_probs=acceptance,
+        table_summaries=tuple(summaries),
+        treewidth=treewidth,
+        node_count=node_count,
+        component_count=len(components),
+        root_table_rows=root_table_rows,
+        root_probability_mass=root_probability_mass,
+    )
 
 
 def _compute_grounded_dp_component(
@@ -589,6 +665,17 @@ def _compute_grounded_dp_component(
     p_arg: dict[str, float],
     p_defeat: dict[tuple[str, str], float],
 ) -> dict[str, float]:
+    return _compute_grounded_dp_component_result(
+        af, p_arg, p_defeat, component_index=0,
+    ).acceptance_probs
+
+
+def _compute_grounded_dp_component_result(
+    af: ArgumentationFramework,
+    p_arg: dict[str, float],
+    p_defeat: dict[tuple[str, str], float],
+    component_index: int,
+) -> _GroundedDPComponentResult:
     """Edge-tracking DP for one connected component (grounded semantics).
 
     Instead of I/O/U labels, tracks which defeat edges are active in each
@@ -603,7 +690,7 @@ def _compute_grounded_dp_component(
     args_list = sorted(af.arguments)
 
     if not args_list:
-        return {}
+        return _GroundedDPComponentResult({}, (), 0, 0, 0, 1.0)
 
     defeat_set: set[tuple[str, str]] = set(af.defeats)
 
@@ -652,6 +739,7 @@ def _compute_grounded_dp_component(
 
     # DP tables.
     tables: dict[int, DPTable] = {}
+    table_summaries: list[DPTableSummary] = []
 
     for nid in post_order:
         node = ntd.nodes[nid]
@@ -677,6 +765,18 @@ def _compute_grounded_dp_component(
                 node, tables[node.children[0]], tables[node.children[1]],
             )
 
+        table = tables[nid]
+        table_summaries.append(
+            DPTableSummary(
+                component_index=component_index,
+                node_id=nid,
+                node_type=node.node_type,
+                bag=node.bag,
+                row_count=len(table),
+                probability_mass=sum(table.values()),
+            )
+        )
+
         # Free child tables.
         for child in node.children:
             if child in tables:
@@ -687,6 +787,7 @@ def _compute_grounded_dp_component(
     # Run the grounded fixpoint on each configuration.
     acceptance: dict[str, float] = {a: 0.0 for a in args_list}
     root_table = tables.get(ntd.root, {})
+    root_probability_mass = sum(root_table.values())
     for (_, edges_fs, present_fs), prob in root_table.items():
         if prob < 1e-18:
             continue
@@ -715,7 +816,14 @@ def _compute_grounded_dp_component(
             if labels[a] == "I":
                 acceptance[a] += prob
 
-    return acceptance
+    return _GroundedDPComponentResult(
+        acceptance_probs=acceptance,
+        table_summaries=tuple(table_summaries),
+        treewidth=td.width,
+        node_count=len(ntd.nodes),
+        root_table_rows=len(root_table),
+        root_probability_mass=root_probability_mass,
+    )
 
 
 
