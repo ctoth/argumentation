@@ -3,9 +3,18 @@ from __future__ import annotations
 import pytest
 
 import argumentation
-from argumentation.aspic import GroundAtom, KnowledgeBase, Literal, Rule
+from argumentation.aspic import (
+    ArgumentationSystem,
+    ContrarinessFn,
+    GroundAtom,
+    KnowledgeBase,
+    Literal,
+    PreferenceConfig,
+    Rule,
+)
 from argumentation.value_based import (
     complementary_literals,
+    subjective_argumentation_theory,
     subjective_defeasible_rules,
     subjective_knowledge_base,
 )
@@ -85,3 +94,46 @@ def test_subjective_defeasible_rules_reject_unnamed_defeasible_rules() -> None:
 
     with pytest.raises(ValueError, match="name"):
         subjective_defeasible_rules(frozenset({unnamed}), clean=frozenset({lit("a"), lit("b")}))
+
+
+def test_subjective_argumentation_theory_returns_filtered_projection() -> None:
+    d1 = rule("d1", ("a",), "b")
+    d2 = rule("d2", ("b",), "c")
+    system = ArgumentationSystem(
+        language=frozenset({
+            lit("a"),
+            lit("b"),
+            lit("c"),
+            lit("d1"),
+            lit("d2"),
+            lit("b").contrary,
+            lit("d2").contrary,
+        }),
+        contrariness=ContrarinessFn(contradictories=frozenset({(lit("b"), lit("b").contrary)})),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({d1, d2}),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({lit("a"), lit("b")}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+
+    subjective = subjective_argumentation_theory(
+        system,
+        kb,
+        pref,
+        propositions=frozenset({lit("a"), lit("b"), lit("c"), lit("d1"), lit("d2")}),
+        clean=frozenset({lit("a"), lit("c"), lit("d1")}),
+    )
+
+    assert subjective.knowledge_base.premises == frozenset({
+        lit("a"),
+        lit("b").contrary,
+        lit("d2").contrary,
+    })
+    assert subjective.system.defeasible_rules == frozenset({d1})
+    assert subjective.projection.arguments
+    assert subjective.projection.framework.arguments
