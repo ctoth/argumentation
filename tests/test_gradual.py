@@ -6,6 +6,7 @@ import argumentation
 from argumentation.gradual import (
     WeightedBipolarGraph,
     quadratic_energy_strengths,
+    revised_direct_impact,
 )
 
 
@@ -89,3 +90,32 @@ def test_weighted_bipolar_graph_rejects_overlapping_edges() -> None:
             attacks=frozenset({("a", "b")}),
             supports=frozenset({("a", "b")}),
         )
+
+
+def test_revised_direct_impact_handles_self_attack() -> None:
+    graph = WeightedBipolarGraph(
+        arguments=frozenset({"a"}),
+        initial_weights={"a": 0.5},
+        attacks=frozenset({("a", "a")}),
+    )
+
+    impact = revised_direct_impact(graph, influencers=frozenset({"a"}), target="a")
+
+    assert impact.removed_attacks == frozenset({("a", "a")})
+    assert impact.removed_arguments == frozenset()
+    assert impact.after_argument_removal_strength == pytest.approx(0.4)
+    assert impact.after_attack_removal_strength == pytest.approx(0.5)
+    assert impact.impact == pytest.approx(0.1)
+
+
+def test_revised_direct_impact_is_zero_for_unrelated_argument() -> None:
+    graph = WeightedBipolarGraph(
+        arguments=frozenset({"a", "b", "c"}),
+        initial_weights={"a": 0.5, "b": 0.5, "c": 0.9},
+        attacks=frozenset({("a", "b")}),
+    )
+
+    impact = revised_direct_impact(graph, influencers=frozenset({"c"}), target="b")
+
+    assert impact.removed_attacks == frozenset()
+    assert impact.impact == pytest.approx(0.0)
