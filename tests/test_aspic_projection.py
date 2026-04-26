@@ -65,7 +65,7 @@ def test_build_abstract_framework_assigns_deterministic_external_ids() -> None:
     q = Literal(GroundAtom("q"))
     system = ArgumentationSystem(
         language=frozenset({p, q}),
-        contrariness=ContrarinessFn(),
+        contrariness=ContrarinessFn(frozenset()),
         strict_rules=frozenset(),
         defeasible_rules=frozenset(),
     )

@@ -1296,6 +1296,59 @@ def compute_defeats(
     )
 
 
+@dataclass(frozen=True)
+class ASPICAbstractProjection:
+    """Materialized ASPIC+ projection into a Dung-style framework."""
+
+    arguments: frozenset[Argument]
+    attacks: frozenset[Attack]
+    defeats: frozenset[Attack]
+    framework: ArgumentationFramework
+    argument_to_id: dict[Argument, str]
+    id_to_argument: dict[str, Argument]
+
+
+def build_abstract_framework(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+    pref: PreferenceConfig,
+    *,
+    id_prefix: str = "arg",
+) -> ASPICAbstractProjection:
+    """Build arguments, attacks, defeats, and the derived Dung AF together."""
+    from argumentation.dung import ArgumentationFramework
+
+    arguments = build_arguments(system, kb)
+    attacks = compute_attacks(arguments, system)
+    defeats = compute_defeats(attacks, arguments, system, kb, pref)
+
+    argument_list = sorted(arguments, key=repr)
+    argument_to_id = {
+        argument: f"{id_prefix}_{index}"
+        for index, argument in enumerate(argument_list)
+    }
+    id_to_argument = {identifier: argument for argument, identifier in argument_to_id.items()}
+    framework = ArgumentationFramework(
+        arguments=frozenset(argument_to_id.values()),
+        attacks=frozenset(
+            (argument_to_id[attack.attacker], argument_to_id[attack.target])
+            for attack in attacks
+        ),
+        defeats=frozenset(
+            (argument_to_id[attack.attacker], argument_to_id[attack.target])
+            for attack in defeats
+        ),
+    )
+    return ASPICAbstractProjection(
+        arguments=arguments,
+        attacks=attacks,
+        defeats=defeats,
+        framework=framework,
+        argument_to_id=argument_to_id,
+        id_to_argument=id_to_argument,
+    )
+
+
 # ── Complete Structured Argumentation Framework ──────────────────
 
 
