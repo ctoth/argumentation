@@ -10,7 +10,7 @@ from argumentation.labelling import Label, Labelling
 
 
 def _labelling(statuses: dict[str, Label]) -> Labelling:
-    return Labelling.from_statuses(frozenset(statuses), statuses)
+    return Labelling.from_statuses(arguments=frozenset(statuses), statuses=statuses)
 
 
 def test_weak_and_strong_applicability_follow_labelling_statuses() -> None:
