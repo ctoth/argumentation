@@ -5,7 +5,9 @@ import pytest
 from argumentation.probabilistic_treedecomp import (
     PaperTDLabel,
     PaperTDRow,
+    paper_forget_rows,
     paper_introduce_rows,
+    paper_join_rows,
     paper_leaf_rows,
 )
 
@@ -99,3 +101,72 @@ def test_paper_td_introduce_records_out_witness_for_attacked_argument() -> None:
     assert out_rows[0].active_defeats == frozenset({("a", "b")})
     assert out_rows[0].witnesses == {"b": "a"}
     assert out_rows[0].probability == pytest.approx(0.6)
+
+
+def test_paper_td_forget_filters_out_without_witness_and_removes_local_state() -> None:
+    rows = paper_forget_rows(
+        (
+            PaperTDRow(
+                present_arguments=frozenset({"a", "b"}),
+                active_defeats=frozenset({("a", "b")}),
+                labels={"a": PaperTDLabel.IN, "b": PaperTDLabel.OUT},
+                witnesses={},
+                probability=0.2,
+            ),
+            PaperTDRow(
+                present_arguments=frozenset({"a", "b"}),
+                active_defeats=frozenset({("a", "b")}),
+                labels={"a": PaperTDLabel.IN, "b": PaperTDLabel.OUT},
+                witnesses={"b": "a"},
+                probability=0.3,
+            ),
+        ),
+        argument="b",
+    )
+
+    assert rows == (
+        PaperTDRow(
+            present_arguments=frozenset({"a"}),
+            active_defeats=frozenset(),
+            labels={"a": PaperTDLabel.IN},
+            witnesses={},
+            probability=pytest.approx(0.3),
+        ),
+    )
+
+
+def test_paper_td_join_divides_out_common_bag_probability() -> None:
+    rows = paper_join_rows(
+        (
+            PaperTDRow(
+                present_arguments=frozenset({"a"}),
+                active_defeats=frozenset(),
+                labels={"a": PaperTDLabel.IN},
+                witnesses={},
+                probability=0.4,
+            ),
+        ),
+        (
+            PaperTDRow(
+                present_arguments=frozenset({"a"}),
+                active_defeats=frozenset(),
+                labels={"a": PaperTDLabel.IN},
+                witnesses={},
+                probability=0.5,
+            ),
+        ),
+        bag=frozenset({"a"}),
+        p_arguments={"a": 0.8},
+        p_defeats={},
+        all_defeats=frozenset(),
+    )
+
+    assert rows == (
+        PaperTDRow(
+            present_arguments=frozenset({"a"}),
+            active_defeats=frozenset(),
+            labels={"a": PaperTDLabel.IN},
+            witnesses={},
+            probability=pytest.approx(0.25),
+        ),
+    )
