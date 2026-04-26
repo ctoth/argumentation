@@ -155,3 +155,10 @@ def test_exact_dp_rejects_richer_support_worlds() -> None:
     assert not supports_exact_dp(praf, "grounded")
     with pytest.raises(ValueError, match="exact_dp"):
         compute_probabilistic_acceptance(praf, strategy="exact_dp")
+
+
+def test_exact_dp_docstring_discloses_adapted_backend() -> None:
+    doc = compute_exact_dp.__doc__ or ""
+
+    assert "edge-tracking" in doc
+    assert "I/O/U labelling DP with witness" not in doc
