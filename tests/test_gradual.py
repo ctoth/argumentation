@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import pytest
 
+import argumentation
 from argumentation.gradual import (
     WeightedBipolarGraph,
     quadratic_energy_strengths,
 )
+
+
+def test_gradual_module_is_exported() -> None:
+    assert argumentation.gradual.WeightedBipolarGraph is WeightedBipolarGraph
+    assert "gradual" in argumentation.__all__
 
 
 def test_quadratic_energy_keeps_isolated_argument_at_initial_weight() -> None:
