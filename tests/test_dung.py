@@ -70,6 +70,17 @@ def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
     ]
 
 
+def _definition_range(
+    extension: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    return extension | frozenset(
+        target
+        for attacker, target in defeats
+        if attacker in extension
+    )
+
+
 def _draw_subset(data: st.DataObject, arguments: frozenset[str]) -> frozenset[str]:
     return frozenset(data.draw(st.sets(st.sampled_from(sorted(arguments)), max_size=len(arguments))))
 
@@ -719,6 +730,71 @@ class TestCompleteProperties:
         grounded = grounded_extension(framework)
         for ext in complete_extensions(framework):
             assert grounded <= ext
+
+
+class TestNewSemanticsProperties:
+    """Property coverage for non-Dung-1995 semantics added in this workstream."""
+
+    pytestmark = pytest.mark.property
+
+    @given(argumentation_frameworks(max_args=5))
+    @_PROP_SETTINGS
+    def test_semi_stable_extensions_are_complete_with_maximal_range(self, framework):
+        completes = complete_extensions(framework, backend="brute")
+        complete_ranges = {
+            complete: _definition_range(complete, framework.defeats)
+            for complete in completes
+        }
+
+        for extension in semi_stable_extensions(framework, backend="brute"):
+            assert extension in completes
+            extension_range = complete_ranges[extension]
+            assert not any(
+                extension_range < other_range
+                for other_range in complete_ranges.values()
+            )
+
+    @given(argumentation_frameworks(max_args=5))
+    @_PROP_SETTINGS
+    def test_stage_extensions_are_conflict_free_with_maximal_range(self, framework):
+        conflict_free_sets = [
+            candidate
+            for candidate in _all_subsets(framework.arguments)
+            if conflict_free(candidate, framework.defeats)
+        ]
+        ranges = {
+            candidate: _definition_range(candidate, framework.defeats)
+            for candidate in conflict_free_sets
+        }
+
+        for extension in stage_extensions(framework, backend="brute"):
+            assert extension in conflict_free_sets
+            extension_range = ranges[extension]
+            assert not any(
+                extension_range < other_range
+                for other_range in ranges.values()
+            )
+
+    @given(argumentation_frameworks(max_args=5))
+    @_PROP_SETTINGS
+    def test_ideal_is_maximal_admissible_subset_of_every_preferred(self, framework):
+        ideal = ideal_extension(framework, backend="brute")
+        preferred = preferred_extensions(framework, backend="brute")
+
+        assert admissible(ideal, framework.arguments, framework.defeats)
+        assert all(ideal <= extension for extension in preferred)
+
+        for candidate in _all_subsets(framework.arguments):
+            if not admissible(candidate, framework.arguments, framework.defeats):
+                continue
+            if all(candidate <= extension for extension in preferred):
+                assert candidate <= ideal
+
+    @given(argumentation_frameworks(max_args=5))
+    @_PROP_SETTINGS
+    def test_cf2_extensions_are_conflict_free(self, framework):
+        for extension in cf2_extensions(framework, backend="brute"):
+            assert conflict_free(extension, framework.defeats)
 
 
 class TestCharacteristicFnProperties:
