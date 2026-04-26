@@ -2,12 +2,18 @@ from __future__ import annotations
 
 import pytest
 
+import argumentation
 from argumentation.aspic import GroundAtom, KnowledgeBase, Literal, Rule
 from argumentation.value_based import (
     complementary_literals,
     subjective_defeasible_rules,
     subjective_knowledge_base,
 )
+
+
+def test_value_based_module_is_exported() -> None:
+    assert argumentation.value_based.subjective_knowledge_base is subjective_knowledge_base
+    assert "value_based" in argumentation.__all__
 
 
 def lit(name: str) -> Literal:
