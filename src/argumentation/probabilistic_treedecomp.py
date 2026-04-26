@@ -100,10 +100,43 @@ class DPTableSummary:
 
 
 @dataclass(frozen=True)
+class GroundedOutcomeProbabilities:
+    """Probability mass for one argument's grounded status outcomes."""
+
+    accepted: float
+    rejected: float
+    undecided: float
+    absent: float
+
+
+@dataclass(frozen=True)
+class GroundedOutcomeWitness:
+    """One realized subworld witnessing an argument outcome."""
+
+    argument: str
+    outcome: str
+    present_arguments: frozenset[str]
+    active_defeats: frozenset[tuple[str, str]]
+    probability: float
+
+
+@dataclass(frozen=True)
+class GroundedOutcomeWitnesses:
+    """Example realized subworlds for each possible grounded outcome."""
+
+    accepted: GroundedOutcomeWitness | None = None
+    rejected: GroundedOutcomeWitness | None = None
+    undecided: GroundedOutcomeWitness | None = None
+    absent: GroundedOutcomeWitness | None = None
+
+
+@dataclass(frozen=True)
 class ExactDPDiagnostics:
     """Acceptance probabilities plus auditable table-level DP diagnostics."""
 
     acceptance_probs: dict[str, float]
+    status_probabilities: dict[str, GroundedOutcomeProbabilities]
+    status_witnesses: dict[str, GroundedOutcomeWitnesses]
     table_summaries: tuple[DPTableSummary, ...]
     treewidth: int
     node_count: int
@@ -543,6 +576,8 @@ DPTable = dict[_RowKey, float]
 @dataclass(frozen=True)
 class _GroundedDPComponentResult:
     acceptance_probs: dict[str, float]
+    status_probabilities: dict[str, GroundedOutcomeProbabilities]
+    status_witnesses: dict[str, GroundedOutcomeWitnesses]
     table_summaries: tuple[DPTableSummary, ...]
     treewidth: int
     node_count: int
@@ -597,6 +632,8 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
     if not args_list:
         return ExactDPDiagnostics(
             acceptance_probs={},
+            status_probabilities={},
+            status_witnesses={},
             table_summaries=(),
             treewidth=0,
             node_count=0,
@@ -618,6 +655,8 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
     components = connected_components(praf)
 
     acceptance: dict[str, float] = {}
+    status_probabilities: dict[str, GroundedOutcomeProbabilities] = {}
+    status_witnesses: dict[str, GroundedOutcomeWitnesses] = {}
     summaries: list[DPTableSummary] = []
     treewidth = 0
     node_count = 0
@@ -643,6 +682,8 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
             comp_af, p_arg, p_defeat, component_index,
         )
         acceptance.update(comp_result.acceptance_probs)
+        status_probabilities.update(comp_result.status_probabilities)
+        status_witnesses.update(comp_result.status_witnesses)
         summaries.extend(comp_result.table_summaries)
         treewidth = max(treewidth, comp_result.treewidth)
         node_count += comp_result.node_count
@@ -651,6 +692,8 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
 
     return ExactDPDiagnostics(
         acceptance_probs=acceptance,
+        status_probabilities=status_probabilities,
+        status_witnesses=status_witnesses,
         table_summaries=tuple(summaries),
         treewidth=treewidth,
         node_count=node_count,
@@ -690,7 +733,7 @@ def _compute_grounded_dp_component_result(
     args_list = sorted(af.arguments)
 
     if not args_list:
-        return _GroundedDPComponentResult({}, (), 0, 0, 0, 1.0)
+        return _GroundedDPComponentResult({}, {}, {}, (), 0, 0, 0, 1.0)
 
     defeat_set: set[tuple[str, str]] = set(af.defeats)
 
@@ -786,6 +829,13 @@ def _compute_grounded_dp_component_result(
     # Each row has present_forgotten (all present args) and active_edges.
     # Run the grounded fixpoint on each configuration.
     acceptance: dict[str, float] = {a: 0.0 for a in args_list}
+    status_totals: dict[str, dict[str, float]] = {
+        a: {"accepted": 0.0, "rejected": 0.0, "undecided": 0.0, "absent": 0.0}
+        for a in args_list
+    }
+    witness_rows: dict[str, dict[str, GroundedOutcomeWitness]] = {
+        a: {} for a in args_list
+    }
     root_table = tables.get(ntd.root, {})
     root_probability_mass = sum(root_table.values())
     for (_, edges_fs, present_fs), prob in root_table.items():
@@ -812,12 +862,50 @@ def _compute_grounded_dp_component_result(
                 elif any(labels[att] == "I" for att in atts):
                     labels[a] = "O"
                     changed = True
-        for a in present:
-            if labels[a] == "I":
+        for a in args_list:
+            if a not in present:
+                outcome = "absent"
+            elif labels[a] == "I":
+                outcome = "accepted"
                 acceptance[a] += prob
+            elif labels[a] == "O":
+                outcome = "rejected"
+            else:
+                outcome = "undecided"
+
+            status_totals[a][outcome] += prob
+            if outcome not in witness_rows[a]:
+                witness_rows[a][outcome] = GroundedOutcomeWitness(
+                    argument=a,
+                    outcome=outcome,
+                    present_arguments=frozenset(present),
+                    active_defeats=edges_fs,
+                    probability=prob,
+                )
+
+    status_probabilities = {
+        a: GroundedOutcomeProbabilities(
+            accepted=status_totals[a]["accepted"],
+            rejected=status_totals[a]["rejected"],
+            undecided=status_totals[a]["undecided"],
+            absent=status_totals[a]["absent"],
+        )
+        for a in args_list
+    }
+    status_witnesses = {
+        a: GroundedOutcomeWitnesses(
+            accepted=witness_rows[a].get("accepted"),
+            rejected=witness_rows[a].get("rejected"),
+            undecided=witness_rows[a].get("undecided"),
+            absent=witness_rows[a].get("absent"),
+        )
+        for a in args_list
+    }
 
     return _GroundedDPComponentResult(
         acceptance_probs=acceptance,
+        status_probabilities=status_probabilities,
+        status_witnesses=status_witnesses,
         table_summaries=tuple(table_summaries),
         treewidth=td.width,
         node_count=len(ntd.nodes),
