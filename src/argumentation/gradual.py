@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
+from math import factorial
 from typing import Mapping
 
 
@@ -69,6 +71,16 @@ class RevisedImpactResult:
     after_attack_removal_strength: float
     after_argument_removal_strength: float
     impact: float
+
+
+@dataclass(frozen=True)
+class ShapleyAttackImpactResult:
+    """Exact Shapley impact attribution for direct attacks into a target."""
+
+    target: str
+    attack_impacts: dict[tuple[str, str], float]
+    exact: bool
+    coalition_count: int
 
 
 def quadratic_energy_strengths(
@@ -189,6 +201,60 @@ def revised_direct_impact(
         after_attack_removal_strength=attack_removed_strength,
         after_argument_removal_strength=argument_removed_strength,
         impact=attack_removed_strength - argument_removed_strength,
+    )
+
+
+def shapley_attack_impacts(
+    graph: WeightedBipolarGraph,
+    *,
+    target: str,
+    tolerance: float = 1e-9,
+    max_iterations: int = 10_000,
+) -> ShapleyAttackImpactResult:
+    """Compute exact Shapley impact for attacks directly targeting ``target``.
+
+    Al Anaissy et al. 2024, Definition 13: for an attack `(b, a)`, enumerate
+    all coalitions of the other direct attacks toward `a` and average the
+    marginal target-strength gain from additionally removing `(b, a)`.
+    """
+    target = str(target)
+    if target not in graph.arguments:
+        raise ValueError(f"unknown target argument: {target!r}")
+
+    target_attacks = tuple(sorted(
+        attack for attack in graph.attacks if attack[1] == target
+    ))
+    n_attacks = len(target_attacks)
+    impacts: dict[tuple[str, str], float] = {}
+    for attack in target_attacks:
+        others = tuple(other for other in target_attacks if other != attack)
+        impact = 0.0
+        for size in range(len(others) + 1):
+            coefficient = (
+                factorial(size)
+                * factorial(n_attacks - size - 1)
+                / factorial(n_attacks)
+            )
+            for coalition in combinations(others, size):
+                removed = frozenset(coalition)
+                before = quadratic_energy_strengths(
+                    _without_attacks(graph, removed),
+                    tolerance=tolerance,
+                    max_iterations=max_iterations,
+                ).strengths[target]
+                after = quadratic_energy_strengths(
+                    _without_attacks(graph, removed | frozenset({attack})),
+                    tolerance=tolerance,
+                    max_iterations=max_iterations,
+                ).strengths[target]
+                impact += coefficient * (after - before)
+        impacts[attack] = impact
+
+    return ShapleyAttackImpactResult(
+        target=target,
+        attack_impacts=dict(sorted(impacts.items())),
+        exact=True,
+        coalition_count=2 ** n_attacks,
     )
 
 
