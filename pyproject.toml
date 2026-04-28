@@ -1,6 +1,6 @@
 [project]
 name = "formal-argumentation"
-version = "0.1.0"
+version = "0.2.0"
 description = "Finite formal argumentation frameworks and semantics: Dung, ASPIC+, bipolar, partial, and revision"
 readme = "README.md"
 requires-python = ">=3.11"

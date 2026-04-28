@@ -7,6 +7,8 @@ argumentation theory as a small, dependency-free kernel:
 
 - **Dung** abstract argumentation frameworks and extension semantics
 - **ASPIC+** structured argumentation
+- **Flat ABA / ABA+** assumption-based argumentation with preference-aware attack reversal
+- **ADF** abstract dialectical frameworks with typed acceptance-condition ASTs
 - **Cayrol-style bipolar** argumentation frameworks
 - **Partial** argumentation frameworks with completion-based reasoning
 - **AF revision** under formula and framework constraints

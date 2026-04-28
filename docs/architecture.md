@@ -13,6 +13,12 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.aspic` — ASPIC+ literals, rules, premise/strict/defeasible
   arguments, attacks, defeats, and CSAF construction (Modgil & Prakken
   2018).
+- `argumentation.aba` — Flat ABA and ABA+ frameworks over ASPIC literals,
+  with constructor-level rejection of non-flat frameworks and preference-aware
+  attack reversal (Bondarenko et al. 1997; Čyras & Toni 2016).
+- `argumentation.adf` — Abstract dialectical frameworks with typed
+  acceptance-condition ASTs, three-valued operator semantics, structural link
+  classification, and Dung bridges (Brewka & Woltran 2010; Brewka et al. 2013).
 - `argumentation.bipolar` — Cayrol-style bipolar argumentation frameworks
   with derived defeats and d/s/c-admissibility semantics.
 - `argumentation.partial_af` — Partial argumentation frameworks with a
