@@ -49,7 +49,7 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.gradual` — Potyka-style quadratic-energy gradual
   strengths for weighted bipolar graphs, plus revised direct-impact
   attribution.
-- `argumentation.value_based` — Wallner-style value filtering helpers for
+- `argumentation.subjective_aspic` — Wallner-style value filtering helpers for
   ASPIC+ subjective knowledge bases and defeasible rules.
 - `argumentation.accrual` — Prakken-style weak/strong applicability
   helpers and same-conclusion accrual envelopes.

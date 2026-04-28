@@ -12,7 +12,7 @@ from argumentation.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.value_based import (
+from argumentation.subjective_aspic import (
     complementary_literals,
     subjective_argumentation_theory,
     subjective_defeasible_rules,
@@ -20,9 +20,10 @@ from argumentation.value_based import (
 )
 
 
-def test_value_based_module_is_exported() -> None:
-    assert argumentation.value_based.subjective_knowledge_base is subjective_knowledge_base
-    assert "value_based" in argumentation.__all__
+def test_subjective_aspic_module_is_exported() -> None:
+    assert argumentation.subjective_aspic.subjective_knowledge_base is subjective_knowledge_base
+    assert "subjective_aspic" in argumentation.__all__
+    assert "value_based" not in argumentation.__all__
 
 
 def lit(name: str) -> Literal:

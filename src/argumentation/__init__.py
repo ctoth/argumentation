@@ -19,7 +19,7 @@ from argumentation import (
     ranking,
     sat_encoding,
     semantics,
-    value_based,
+    subjective_aspic,
     weighted,
 )
 
@@ -42,6 +42,6 @@ __all__ = [
     "ranking",
     "sat_encoding",
     "semantics",
-    "value_based",
+    "subjective_aspic",
     "weighted",
 ]

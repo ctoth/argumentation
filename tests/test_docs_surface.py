@@ -13,7 +13,7 @@ def test_readme_documents_new_package_surfaces() -> None:
         "argumentation.ranking",
         "argumentation.weighted",
         "argumentation.gradual",
-        "argumentation.value_based",
+        "argumentation.subjective_aspic",
         "argumentation.accrual",
     ):
         assert expected in readme
@@ -33,7 +33,7 @@ def test_architecture_documents_new_package_surfaces() -> None:
         "argumentation.ranking",
         "argumentation.weighted",
         "argumentation.gradual",
-        "argumentation.value_based",
+        "argumentation.subjective_aspic",
         "argumentation.accrual",
     ):
         assert expected in architecture

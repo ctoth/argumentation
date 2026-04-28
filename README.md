@@ -356,7 +356,7 @@ strengths = quadratic_energy_strengths(graph)
 impact = revised_direct_impact(graph, influencers=frozenset({"a"}), target="b")
 ```
 
-`argumentation.value_based` implements Wallner-style value filtering before
+`argumentation.subjective_aspic` implements Wallner-style value filtering before
 ASPIC+ argument construction: subjective knowledge bases add complementary
 literals for rejected propositions, and defeasible rules are filtered by body,
 head, and rule name.
