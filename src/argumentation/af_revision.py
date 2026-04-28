@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations
@@ -60,36 +61,39 @@ class UnknownArgumentRank(Exception):
 class ExtensionRevisionState:
     arguments: frozenset[str]
     extensions: tuple[frozenset[str], ...]
-    ranking: dict[frozenset[str], int]
+    ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int]
 
     def __post_init__(self) -> None:
-        all_extensions = self.all_extensions(self.arguments)
         normalized = tuple(frozenset(extension) for extension in self.extensions)
-        if not set(normalized) <= set(all_extensions):
+        if not all(extension <= self.arguments for extension in normalized):
             raise ValueError("extensions must be subsets of the argument universe")
-        if set(self.ranking) != set(all_extensions):
-            raise ValueError("ranking must cover every extension candidate")
         extension_set = set(normalized)
-        non_extension_floor = min(
-            (self.ranking[extension] for extension in extension_set),
-            default=0,
-        ) + 1
-        faithful_ranking = {
-            candidate: 0
-            if candidate in extension_set
-            else max(non_extension_floor, int(rank))
-            for candidate, rank in self.ranking.items()
-        }
-        min_rank = min(faithful_ranking.values(), default=0)
+        if isinstance(self.ranking, Mapping):
+            normalized_ranking = {
+                frozenset(candidate): int(rank)
+                for candidate, rank in self.ranking.items()
+            }
+            if not all(candidate <= self.arguments for candidate in normalized_ranking):
+                raise ValueError("ranking keys must be subsets of the argument universe")
+            non_extension_floor = min(
+                (normalized_ranking.get(extension, 0) for extension in extension_set),
+                default=0,
+            ) + 1
+            faithful_ranking = {
+                candidate: 0
+                if candidate in extension_set
+                else max(non_extension_floor, rank)
+                for candidate, rank in normalized_ranking.items()
+            }
+            min_rank = min(faithful_ranking.values(), default=0)
+            ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] = {
+                candidate: rank - min_rank
+                for candidate, rank in faithful_ranking.items()
+            }
+        else:
+            ranking = self.ranking
         object.__setattr__(self, "extensions", normalized)
-        object.__setattr__(
-            self,
-            "ranking",
-            {
-                frozenset(extension): int(rank) - min_rank
-                for extension, rank in faithful_ranking.items()
-            },
-        )
+        object.__setattr__(self, "ranking", ranking)
 
     @classmethod
     def from_extensions(
@@ -97,14 +101,11 @@ class ExtensionRevisionState:
         arguments: frozenset[str],
         extensions: tuple[frozenset[str], ...],
         *,
-        ranking: dict[frozenset[str], int] | None = None,
+        ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] | None = None,
     ) -> ExtensionRevisionState:
-        candidates = cls.all_extensions(arguments)
+        extension_set = set(extensions)
         if ranking is None:
-            ranking = {
-                candidate: 0 if candidate in set(extensions) else 1
-                for candidate in candidates
-            }
+            ranking = lambda candidate: 0 if candidate in extension_set else 1
         return cls(arguments=arguments, extensions=extensions, ranking=ranking)
 
     @staticmethod
@@ -122,20 +123,34 @@ class ExtensionRevisionState:
     ) -> tuple[frozenset[str], ...]:
         if not candidates:
             return ()
-        best = min(self.ranking.get(candidate, len(self.ranking) + 1) for candidate in candidates)
+        ranked = {
+            candidate: self.rank(candidate)
+            for candidate in candidates
+        }
+        best = min(ranked.values())
         return tuple(sorted(
-            (candidate for candidate in candidates if self.ranking.get(candidate, len(self.ranking) + 1) == best),
+            (candidate for candidate in candidates if ranked[candidate] == best),
             key=lambda item: (len(item), tuple(sorted(item))),
         ))
+
+    def rank(self, extension: frozenset[str]) -> int:
+        candidate = frozenset(extension)
+        if not candidate <= self.arguments:
+            raise ValueError("ranked extension must be a subset of the argument universe")
+        if isinstance(self.ranking, Mapping):
+            if candidate in self.ranking:
+                return int(self.ranking[candidate])
+            return max((int(rank) for rank in self.ranking.values()), default=0) + 1
+        return int(self.ranking(candidate))
 
     def with_argument(self, argument: str) -> ExtensionRevisionState:
         if argument in self.arguments:
             return self
         arguments = self.arguments | frozenset((argument,))
-        ranking = {
-            candidate: self.ranking.get(frozenset(item for item in candidate if item != argument), 0)
-            for candidate in self.all_extensions(arguments)
-        }
+        def ranking(candidate: frozenset[str]) -> int:
+            projected = frozenset(item for item in candidate if item != argument)
+            return self.rank(projected)
+
         extensions = tuple(frozenset(set(extension) | {argument}) for extension in self.extensions)
         return ExtensionRevisionState.from_extensions(arguments, extensions, ranking=ranking)
 
@@ -305,23 +320,32 @@ def _classify_extension_change(
     """Classify structural extension change after an AF update.
 
     Cayrol, de Saint-Cyr, and Lagasquie-Schiex 2010, JAIR 38, Table 3
-    distinguish seven extension-family changes: conservative, decisive,
-    destructive, expansive, restrictive, questioning, and altering.
+    distinguishes seven extension-family changes by content relations between
+    the old and new extension families, not by cardinality alone.
     """
-    if before == after:
+    before_set = frozenset(frozenset(extension) for extension in before)
+    after_set = frozenset(frozenset(extension) for extension in after)
+    empty_family = frozenset({frozenset()})
+    if before_set == after_set:
         return AFChangeKind.CONSERVATIVE
-    if not after or after == (frozenset(),):
+    if not after_set or after_set == empty_family:
         return AFChangeKind.DESTRUCTIVE
-    if len(after) == 1 and (not before or before == (frozenset(),) or len(before) > 2):
-        return AFChangeKind.DECISIVE
-    if len(before) > len(after) >= 2:
-        # Cayrol et al.'s restrictive case is a strict cardinality shrink
-        # that does not collapse to the decisive or destructive cases above.
-        return AFChangeKind.RESTRICTIVE
-    if len(before) < len(after):
-        return AFChangeKind.QUESTIONING
-    if len(after) == len(before) and all(any(old < new for new in after) for old in before):
+    if before_set and after_set and all(
+        any(old < new for new in after_set)
+        for old in before_set
+    ):
         return AFChangeKind.EXPANSIVE
+    if len(after_set) == 1:
+        survivor = next(iter(after_set))
+        if survivor in before_set or before_set in {frozenset(), empty_family}:
+            return AFChangeKind.DECISIVE
+    if len(before_set) < len(after_set):
+        return AFChangeKind.QUESTIONING
+    if before_set and after_set and all(
+        any(new <= old for old in before_set)
+        for new in after_set
+    ):
+        return AFChangeKind.RESTRICTIVE
     return AFChangeKind.ALTERING
 
 
@@ -334,7 +358,9 @@ def _extend_state(
     for candidate in ExtensionRevisionState.all_extensions(arguments):
         projected = frozenset(item for item in candidate if item not in extras)
         try:
-            ranking[candidate] = state.ranking[projected]
+            if isinstance(state.ranking, Mapping) and projected not in state.ranking:
+                raise KeyError(projected)
+            ranking[candidate] = state.rank(projected)
         except KeyError:
             raise UnknownArgumentRank(
                 projected,
