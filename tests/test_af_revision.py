@@ -244,6 +244,44 @@ def test_cayrol_2010_questioning_classification_for_more_extensions() -> None:
     assert _classify_extension_change(before, after) == AFChangeKind.QUESTIONING
 
 
+def test_ws_o_arg_cayrol_2010_decisive_uses_surviving_extension_content() -> None:
+    """Bug 4: a two-extension family collapsing to one old extension is decisive."""
+    before = (frozenset({"a"}), frozenset({"b"}))
+    after = (frozenset({"a"}),)
+
+    assert _classify_extension_change(before, after) == AFChangeKind.DECISIVE
+
+
+def test_ws_o_arg_cayrol_2010_expansive_does_not_require_equal_cardinality() -> None:
+    """Bug 4: expansive is content-based, not equal-cardinality-based."""
+    before = (frozenset({"a"}),)
+    after = (frozenset({"a", "b"}), frozenset({"a", "c"}))
+
+    assert _classify_extension_change(before, after) == AFChangeKind.EXPANSIVE
+
+
+def test_ws_o_arg_extension_revision_state_accepts_lazy_ranking() -> None:
+    """Bug 5: construction must not enumerate the full extension powerset."""
+    arguments = frozenset(f"a{i}" for i in range(20))
+    calls: list[frozenset[str]] = []
+
+    def ranking(extension: frozenset[str]) -> int:
+        calls.append(extension)
+        return 0 if extension == frozenset({"a0"}) else 1
+
+    state = ExtensionRevisionState.from_extensions(
+        arguments,
+        (frozenset({"a0"}),),
+        ranking=ranking,
+    )
+
+    assert calls == []
+    assert state.minimal_extensions(
+        (frozenset({"a0"}), frozenset({"a1"})),
+    ) == (frozenset({"a0"}),)
+    assert set(calls) == {frozenset({"a0"}), frozenset({"a1"})}
+
+
 def test_extend_state_unknown_rank_raises() -> None:
     state = object.__new__(ExtensionRevisionState)
     object.__setattr__(state, "arguments", frozenset({"a"}))
