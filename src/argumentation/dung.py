@@ -576,10 +576,9 @@ def ideal_extension(
         for candidate in candidates
         if not any(candidate < other for other in candidates)
     ]
-    if len(maximal) == 1:
-        return maximal[0]
-
-    result: frozenset[str] = frozenset()
-    for candidate in maximal:
-        result = result | candidate
-    return result
+    if len(maximal) != 1:
+        raise AssertionError(
+            "ideal extension construction must have exactly one maximal "
+            "admissible subset of the preferred-extension intersection"
+        )
+    return maximal[0]
