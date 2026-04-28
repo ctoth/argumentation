@@ -11,6 +11,7 @@ from argumentation.adf import (
     interpretation_from_mapping,
     is_admissible,
     is_complete,
+    model_models,
     preferred_models,
     stable_models,
 )
@@ -49,3 +50,17 @@ def test_preferred_models_keep_both_two_valued_models_of_mutual_attack() -> None
         interpretation_from_mapping({"a": ThreeValued.F, "b": ThreeValued.T}),
         interpretation_from_mapping({"a": ThreeValued.T, "b": ThreeValued.F}),
     )
+
+
+def test_stable_models_use_brewka_2013_reduct_not_just_two_valued_models() -> None:
+    """Brewka et al. 2013 p.3: stable iff true nodes equal grounded reduct."""
+    framework = AbstractDialecticalFramework(
+        statements=frozenset({"a"}),
+        links=frozenset({("a", "a")}),
+        acceptance_conditions={"a": Atom("a")},
+    )
+    false_model = interpretation_from_mapping({"a": ThreeValued.F})
+    self_supported_model = interpretation_from_mapping({"a": ThreeValued.T})
+
+    assert model_models(framework) == (false_model, self_supported_model)
+    assert stable_models(framework) == (false_model,)
