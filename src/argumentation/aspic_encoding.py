@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 
 from argumentation.aspic import (
     ArgumentationSystem,
@@ -28,6 +29,7 @@ class ASPICEncoding:
     facts: tuple[str, ...]
     signature: str
     metadata: dict[str, str]
+    literal_by_id: dict[str, Literal] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -52,33 +54,44 @@ def encode_aspic_theory(
     strict_rule_ids = _strict_rule_ids(system.strict_rules)
     defeasible_rule_ids = _defeasible_rule_ids(system.defeasible_rules)
     facts: set[str] = set()
+    literal_by_id: dict[str, Literal] = {}
+
+    def literal_id(literal: Literal) -> str:
+        encoded = _literal_id(literal)
+        existing = literal_by_id.setdefault(encoded, literal)
+        if existing != literal:
+            raise ValueError(
+                "ASP literal id collision: "
+                f"{encoded!r} maps to both {existing!r} and {literal!r}"
+            )
+        return encoded
 
     for axiom in kb.axioms:
-        facts.add(f"axiom({_literal_id(axiom)}).")
+        facts.add(f"axiom({literal_id(axiom)}).")
     for premise in kb.premises:
-        facts.add(f"premise({_literal_id(premise)}).")
+        facts.add(f"premise({literal_id(premise)}).")
 
     for rule in system.strict_rules:
         rule_id = strict_rule_ids[rule]
-        facts.add(f"s_head({rule_id},{_literal_id(rule.consequent)}).")
+        facts.add(f"s_head({rule_id},{literal_id(rule.consequent)}).")
         for antecedent in rule.antecedents:
-            facts.add(f"s_body({rule_id},{_literal_id(antecedent)}).")
+            facts.add(f"s_body({rule_id},{literal_id(antecedent)}).")
 
     for rule in system.defeasible_rules:
         rule_id = defeasible_rule_ids[rule]
-        facts.add(f"d_head({rule_id},{_literal_id(rule.consequent)}).")
+        facts.add(f"d_head({rule_id},{literal_id(rule.consequent)}).")
         for antecedent in rule.antecedents:
-            facts.add(f"d_body({rule_id},{_literal_id(antecedent)}).")
+            facts.add(f"d_body({rule_id},{literal_id(antecedent)}).")
 
     for left, right in system.contrariness.contradictories:
-        left_id = _literal_id(left)
-        right_id = _literal_id(right)
+        left_id = literal_id(left)
+        right_id = literal_id(right)
         facts.add(f"contrary({left_id},{right_id}).")
         facts.add(f"contrary({right_id},{left_id}).")
         facts.add(f"ctrd({left_id},{right_id}).")
         facts.add(f"ctrd({right_id},{left_id}).")
     for left, right in system.contrariness.contraries:
-        facts.add(f"contrary({_literal_id(left)},{_literal_id(right)}).")
+        facts.add(f"contrary({literal_id(left)},{literal_id(right)}).")
 
     for weaker, stronger in pref.rule_order:
         facts.add(
@@ -86,7 +99,7 @@ def encode_aspic_theory(
             f"{_rule_id(weaker, strict_rule_ids, defeasible_rule_ids)})."
         )
     for weaker, stronger in pref.premise_order:
-        facts.add(f"preferred({_literal_id(stronger)},{_literal_id(weaker)}).")
+        facts.add(f"preferred({literal_id(stronger)},{literal_id(weaker)}).")
 
     ordered_facts = tuple(sorted(facts))
     signature = hashlib.sha256("\n".join(ordered_facts).encode("utf-8")).hexdigest()
@@ -98,6 +111,7 @@ def encode_aspic_theory(
             "comparison": pref.comparison,
             "link": pref.link,
         },
+        literal_by_id=literal_by_id,
     )
 
 
@@ -163,7 +177,18 @@ def solve_aspic_with_backend(
 
 
 def _literal_id(literal: Literal) -> str:
-    return repr(literal)
+    rendered = repr(literal)
+    if rendered.startswith("~"):
+        rendered = f"n_{rendered[1:]}"
+    cleaned = re.sub(r"[^A-Za-z0-9_]", "_", rendered)
+    cleaned = re.sub(r"_+", "_", cleaned).strip("_")
+    if not cleaned:
+        cleaned = "literal"
+    if cleaned[0].isupper():
+        cleaned = cleaned[0].lower() + cleaned[1:]
+    if not cleaned[0].islower():
+        cleaned = f"l_{cleaned}"
+    return cleaned
 
 
 def _strict_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
@@ -174,6 +199,21 @@ def _strict_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
 
 
 def _defeasible_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
+    rules_by_name: dict[str, list[Rule]] = {}
+    for rule in rules:
+        if rule.name is not None:
+            rules_by_name.setdefault(rule.name, []).append(rule)
+    duplicates = sorted(
+        (name, rules)
+        for name, rules in rules_by_name.items()
+        if len(rules) > 1
+    )
+    if duplicates:
+        name, duplicate_rules = duplicates[0]
+        raise ValueError(
+            f"duplicate defeasible rule name: {name!r} "
+            f"attached to {len(duplicate_rules)} rules"
+        )
     named: dict[Rule, str] = {}
     for index, rule in enumerate(sorted(rules, key=repr)):
         named[rule] = rule.name or f"d_{index}"

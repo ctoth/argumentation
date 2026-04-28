@@ -62,9 +62,9 @@ def test_aspic_encoding_assigns_deterministic_facts_and_signature() -> None:
     assert "premise(q)." in first.facts
     assert "s_head(s_0,q)." in first.facts
     assert "s_body(s_0,p)." in first.facts
-    assert "d_head(d_not_q,~q)." in first.facts
+    assert "d_head(d_not_q,n_q)." in first.facts
     assert "d_body(d_not_q,q)." in first.facts
-    assert "contrary(q,~q)." in first.facts
+    assert "contrary(q,n_q)." in first.facts
 
 
 def test_aspic_encoding_signature_is_stable_under_input_set_ordering() -> None:
