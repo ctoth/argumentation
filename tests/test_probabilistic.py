@@ -5,6 +5,7 @@ import pytest
 from argumentation.dung import ArgumentationFramework
 from argumentation.probabilistic import (
     ProbabilisticAF,
+    _z_for_confidence,
     compute_probabilistic_acceptance,
     summarize_defeat_relations,
 )
@@ -121,3 +122,15 @@ def test_summarize_defeat_relations_returns_exact_marginals() -> None:
     )
 
     assert summarize_defeat_relations(praf) == {("a", "b"): pytest.approx(0.25)}
+
+
+def test_ws_o_arg_z_for_confidence_accepts_continuous_confidence_values() -> None:
+    """Bug 8: Monte Carlo confidence should not be limited to three dict keys."""
+    assert _z_for_confidence(0.975) == pytest.approx(2.2414027276)
+    assert _z_for_confidence(0.999) == pytest.approx(3.2905267315)
+
+
+@pytest.mark.parametrize("confidence", [0.0, 1.0, -0.1, 1.1])
+def test_ws_o_arg_z_for_confidence_rejects_out_of_range_values(confidence: float) -> None:
+    with pytest.raises(ValueError, match="mc_confidence"):
+        _z_for_confidence(confidence)

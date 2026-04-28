@@ -85,8 +85,19 @@ def test_partial_af_extensions_are_completion_based() -> None:
     assert accepted_arguments(
         framework,
         semantics="grounded",
-        mode="skeptical",
+        mode="necessary_skeptical",
     ) == frozenset()
+    assert accepted_arguments(
+        framework,
+        semantics="grounded",
+        mode="possible_skeptical",
+    ) == frozenset({"a"})
+    with pytest.raises(ValueError, match="necessary_skeptical"):
+        accepted_arguments(
+            framework,
+            semantics="grounded",
+            mode="skeptical",
+        )
 
 
 def test_semantics_rejects_unknown_framework_and_mode() -> None:
