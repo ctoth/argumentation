@@ -20,6 +20,7 @@ from argumentation import (
     sat_encoding,
     semantics,
     subjective_aspic,
+    vaf,
     weighted,
 )
 
@@ -43,5 +44,6 @@ __all__ = [
     "sat_encoding",
     "semantics",
     "subjective_aspic",
+    "vaf",
     "weighted",
 ]
