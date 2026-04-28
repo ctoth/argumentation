@@ -48,11 +48,11 @@ def test_ideal_extension_requires_joint_mutual_defense() -> None:
         ),
     )
 
-    assert tuple(preferred_extensions(framework, backend="brute")) == (frozenset({"a", "b"}),)
+    assert tuple(preferred_extensions(framework)) == (frozenset({"a", "b"}),)
     assert not admissible(frozenset({"a"}), framework.arguments, framework.defeats)
     assert not admissible(frozenset({"b"}), framework.arguments, framework.defeats)
     assert admissible(frozenset({"a", "b"}), framework.arguments, framework.defeats)
-    assert ideal_extension(framework, backend="brute") == frozenset({"a", "b"})
+    assert ideal_extension(framework) == frozenset({"a", "b"})
 
 
 @given(argumentation_frameworks(max_args=5))
@@ -60,7 +60,7 @@ def test_ideal_extension_requires_joint_mutual_defense() -> None:
 def test_ideal_extension_is_admissible_and_below_every_preferred(
     framework: ArgumentationFramework,
 ) -> None:
-    ideal = ideal_extension(framework, backend="brute")
+    ideal = ideal_extension(framework)
 
     assert admissible(ideal, framework.arguments, framework.defeats)
-    assert all(ideal <= preferred for preferred in preferred_extensions(framework, backend="brute"))
+    assert all(ideal <= preferred for preferred in preferred_extensions(framework))

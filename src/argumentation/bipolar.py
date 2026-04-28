@@ -1,4 +1,10 @@
-"""Explicit bipolar argumentation semantics for Cayrol-style frameworks."""
+"""Explicit bipolar argumentation semantics for Cayrol-style frameworks.
+
+This module implements the Cayrol and Lagasquie-Schiex 2005 abstract
+set-defeat account. Amgoud et al. 2008 distinguish richer support modes
+(deductive, necessary, evidence-style); those are intentionally not collapsed
+into this abstract support relation.
+"""
 
 from __future__ import annotations
 
@@ -325,3 +331,45 @@ def stable_extensions(
         if all(set_defeats(candidate, target, framework) for target in outsiders):
             stable.append(candidate)
     return sorted(stable, key=lambda s: (len(s), tuple(sorted(s))))
+
+
+def characteristic_fn(
+    args: frozenset[str],
+    framework: BipolarArgumentationFramework,
+) -> frozenset[str]:
+    """Return the Cayrol/Dung characteristic function over set-defeats."""
+    return frozenset(
+        argument
+        for argument in framework.arguments
+        if defends(args, argument, framework)
+    )
+
+
+def bipolar_grounded_extension(
+    framework: BipolarArgumentationFramework,
+) -> frozenset[str]:
+    """Return the least fixed point over Cayrol set-defeat.
+
+    Cayrol and Lagasquie-Schiex 2005, p. 385, instantiate Dung's framework
+    with set-defeats; Dung grounded is the least fixed point of the resulting
+    characteristic function.
+    """
+    current: frozenset[str] = frozenset()
+    while True:
+        next_current = characteristic_fn(current, framework)
+        if next_current == current:
+            return current
+        current = next_current
+
+
+def bipolar_complete_extensions(
+    framework: BipolarArgumentationFramework,
+) -> list[frozenset[str]]:
+    """Return fixed points of the Cayrol characteristic function."""
+    completes = [
+        candidate
+        for candidate in _all_subsets(framework.arguments)
+        if d_admissible(candidate, framework)
+        and characteristic_fn(candidate, framework) == candidate
+    ]
+    return sorted(completes, key=lambda s: (len(s), tuple(sorted(s))))

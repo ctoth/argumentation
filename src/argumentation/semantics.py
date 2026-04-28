@@ -6,6 +6,8 @@ from typing import Final
 
 from argumentation.bipolar import (
     BipolarArgumentationFramework,
+    bipolar_complete_extensions,
+    bipolar_grounded_extension,
     c_preferred_extensions,
     d_preferred_extensions,
     s_preferred_extensions,
@@ -18,7 +20,10 @@ from argumentation.dung import (
     grounded_extension,
     ideal_extension,
     preferred_extensions,
+    prudent_grounded_extension,
+    prudent_preferred_extensions,
     semi_stable_extensions,
+    stage2_extensions,
     stage_extensions,
     stable_extensions,
 )
@@ -72,8 +77,14 @@ def _dung_extensions(
         return _sorted_extensions(tuple(semi_stable_extensions(framework)))
     if semantics == "stage":
         return _sorted_extensions(tuple(stage_extensions(framework)))
+    if semantics == "stage2":
+        return _sorted_extensions(tuple(stage2_extensions(framework)))
     if semantics == "cf2":
         return _sorted_extensions(tuple(cf2_extensions(framework)))
+    if semantics == "prudent-grounded":
+        return (prudent_grounded_extension(framework),)
+    if semantics == "prudent-preferred":
+        return _sorted_extensions(tuple(prudent_preferred_extensions(framework)))
     if semantics == "stable":
         return _sorted_extensions(tuple(stable_extensions(framework)))
     raise ValueError(f"Unknown Dung semantics: {semantics}")
@@ -92,6 +103,10 @@ def _bipolar_extensions(
         return _sorted_extensions(tuple(c_preferred_extensions(framework)))
     if semantics == "bipolar-stable":
         return _sorted_extensions(tuple(bipolar_stable_extensions(framework)))
+    if semantics == "bipolar-grounded":
+        return (bipolar_grounded_extension(framework),)
+    if semantics == "bipolar-complete":
+        return _sorted_extensions(tuple(bipolar_complete_extensions(framework)))
     raise ValueError(f"Unknown bipolar semantics: {semantics}")
 
 

@@ -50,9 +50,6 @@ class ArgumentationFramework:
         object.__setattr__(self, "attacks", attacks)
 
 
-_AUTO_BACKEND_MAX_ARGS = 12
-
-
 def _normalize_relation(
     name: str,
     relation: frozenset[tuple[str, str]],
@@ -203,82 +200,44 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
     References:
         Dung 1995, Definition 20 + Theorem 25 (least fixed point).
     """
-    s: frozenset[str] = frozenset()
+    current: frozenset[str] = frozenset()
     attackers_index = _attackers_index(framework.defeats)
     while True:
-        next_s = characteristic_fn(
-            s,
+        next_current = characteristic_fn(
+            current,
             framework.arguments,
             framework.defeats,
             attackers_index=attackers_index,
         )
-        if next_s == s:
-            break
-        s = next_s
-
-    return s
-
-def _resolve_backend(
-    framework: ArgumentationFramework,
-    backend: str,
-) -> str:
-    """Resolve an extension-computation backend.
-
-    `auto` prefers brute force for very small frameworks where Python-level
-    Z3 expression construction can cost more than simple subset enumeration.
-    """
-    if backend == "auto":
-        if len(framework.arguments) <= _AUTO_BACKEND_MAX_ARGS:
-            return "brute"
-        return "z3"
-    if backend in {"brute", "z3"}:
-        return backend
-    raise ValueError(f"Unknown backend: {backend}")
+        if next_current == current:
+            return current
+        current = next_current
 
 
-def complete_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def complete_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all complete extensions.
 
     A complete extension is a fixed point of F that is admissible.
 
     Reference: Dung 1995, Definition 10.
     """
-    backend = _resolve_backend(framework, backend)
-    if backend == "z3":
-        from argumentation.dung_z3 import z3_complete_extensions
+    from argumentation.labelling import complete_labellings
 
-        return z3_complete_extensions(framework)
-    args = framework.arguments
-    defeats = framework.defeats
-    attacks = framework.attacks
-    attackers_index = _attackers_index(defeats)
-    results: list[frozenset[str]] = []
-
-    for size in range(len(args) + 1):
-        for subset in combinations(sorted(args), size):
-            s = frozenset(subset)
-            if characteristic_fn(
-                s,
-                args,
-                defeats,
-                attackers_index=attackers_index,
-            ) == s and admissible(
-                s,
-                args,
-                defeats,
-                attacks=attacks,
-                attackers_index=attackers_index,
-            ):
-                results.append(s)
-
-    return results
+    attackers_index = _attackers_index(framework.defeats)
+    return [
+        labelling.extension
+        for labelling in complete_labellings(framework)
+        if admissible(
+            labelling.extension,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+            attackers_index=attackers_index,
+        )
+    ]
 
 
-def preferred_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all preferred extensions.
 
     A preferred extension is a maximal (w.r.t. set inclusion) admissible set,
@@ -286,22 +245,15 @@ def preferred_extensions(
 
     Reference: Dung 1995, Definition 8.
     """
-    backend = _resolve_backend(framework, backend)
-    if backend == "z3":
-        from argumentation.dung_z3 import z3_preferred_extensions
-
-        return z3_preferred_extensions(framework)
-    completes = complete_extensions(framework, backend=backend)
-    maximal: list[frozenset[str]] = []
-    for ext in completes:
-        if not any(ext < other for other in completes):
-            maximal.append(ext)
-    return maximal
+    completes = complete_extensions(framework)
+    return [
+        extension
+        for extension in completes
+        if not any(extension < other for other in completes)
+    ]
 
 
-def stable_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all stable extensions.
 
     A stable extension is conflict-free and defeats every argument not in it.
@@ -314,26 +266,14 @@ def stable_extensions(
 
     WARNING: Stable extensions may not exist.
     """
-    backend = _resolve_backend(framework, backend)
-    if backend == "z3":
-        from argumentation.dung_z3 import z3_stable_extensions
+    from argumentation.labelling import stable_labellings
 
-        return z3_stable_extensions(framework)
-    args = framework.arguments
-    defeats = framework.defeats
-    cf_relation = framework.attacks if framework.attacks is not None else defeats
-    results: list[frozenset[str]] = []
-
-    for size in range(len(args) + 1):
-        for subset in combinations(sorted(args), size):
-            s = frozenset(subset)
-            if not conflict_free(s, cf_relation):
-                continue
-            outsiders = args - s
-            if all(any((d, out) in defeats for d in s) for out in outsiders):
-                results.append(s)
-
-    return results
+    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    return [
+        labelling.extension
+        for labelling in stable_labellings(framework)
+        if conflict_free(labelling.extension, cf_relation)
+    ]
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
@@ -360,9 +300,7 @@ def _range_maximal_extensions(
     return maximal
 
 
-def semi_stable_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def semi_stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all semi-stable extensions.
 
     A semi-stable extension is a complete extension whose range is maximal
@@ -371,21 +309,15 @@ def semi_stable_extensions(
     Reference:
         Caminada 2011, Definition 2.3.
     """
-    completes = complete_extensions(framework, backend=backend)
-    return _range_maximal_extensions(completes, framework.defeats)
+    return _range_maximal_extensions(complete_extensions(framework), framework.defeats)
 
 
-def stage_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def stage_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all stage extensions by range-maximal conflict-free sets.
 
-    Stage semantics is implemented by brute-force subset enumeration in this
-    slice. Solver-backed stage reasoning is a later workstream item.
+    Gaggl and Woltran 2013, p. 927: stage extensions are conflict-free sets
+    with maximal range.
     """
-    if backend not in {"auto", "brute"}:
-        raise ValueError(f"Unknown or unsupported stage backend: {backend}")
-
     args = framework.arguments
     cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
     candidates: list[frozenset[str]] = []
@@ -396,6 +328,32 @@ def stage_extensions(
                 candidates.append(s)
 
     return _range_maximal_extensions(candidates, framework.defeats)
+
+
+def eager_extension(framework: ArgumentationFramework) -> frozenset[str]:
+    """Compute the unique eager extension.
+
+    Caminada 2007's eager extension is the least committed semi-stable choice:
+    if semi-stable is unique, return it; otherwise return the largest
+    admissible subset of the intersection of all semi-stable extensions.
+    """
+    semi_stables = semi_stable_extensions(framework)
+    if not semi_stables:
+        return frozenset()
+    intersection = frozenset.intersection(*semi_stables)
+    attackers_index = _attackers_index(framework.defeats)
+    candidates = [
+        candidate
+        for candidate in _all_subsets(intersection)
+        if admissible(
+            candidate,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+            attackers_index=attackers_index,
+        )
+    ]
+    return max(candidates, key=lambda candidate: (len(candidate), tuple(sorted(candidate))))
 
 
 def _strongly_connected_components(
@@ -520,9 +478,7 @@ def _is_cf2_extension(
     return True
 
 
-def cf2_extensions(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> list[frozenset[str]]:
+def cf2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all CF2 extensions by recursive SCC decomposition.
 
     The base case for a single strongly connected component is the naive
@@ -531,8 +487,6 @@ def cf2_extensions(
     Reference:
         Gaggl and Woltran 2013, Definition 2.7.
     """
-    if backend not in {"auto", "brute"}:
-        raise ValueError(f"Unknown or unsupported CF2 backend: {backend}")
     return [
         candidate
         for candidate in _all_subsets(framework.arguments)
@@ -540,9 +494,118 @@ def cf2_extensions(
     ]
 
 
-def ideal_extension(
-    framework: ArgumentationFramework, *, backend: str = "auto"
-) -> frozenset[str]:
+def stage2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
+    """Compute SCC-recursive stage2 extensions.
+
+    Gaggl and Woltran 2013 give the SCC-recursive shape for CF2; stage2 uses
+    the same component recursion with stage semantics as the single-SCC base.
+    """
+    return [
+        candidate
+        for candidate in _all_subsets(framework.arguments)
+        if _is_stage2_extension(framework, candidate)
+    ]
+
+
+def _is_stage2_extension(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    if not candidate <= framework.arguments:
+        return False
+
+    components = _strongly_connected_components(
+        framework.arguments,
+        framework.defeats,
+    )
+    if len(components) <= 1:
+        return candidate in stage_extensions(framework)
+
+    defeated = _component_defeated(framework, candidate, components)
+    for component in components:
+        sub_arguments = component - defeated
+        subframework = _subframework(framework, sub_arguments)
+        if not _is_stage2_extension(subframework, candidate & component):
+            return False
+    return True
+
+
+def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, str]]:
+    """Return odd-length attack paths for prudent semantics.
+
+    Baroni and Giacomin 2007, pp. 12-13 summarize prudent semantics using
+    indirect attacks: an argument indirectly attacks another when an odd-length
+    attack path connects them.
+    """
+    indirect: set[tuple[str, str]] = set()
+    successors: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    for attacker, target in framework.defeats:
+        successors.setdefault(attacker, set()).add(target)
+
+    for source in framework.arguments:
+        stack = [(source, target, 1) for target in successors.get(source, set())]
+        seen: set[tuple[str, int]] = set()
+        while stack:
+            origin, current, length = stack.pop()
+            parity = length % 2
+            if (current, parity) in seen:
+                continue
+            seen.add((current, parity))
+            if length > 1 and parity == 0:
+                indirect.add((origin, current))
+            for target in successors.get(current, set()):
+                stack.append((origin, target, length + 1))
+    return frozenset(indirect)
+
+
+def prudent_conflict_free(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    """Return whether ``candidate`` has no prudent indirect conflict."""
+    indirect = indirect_attacks(framework)
+    return not any(
+        attacker in candidate and target in candidate
+        for attacker, target in indirect
+    )
+
+
+def prudent_admissible(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    """Return prudent admissibility: admissible and no indirect conflicts."""
+    return prudent_conflict_free(framework, candidate) and admissible(
+        candidate,
+        framework.arguments,
+        framework.defeats,
+        attacks=framework.attacks,
+    )
+
+
+def prudent_preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
+    """Return inclusion-maximal prudent-admissible sets."""
+    candidates = [
+        candidate
+        for candidate in _all_subsets(framework.arguments)
+        if prudent_admissible(framework, candidate)
+    ]
+    return [
+        candidate
+        for candidate in candidates
+        if not any(candidate < other for other in candidates)
+    ]
+
+
+def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
+    """Return the least complete extension that is prudent-conflict-free."""
+    for extension in complete_extensions(framework):
+        if prudent_conflict_free(framework, extension):
+            return extension
+    return frozenset()
+
+
+def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
     """Compute the unique maximal ideal extension.
 
     An ideal set is admissible and contained in every preferred extension. The
@@ -551,7 +614,7 @@ def ideal_extension(
     Reference:
         Dung, Mancarella, and Toni 2007, Definition 2.2 and Theorem 2.1.
     """
-    preferred = preferred_extensions(framework, backend=backend)
+    preferred = preferred_extensions(framework)
     if not preferred:
         return frozenset()
 

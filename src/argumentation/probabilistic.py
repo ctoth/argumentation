@@ -461,11 +461,11 @@ def _extensions_for_semantics(
     if semantics == "grounded":
         return (grounded_extension(af),)
     if semantics == "preferred":
-        return tuple(preferred_extensions(af, backend="brute"))
+        return tuple(preferred_extensions(af))
     if semantics == "stable":
-        return tuple(stable_extensions(af, backend="brute"))
+        return tuple(stable_extensions(af))
     if semantics == "complete":
-        return tuple(complete_extensions(af, backend="brute"))
+        return tuple(complete_extensions(af))
     raise ValueError(f"Unknown semantics: {semantics}")
 
 

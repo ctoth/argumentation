@@ -36,7 +36,7 @@ def test_workstream_o_arg_done() -> None:
             }
         ),
     )
-    ideal = ideal_extension(framework, backend="brute")
+    ideal = ideal_extension(framework)
     assert ideal == frozenset({"a", "b"})
     assert admissible(ideal, framework.arguments, framework.defeats)
 

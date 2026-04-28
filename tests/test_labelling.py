@@ -102,9 +102,9 @@ class TestExtensionLabellingConversion:
         )
         extension_families = [
             [grounded_extension(framework)],
-            complete_extensions(framework, backend="brute"),
-            preferred_extensions(framework, backend="brute"),
-            stable_extensions(framework, backend="brute"),
+            complete_extensions(framework),
+            preferred_extensions(framework),
+            stable_extensions(framework),
         ]
 
         for extensions in extension_families:

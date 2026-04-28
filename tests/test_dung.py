@@ -262,8 +262,8 @@ class TestRangeSemanticsConcrete:
         """Semi-stable should agree with stable on stable-friendly AFs."""
         framework = af({"A", "B"}, {("A", "B"), ("B", "A")})
 
-        assert set(semi_stable_extensions(framework, backend="brute")) == set(
-            stable_extensions(framework, backend="brute")
+        assert set(semi_stable_extensions(framework)) == set(
+            stable_extensions(framework)
         )
 
     def test_semi_stable_is_complete_with_maximal_range_when_no_stable_exists(self):
@@ -273,8 +273,8 @@ class TestRangeSemanticsConcrete:
             {("A", "B"), ("B", "C"), ("C", "A")},
         )
 
-        assert stable_extensions(framework, backend="brute") == []
-        assert semi_stable_extensions(framework, backend="brute") == [frozenset()]
+        assert stable_extensions(framework) == []
+        assert semi_stable_extensions(framework) == [frozenset()]
 
     def test_stage_extensions_are_conflict_free_sets_with_maximal_range(self):
         """Stage does not require completeness, so an odd cycle has singleton stages."""
@@ -283,7 +283,7 @@ class TestRangeSemanticsConcrete:
             {("A", "B"), ("B", "C"), ("C", "A")},
         )
 
-        assert set(stage_extensions(framework, backend="brute")) == {
+        assert set(stage_extensions(framework)) == {
             frozenset({"A"}),
             frozenset({"B"}),
             frozenset({"C"}),
@@ -320,11 +320,11 @@ class TestIdealConcrete:
         )
 
         assert grounded_extension(framework) == frozenset()
-        assert set(preferred_extensions(framework, backend="brute")) == {
+        assert set(preferred_extensions(framework)) == {
             frozenset({"b", "c"}),
             frozenset({"b", "d"}),
         }
-        assert ideal_extension(framework, backend="brute") == frozenset({"b"})
+        assert ideal_extension(framework) == frozenset({"b"})
 
     def test_ideal_can_be_proper_subset_of_preferred_intersection(self):
         """Grounded in Dung, Mancarella, Toni 2007 page-image pages 4-5."""
@@ -342,11 +342,11 @@ class TestIdealConcrete:
             },
         )
 
-        assert set(preferred_extensions(framework, backend="brute")) == {
+        assert set(preferred_extensions(framework)) == {
             frozenset({"b", "c", "f"}),
             frozenset({"b", "d", "f"}),
         }
-        assert ideal_extension(framework, backend="brute") == frozenset({"b"})
+        assert ideal_extension(framework) == frozenset({"b"})
 
     def test_dispatch_supports_ideal(self):
         framework = af(
@@ -373,7 +373,7 @@ class TestCF2Concrete:
             {("a", "b"), ("b", "c"), ("c", "a")},
         )
 
-        assert set(cf2_extensions(framework, backend="brute")) == {
+        assert set(cf2_extensions(framework)) == {
             frozenset({"a"}),
             frozenset({"b"}),
             frozenset({"c"}),
@@ -383,7 +383,7 @@ class TestCF2Concrete:
         """A selected upstream argument removes downstream arguments it defeats."""
         framework = af({"a", "b"}, {("a", "b")})
 
-        assert cf2_extensions(framework, backend="brute") == [frozenset({"a"})]
+        assert cf2_extensions(framework) == [frozenset({"a"})]
 
     def test_cf2_matches_gaggl_woltran_2013_example_2_8(self):
         """Grounded in Gaggl and Woltran 2013 page-image page 5."""
@@ -405,7 +405,7 @@ class TestCF2Concrete:
             },
         )
 
-        assert set(cf2_extensions(framework, backend="brute")) == {
+        assert set(cf2_extensions(framework)) == {
             frozenset({"a", "d", "e", "g", "i"}),
             frozenset({"b", "f", "h"}),
             frozenset({"b", "g", "i"}),
@@ -740,13 +740,13 @@ class TestNewSemanticsProperties:
     @given(argumentation_frameworks(max_args=5))
     @_PROP_SETTINGS
     def test_semi_stable_extensions_are_complete_with_maximal_range(self, framework):
-        completes = complete_extensions(framework, backend="brute")
+        completes = complete_extensions(framework)
         complete_ranges = {
             complete: _definition_range(complete, framework.defeats)
             for complete in completes
         }
 
-        for extension in semi_stable_extensions(framework, backend="brute"):
+        for extension in semi_stable_extensions(framework):
             assert extension in completes
             extension_range = complete_ranges[extension]
             assert not any(
@@ -767,7 +767,7 @@ class TestNewSemanticsProperties:
             for candidate in conflict_free_sets
         }
 
-        for extension in stage_extensions(framework, backend="brute"):
+        for extension in stage_extensions(framework):
             assert extension in conflict_free_sets
             extension_range = ranges[extension]
             assert not any(
@@ -778,8 +778,8 @@ class TestNewSemanticsProperties:
     @given(argumentation_frameworks(max_args=5))
     @_PROP_SETTINGS
     def test_ideal_is_maximal_admissible_subset_of_every_preferred(self, framework):
-        ideal = ideal_extension(framework, backend="brute")
-        preferred = preferred_extensions(framework, backend="brute")
+        ideal = ideal_extension(framework)
+        preferred = preferred_extensions(framework)
 
         assert admissible(ideal, framework.arguments, framework.defeats)
         assert all(ideal <= extension for extension in preferred)
@@ -793,7 +793,7 @@ class TestNewSemanticsProperties:
     @given(argumentation_frameworks(max_args=5))
     @_PROP_SETTINGS
     def test_cf2_extensions_are_conflict_free(self, framework):
-        for extension in cf2_extensions(framework, backend="brute"):
+        for extension in cf2_extensions(framework):
             assert conflict_free(extension, framework.defeats)
 
 
@@ -823,39 +823,32 @@ class TestCharacteristicFnProperties:
         assert characteristic_fn(lower, args, defeats) <= characteristic_fn(upper, args, defeats)
 
 
-class TestAutoBackendDispatch:
-    def test_complete_auto_matches_brute_backend_on_small_framework(self):
+class TestSingleDungPath:
+    def test_complete_labelling_path_handles_small_framework(self):
         framework = af({"A", "B"}, {("A", "B")})
 
-        assert set(complete_extensions(framework, backend="auto")) == set(
-            complete_extensions(framework, backend="brute")
-        )
+        assert set(complete_extensions(framework)) == {
+            frozenset({"A"}),
+        }
 
-    def test_complete_auto_matches_z3_backend_on_large_framework(self):
-        args = {f"a{i}" for i in range(13)}
-        framework = af(args, {(f"a{i}", f"a{(i + 1) % 13}") for i in range(13)})
+    def test_complete_labelling_path_handles_larger_framework(self):
+        args = {f"a{i}" for i in range(7)}
+        framework = af(args, {(f"a{i}", f"a{(i + 1) % 7}") for i in range(7)})
 
-        assert set(complete_extensions(framework, backend="auto")) == set(
-            complete_extensions(framework, backend="z3")
-        )
+        assert complete_extensions(framework) == [frozenset()]
 
-    def test_preferred_auto_matches_explicit_backends(self):
+    def test_preferred_labelling_path_handles_reinstatement(self):
         framework = af({"A", "B", "C"}, {("A", "B"), ("B", "C")})
 
-        assert preferred_extensions(framework, backend="auto") == preferred_extensions(
-            framework,
-            backend="brute",
-        )
+        assert preferred_extensions(framework) == [frozenset({"A", "C"})]
 
-    def test_stable_auto_matches_explicit_backends_on_large_framework(self):
+    def test_stable_labelling_path_handles_odd_cycle(self):
         framework = af(
-            {f"a{i}" for i in range(13)},
-            {(f"a{i}", f"a{(i + 1) % 13}") for i in range(13)},
+            {f"a{i}" for i in range(7)},
+            {(f"a{i}", f"a{(i + 1) % 7}") for i in range(7)},
         )
 
-        assert set(stable_extensions(framework, backend="auto")) == set(
-            stable_extensions(framework, backend="z3")
-        )
+        assert stable_extensions(framework) == []
 
 
 # ── Attacks ≠ Defeats property tests (F27) ─────────────────────────

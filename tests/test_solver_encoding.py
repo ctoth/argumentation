@@ -59,5 +59,5 @@ def test_stable_encoding_matches_brute_force_reference(framework) -> None:
     encoding = encode_stable_extensions(framework)
 
     assert set(stable_extensions_from_encoding(encoding)) == set(
-        stable_extensions(framework, backend="brute")
+        stable_extensions(framework)
     )
