@@ -15,6 +15,14 @@ def argument_label(support: frozenset[Literal], conclusion: Literal) -> str:
     return f"{{{support_text}}} |- {conclusion!r}"
 
 
+def project_assumptions(extension: frozenset[str], assumptions: frozenset[Literal]) -> frozenset[Literal]:
+    return frozenset(
+        assumption
+        for assumption in assumptions
+        if argument_label(frozenset({assumption}), assumption) in extension
+    )
+
+
 def test_flat_aba_to_dung_preserves_singleton_attack_semantics() -> None:
     alpha = lit("alpha")
     beta = lit("beta")
@@ -32,8 +40,11 @@ def test_flat_aba_to_dung_preserves_singleton_attack_semantics() -> None:
         argument_label(frozenset({literal}), literal)
         for literal in grounded_extension(framework)
     }
-    assert tuple(dung_preferred_extensions(dung)) == tuple(
-        frozenset(argument_label(frozenset({literal}), literal) for literal in extension)
+    assert tuple(
+        project_assumptions(extension, framework.assumptions)
+        for extension in dung_preferred_extensions(dung)
+    ) == tuple(
+        extension
         for extension in preferred_extensions(framework)
     )
 
