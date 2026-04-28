@@ -22,7 +22,8 @@ def test_readme_documents_new_package_surfaces() -> None:
         "adapted grounded edge-tracking TD backend" in readme
         or "adapted grounded edge-tracking tree-decomposition backend" in readme
     )
-    assert "not the full Popescu & Wallner I/O/U witness-table DP" in readme
+    readme_without_emphasis = readme.replace("*", "")
+    assert "not the full Popescu & Wallner I/O/U witness-table DP" in readme_without_emphasis
 
 
 def test_architecture_documents_new_package_surfaces() -> None:
