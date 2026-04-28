@@ -6,8 +6,8 @@
 |---|---:|---|---|---|
 | P-A.1: arbitrary ADF kernel absent | HIGH | `src/argumentation/adf.py` | `tests/test_adf_acceptance_condition_ast.py` | closed `06bff8a` |
 | P-A.2: flat ABA kernel absent | HIGH | `src/argumentation/aba.py` | `tests/test_aba_bondarenko_examples.py` | closed `70bc537` |
-| P-A.3: ADF and ABA foundational papers had no executable kernel | HIGH | `src/argumentation/adf.py`, `src/argumentation/aba.py` | `tests/test_workstream_o_arg_aba_adf_done.py` | closed pending sentinel commit |
-| P-A.4: propstore/argumentation boundary for ABA/ADF unresolved | HIGH | public package surface | `tests/test_workstream_o_arg_aba_adf_done.py` | closed pending sentinel commit |
+| P-A.3: ADF and ABA foundational papers had no executable kernel | HIGH | `src/argumentation/adf.py`, `src/argumentation/aba.py` | `tests/test_workstream_o_arg_aba_adf_done.py` | closed `4719640` |
+| P-A.4: propstore/argumentation boundary for ABA/ADF unresolved | HIGH | public package surface | `tests/test_workstream_o_arg_aba_adf_done.py` | closed `4719640` |
 
 Non-flat ABA remains out of scope. `ABAFramework` rejects rules whose heads are assumptions via `NotFlatABAError`; a future non-flat ABA workstream must own that distinct semantics.
 
