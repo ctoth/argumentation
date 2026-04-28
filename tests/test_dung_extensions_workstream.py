@@ -22,6 +22,7 @@ from argumentation.dung import (
     conflict_free,
     prudent_admissible,
     prudent_conflict_free,
+    prudent_grounded_extension,
     prudent_preferred_extensions,
     semi_stable_extensions,
     stage2_extensions,
@@ -83,14 +84,27 @@ def test_stage2_collapses_to_stage_on_single_scc_gaggl_2013_pages_927_929() -> N
     assert set(stage2_extensions(framework)) == set(stage_extensions(framework))
 
 
-def test_prudent_conflict_free_excludes_odd_indirect_attack_baroni_2007_pages_12_13() -> None:
-    """Baroni and Giacomin 2007, pp. 12-13: prudent semantics excludes odd paths."""
-    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c")})
+def test_prudent_conflict_free_excludes_odd_indirect_attack_coste_marquis_2005_pages_1_2() -> None:
+    """Coste-Marquis et al. 2005, pp. 1-2: indirect attacks are odd paths."""
+    framework = af({"a", "b", "c", "d"}, {("a", "b"), ("b", "c"), ("c", "d")})
 
-    assert ("a", "c") in indirect_attacks(framework)
-    assert prudent_conflict_free(framework, frozenset({"a", "c"})) is False
-    assert prudent_admissible(framework, frozenset({"a", "c"})) is False
-    assert prudent_preferred_extensions(framework) == [frozenset({"a"})]
+    assert ("a", "c") not in indirect_attacks(framework)
+    assert ("a", "d") in indirect_attacks(framework)
+    assert prudent_conflict_free(framework, frozenset({"a", "c"})) is True
+    assert prudent_conflict_free(framework, frozenset({"a", "d"})) is False
+
+
+def test_prudent_example_af1_coste_marquis_2005_pages_1_3() -> None:
+    """Coste-Marquis et al. 2005, pp. 1-3: AF1 has prudent extension {i,n}."""
+    framework = af(
+        {"a", "b", "c", "e", "n", "i"},
+        {("b", "a"), ("c", "a"), ("n", "c"), ("i", "b"), ("e", "c"), ("i", "e")},
+    )
+
+    assert ("i", "a") in indirect_attacks(framework)
+    assert prudent_conflict_free(framework, frozenset({"a", "i", "n"})) is False
+    assert prudent_preferred_extensions(framework) == [frozenset({"i", "n"})]
+    assert prudent_grounded_extension(framework) == frozenset({"i", "n"})
 
 
 def test_bipolar_grounded_and_complete_cayrol_2005_pages_383_386() -> None:
