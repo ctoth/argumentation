@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from argumentation.adf import (
+    AcceptanceCondition,
     AbstractDialecticalFramework,
     parse_iccma_formula,
     write_iccma_formula,
@@ -65,7 +66,7 @@ def parse_adf(text: str) -> AbstractDialecticalFramework:
     """Parse a compact ICCMA-style ``p adf`` text format."""
     statements: set[str] = set()
     links: set[tuple[str, str]] = set()
-    conditions: dict[str, object] = {}
+    conditions: dict[str, AcceptanceCondition] = {}
     seen_header = False
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
