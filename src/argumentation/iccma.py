@@ -7,6 +7,8 @@ from argumentation.adf import (
     parse_iccma_formula,
     write_iccma_formula,
 )
+from argumentation.aba import ABAFramework
+from argumentation.aspic import GroundAtom, Literal, Rule
 from argumentation.dung import ArgumentationFramework
 
 
@@ -111,6 +113,66 @@ def write_adf(framework: AbstractDialecticalFramework) -> str:
     return "\n".join(lines) + "\n"
 
 
+def parse_aba(text: str) -> ABAFramework:
+    """Parse a compact ICCMA-style ``p aba`` flat-ABA text format."""
+    atoms: dict[str, Literal] = {}
+    assumptions: set[Literal] = set()
+    contraries: dict[Literal, Literal] = {}
+    rules: set[Rule] = set()
+    seen_header = False
+
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if parts == ["p", "aba"]:
+            if seen_header:
+                raise ValueError("multiple p aba header lines")
+            seen_header = True
+            continue
+        if not seen_header:
+            raise ValueError("ICCMA ABA input must start with a p aba header")
+        if parts[0] == "a" and len(parts) == 2:
+            assumptions.add(_aba_literal(atoms, parts[1]))
+            continue
+        if parts[0] == "c" and len(parts) == 3:
+            contraries[_aba_literal(atoms, parts[1])] = _aba_literal(atoms, parts[2])
+            continue
+        if parts[0] == "r" and len(parts) >= 2:
+            rules.add(
+                Rule(
+                    tuple(_aba_literal(atoms, item) for item in parts[2:]),
+                    _aba_literal(atoms, parts[1]),
+                    "strict",
+                )
+            )
+            continue
+        raise ValueError(f"invalid ABA line {line_number}: {line!r}")
+    if not seen_header:
+        raise ValueError("ICCMA ABA input must include a p aba header")
+    language = frozenset(set(atoms.values()) | assumptions | set(contraries.values()))
+    return ABAFramework(
+        language=language,
+        rules=frozenset(rules),
+        assumptions=frozenset(assumptions),
+        contrary=contraries,
+    )
+
+
+def write_aba(framework: ABAFramework) -> str:
+    """Write a deterministic compact ICCMA-style ``p aba`` flat-ABA format."""
+    lines = ["p aba"]
+    for assumption in sorted(framework.assumptions, key=repr):
+        lines.append(f"a {_aba_name(assumption)}")
+    for assumption, contrary in sorted(framework.contrary.items(), key=lambda item: repr(item[0])):
+        lines.append(f"c {_aba_name(assumption)} {_aba_name(contrary)}")
+    for rule in sorted(framework.rules, key=lambda item: (_aba_name(item.consequent), tuple(map(_aba_name, item.antecedents)))):
+        body = " ".join(_aba_name(antecedent) for antecedent in rule.antecedents)
+        lines.append(f"r {_aba_name(rule.consequent)}" + (f" {body}" if body else ""))
+    return "\n".join(lines) + "\n"
+
+
 def _validate_attack_id(value: str, argument_count: int, line_number: int) -> None:
     numeric = int(value)
     if numeric < 1 or numeric > argument_count:
@@ -125,4 +187,16 @@ def _numeric_argument_ids(framework: ArgumentationFramework) -> list[int]:
     return sorted(int(argument) for argument in framework.arguments)
 
 
-__all__ = ["parse_adf", "parse_af", "write_adf", "write_af"]
+def _aba_literal(atoms: dict[str, Literal], name: str) -> Literal:
+    if name not in atoms:
+        atoms[name] = Literal(GroundAtom(name))
+    return atoms[name]
+
+
+def _aba_name(literal: Literal) -> str:
+    if literal.negated or literal.atom.arguments:
+        raise ValueError("compact ABA ICCMA format supports only nullary positive literals")
+    return literal.atom.predicate
+
+
+__all__ = ["parse_aba", "parse_adf", "parse_af", "write_aba", "write_adf", "write_af"]
