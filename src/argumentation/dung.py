@@ -533,9 +533,8 @@ def _is_stage2_extension(
 def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, str]]:
     """Return odd-length attack paths for prudent semantics.
 
-    Baroni and Giacomin 2007, pp. 12-13 summarize prudent semantics using
-    indirect attacks: an argument indirectly attacks another when an odd-length
-    attack path connects them.
+    Coste-Marquis, Devred, and Marquis 2005, pp. 1-2 define the prudent
+    indirect-conflict check over odd-length attack paths.
     """
     indirect: set[tuple[str, str]] = set()
     successors: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
@@ -551,7 +550,7 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
             if (current, parity) in seen:
                 continue
             seen.add((current, parity))
-            if length > 1 and parity == 0:
+            if length > 1 and parity == 1:
                 indirect.add((origin, current))
             for target in successors.get(current, set()):
                 stack.append((origin, target, length + 1))
@@ -598,11 +597,34 @@ def prudent_preferred_extensions(framework: ArgumentationFramework) -> list[froz
 
 
 def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
-    """Return the least complete extension that is prudent-conflict-free."""
-    for extension in complete_extensions(framework):
-        if prudent_conflict_free(framework, extension):
-            return extension
-    return frozenset()
+    """Return the stationary prudent grounded extension.
+
+    Coste-Marquis, Devred, and Marquis 2005, p. 3 define grounded prudent
+    semantics by iterating the prudent characteristic function from empty.
+    """
+    current: frozenset[str] = frozenset()
+    attackers_index = _attackers_index(framework.defeats)
+    indirect = indirect_attacks(framework)
+    while True:
+        next_current = frozenset(
+            argument
+            for argument in framework.arguments
+            if defends(
+                current,
+                argument,
+                framework.arguments,
+                framework.defeats,
+                attackers_index=attackers_index,
+            )
+            and not any(
+                attacker in current | frozenset({argument})
+                and target in current | frozenset({argument})
+                for attacker, target in indirect
+            )
+        )
+        if next_current == current:
+            return current
+        current = next_current
 
 
 def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
