@@ -24,7 +24,7 @@ def test_flat_aba_to_dung_preserves_singleton_attack_semantics() -> None:
     dung = aba_to_dung(framework)
 
     assert dung_grounded_extension(dung) == {repr(literal) for literal in grounded_extension(framework)}
-    assert dung_preferred_extensions(dung) == tuple(
+    assert tuple(dung_preferred_extensions(dung)) == tuple(
         frozenset(repr(literal) for literal in extension)
         for extension in preferred_extensions(framework)
     )
