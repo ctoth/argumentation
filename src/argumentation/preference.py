@@ -55,8 +55,10 @@ def strictly_weaker(
     - Elitist: A < B iff some x in A is weaker than every y in B.
     - Democratic: A < B iff every x in A is weaker than some y in B.
     """
-    if not set_a or not set_b:
+    if not set_a:
         return False
+    if not set_b:
+        return True
     if comparison == "elitist":
         return any(all(x < y for y in set_b) for x in set_a)
     if comparison == "democratic":

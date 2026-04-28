@@ -133,8 +133,31 @@ def accepted_arguments(
     mode: str = "credulous",
 ) -> frozenset[str] | SemanticsUndefinedType:
     """Return credulously or skeptically accepted arguments."""
-    if mode not in {"credulous", "skeptical"}:
-        raise ValueError("mode must be 'credulous' or 'skeptical'")
+    if mode not in {"credulous", "skeptical", "necessary_skeptical", "possible_skeptical"}:
+        raise ValueError(
+            "mode must be 'credulous', 'skeptical', "
+            "'necessary_skeptical', or 'possible_skeptical'"
+        )
+
+    if isinstance(framework, PartialArgumentationFramework):
+        if mode == "skeptical":
+            raise ValueError(
+                "mode='skeptical' is ambiguous for partial AFs; use "
+                "'necessary_skeptical' or 'possible_skeptical'"
+            )
+        if mode == "possible_skeptical":
+            accepted: set[str] = set()
+            for completion in enumerate_completions(framework):
+                completion_extensions = _dung_extensions(completion, semantics=semantics)
+                if not completion_extensions:
+                    continue
+                skeptical = set(completion_extensions[0])
+                for extension in completion_extensions[1:]:
+                    skeptical.intersection_update(extension)
+                accepted.update(skeptical)
+            return frozenset(accepted)
+        if mode == "necessary_skeptical":
+            mode = "skeptical"
 
     extension_sets = extensions(framework, semantics=semantics)
     if not extension_sets:
