@@ -3,6 +3,7 @@
 from argumentation import (
     af_revision,
     accrual,
+    adf,
     aspic,
     aspic_encoding,
     aspic_incomplete,
@@ -24,6 +25,7 @@ from argumentation import (
 __all__ = [
     "af_revision",
     "accrual",
+    "adf",
     "aspic",
     "aspic_encoding",
     "aspic_incomplete",

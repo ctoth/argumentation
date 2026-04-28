@@ -1,7 +1,12 @@
-"""ICCMA-style abstract argumentation framework I/O."""
+"""ICCMA-style argumentation framework I/O."""
 
 from __future__ import annotations
 
+from argumentation.adf import (
+    AbstractDialecticalFramework,
+    parse_iccma_formula,
+    write_iccma_formula,
+)
 from argumentation.dung import ArgumentationFramework
 
 
@@ -54,6 +59,58 @@ def write_af(framework: ArgumentationFramework) -> str:
     return "\n".join(lines) + "\n"
 
 
+def parse_adf(text: str) -> AbstractDialecticalFramework:
+    """Parse a compact ICCMA-style ``p adf`` text format."""
+    statements: set[str] = set()
+    links: set[tuple[str, str]] = set()
+    conditions: dict[str, object] = {}
+    seen_header = False
+
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split(maxsplit=2)
+        if parts[:2] == ["p", "adf"]:
+            if seen_header:
+                raise ValueError("multiple p adf header lines")
+            seen_header = True
+            continue
+        if not seen_header:
+            raise ValueError("ICCMA ADF input must start with a p adf header")
+        if parts[0] == "s" and len(parts) == 2:
+            statements.add(parts[1])
+            continue
+        if parts[0] == "l" and len(parts) == 3:
+            links.add((parts[1], parts[2]))
+            continue
+        if parts[0] == "c" and len(parts) == 3:
+            conditions[parts[1]] = parse_iccma_formula(parts[2])
+            continue
+        raise ValueError(f"invalid ADF line {line_number}: {line!r}")
+    if not seen_header:
+        raise ValueError("ICCMA ADF input must include a p adf header")
+    return AbstractDialecticalFramework(
+        statements=frozenset(statements),
+        links=frozenset(links),
+        acceptance_conditions=conditions,
+    )
+
+
+def write_adf(framework: AbstractDialecticalFramework) -> str:
+    """Write a deterministic compact ICCMA-style ``p adf`` text format."""
+    lines = ["p adf"]
+    for statement in sorted(framework.statements):
+        lines.append(f"s {statement}")
+    for parent, child in sorted(framework.links):
+        lines.append(f"l {parent} {child}")
+    for statement in sorted(framework.statements):
+        lines.append(
+            f"c {statement} {write_iccma_formula(framework.acceptance_conditions[statement])}"
+        )
+    return "\n".join(lines) + "\n"
+
+
 def _validate_attack_id(value: str, argument_count: int, line_number: int) -> None:
     numeric = int(value)
     if numeric < 1 or numeric > argument_count:
@@ -68,4 +125,4 @@ def _numeric_argument_ids(framework: ArgumentationFramework) -> list[int]:
     return sorted(int(argument) for argument in framework.arguments)
 
 
-__all__ = ["parse_af", "write_af"]
+__all__ = ["parse_adf", "parse_af", "write_adf", "write_af"]
