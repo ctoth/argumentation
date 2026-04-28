@@ -280,7 +280,12 @@ def preferred_models(framework: AbstractDialecticalFramework) -> tuple[Interpret
 
 
 def stable_models(framework: AbstractDialecticalFramework) -> tuple[Interpretation, ...]:
-    return model_models(framework)
+    stable = [
+        interpretation
+        for interpretation in model_models(framework)
+        if _is_stable_model(framework, interpretation)
+    ]
+    return tuple(sorted(stable, key=_interpretation_sort_key))
 
 
 def classify_link(
@@ -392,6 +397,60 @@ def _canonical(condition: AcceptanceCondition) -> AcceptanceCondition:
         return And(condition.children)
     if isinstance(condition, _Or):
         return Or(condition.children)
+    return condition
+
+
+def _is_stable_model(
+    framework: AbstractDialecticalFramework,
+    interpretation: Interpretation,
+) -> bool:
+    values = interpretation_to_mapping(interpretation)
+    reduct = _stable_reduct(framework, values)
+    grounded = interpretation_to_mapping(grounded_interpretation(reduct))
+    return all(value is ThreeValued.T for value in grounded.values())
+
+
+def _stable_reduct(
+    framework: AbstractDialecticalFramework,
+    values: Mapping[str, ThreeValued],
+) -> AbstractDialecticalFramework:
+    true_statements = frozenset(
+        statement for statement, value in values.items() if value is ThreeValued.T
+    )
+    false_statements = frozenset(
+        statement for statement, value in values.items() if value is ThreeValued.F
+    )
+    conditions = {
+        statement: _replace_false_atoms(
+            framework.acceptance_conditions[statement],
+            false_statements,
+        )
+        for statement in true_statements
+    }
+    links = frozenset(
+        (parent, child)
+        for parent, child in framework.links
+        if parent in true_statements and child in true_statements
+    )
+    return AbstractDialecticalFramework(
+        statements=true_statements,
+        links=links,
+        acceptance_conditions=conditions,
+    )
+
+
+def _replace_false_atoms(
+    condition: AcceptanceCondition,
+    false_statements: frozenset[str],
+) -> AcceptanceCondition:
+    if isinstance(condition, Atom):
+        return False_() if condition.parent in false_statements else condition
+    if isinstance(condition, _Not):
+        return Not(_replace_false_atoms(condition.child, false_statements))
+    if isinstance(condition, _And):
+        return And(tuple(_replace_false_atoms(child, false_statements) for child in condition.children))
+    if isinstance(condition, _Or):
+        return Or(tuple(_replace_false_atoms(child, false_statements) for child in condition.children))
     return condition
 
 
