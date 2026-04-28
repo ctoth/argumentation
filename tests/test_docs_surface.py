@@ -18,7 +18,10 @@ def test_readme_documents_new_package_surfaces() -> None:
     ):
         assert expected in readme
 
-    assert "adapted grounded edge-tracking TD backend" in readme
+    assert (
+        "adapted grounded edge-tracking TD backend" in readme
+        or "adapted grounded edge-tracking tree-decomposition backend" in readme
+    )
     assert "not the full Popescu & Wallner I/O/U witness-table DP" in readme
 
 
