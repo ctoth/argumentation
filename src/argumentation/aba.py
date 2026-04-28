@@ -229,14 +229,15 @@ def ideal_extension(framework: ABAInput) -> AssumptionSet:
 
 
 def aba_to_dung(framework: ABAFramework) -> ArgumentationFramework:
-    arguments = frozenset(repr(assumption) for assumption in framework.assumptions)
+    aba_arguments = _all_arguments(framework)
+    labels = {argument: _argument_label(argument) for argument in aba_arguments}
     defeats = frozenset(
-        (repr(attacker), repr(target))
-        for attacker in framework.assumptions
-        for target in framework.assumptions
-        if attacks(framework, frozenset({attacker}), frozenset({target}))
+        (labels[attacker], labels[target])
+        for attacker in aba_arguments
+        for target in aba_arguments
+        if _argument_attacks(framework, attacker, target)
     )
-    return ArgumentationFramework(arguments=arguments, defeats=defeats)
+    return ArgumentationFramework(arguments=frozenset(labels.values()), defeats=defeats)
 
 
 def _base(framework: ABAInput) -> ABAFramework:
@@ -288,6 +289,36 @@ def _attack_supports(
             )
         )
     return tuple(supports)
+
+
+def _all_arguments(framework: ABAFramework) -> tuple[ABAArgument, ...]:
+    arguments: set[ABAArgument] = set()
+    for support in _all_subsets(framework.assumptions):
+        for conclusion in _closure(framework, support):
+            arguments.add(ABAArgument(support, conclusion))
+    return tuple(
+        sorted(
+            arguments,
+            key=lambda argument: (
+                len(argument.assumptions),
+                tuple(sorted(map(repr, argument.assumptions))),
+                repr(argument.conclusion),
+            ),
+        )
+    )
+
+
+def _argument_attacks(
+    framework: ABAFramework,
+    attacker: ABAArgument,
+    target: ABAArgument,
+) -> bool:
+    return any(attacker.conclusion == framework.contrary[assumption] for assumption in target.assumptions)
+
+
+def _argument_label(argument: ABAArgument) -> str:
+    support_text = ",".join(sorted(repr(assumption) for assumption in argument.assumptions))
+    return f"{{{support_text}}} |- {argument.conclusion!r}"
 
 
 def _defends(framework: ABAInput, defender: AssumptionSet, target: AssumptionSet) -> bool:
