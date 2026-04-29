@@ -108,10 +108,16 @@ def principle_monotonicity(
     """
 
     strengths = strength_fn(graph)
-    for source, target in graph.supports:
+    attacked_targets = {target for _source, target in graph.attacks}
+    supported_targets = {target for _source, target in graph.supports}
+    for _source, target in graph.supports:
+        if target in attacked_targets:
+            continue
         if strengths[target] + 1e-8 < graph.initial_weights[target]:
             return False
-    for source, target in graph.attacks:
+    for _source, target in graph.attacks:
+        if target in supported_targets:
+            continue
         if strengths[target] - 1e-8 > graph.initial_weights[target]:
             return False
     return True
