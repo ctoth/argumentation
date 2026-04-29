@@ -214,19 +214,34 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
         current = next_current
 
 
-def complete_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
+def complete_extensions(
+    framework: ArgumentationFramework,
+    *,
+    max_candidates: int | None = None,
+) -> list[frozenset[str]]:
     """Compute all complete extensions.
 
     A complete extension is a fixed point of F that is admissible.
 
     Reference: Dung 1995, Definition 10.
     """
-    from argumentation.labelling import complete_labellings
+    from argumentation.labelling import (
+        DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET,
+        complete_labellings,
+    )
 
     attackers_index = _attackers_index(framework.defeats)
+    candidate_budget = (
+        DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET
+        if max_candidates is None
+        else max_candidates
+    )
     return [
         labelling.extension
-        for labelling in complete_labellings(framework)
+        for labelling in complete_labellings(
+            framework,
+            max_candidates=candidate_budget,
+        )
         if admissible(
             labelling.extension,
             framework.arguments,
