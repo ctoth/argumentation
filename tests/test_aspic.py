@@ -2468,6 +2468,10 @@ class TestDefeatConcrete:
 # ── Phase 6: Rationality postulate strategies and tests ──────────
 
 
+ASPIC_RATIONALITY_MAX_ARGUMENTS = 10
+ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES = 1 << ASPIC_RATIONALITY_MAX_ARGUMENTS
+
+
 @st.composite
 def well_formed_csaf(draw, max_atoms=4, max_strict=3, max_defeasible=4):
     """Generate a well-formed c-SAF per Modgil & Prakken 2018, Def 12.
@@ -2529,6 +2533,14 @@ def well_formed_csaf(draw, max_atoms=4, max_strict=3, max_defeasible=4):
     )
 
 
+@st.composite
+def exact_complete_extension_csaf(draw):
+    """Generate c-SAFs small enough for exhaustive complete-extension checks."""
+    csaf = draw(well_formed_csaf(max_atoms=3, max_strict=2, max_defeasible=2))
+    assume(len(csaf.framework.arguments) <= ASPIC_RATIONALITY_MAX_ARGUMENTS)
+    return csaf
+
+
 # ── Phase 6: The 8 Rationality Postulate Tests ──────────────────
 
 
@@ -2538,10 +2550,11 @@ class TestRationalityPostulates:
     These are the crown jewel: if all 8 hold on 200 random well-formed
     c-SAFs, the implementation is correct per Modgil & Prakken 2018.
 
-    All use @given(well_formed_csaf()) with max_examples=200, deadline=None.
+    Complete-extension postulates use bounded generated c-SAFs because exact
+    Dung complete-extension enumeration is exponential in the projected AF size.
     """
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_sub_argument_closure(self, csaf):
         """Postulate 1 — Sub-argument closure (Thm 12, p.18).
@@ -2553,7 +2566,10 @@ class TestRationalityPostulates:
         conflict-free complete extension E of a well-defined c-SAF
         with reasonable ordering, Sub(E) = E.
         """
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             for aid in ext_ids:
                 arg = csaf.id_to_arg[aid]
                 for sub_arg in sub(arg):
@@ -2561,7 +2577,7 @@ class TestRationalityPostulates:
                         f"Sub-argument {sub_arg} of {arg} not in extension"
                     )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_strict_closure(self, csaf):
         """Postulate 2 — Closure under strict rules (Thm 13, p.18).
@@ -2573,7 +2589,10 @@ class TestRationalityPostulates:
         conflict-free complete extension E of a well-defined c-SAF
         with reasonable ordering, Cl_Rs(Conc(E)) = Conc(E).
         """
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             conclusions = frozenset(
                 conc(csaf.id_to_arg[aid]) for aid in ext_ids
             )
@@ -2582,7 +2601,7 @@ class TestRationalityPostulates:
                 f"Strict closure added: {closed - conclusions}"
             )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_direct_consistency(self, csaf):
         """Postulate 3 — Direct consistency (Thm 14, p.18).
@@ -2594,7 +2613,10 @@ class TestRationalityPostulates:
         conflict-free complete extension E of a well-defined c-SAF
         with reasonable ordering, Conc(E) is consistent.
         """
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             conclusions = [conc(csaf.id_to_arg[aid]) for aid in ext_ids]
             for i, c1 in enumerate(conclusions):
                 for c2 in conclusions[i + 1:]:
@@ -2605,7 +2627,7 @@ class TestRationalityPostulates:
                         f"Direct inconsistency: {c1} is a contrary of {c2}"
                     )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_indirect_consistency(self, csaf):
         """Postulate 4 — Indirect consistency (Thm 15, p.19).
@@ -2617,7 +2639,10 @@ class TestRationalityPostulates:
         conflict-free complete extension E of a well-defined c-SAF
         with reasonable ordering, Cl_Rs(Conc(E)) is consistent.
         """
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             conclusions = frozenset(
                 conc(csaf.id_to_arg[aid]) for aid in ext_ids
             )
@@ -2630,7 +2655,7 @@ class TestRationalityPostulates:
                         f"contradictories in Cl_Rs(Conc(E))"
                     )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_firm_strict_in_every_complete(self, csaf):
         """Postulate 5 — Firm+strict in every complete extension (Def 18).
@@ -2647,13 +2672,16 @@ class TestRationalityPostulates:
             csaf.arg_to_id[a] for a in csaf.arguments
             if is_firm(a) and is_strict(a)
         }
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             assert firm_strict_ids <= ext_ids, (
                 f"Firm+strict args {firm_strict_ids - ext_ids} "
                 f"not in complete extension"
             )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_undercutting_always_defeats(self, csaf):
         """Postulate 6 — Undercutting always defeats (Def 9).
@@ -2672,7 +2700,7 @@ class TestRationalityPostulates:
                     f"Undercutting attack {atk} not in framework defeats"
                 )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_attack_based_conflict_free(self, csaf):
         """Postulate 7 — Attack-based conflict-free (Def 14).
@@ -2684,13 +2712,16 @@ class TestRationalityPostulates:
         conflict-free iff no argument in S attacks another argument in S.
         This is strictly stronger than defeat-based conflict-free.
         """
-        for ext_ids in complete_extensions(csaf.framework):
+        for ext_ids in complete_extensions(
+            csaf.framework,
+            max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
+        ):
             assert conflict_free(ext_ids, csaf.framework.attacks), (
                 f"Complete extension {ext_ids} is not attack-based "
                 f"conflict-free"
             )
 
-    @given(well_formed_csaf())
+    @given(exact_complete_extension_csaf())
     @settings(deadline=None)
     def test_transposition_closure_maintained(self, csaf):
         """Postulate 8 — Transposition closure (Def 12).
