@@ -12,6 +12,7 @@ from argumentation.dung import (
     stable_extensions,
 )
 from argumentation.labelling import Label, Labelling
+from argumentation.labelling import ExactEnumerationExceeded, _all_subsets, complete_labellings
 
 
 def af(args: set[str], defeats: set[tuple[str, str]]) -> ArgumentationFramework:
@@ -112,3 +113,20 @@ class TestExtensionLabellingConversion:
             for extension in extensions:
                 labelling = Labelling.from_extension(framework, extension)
                 assert labelling.extension == extension
+
+
+class TestCompleteLabellingEnumerationBudget:
+    def test_subset_generation_is_lazy(self) -> None:
+        subsets = _all_subsets(frozenset(str(index) for index in range(30)))
+
+        assert not isinstance(subsets, list)
+        assert next(subsets) == frozenset()
+
+    def test_cyclic_complete_labellings_stop_at_candidate_budget(self) -> None:
+        framework = af(
+            {"a", "b", "c", "d"},
+            {("a", "b"), ("b", "a"), ("c", "d"), ("d", "c")},
+        )
+
+        with pytest.raises(ExactEnumerationExceeded, match="complete labellings"):
+            complete_labellings(framework, max_candidates=3)
