@@ -1417,19 +1417,25 @@ def _compute_dfquad(
             opinion = _support_opinion(praf, edge)
             supports[edge] = _expectation(opinion)
 
+    if strategy == "dfquad_quad":
+        if tau is None:
+            raise ValueError("dfquad_quad requires explicit tau")
+        missing_tau = sorted(argument for argument in praf.framework.arguments if argument not in tau)
+        if missing_tau:
+            missing_text = ", ".join(missing_tau)
+            raise ValueError(f"missing tau for arguments: {missing_text}")
+        initial_weights = tau
+    else:
+        initial_weights = {argument: 0.5 for argument in praf.framework.arguments}
+
     graph = WeightedBipolarGraph(
         arguments=praf.framework.arguments,
-        initial_weights={
-            argument: 0.5 if tau is None else tau[argument]
-            for argument in praf.framework.arguments
-        },
+        initial_weights=initial_weights,
         attacks=praf.framework.defeats,
         supports=frozenset(supports),
     )
 
     if strategy == "dfquad_quad":
-        if tau is None:
-            raise ValueError("dfquad_quad requires explicit tau")
         result = dfquad_strengths(graph, base_scores=tau, support_weights=supports)
     elif strategy == "dfquad_baf":
         if tau is not None:
