@@ -1,0 +1,124 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\Q\code\argumentation
+configfile: pyproject.toml
+plugins: hypothesis-6.152.1, timeout-2.4.0
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 432 items
+
+tests\test_aba_bondarenko_examples.py .                                  [  0%]
+tests\test_aba_dung_correspondence.py ..                                 [  0%]
+tests\test_aba_iccma_io.py ...                                           [  1%]
+tests\test_aba_plus_cyras_2016.py .                                      [  1%]
+tests\test_aba_toni_2014_tutorial.py ..                                  [  2%]
+tests\test_accrual.py ....                                               [  3%]
+tests\test_adf_acceptance_condition_ast.py ......                        [  4%]
+tests\test_adf_brewka_2010_examples.py ...                               [  5%]
+tests\test_adf_brewka_2013_operator.py ...                               [  5%]
+tests\test_adf_dung_bridge.py ..                                         [  6%]
+tests\test_adf_iccma_io.py ..                                            [  6%]
+tests\test_af_revision.py .............                                  [  9%]
+tests\test_aspic.py .................................................... [ 21%]
+................+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~ Stack of MainThread (380812) ~~~~~~~~~~~~~~~~~~~~~~~~~
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "C:\Users\Q\code\argumentation\.venv\Scripts\pytest.exe\__main__.py", line 10, in <module>
+    sys.exit(console_main())
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\config\__init__.py", line 223, in console_main
+    code = main()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\config\__init__.py", line 199, in main
+    ret: ExitCode | int = config.hook.pytest_cmdline_main(config=config)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\main.py", line 365, in pytest_cmdline_main
+    return wrap_session(config, _main)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\main.py", line 318, in wrap_session
+    session.exitstatus = doit(config, session) or 0
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\main.py", line 372, in _main
+    config.hook.pytest_runtestloop(session=session)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\main.py", line 396, in pytest_runtestloop
+    item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 118, in pytest_runtest_protocol
+    runtestprotocol(item, nextitem=nextitem)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 137, in runtestprotocol
+    reports.append(call_and_report(item, "call", log))
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 244, in call_and_report
+    call = CallInfo.from_call(
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 353, in from_call
+    result: TResult | None = func()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 245, in <lambda>
+    lambda: runtest_hook(item=item, **kwds),
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\runner.py", line 179, in pytest_runtest_call
+    item.runtest()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\python.py", line 1720, in runtest
+    self.ihook.pytest_pyfunc_call(pyfuncitem=self)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_hooks.py", line 512, in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_manager.py", line 120, in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\pluggy\_callers.py", line 121, in _multicall
+    res = hook_impl.function(*args)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\_pytest\python.py", line 166, in pytest_pyfunc_call
+    result = testfunction(**testargs)
+  File "C:\Users\Q\code\argumentation\tests\test_aspic.py", line 2586, in test_direct_consistency
+    @settings(deadline=None)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 2212, in wrapped_test
+    state.run_engine()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 1405, in run_engine
+    runner.run()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\internal\conjecture\engine.py", line 967, in run
+    self._run()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\internal\conjecture\engine.py", line 1540, in _run
+    self.generate_new_examples()
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\internal\conjecture\engine.py", line 1298, in generate_new_examples
+    self.test_function(data)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\internal\conjecture\engine.py", line 555, in test_function
+    self.__stoppable_test_function(data)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\internal\conjecture\engine.py", line 414, in __stoppable_test_function
+    self._test_function(data)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 1211, in _execute_once_for_engine
+    result = self.execute_once(data)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 1150, in execute_once
+    result = self.test_runner(data, run)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 824, in default_executor
+    return function(data)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 1107, in run
+    return test(*args, **kwargs)
+  File "C:\Users\Q\code\argumentation\tests\test_aspic.py", line 2586, in test_direct_consistency
+    @settings(deadline=None)
+  File "C:\Users\Q\code\argumentation\.venv\Lib\site-packages\hypothesis\core.py", line 1004, in test
+    return self.test(*args, **kwargs)
+  File "C:\Users\Q\code\argumentation\tests\test_aspic.py", line 2597, in test_direct_consistency
+    for ext_ids in complete_extensions(csaf.framework):
+  File "C:\Users\Q\code\argumentation\src\argumentation\dung.py", line 229, in complete_extensions
+    for labelling in complete_labellings(framework)
+  File "C:\Users\Q\code\argumentation\src\argumentation\labelling.py", line 189, in complete_labellings
+    for extension in _all_subsets(framework.arguments):
+  File "C:\Users\Q\code\argumentation\src\argumentation\labelling.py", line 299, in _all_subsets
+    frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
++++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++
