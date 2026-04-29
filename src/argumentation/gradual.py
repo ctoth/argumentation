@@ -334,6 +334,9 @@ def revised_direct_impact(
 
     attack_removed_strength = after_attack_removal.strengths[target]
     argument_removed_strength = after_argument_removal.strengths[target]
+    impact = attack_removed_strength - argument_removed_strength
+    if abs(impact) <= tolerance:
+        impact = 0.0
     return RevisedImpactResult(
         influencers=normalized_influencers,
         target=target,
@@ -342,7 +345,7 @@ def revised_direct_impact(
         original_strength=original.strengths[target],
         after_attack_removal_strength=attack_removed_strength,
         after_argument_removal_strength=argument_removed_strength,
-        impact=attack_removed_strength - argument_removed_strength,
+        impact=impact,
     )
 
 
