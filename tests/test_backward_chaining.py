@@ -33,7 +33,7 @@ from argumentation.aspic import (
     conc,
     prem,
     sub,
-    _contraries_of,
+    contraries_of,
 )
 
 
@@ -67,7 +67,7 @@ def _make_system(
     return system, literals
 
 
-# ── Test: _contraries_of helper ────────────────────────────────────
+# ── Test: contraries_of helper ─────────────────────────────────────
 
 
 class TestContrariesOf:
@@ -77,7 +77,7 @@ class TestContrariesOf:
         neg_p = Literal(GroundAtom("p"), negated=True)
         lang = frozenset({p, neg_p})
         cfn = ContrarinessFn(contradictories=frozenset({(p, neg_p)}))
-        result = _contraries_of(p, cfn, lang)
+        result = contraries_of(p, cfn, lang)
         assert neg_p in result
 
     def test_asymmetric_contrary(self):
@@ -90,10 +90,10 @@ class TestContrariesOf:
             contraries=frozenset({(a, b)}),  # a attacks b
         )
         # a is in bar(b), so contraries_of(b) should include a
-        result = _contraries_of(b, cfn, lang)
+        result = contraries_of(b, cfn, lang)
         assert a in result
         # b is NOT in bar(a), so contraries_of(a) should not include b
-        result_a = _contraries_of(a, cfn, lang)
+        result_a = contraries_of(a, cfn, lang)
         assert b not in result_a
 
 

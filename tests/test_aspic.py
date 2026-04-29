@@ -304,8 +304,11 @@ def strict_rules(draw, language, contrariness, max_rules=4):
                 name=None,
             )
         )
-    # Compute transposition closure — calls function that doesn't exist yet
-    closed = transposition_closure(frozenset(seed_rules), language, contrariness)
+    closed, _post_language = transposition_closure(
+        frozenset(seed_rules),
+        language,
+        contrariness,
+    )
     return closed
 
 
@@ -567,7 +570,8 @@ class TestTranspositionClosure:
         """
         (language, cfn), seed_rules = lc_rules
 
-        assert seed_rules <= transposition_closure(seed_rules, language, cfn)
+        closed, _post_language = transposition_closure(seed_rules, language, cfn)
+        assert seed_rules <= closed
 
     @given(logical_language().flatmap(
         lambda lc: st.tuples(
@@ -585,8 +589,12 @@ class TestTranspositionClosure:
         """
         (language, cfn), seed_rules, added_rules = lc_rules
 
-        closed_seed = transposition_closure(seed_rules, language, cfn)
-        closed_union = transposition_closure(seed_rules | added_rules, language, cfn)
+        closed_seed, _seed_language = transposition_closure(seed_rules, language, cfn)
+        closed_union, _union_language = transposition_closure(
+            seed_rules | added_rules,
+            language,
+            cfn,
+        )
 
         assert closed_seed <= closed_union
 
@@ -606,7 +614,7 @@ class TestTranspositionClosure:
         a strict rule whose consequent is a contradictory of that antecedent.
         """
         (language, cfn), seed_rules = lc_rules
-        closed = transposition_closure(seed_rules, language, cfn)
+        closed, _post_language = transposition_closure(seed_rules, language, cfn)
         schema_rules = frozenset(
             transposed
             for rule in closed
@@ -662,7 +670,7 @@ class TestTranspositionClosure:
         must be a fixed point.
         """
         (L, cfn), rules = lc_rules
-        closed_again = transposition_closure(rules, L, cfn)
+        closed_again, _post_language = transposition_closure(rules, L, cfn)
         assert closed_again == rules, (
             f"Closure not idempotent: {len(closed_again)} rules vs {len(rules)}"
         )
@@ -696,7 +704,7 @@ class TestTranspositionClosure:
         cfn = ContrarinessFn(
             contradictories=frozenset({(Literal(GroundAtom("p")), Literal(GroundAtom("p"), negated=True))})
         )
-        result = transposition_closure(frozenset(), L, cfn)
+        result, _post_language = transposition_closure(frozenset(), L, cfn)
         assert result == frozenset(), f"Expected empty set, got {result}"
 
     def test_transposition_closure_does_not_erase_unrelated_rules_on_singleton_inconsistency(self):
@@ -735,7 +743,7 @@ class TestTranspositionClosure:
             }
         )
 
-        closed = transposition_closure(rules, language, cfn)
+        closed, _post_language = transposition_closure(rules, language, cfn)
 
         assert unrelated in closed
         assert closed != frozenset()
@@ -769,7 +777,7 @@ class TestTranspositionClosure:
         )
         original = Rule(antecedents=(p,), consequent=r, kind="strict")
 
-        closed = transposition_closure(frozenset({original}), language, cfn)
+        closed, _post_language = transposition_closure(frozenset({original}), language, cfn)
 
         assert Rule(antecedents=(s,), consequent=q, kind="strict") in closed
 
@@ -819,7 +827,7 @@ class TestRuleConcrete:
         )
 
         # Compute closure
-        closed = transposition_closure(frozenset({original}), L, cfn)
+        closed, _post_language = transposition_closure(frozenset({original}), L, cfn)
 
         # Original must be preserved
         assert original in closed, "Original rule missing from closure"
@@ -1297,7 +1305,7 @@ class TestArgumentConstructionConcrete:
         cfn = ContrarinessFn(contradictories=frozenset({
             (p, not_p), (q, not_q), (r, not_r),
         }))
-        strict_rules = transposition_closure(
+        strict_rules, _post_language = transposition_closure(
             frozenset({
                 Rule((p,), q, "strict"),
                 Rule((not_q,), not_p, "strict"),
@@ -2735,7 +2743,7 @@ class TestRationalityPostulates:
         Prakken 2010, Theorem 6.10: transposition closure is REQUIRED
         for the rationality postulates to hold.
         """
-        closed = transposition_closure(
+        closed, _post_language = transposition_closure(
             csaf.system.strict_rules,
             csaf.system.language,
             csaf.system.contrariness,
@@ -2791,7 +2799,7 @@ class TestRationalityPostulatesConcrete:
         )
 
         # Compute transposition closure: adds bachelor -> ~married
-        R_s = transposition_closure(frozenset({rule_m_nb}), L, cfn)
+        R_s, _post_language = transposition_closure(frozenset({rule_m_nb}), L, cfn)
 
         system = ArgumentationSystem(
             language=L, contrariness=cfn,

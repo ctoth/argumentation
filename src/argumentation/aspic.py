@@ -376,8 +376,8 @@ def transposition_closure(
     rules: frozenset[Rule],
     language: frozenset[Literal],
     contrariness: ContrarinessFn,
-) -> frozenset[Rule]:
-    """Compute the transposition closure of strict rules.
+) -> tuple[frozenset[Rule], frozenset[Literal]]:
+    """Compute the transposition closure of strict rules and its language.
 
     Modgil & Prakken 2018, Def 12 (p.13); Prakken 2010, Def 5.1 (p.141).
 
@@ -409,8 +409,11 @@ def transposition_closure(
             contradictories used as ``-phi`` during transposition.
 
     Returns:
-        The smallest frozenset of well-formed Rules closed under
-        transposition, containing all well-formed input rules.
+        A pair ``(closed_rules, post_closure_language)`` where
+        ``closed_rules`` is the smallest frozenset of well-formed Rules
+        closed under transposition, containing all well-formed input rules,
+        and ``post_closure_language`` contains the input language plus every
+        literal appearing in the closed rules.
 
     Raises:
         ValueError: if a strict-rule literal has no contradictory partner in
@@ -458,7 +461,13 @@ def transposition_closure(
                             new_rules.add(new_rule)
                             changed = True
         closed.update(new_rules)
-    return frozenset(closed)
+    closed_rules = frozenset(closed)
+    post_closure_language = language | frozenset(
+        literal
+        for rule in closed_rules
+        for literal in (*rule.antecedents, rule.consequent)
+    )
+    return closed_rules, post_closure_language
 
 
 def strict_closure(
@@ -767,7 +776,7 @@ def build_arguments(
     return frozenset(all_args)
 
 
-def _contraries_of(
+def contraries_of(
     literal: Literal,
     contrariness: ContrarinessFn,
     language: frozenset[Literal],
@@ -967,7 +976,7 @@ def build_arguments_for(
 
     while pending_literals:
         lit = pending_literals.pop()
-        for contrary_lit in _contraries_of(
+        for contrary_lit in contraries_of(
             lit, system.contrariness, system.language
         ):
             attacker_args = _build_backward(contrary_lit, 0)
