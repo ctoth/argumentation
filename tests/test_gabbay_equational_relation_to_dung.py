@@ -23,5 +23,5 @@ def test_eq_min_crisp_attack_chain_recovers_complete_extension_acceptance() -> N
     result = equational_fixpoint(graph, scheme="min")
 
     assert result.converged
-    assert complete_extensions(framework) == frozenset({frozenset({"a"})})
+    assert complete_extensions(framework) == [frozenset({"a"})]
     assert result.strengths == pytest.approx({"a": 1.0, "b": 0.0})
