@@ -26,3 +26,12 @@ Non-flat ABA remains out of scope. `ABAFramework` rejects rules whose heads are 
 | WS-O-arg upstream gate | HIGH | package surface | `tests/test_workstream_o_arg_done.py` | closed `f55aeac` |
 
 Bug 1's original "must fail today" premise was stale in the current repository: `ideal_extension` already enumerated admissible subsets of the preferred-extension intersection. The workstream still removed the impossible union fallback and added named regressions for admissibility, non-downward-closed defense, and mutual defense.
+
+## WS-O-arg-vaf-completion closed gaps
+
+| Finding | Severity | Production surface | First failing test | Status |
+|---|---:|---|---|---|
+| Bench-Capon p. 438 argument chains absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_argument_chain_validates_definition_6_3_and_parity` | closed `pending-propstore-pin` |
+| Bench-Capon p. 439 lines of argument absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_line_of_argument_builds_distinct_value_chains_and_stops_on_repeat` | closed `pending-propstore-pin` |
+| Bench-Capon pp. 440-441 Theorem 6.6 and Corollary 6.7 helpers absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_corollary_6_7_two_value_cycle_matches_preferred_extension` | closed `pending-propstore-pin` |
+| Bench-Capon pp. 444-447 fact-as-highest-value and factual uncertainty absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_extensions` | closed `pending-propstore-pin` |
