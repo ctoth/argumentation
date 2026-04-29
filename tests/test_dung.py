@@ -34,6 +34,7 @@ from argumentation.dung import (
     stable_extensions,
 )
 from argumentation.semantics import extensions
+from argumentation.labelling import ExactEnumerationExceeded
 
 
 # ── Hypothesis strategies ───────────────────────────────────────────
@@ -454,6 +455,15 @@ class TestCompleteConcrete:
         """No attacks. Single complete = all arguments."""
         exts = complete_extensions(af({"A", "B"}, set()))
         assert exts == [frozenset({"A", "B"})]
+
+    def test_complete_extensions_exposes_exact_enumeration_budget(self):
+        framework = af(
+            {"A", "B", "C", "D"},
+            {("A", "B"), ("B", "A"), ("C", "D"), ("D", "C")},
+        )
+
+        with pytest.raises(ExactEnumerationExceeded, match="complete labellings"):
+            complete_extensions(framework, max_candidates=3)
 
 
 class TestHelpers:
