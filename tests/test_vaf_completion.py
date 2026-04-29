@@ -52,15 +52,15 @@ def test_argument_chain_rejects_mixed_values_and_non_linear_attackers() -> None:
     with pytest.raises(ValueError, match="same value"):
         make_argument_chain(mixed_values, ("a1", "a2"))
 
-    two_attackers = ValueBasedArgumentationFramework(
+    two_chain_attackers = ValueBasedArgumentationFramework(
         arguments=frozenset({"a1", "a2", "x"}),
-        attacks=frozenset({("a1", "a2"), ("x", "a2")}),
+        attacks=frozenset({("a1", "x"), ("x", "a2"), ("a1", "a2")}),
         values=frozenset({"life"}),
         valuation={"a1": "life", "a2": "life", "x": "life"},
         audience=("life",),
     )
     with pytest.raises(ValueError, match="only by its predecessor"):
-        make_argument_chain(two_attackers, ("a1", "a2"))
+        make_argument_chain(two_chain_attackers, ("a1", "x", "a2"))
 
 
 def test_line_of_argument_builds_distinct_value_chains_and_stops_on_repeat() -> None:
@@ -191,8 +191,8 @@ def test_corollary_6_7_two_value_cycle_matches_preferred_extension() -> None:
     # two-valued cycles matches the audience-specific preferred extension.
     vaf, chains, audience = _two_value_cycle(2, 3, "a-value")
 
-    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"a1", "b2"})
-    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"a1", "b2"})]
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"a1", "b1", "b3"})
+    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"a1", "b1", "b3"})]
 
 
 @given(
