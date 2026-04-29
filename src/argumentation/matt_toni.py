@@ -105,6 +105,7 @@ def _normalised_attack_count(count: int) -> float:
 
 
 def _zero_sum_row_value(matrix: list[list[float]]) -> float:
+    matrix = _dominance_reduced(matrix)
     row_count = len(matrix)
     column_count = len(matrix[0])
     best = 0.0
@@ -129,6 +130,56 @@ def _zero_sum_row_value(matrix: list[list[float]]) -> float:
                     best = max(best, value)
     pure = max(min(row) for row in matrix)
     return min(1.0, max(0.0, max(best, pure)))
+
+
+def _dominance_reduced(matrix: list[list[float]]) -> list[list[float]]:
+    reduced = [row[:] for row in matrix]
+    changed = True
+    while changed:
+        changed = False
+        row_count = len(reduced)
+        column_count = len(reduced[0])
+        dominated_rows = {
+            row
+            for row in range(row_count)
+            if any(
+                row != other
+                and all(reduced[other][column] >= reduced[row][column] for column in range(column_count))
+                and any(reduced[other][column] > reduced[row][column] for column in range(column_count))
+                for other in range(row_count)
+            )
+        }
+        if dominated_rows and len(dominated_rows) < row_count:
+            reduced = [
+                values
+                for row, values in enumerate(reduced)
+                if row not in dominated_rows
+            ]
+            changed = True
+
+        row_count = len(reduced)
+        column_count = len(reduced[0])
+        dominated_columns = {
+            column
+            for column in range(column_count)
+            if any(
+                column != other
+                and all(reduced[row][other] <= reduced[row][column] for row in range(row_count))
+                and any(reduced[row][other] < reduced[row][column] for row in range(row_count))
+                for other in range(column_count)
+            )
+        }
+        if dominated_columns and len(dominated_columns) < column_count:
+            reduced = [
+                [
+                    value
+                    for column, value in enumerate(row)
+                    if column not in dominated_columns
+                ]
+                for row in reduced
+            ]
+            changed = True
+    return reduced
 
 
 def _solve_active_system(
