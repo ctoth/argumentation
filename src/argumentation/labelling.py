@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
@@ -21,6 +22,13 @@ class Label(Enum):
     IN = "in"
     OUT = "out"
     UNDEC = "undec"
+
+
+DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET = 65_536
+
+
+class ExactEnumerationExceeded(RuntimeError):
+    """Raised when exact complete-labelling enumeration exceeds its budget."""
 
 
 def _normalize_label(value: Label | str) -> Label:
@@ -180,13 +188,23 @@ def is_reinstatement_labelling(
     return True
 
 
-def complete_labellings(framework: ArgumentationFramework) -> list[Labelling]:
+def complete_labellings(
+    framework: ArgumentationFramework,
+    *,
+    max_candidates: int | None = DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET,
+) -> list[Labelling]:
     """Compute all complete labellings by Caminada 2006 reinstatement."""
     if _is_acyclic(framework):
         return [grounded_labelling(framework)]
 
     results: list[Labelling] = []
-    for extension in _all_subsets(framework.arguments):
+    for candidate_count, extension in enumerate(_all_subsets(framework.arguments), start=1):
+        if max_candidates is not None and candidate_count > max_candidates:
+            raise ExactEnumerationExceeded(
+                "complete labellings exact enumeration exceeded "
+                f"{max_candidates} candidate subsets for "
+                f"{len(framework.arguments)} arguments"
+            )
         if characteristic_fn(
             extension,
             framework.arguments,
@@ -293,12 +311,14 @@ def _sort_labellings(labellings: list[Labelling]) -> list[Labelling]:
     )
 
 
-def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
+def _all_subsets(arguments: frozenset[str]) -> Iterator[frozenset[str]]:
     ordered = sorted(arguments)
-    return [
-        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
-        for mask in range(1 << len(ordered))
-    ]
+    for mask in range(1 << len(ordered)):
+        yield frozenset(
+            ordered[index]
+            for index in range(len(ordered))
+            if mask & (1 << index)
+        )
 
 
 def _is_acyclic(framework: ArgumentationFramework) -> bool:
@@ -333,6 +353,7 @@ def _require_known_argument(framework: ArgumentationFramework, argument: str) ->
 __all__ = [
     "Label",
     "Labelling",
+    "ExactEnumerationExceeded",
     "complete_labellings",
     "eager_labelling",
     "grounded_labelling",
