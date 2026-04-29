@@ -1,0 +1,64 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Users\Q\code\argumentation
+configfile: pyproject.toml
+plugins: hypothesis-6.152.1, timeout-2.4.0
+timeout: 120.0s
+timeout method: thread
+timeout func_only: False
+collected 439 items
+
+tests\test_aba_bondarenko_examples.py .                                  [  0%]
+tests\test_aba_dung_correspondence.py ..                                 [  0%]
+tests\test_aba_iccma_io.py ...                                           [  1%]
+tests\test_aba_plus_cyras_2016.py .                                      [  1%]
+tests\test_aba_toni_2014_tutorial.py ..                                  [  2%]
+tests\test_accrual.py ....                                               [  2%]
+tests\test_adf_acceptance_condition_ast.py ......                        [  4%]
+tests\test_adf_brewka_2010_examples.py ...                               [  5%]
+tests\test_adf_brewka_2013_operator.py ...                               [  5%]
+tests\test_adf_dung_bridge.py ..                                         [  6%]
+tests\test_adf_iccma_io.py ..                                            [  6%]
+tests\test_af_revision.py .............                                  [  9%]
+tests\test_aspic.py .................................................... [ 21%]
+.......................                                                  [ 26%]
+tests\test_aspic_encodings.py ........                                   [ 28%]
+tests\test_aspic_incomplete.py .....                                     [ 29%]
+tests\test_aspic_projection.py ..                                        [ 30%]
+tests\test_backward_chaining.py ......................                   [ 35%]
+tests\test_bipolar_argumentation.py ....................                 [ 39%]
+tests\test_bipolar_semantics.py .................                        [ 43%]
+tests\test_dfquad.py .....                                               [ 44%]
+tests\test_docs_surface.py ..                                            [ 45%]
+tests\test_dung.py ..................................................... [ 57%]
+..................                                                       [ 61%]
+tests\test_dung_extensions_workstream.py ...........                     [ 63%]
+tests\test_dung_ideal_admissibility.py ...                               [ 64%]
+tests\test_gradual.py ........                                           [ 66%]
+tests\test_iccma.py .....                                                [ 67%]
+tests\test_import_boundaries.py .                                        [ 67%]
+tests\test_labelling.py ........                                         [ 69%]
+tests\test_labelling_operational.py ....                                 [ 70%]
+tests\test_partial_af.py .......                                         [ 71%]
+tests\test_partial_af_merge.py ..............                            [ 75%]
+tests\test_partial_af_queries.py ....                                    [ 76%]
+tests\test_practical_reasoning.py ......                                 [ 77%]
+tests\test_preference.py ...............                                 [ 80%]
+tests\test_probabilistic.py ............                                 [ 83%]
+tests\test_probabilistic_paper_td.py ..........                          [ 85%]
+tests\test_ranking.py ...........                                        [ 88%]
+tests\test_ranking_axioms.py .........                                   [ 90%]
+tests\test_semantics.py ......                                           [ 91%]
+tests\test_solver_availability.py ..                                     [ 92%]
+tests\test_solver_encoding.py .....                                      [ 93%]
+tests\test_subjective_aspic.py ......                                    [ 94%]
+tests\test_treedecomp.py .......                                         [ 96%]
+tests\test_treedecomp_differential.py .                                  [ 96%]
+tests\test_vaf.py .....                                                  [ 97%]
+tests\test_weighted.py .....                                             [ 98%]
+tests\test_workstream_o_arg_aba_adf_done.py .                            [ 99%]
+tests\test_workstream_o_arg_done.py .                                    [ 99%]
+tests\test_workstream_o_arg_dung_extensions_done.py .                    [ 99%]
+tests\test_workstream_o_arg_vaf_ranking_done.py ..                       [100%]
+
+============================ 439 passed in 27.85s =============================
