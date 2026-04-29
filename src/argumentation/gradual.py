@@ -57,6 +57,7 @@ class GradualStrengthResult:
     iterations: int
     max_delta: float
     tolerance: float
+    integration_method: str
 
 
 @dataclass(frozen=True)
@@ -89,11 +90,30 @@ def quadratic_energy_strengths(
     tolerance: float = 1e-9,
     max_iterations: int = 10_000,
 ) -> GradualStrengthResult:
+    """Compute Potyka quadratic-energy strengths with the continuous model.
+
+    Potyka 2018, KR, p. 150, Definition 2 gives the differential equation
+    ``ds_j/dt = w(j) - s_j + (1-w(j))h(E_j) - w(j)h(-E_j)``. This public
+    entry point uses that continuous system by default.
+    """
+    return quadratic_energy_strengths_continuous(
+        graph,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+    )
+
+
+def quadratic_energy_strengths_discrete(
+    graph: WeightedBipolarGraph,
+    *,
+    tolerance: float = 1e-9,
+    max_iterations: int = 10_000,
+) -> GradualStrengthResult:
     """Compute fixed-point strengths for Potyka's quadratic energy model.
 
-    Definition 2 gives energy as supporter strength minus attacker strength and
-    uses ``h(x)=max(x,0)^2 / (1 + max(x,0)^2)``. At equilibrium, each argument
-    has strength ``w + (1-w)h(E) - w h(-E)``.
+    This is the explicit Euler-style fixed-point iteration for Potyka 2018,
+    KR, p. 150, Definition 2. Use it only when the discretisation itself is
+    the subject; ``quadratic_energy_strengths`` is the continuous default.
     """
     if tolerance <= 0.0:
         raise ValueError("tolerance must be positive")
@@ -128,6 +148,7 @@ def quadratic_energy_strengths(
                 iterations=iteration,
                 max_delta=max_delta,
                 tolerance=tolerance,
+                integration_method="fixed_point_discrete",
             )
 
     return GradualStrengthResult(
@@ -136,12 +157,133 @@ def quadratic_energy_strengths(
         iterations=max_iterations,
         max_delta=max_delta,
         tolerance=tolerance,
+        integration_method="fixed_point_discrete",
+    )
+
+
+def quadratic_energy_strengths_continuous(
+    graph: WeightedBipolarGraph,
+    *,
+    tolerance: float = 1e-9,
+    max_iterations: int = 10_000,
+    initial_step: float = 0.25,
+) -> GradualStrengthResult:
+    """Integrate Potyka's continuous quadratic-energy ODE.
+
+    Potyka 2018, KR, p. 150, Definition 2 defines the quadratic energy
+    model as a system of differential equations and notes RK4 as the basic
+    numerical integration method. This implementation uses adaptive step
+    halving/doubling around RK4 and reports the largest residual derivative.
+    """
+    if tolerance <= 0.0:
+        raise ValueError("tolerance must be positive")
+    if max_iterations <= 0:
+        raise ValueError("max_iterations must be positive")
+    if initial_step <= 0.0:
+        raise ValueError("initial_step must be positive")
+
+    arguments = tuple(sorted(graph.arguments))
+    strengths = {
+        argument: graph.initial_weights[argument]
+        for argument in arguments
+    }
+    step = initial_step
+    max_delta = 0.0
+    for iteration in range(1, max_iterations + 1):
+        derivative = _quadratic_derivative(graph, strengths)
+        max_delta = max((abs(value) for value in derivative.values()), default=0.0)
+        if max_delta <= tolerance:
+            return GradualStrengthResult(
+                strengths=dict(sorted(strengths.items())),
+                converged=True,
+                iterations=iteration - 1,
+                max_delta=max_delta,
+                tolerance=tolerance,
+                integration_method="rk4_adaptive",
+            )
+
+        while True:
+            full = _rk4_step(graph, strengths, step)
+            half = _rk4_step(graph, _rk4_step(graph, strengths, step / 2.0), step / 2.0)
+            error = max(
+                abs(full[argument] - half[argument])
+                for argument in arguments
+            )
+            scale = tolerance + tolerance * max(abs(half[argument]) for argument in arguments)
+            if error <= scale or step <= 1e-6:
+                strengths = {
+                    argument: min(1.0, max(0.0, half[argument]))
+                    for argument in arguments
+                }
+                if error < scale / 16.0:
+                    step = min(step * 2.0, 1.0)
+                break
+            step /= 2.0
+
+    return GradualStrengthResult(
+        strengths=dict(sorted(strengths.items())),
+        converged=False,
+        iterations=max_iterations,
+        max_delta=max_delta,
+        tolerance=tolerance,
+        integration_method="rk4_adaptive",
     )
 
 
 def quadratic_impact(value: float) -> float:
     positive = max(value, 0.0)
     return (positive * positive) / (1.0 + positive * positive)
+
+
+def _quadratic_derivative(
+    graph: WeightedBipolarGraph,
+    strengths: Mapping[str, float],
+) -> dict[str, float]:
+    supporters = _predecessors(graph.supports, graph.arguments)
+    attackers = _predecessors(graph.attacks, graph.arguments)
+    derivative: dict[str, float] = {}
+    for argument in graph.arguments:
+        energy = sum(strengths[source] for source in supporters[argument])
+        energy -= sum(strengths[source] for source in attackers[argument])
+        target = _equilibrium_strength(graph.initial_weights[argument], energy)
+        derivative[argument] = target - strengths[argument]
+    return derivative
+
+
+def _rk4_step(
+    graph: WeightedBipolarGraph,
+    strengths: Mapping[str, float],
+    step: float,
+) -> dict[str, float]:
+    arguments = tuple(sorted(graph.arguments))
+    k1 = _quadratic_derivative(graph, strengths)
+    k2_input = {
+        argument: strengths[argument] + step * k1[argument] / 2.0
+        for argument in arguments
+    }
+    k2 = _quadratic_derivative(graph, k2_input)
+    k3_input = {
+        argument: strengths[argument] + step * k2[argument] / 2.0
+        for argument in arguments
+    }
+    k3 = _quadratic_derivative(graph, k3_input)
+    k4_input = {
+        argument: strengths[argument] + step * k3[argument]
+        for argument in arguments
+    }
+    k4 = _quadratic_derivative(graph, k4_input)
+    return {
+        argument: strengths[argument]
+        + step
+        * (
+            k1[argument]
+            + 2.0 * k2[argument]
+            + 2.0 * k3[argument]
+            + k4[argument]
+        )
+        / 6.0
+        for argument in arguments
+    }
 
 
 def revised_direct_impact(
