@@ -11,6 +11,7 @@ from argumentation.af_revision import (
     AFChangeKind,
     AFKernelSemantics,
     ExtensionRevisionState,
+    NoStableExtensionsError,
     UnknownArgumentRank,
     _classify_extension_change,
     _extend_state,
@@ -282,6 +283,20 @@ def test_ws_o_arg_extension_revision_state_accepts_lazy_ranking() -> None:
     assert set(calls) == {frozenset({"a0"}), frozenset({"a1"})}
 
 
+def test_diller_2015_framework_revision_rejects_no_stable_target() -> None:
+    no_stable = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b"), ("b", "c"), ("c", "a")}),
+    )
+    state = ExtensionRevisionState.from_extensions(frozenset(), (frozenset(),))
+
+    assert tuple(stable_extensions(no_stable)) == ()
+    with pytest.raises(NoStableExtensionsError) as exc_info:
+        diller_2015_revise_by_framework(state, no_stable, semantics="stable")
+
+    assert exc_info.value.framework == no_stable
+
+
 def test_extend_state_unknown_rank_raises() -> None:
     state = object.__new__(ExtensionRevisionState)
     object.__setattr__(state, "arguments", frozenset({"a"}))
@@ -326,7 +341,12 @@ def test_diller_2015_a_star_1_a_star_6_framework_revision(
     state: ExtensionRevisionState,
     framework: ArgumentationFramework,
 ) -> None:
-    target_extensions = tuple(stable_extensions(framework)) or (frozenset(),)
+    target_extensions = tuple(stable_extensions(framework))
+    if not target_extensions:
+        with pytest.raises(NoStableExtensionsError):
+            diller_2015_revise_by_framework(state, framework, semantics="stable")
+        return
+
     result = diller_2015_revise_by_framework(state, framework, semantics="stable")
 
     assert frozenset(result.extensions) <= frozenset(target_extensions)
