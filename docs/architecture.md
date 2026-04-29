@@ -51,6 +51,12 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   attribution.
 - `argumentation.subjective_aspic` — Wallner-style value filtering helpers for
   ASPIC+ subjective knowledge bases and defeasible rules.
+- `argumentation.vaf` — Bench-Capon value-based argumentation frameworks,
+  audience-specific defeat, and objective/subjective acceptance.
+- `argumentation.practical_reasoning` — Atkinson and Bench-Capon AATS-backed
+  AS1 practical arguments with CQ5, CQ6, and CQ11 objection generation.
+- `argumentation.ranking_axioms` — Executable ranking postulate checks over
+  `RankingResult` outputs.
 - `argumentation.accrual` — Prakken-style weak/strong applicability
   helpers and same-conclusion accrual envelopes.
 - `argumentation.semantics` — Generic set-returning semantics dispatch over

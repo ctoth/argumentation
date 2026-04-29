@@ -361,6 +361,18 @@ ASPIC+ argument construction: subjective knowledge bases add complementary
 literals for rejected propositions, and defeasible rules are filtered by body,
 head, and rule name.
 
+`argumentation.vaf` implements Bench-Capon value-based argumentation frameworks:
+audience-specific defeat removes attacks whose target value is preferred to the
+attacker value, and objective/subjective acceptance quantify over audience
+orders and preferred extensions.
+
+`argumentation.practical_reasoning` implements the Atkinson and Bench-Capon
+AATS grounding for AS1-style practical arguments and the CQ5, CQ6, and CQ11
+choice-stage objections.
+
+`argumentation.ranking_axioms` exposes executable checks for ranking preorder,
+void-precedence, and cardinality-precedence obligations over `RankingResult`.
+
 `argumentation.accrual` exposes Prakken-style weak/strong applicability checks
 and accrual envelopes for same-conclusion arguments. It does not yet implement
 the full labelling-relative defeat engine.
