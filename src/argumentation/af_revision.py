@@ -57,6 +57,17 @@ class UnknownArgumentRank(Exception):
         )
 
 
+class NoStableExtensionsError(ValueError):
+    """Raised when stable-framework revision has no stable target extensions."""
+
+    def __init__(self, framework: ArgumentationFramework) -> None:
+        self.framework = framework
+        super().__init__("stable-framework revision target has no stable extensions")
+
+    def __str__(self) -> str:
+        return "stable-framework revision target has no stable extensions"
+
+
 @dataclass(frozen=True, slots=True)
 class ExtensionRevisionState:
     arguments: frozenset[str]
@@ -286,7 +297,9 @@ def diller_2015_revise_by_framework(
 ) -> ExtensionRevisionResult:
     if semantics != "stable":
         raise ValueError("Only stable extension revision is implemented")
-    target = tuple(stable_extensions(framework)) or (frozenset(),)
+    target = tuple(stable_extensions(framework))
+    if not target:
+        raise NoStableExtensionsError(framework)
     arguments = state.arguments | framework.arguments
     working = state if arguments == state.arguments else _extend_state(state, arguments)
     lifted_target = tuple(frozenset(extension) for extension in target)
@@ -377,6 +390,7 @@ __all__ = [
     "AFKernelSemantics",
     "ExtensionRevisionState",
     "ExtensionRevisionResult",
+    "NoStableExtensionsError",
     "UnknownArgumentRank",
     "baumann_2015_kernel",
     "baumann_2015_kernel_union_expand",
