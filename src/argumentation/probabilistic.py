@@ -1402,10 +1402,8 @@ def _compute_dfquad(
     the same as a weak argument. A principled separation would maintain P_A for
     sampling and τ as an independent parameter.
     """
-    from argumentation.probabilistic_dfquad import (
-        compute_dfquad_baf_strengths,
-        compute_dfquad_quad_strengths,
-    )
+    from argumentation.dfquad import dfquad_bipolar_strengths, dfquad_strengths
+    from argumentation.gradual import WeightedBipolarGraph
 
     if semantics != "grounded":
         raise ValueError(
@@ -1419,28 +1417,31 @@ def _compute_dfquad(
             opinion = _support_opinion(praf, edge)
             supports[edge] = _expectation(opinion)
 
+    graph = WeightedBipolarGraph(
+        arguments=praf.framework.arguments,
+        initial_weights={
+            argument: 0.5 if tau is None else tau[argument]
+            for argument in praf.framework.arguments
+        },
+        attacks=praf.framework.defeats,
+        supports=frozenset(supports),
+    )
+
     if strategy == "dfquad_quad":
         if tau is None:
             raise ValueError("dfquad_quad requires explicit tau")
-        strengths = compute_dfquad_quad_strengths(
-            praf,
-            supports,
-            tau=tau,
-        )
+        result = dfquad_strengths(graph, base_scores=tau, support_weights=supports)
     elif strategy == "dfquad_baf":
         if tau is not None:
             raise ValueError("dfquad_baf does not use tau")
-        strengths = compute_dfquad_baf_strengths(
-            praf,
-            supports,
-        )
+        result = dfquad_bipolar_strengths(graph)
     else:
         raise ValueError(
             "strategy='dfquad' is ambiguous; use 'dfquad_quad' or 'dfquad_baf'"
         )
 
     return PrAFResult(
-        acceptance_probs=strengths,
+        acceptance_probs=result.strengths,
         extension_probability=None,
         strategy_used=strategy,
         strategy_requested=strategy,
