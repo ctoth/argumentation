@@ -3,13 +3,14 @@ from __future__ import annotations
 import pytest
 
 from argumentation.dung import ArgumentationFramework
-from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
-from argumentation.probabilistic_dfquad import (
-    compute_dfquad_baf_strengths,
-    compute_dfquad_quad_strengths,
+from argumentation.dfquad import (
     dfquad_aggregate,
+    dfquad_bipolar_strengths,
     dfquad_combine,
+    dfquad_strengths,
 )
+from argumentation.gradual import WeightedBipolarGraph
+from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 
 
 def test_dfquad_aggregate_bounds_attack_and_support_effects() -> None:
@@ -34,11 +35,16 @@ def test_quad_strengths_are_support_sensitive() -> None:
         p_supports={("a", "b"): 0.8},
     )
 
-    strengths = compute_dfquad_quad_strengths(
-        praf,
-        {("a", "b"): 0.8},
-        tau={"a": 0.9, "b": 0.3},
+    graph = WeightedBipolarGraph(
+        arguments=praf.framework.arguments,
+        initial_weights={"a": 0.9, "b": 0.3},
+        supports=praf.supports,
     )
+    strengths = dfquad_strengths(
+        graph,
+        base_scores={"a": 0.9, "b": 0.3},
+        support_weights={("a", "b"): 0.8},
+    ).strengths
 
     assert strengths["b"] > 0.3
 
@@ -64,7 +70,12 @@ def test_baf_strengths_use_neutral_base_score() -> None:
         p_defeats={("a", "b"): 1.0},
     )
 
-    strengths = compute_dfquad_baf_strengths(praf, {})
+    graph = WeightedBipolarGraph(
+        arguments=praf.framework.arguments,
+        initial_weights={argument: 0.5 for argument in praf.framework.arguments},
+        attacks=praf.framework.defeats,
+    )
+    strengths = dfquad_bipolar_strengths(graph).strengths
 
     assert strengths["a"] == pytest.approx(0.5)
     assert strengths["b"] < 0.5
