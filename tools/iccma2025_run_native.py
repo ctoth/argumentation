@@ -4,10 +4,10 @@ import argparse
 import csv
 from dataclasses import dataclass
 import json
-import multiprocessing as mp
 from pathlib import Path
-import queue
+import subprocess
 import sys
+import tempfile
 import time
 from typing import Any
 
@@ -52,6 +52,8 @@ class RunConfig:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if argv and argv[0] == "_worker":
+        return worker_main(argv[1:])
     parser = argparse.ArgumentParser(
         description="Run bounded native argumentation algorithms on ICCMA 2025 data."
     )
@@ -133,30 +135,56 @@ def run_or_skip(
 
 
 def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
-    context = mp.get_context("spawn")
-    results = context.Queue()
-    process = context.Process(target=worker_entry, args=(job, results))
-    process.start()
-    process.join(timeout_seconds)
-    if process.is_alive():
-        process.terminate()
-        process.join()
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        suffix=".json",
+        delete=False,
+    ) as handle:
+        json.dump(job, handle)
+        job_path = Path(handle.name)
+    try:
+        completed = subprocess.run(
+            [sys.executable, __file__, "_worker", str(job_path)],
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
         return {
             "status": "timeout",
             "reason": f"timeout>{timeout_seconds}",
             "error": None,
         }
-    try:
-        return results.get_nowait()
-    except queue.Empty:
+    finally:
+        job_path.unlink(missing_ok=True)
+    if completed.returncode != 0:
         return {
             "status": "error",
-            "reason": "worker_no_result",
-            "error": f"worker exited with code {process.exitcode}",
+            "reason": "worker_nonzero_exit",
+            "error": (completed.stderr or completed.stdout).strip(),
+        }
+    try:
+        return json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        return {
+            "status": "error",
+            "reason": "worker_bad_json",
+            "error": f"{exc}: {completed.stdout!r}",
         }
 
 
-def worker_entry(job: dict[str, Any], results) -> None:
+def worker_main(argv: list[str]) -> int:
+    if len(argv) != 1:
+        print("_worker requires a job json path", file=sys.stderr)
+        return 2
+    job = load_json(Path(argv[0]))
+    print(json.dumps(worker_solve(job), sort_keys=True))
+    return 0
+
+
+def worker_solve(job: dict[str, Any]) -> dict[str, Any]:
     try:
         if job["instance"]["kind"] == "af":
             result = solve_af_job(job)
@@ -168,7 +196,7 @@ def worker_entry(job: dict[str, Any], results) -> None:
             "reason": type(exc).__name__,
             "error": str(exc),
         }
-    results.put(result)
+    return result
 
 
 def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
@@ -352,4 +380,4 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
