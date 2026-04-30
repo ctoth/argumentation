@@ -103,8 +103,8 @@ Acceptance criteria:
   finds a cheaper witness that Baumann enforcement correctly rejects.
 - Status: conservative normal/strong/weak expansion variants are implemented
   for credulous, skeptical, and strict/non-strict extension targets. Liberal
-  semantics-changing variants are intentionally not implemented because this
-  pass did not reread and encode their semantics-change definition.
+  semantics-changing variants are implemented with explicit source and target
+  semantics after rereading the general enforcement definition.
 
 ### Phase 4: Brute-Force Reference Oracle
 
