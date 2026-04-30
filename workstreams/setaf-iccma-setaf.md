@@ -22,8 +22,8 @@ images, retrieve the primary source and convert it before changing code.
   `(tail_set, target)`.
 - Conflict-free, defense, admissible, complete, grounded, preferred, stable,
   semi-stable, and stage semantics exist.
-- `argumentation.iccma_setaf` currently uses a compact `p setaf` format that
-  has not been verified against an official ICCMA format.
+- `argumentation.setaf_io` supports the ASPARTIX `arg/att/mem` fact format and
+  names the compact `p setaf` format as package-local.
 
 ## Execution Mode
 
@@ -117,7 +117,7 @@ Acceptance criteria:
 Targeted commands:
 
 ```powershell
-uv run pytest tests\test_setaf.py tests\test_iccma_setaf.py -q
+uv run pytest tests\test_setaf.py tests\test_setaf_io.py -q
 ```
 
 Full verification:
