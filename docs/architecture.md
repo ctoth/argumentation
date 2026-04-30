@@ -13,11 +13,9 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.labelling` — Three-valued IN / OUT / UNDEC labelling and
   the extension-to-labelling bridge used by accrual and quantitative
   services.
-- `argumentation.dung_z3` — SAT-backed enumeration of complete, preferred,
-  and stable extensions for larger frameworks.
 - `argumentation.sat_encoding` — Solver-independent CNF encoding of stable
   extensions, plus a reference scan-based enumerator.
-- `argumentation.iccma` — ICCMA `p af n` numeric AF I/O for interop with
+- `argumentation.iccma` — ICCMA-style AF, ADF, and ABA I/O for interop with
   external argumentation solvers.
 - `argumentation.solver_adapters.iccma_af` — ICCMA 2023 AF solver subprocess
   adapter for `solver -p <task> -f <file> [-a <query>]`, with typed DC/DS/SE
@@ -77,12 +75,15 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.probabilistic_components` — Connected component
   decomposition over the primitive semantic dependency graph (Hunter &
   Thimm 2017, Proposition 18).
-- `argumentation.probabilistic_dfquad` — DF-QuAD aggregation function and
-  strength propagation for QBAFs.
+- `argumentation.dfquad` — DF-QuAD aggregation/combination and strength
+  propagation for quantitative bipolar graphs.
 - `argumentation.probabilistic_treedecomp` — Min-degree treewidth
   estimation, tree decomposition computation, nice tree decomposition
   conversion, and an adapted grounded edge-tracking DP. This is exact for
-  the supported grounded PrAF route, but not the full Popescu & Wallner I/O/U witness-table DP.
+  the supported grounded PrAF route, but not the full Popescu & Wallner I/O/U
+  witness-table DP.
+- `argumentation.equational` — Iterative equational fixpoint scoring schemes
+  over weighted bipolar graphs.
 - `argumentation.ranking` — Categoriser and Burden ranking-based semantics
   over Dung AFs.
 - `argumentation.weighted` — Dunne-style weighted argument systems with
@@ -91,10 +92,17 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   strengths for weighted bipolar graphs, revised direct-impact
   attribution, and exact Shapley-style per-attack impact scores
   (Al Anaissy et al. 2024).
+- `argumentation.gradual_principles` — Executable balance, directionality,
+  and monotonicity checks over gradual strength functions.
+- `argumentation.matt_toni` — Finite zero-sum game strengths for small AFs,
+  with explicit intractability signalling for oversized game matrices.
 - `argumentation.subjective_aspic` — Wallner-style value filtering helpers for
   ASPIC+ subjective knowledge bases and defeasible rules.
 - `argumentation.vaf` — Bench-Capon value-based argumentation frameworks,
   audience-specific defeat, and objective/subjective acceptance.
+- `argumentation.vaf_completion` — Value-based argument-chain construction,
+  line classification, fact-first audiences, and two-value cycle completion
+  helpers.
 - `argumentation.practical_reasoning` — Atkinson and Bench-Capon AATS-backed
   AS1 practical arguments with CQ5, CQ6, and CQ11 objection generation.
 - `argumentation.ranking_axioms` — Executable ranking postulate checks over
@@ -105,34 +113,31 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   argumentation-owned Dung, bipolar, and partial-AF dataclasses.
 - `argumentation.preference` — Strict-partial-order helpers and elitist
   and democratic preference comparisons (Modgil & Prakken 2018 Def 19).
-- `argumentation.solver` — Solver-result wrappers (`SolverSat`,
-  `SolverUnsat`, `SolverUnknown`, `Z3UnknownError`) used by optional
-  backends.
+- `argumentation.solver` — Typed Dung extension solve results. The supported
+  Dung backend is `labelling`; unknown backend names, including the deleted
+  `z3` backend name, return `SolverBackendUnavailable`.
 
 ## Backend policy
 
-Pure Python algorithms are the reference implementation. Optional solver
-backends must produce the same formal results as the reference
-implementation on the same finite framework, except when the solver
-explicitly reports unknown. Differential tests cross-check the two backends.
+Pure Python algorithms are the reference implementation. Dung extension
+enumeration currently has one package-owned execution path: labelling and
+finite set enumeration in `argumentation.dung` / `argumentation.labelling`.
 
-Backend routing on Dung extension semantics: `backend="auto"` selects
-brute-force enumeration for frameworks with at most twelve arguments, where
-Z3 expression construction overhead exceeds direct enumeration cost, and
-selects the Z3 backend above that threshold. `backend="brute"` and
-`backend="z3"` force a specific implementation.
+`argumentation.solver.solve_dung_extensions` exposes that path through the
+backend name `labelling`. Other backend names return
+`SolverBackendUnavailable`; this includes the old `z3` backend name. The
+deleted `argumentation.dung_z3` module is not part of the current public
+surface.
 
-## Z3 backend
+## Z3 usage
 
-`argumentation.dung_z3` encodes Dung extension semantics as SAT problems
-over per-argument Boolean variables and enumerates models by adding
-blocking clauses. It uses a default 30-second timeout (configurable via
-`argumentation.solver.DEFAULT_Z3_TIMEOUT_MS`) and surfaces solver outcomes
-through `argumentation.solver` result types. A two-valued caller that
-cannot represent unknown receives `Z3UnknownError`.
-
-`z3-solver` is an optional package dependency (extra: `z3`) and a
-development dependency for the test suite.
+`z3-solver` remains an optional package dependency (extra: `z3`) and a
+development dependency for tests, but not for Dung extension enumeration.
+The current Z3-backed package surface is in `argumentation.epistemic`:
+`constraints_satisfiable` and `constraints_entail` build linear real
+constraints over argument probability labels and call Z3 when the optional
+dependency is installed. Without `z3-solver`, those functions raise a
+runtime error naming the missing dependency.
 
 ## Probabilistic backend routing
 

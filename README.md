@@ -18,11 +18,11 @@ argumentation theory as a small, dependency-free kernel:
 - **Value-based and accrual** helpers for ASPIC+ input filtering and
   same-conclusion support envelopes
 - **Generic semantics dispatch** over Dung, bipolar, and partial AF objects
-- An optional **Z3-backed** backend for extension enumeration
+- Optional **Z3-backed epistemic linear-constraint** helpers
 
 Every algorithm cites the paper, definition, and (where useful) page that fixes
-its behaviour. The pure-Python implementation is the reference; solver backends
-must agree with it.
+its behaviour. The pure-Python implementation is the reference for package
+algorithms and adapter checks.
 
 ## Install
 
@@ -30,7 +30,7 @@ must agree with it.
 uv add formal-argumentation
 ```
 
-To enable the Z3-backed Dung backend:
+To enable Z3-backed epistemic linear-constraint checks:
 
 ```powershell
 uv add "formal-argumentation[z3]"
@@ -77,13 +77,50 @@ used by Dung's defence) and an optional pre-preference `attacks` relation used
 by conflict-freeness, following Modgil & Prakken (2018) Def 14.
 
 `grounded` / `complete` / `preferred` / `stable` semantics are all provided.
-`complete`, `preferred`, and `stable` accept a `backend` argument; the default
-`"auto"` selects brute-force enumeration for small frameworks (≤12 arguments)
-and Z3 above that threshold.
+Dung extension enumeration is implemented through the package's labelling and
+set-enumeration code paths. The old `argumentation.dung_z3` module and Dung
+Z3 backend name have been removed.
+
+Beyond the four core semantics, `argumentation.dung` also provides
+`naive_extensions`, `semi_stable_extensions` (Caminada 2011),
+`stage_extensions`, `cf2_extensions` (Gaggl & Woltran 2013),
+`stage2_extensions`, `eager_extension`, `ideal_extension` (Dung, Mancarella &
+Toni 2007), and prudent-semantics helpers. These are finite in-package
+algorithms, not wrappers around an external solver.
+
+```python
+from argumentation.dung import (
+    semi_stable_extensions,
+    stage_extensions,
+    cf2_extensions,
+    ideal_extension,
+)
+```
+
+### Three-valued labellings
+
+`argumentation.labelling` exposes the standard IN / OUT / UNDEC labelling and
+provides a bridge from extensions to labellings, used by accrual and other
+quantitative services.
+
+```python
+from argumentation.labelling import Label, Labelling
+
+labelling = Labelling.from_extension(framework, frozenset({"a", "c"}))
+labelling.in_arguments         # frozenset({"a", "c"})
+labelling.out_arguments        # arguments defeated by an in argument
+labelling.undecided_arguments  # everything else
+labelling.range                # in ∪ out
+```
 
 > Dung, P. M. (1995). On the acceptability of arguments and its fundamental
 > role in nonmonotonic reasoning, logic programming and *n*-person games.
 > *Artificial Intelligence*, 77(2), 321–357.
+> Caminada, M. (2011). Semi-stable semantics. In *COMMA 2006*.
+> Gaggl, S. A. & Woltran, S. (2013). The cf2 argumentation semantics revisited.
+> *Journal of Logic and Computation*, 23(5), 925–949.
+> Dung, P. M., Mancarella, P. & Toni, F. (2007). Computing ideal sceptical
+> argumentation. *Artificial Intelligence*, 171(10–15), 642–674.
 
 ## ASPIC+ structured argumentation
 
@@ -145,6 +182,61 @@ The module provides:
 
 > Modgil, S. & Prakken, H. (2018). A general account of argumentation with
 > preferences. *Artificial Intelligence*, 248, 51–104.
+
+## ASPIC+ encodings and incomplete reasoning
+
+The `argumentation.aspic_encoding` module encodes ASPIC+ theories into a
+deterministic ASP-style fact vocabulary and provides a typed grounded-query
+surface that can be backed by either the materialised reference projection or
+an optional registered backend.
+
+```python
+from argumentation.aspic_encoding import (
+    encode_aspic_theory,
+    solve_aspic_grounded,
+    solve_aspic_with_backend,
+)
+
+encoding = encode_aspic_theory(system, kb, pref)
+encoding.facts        # tuple of axiom/premise/s_head/d_head/contrary/preferred facts
+encoding.signature    # SHA-256 over the sorted fact tuple
+
+result = solve_aspic_grounded(system, kb, pref)
+result.accepted_argument_ids
+result.accepted_conclusions
+result.backend        # "materialized_reference"
+```
+
+`solve_aspic_with_backend` dispatches to a named backend; an unregistered
+backend returns a typed `ASPICQueryResult` with `status="unavailable_backend"`
+rather than raising. The fact vocabulary follows Lehtonen, Niskanen & Järvisalo
+2024.
+
+`argumentation.aspic_incomplete` reasons over ASPIC+ theories with optional
+ordinary premises. `evaluate_incomplete_grounded` enumerates all completions of
+the unknown premises and classifies a query literal as `stable`, `relevant`,
+`unknown`, or `unsupported`.
+
+```python
+from argumentation.aspic_incomplete import (
+    PartialASPICTheory,
+    evaluate_incomplete_grounded,
+)
+
+theory = PartialASPICTheory(
+    system=system, kb=kb, pref=pref,
+    unknown_premises=frozenset({p, q}),
+)
+outcome = evaluate_incomplete_grounded(theory, query=p)
+outcome.status                  # "stable" | "relevant" | "unknown" | "unsupported"
+outcome.accepting_completions
+outcome.completion_count
+```
+
+> Lehtonen, T., Niskanen, A., & Järvisalo, M. (2024). Reasoning over ASPIC+
+> in answer set programming. *KR 2024*.
+> Odekerken, D., Borg, A. & Bex, F. (2023). Justification, stability and
+> relevance for case-based reasoning with incomplete focus cases.
 
 ## Bipolar argumentation
 
@@ -276,10 +368,10 @@ praf = ProbabilisticAF(
 
 result = compute_probabilistic_acceptance(praf, semantics="grounded")
 result.acceptance_probs    # {"a": 0.9, "b": ..., "c": ...}
-result.strategy_used       # "exact_enum" | "mc" | "exact_dp" | "deterministic"
+result.strategy_used       # "deterministic" | "exact_enum" | "mc" | ...
 ```
 
-`compute_probabilistic_acceptance` dispatches across five strategies:
+`compute_probabilistic_acceptance` dispatches across six strategies:
 
 - `deterministic` — fast path when every probability is 0 or 1; collapses
   to standard Dung evaluation (Li et al. 2012, p. 2).
@@ -288,9 +380,15 @@ result.strategy_used       # "exact_enum" | "mc" | "exact_dp" | "deterministic"
 - `mc` — Monte Carlo sampling with Agresti–Coull stopping per Li et al.
   (2012, Algorithm 1), decomposed across connected components per Hunter
   & Thimm (2017, Proposition 18).
-- `exact_dp` — an adapted grounded edge-tracking TD backend using
-  tree decompositions for defeat-only frameworks. It is exact for the
-  supported grounded PrAF route, but not the full Popescu & Wallner I/O/U witness-table DP.
+- `exact_dp` — an adapted grounded edge-tracking tree-decomposition backend
+  for credulous grounded acceptance on defeat-only worlds. It currently tracks
+  full edge sets and forgotten arguments in table keys, so the asymptotic
+  complexity is not better than brute-force enumeration; it is effective in
+  practice for primal-graph treewidth ≤ ~15. This is *not* the full
+  Popescu & Wallner I/O/U witness-table DP.
+- `paper_td` — the paper-faithful Popescu & Wallner (2024) Algorithm 1 for
+  exact extension-probability queries. Opt-in only (`strategy="paper_td"`,
+  `query_kind="extension_probability"`); the auto-router does not select it.
 - `dfquad_quad` and `dfquad_baf` — DF-QuAD gradual semantics for
   quantitative bipolar frameworks (Freedman et al. 2025).
 
@@ -347,14 +445,25 @@ weighted_grounded_extensions(weighted_framework, budget=1.0)
 ```
 
 `argumentation.gradual` computes Potyka-style quadratic-energy strengths for
-weighted bipolar graphs and exposes revised direct-impact attribution:
+weighted bipolar graphs, exposes revised direct-impact attribution, and
+computes exact Shapley-style per-attack impact scores:
 
 ```python
-from argumentation.gradual import quadratic_energy_strengths, revised_direct_impact
+from argumentation.gradual import (
+    quadratic_energy_strengths,
+    revised_direct_impact,
+    shapley_attack_impacts,
+)
 
 strengths = quadratic_energy_strengths(graph)
 impact = revised_direct_impact(graph, influencers=frozenset({"a"}), target="b")
+shapley = shapley_attack_impacts(graph, target="b")
+shapley.attack_impacts   # exact Shapley value per direct attack on "b"
 ```
+
+`shapley_attack_impacts` enumerates all coalitions of the other direct attacks
+on the target and averages their marginal contribution to the target's
+quadratic-energy strength (Al Anaissy et al. 2024, Definition 13).
 
 `argumentation.subjective_aspic` implements Wallner-style value filtering before
 ASPIC+ argument construction: subjective knowledge bases add complementary
@@ -379,10 +488,19 @@ the full labelling-relative defeat engine.
 
 ## Additional SOTA workstream surfaces
 
+`argumentation.aba` implements flat ABA and ABA+ over ASPIC literals, including
+complete, preferred, stable, naive, grounded, well-founded, and ideal
+assumption-extension functions plus a Dung projection.
+
+`argumentation.adf` implements abstract dialectical frameworks with typed
+acceptance-condition ASTs, three-valued interpretations, grounded/admissible/
+complete/model/preferred/stable model enumeration, structural link
+classification, JSON/formula I/O helpers, and Dung bridges.
+
 `argumentation.setaf` implements argumentation frameworks with collective
 attacks, including conflict-free, admissible, complete, preferred, grounded,
-stable, semi-stable, and stage semantics. `argumentation.iccma_setaf` provides
-a compact deterministic parser and writer for SETAF exchange.
+stable, semi-stable, and stage semantics. `argumentation.setaf_io` provides
+ASPARTIX fact I/O plus compact deterministic SETAF parser/writer helpers.
 
 `argumentation.enforcement` provides a brute-force minimal-change oracle for
 argument and extension enforcement over Dung AFs. It returns typed witness
@@ -400,27 +518,66 @@ iteration, and budgeted semi-stable approximation with exactness metadata.
 
 `argumentation.epistemic` represents epistemic graphs with positive and
 negative influences over belief levels, finite model enumeration, evidence
-updates, and projection to constellation PrAFs.
+updates, and projection to constellation PrAFs. Its linear atomic constraint
+satisfiability and entailment helpers use `z3-solver` when the optional `z3`
+extra is installed; this is the current Z3-backed surface.
+
+`argumentation.dfquad` exposes DF-QuAD aggregation/combination and strength
+propagation for quantitative bipolar graphs. `argumentation.equational`
+provides iterative equational fixpoint scoring schemes. `argumentation.matt_toni`
+computes finite zero-sum game strengths for small AFs and raises when the game
+matrix is too large for the in-package solver.
+
+`argumentation.gradual_principles` contains executable checks for balance,
+directionality, and monotonicity over gradual strength functions.
+`argumentation.vaf_completion` contains finite value-based argument-chain and
+audience helpers for fact-uncertainty completion scenarios.
 
 `argumentation.llm_surface` is a dependency-free adapter for argumentative LLM
 pipelines: callers supply propositions and attack/support edges, while the
 package computes QBAF strengths, Shapley-style attack explanations, and
 contestation witnesses.
 
-## Optional Z3 backend
+## ICCMA interop and pure SAT encoding
 
-`argumentation.dung_z3` provides SAT-encoded enumeration of complete,
-preferred, and stable extensions. It is automatically selected by the `"auto"`
-backend on larger frameworks and can be requested explicitly:
+`argumentation.iccma` reads and writes ICCMA-style AF, ADF, and ABA exchange
+formats, allowing frameworks to be exchanged with external argumentation
+solvers.
 
 ```python
-preferred_extensions(framework, backend="z3")
+from argumentation.iccma import parse_aba, parse_adf, parse_af, write_af
+
+framework = parse_af("p af 3\n1 2\n2 3\n")
+text = write_af(framework)
 ```
 
-Z3 results are surfaced through three local result types — `SolverSat`,
-`SolverUnsat`, `SolverUnknown` — with a default 30-second timeout. A two-valued
-caller that cannot represent unknown receives `Z3UnknownError`. Install the
-`z3` extra to enable the backend.
+`argumentation.sat_encoding` provides a pure-Python CNF encoding of the stable
+extension semantics over one Boolean variable per argument. The encoding is
+solver-independent: the included reference enumerator decides satisfaction by
+direct assignment scan, and the same `CNFEncoding` can be handed to any SAT
+solver that accepts DIMACS-style integer literals.
+
+```python
+from argumentation.sat_encoding import (
+    encode_stable_extensions,
+    stable_extensions_from_encoding,
+)
+
+encoding = encode_stable_extensions(framework)
+extensions = stable_extensions_from_encoding(encoding)
+```
+
+## Solver surfaces
+
+`argumentation.solver.solve_dung_extensions` is a typed dispatcher over the
+single in-package Dung extension path. Its supported backend name is
+`"labelling"`; asking for `"z3"` returns `SolverBackendUnavailable` with an
+install hint to use `"labelling"`.
+
+The package still has an optional `z3` extra, but it is for
+`argumentation.epistemic` linear atomic constraint satisfiability and
+entailment. There is no Dung Z3 extension backend in the current package
+surface.
 
 ## Generic semantics dispatch
 
@@ -453,9 +610,9 @@ revision code:
 
 ## Design
 
-- Pure-Python algorithms are the reference implementation. Optional solver
-  backends must produce the same formal results on the same finite framework,
-  except where the solver explicitly reports unknown.
+- Pure-Python algorithms are the reference implementation for package-owned
+  algorithms. Solver adapters are typed boundaries around external tools or
+  optional dependencies.
 - Frameworks, rules, arguments, and extensions are immutable frozen
   dataclasses over frozensets. Equality is structural.
 - Conflict-freeness is checked against the pre-preference attack relation;
@@ -479,5 +636,5 @@ uv run pytest -vv
 ```
 
 Tests are tagged `unit`, `property`, and `differential`. Property tests use
-Hypothesis. Differential tests cross-check the brute-force and Z3 backends on
-the same frameworks.
+Hypothesis. Differential tests cross-check independently implemented package
+paths where the repository has more than one executable route.
