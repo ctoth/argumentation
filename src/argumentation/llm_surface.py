@@ -5,6 +5,11 @@ weights, and attack/support edges.  This module builds package-native weighted
 bipolar graphs, computes gradual strengths, and returns typed explanation or
 contestation witnesses without taking any LLM dependency.
 
+Freedman et al.'s main ArgLLM experiments use DF-QuAD; this module currently
+uses the package's Potyka-style quadratic-energy gradual semantics as a typed
+reasoning surface.  It does not implement prompt orchestration, argument
+generation, intrinsic strength attribution, or the paper's empirical pipeline.
+
 Reference:
     Freedman, Dejl, Gorur, Yin, Rago, and Toni (2025). Argumentative large
     language models for explainable and contestable claim verification.
