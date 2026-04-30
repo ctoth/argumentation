@@ -8,6 +8,7 @@ from argumentation.dynamic import (
     DynamicRecomputeOracle,
     DynamicArgumentationFramework,
     DynamicUpdate,
+    IncrementalDynamicArgumentationFramework,
     incremental_extension_update,
     apply_update_stream,
     parse_update_stream,
@@ -198,3 +199,40 @@ def test_incremental_algorithm_combines_reduced_preferred_extension_without_fall
     assert result.used_incremental is True
     assert result.fallback_reason is None
     assert result.extension in extensions_for(result.updated_framework, "preferred")
+
+
+def test_incremental_state_queries_expose_witnesses_and_counterexamples() -> None:
+    dynamic = IncrementalDynamicArgumentationFramework(
+        example_6_framework(),
+        semantics="stable",
+        current_extension=frozenset({"a", "d", "e"}),
+    )
+
+    result = dynamic.apply(DynamicUpdate("add_att", "d", "d"))
+
+    assert result.used_incremental is False
+    assert result.fallback_reason == "reduced_solver_no_extension"
+    assert dynamic.current_extension == frozenset({"a", "c"})
+
+    credulous = dynamic.query_credulous("c")
+    skeptical = dynamic.query_skeptical("d")
+
+    assert credulous.accepted is True
+    assert credulous.witness == frozenset({"a", "c"})
+    assert skeptical.accepted is False
+    assert skeptical.counterexample == frozenset({"a", "c"})
+
+
+def test_incremental_state_reports_honest_recompute_for_unsupported_update_kind() -> None:
+    dynamic = IncrementalDynamicArgumentationFramework(
+        ArgumentationFramework(arguments=frozenset({"a"}), defeats=frozenset()),
+        semantics="grounded",
+        current_extension=frozenset({"a"}),
+    )
+
+    result = dynamic.apply(DynamicUpdate("add_arg", "b"))
+
+    assert result.used_incremental is False
+    assert result.fallback_reason == "unsupported_update_kind"
+    assert result.updated_framework.arguments == frozenset({"a", "b"})
+    assert dynamic.current_extension == frozenset({"a", "b"})
