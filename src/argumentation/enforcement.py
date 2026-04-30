@@ -118,6 +118,7 @@ class ExpansionEnforcementResult:
     witness_framework: ArgumentationFramework
     extensions: tuple[frozenset[str], ...]
     accepted_arguments: frozenset[str]
+    source_semantics: SemanticsName | None = None
 
     @property
     def cost(self) -> int:
@@ -394,6 +395,7 @@ def _minimal_expansion_result(
     max_added_defeats: int,
     mode: EnforcementMode,
     accepts: Callable[[tuple[frozenset[str], ...]], bool],
+    source_semantics: SemanticsName | None = None,
 ) -> ExpansionEnforcementResult:
     for expansion in _all_expansions(
         framework,
@@ -418,6 +420,7 @@ def _minimal_expansion_result(
             witness_framework=expansion.expanded,
             extensions=extensions,
             accepted_arguments=accepted,
+            source_semantics=source_semantics,
         )
     raise ValueError(
         f"no {kind} expansion {mode} {semantics} enforcement found "
@@ -575,4 +578,104 @@ def enforce_expansion_extension(
             if variant == "strict"
             else any(target <= extension for extension in extensions)
         ),
+    )
+
+
+def _validate_liberal_semantics(
+    source_semantics: SemanticsName,
+    target_semantics: SemanticsName,
+) -> None:
+    if source_semantics == target_semantics:
+        raise ValueError("liberal enforcement requires source_semantics != target_semantics")
+
+
+def enforce_liberal_expansion_credulous(
+    framework: ArgumentationFramework,
+    argument: str,
+    *,
+    source_semantics: SemanticsName,
+    target_semantics: SemanticsName,
+    kind: ExpansionKind = "normal",
+    candidate_new_arguments: frozenset[str] = frozenset({"x1", "x2"}),
+    max_new_arguments: int = 1,
+    max_added_defeats: int = 2,
+) -> ExpansionEnforcementResult:
+    """Find a minimal liberal expansion credulously enforcing ``argument``."""
+    _validate_liberal_semantics(source_semantics, target_semantics)
+    if argument not in framework.arguments:
+        raise ValueError(f"unknown argument: {argument}")
+    return _minimal_expansion_result(
+        framework,
+        semantics=target_semantics,
+        kind=kind,
+        candidate_new_arguments=candidate_new_arguments,
+        max_new_arguments=max_new_arguments,
+        max_added_defeats=max_added_defeats,
+        mode="credulous",
+        accepts=lambda extensions: any(argument in extension for extension in extensions),
+        source_semantics=source_semantics,
+    )
+
+
+def enforce_liberal_expansion_skeptical(
+    framework: ArgumentationFramework,
+    argument: str,
+    *,
+    source_semantics: SemanticsName,
+    target_semantics: SemanticsName,
+    kind: ExpansionKind = "normal",
+    candidate_new_arguments: frozenset[str] = frozenset({"x1", "x2"}),
+    max_new_arguments: int = 1,
+    max_added_defeats: int = 2,
+) -> ExpansionEnforcementResult:
+    """Find a minimal liberal expansion skeptically enforcing ``argument``."""
+    _validate_liberal_semantics(source_semantics, target_semantics)
+    if argument not in framework.arguments:
+        raise ValueError(f"unknown argument: {argument}")
+    return _minimal_expansion_result(
+        framework,
+        semantics=target_semantics,
+        kind=kind,
+        candidate_new_arguments=candidate_new_arguments,
+        max_new_arguments=max_new_arguments,
+        max_added_defeats=max_added_defeats,
+        mode="skeptical",
+        accepts=lambda extensions: bool(extensions)
+        and all(argument in extension for extension in extensions),
+        source_semantics=source_semantics,
+    )
+
+
+def enforce_liberal_expansion_extension(
+    framework: ArgumentationFramework,
+    target: frozenset[str],
+    *,
+    source_semantics: SemanticsName,
+    target_semantics: SemanticsName,
+    variant: ExtensionVariant = "strict",
+    kind: ExpansionKind = "normal",
+    candidate_new_arguments: frozenset[str] = frozenset({"x1", "x2"}),
+    max_new_arguments: int = 1,
+    max_added_defeats: int = 2,
+) -> ExpansionEnforcementResult:
+    """Find a minimal liberal expansion enforcing an extension target."""
+    _validate_liberal_semantics(source_semantics, target_semantics)
+    if not target <= framework.arguments:
+        raise ValueError(f"target contains unknown arguments: {sorted(target - framework.arguments)!r}")
+    if variant not in {"strict", "non-strict"}:
+        raise ValueError(f"unsupported enforcement variant: {variant}")
+    return _minimal_expansion_result(
+        framework,
+        semantics=target_semantics,
+        kind=kind,
+        candidate_new_arguments=candidate_new_arguments,
+        max_new_arguments=max_new_arguments,
+        max_added_defeats=max_added_defeats,
+        mode="extension",
+        accepts=(
+            lambda extensions: target in extensions
+            if variant == "strict"
+            else any(target <= extension for extension in extensions)
+        ),
+        source_semantics=source_semantics,
     )
