@@ -63,3 +63,26 @@ def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
         caf,
         semantics="stable",
     )
+
+
+def test_claim_level_stable_uses_claim_defeat_range() -> None:
+    caf = ClaimAugmentedAF(
+        framework=af({"a1", "a2", "b"}, {("a2", "a2"), ("a2", "a1"), ("a1", "b")}),
+        claims={"a1": "A", "a2": "A", "b": "B"},
+    )
+
+    assert inherited_extensions(caf, semantics="stable") == ()
+    assert claim_level_extensions(caf, semantics="stable") == (frozenset({"A"}),)
+    assert claim_level_extensions(caf, semantics="stable-admissible") == ()
+
+
+def test_claim_level_stage_maximizes_claim_ranges() -> None:
+    caf = ClaimAugmentedAF(
+        framework=af({"a", "b", "c1", "c2"}, {("b", "a"), ("b", "c1"), ("c1", "c1"), ("c2", "c2")}),
+        claims={"a": "A", "b": "B", "c1": "C", "c2": "C"},
+    )
+
+    assert set(claim_level_extensions(caf, semantics="stage")) == {
+        frozenset({"A"}),
+        frozenset({"B"}),
+    }
