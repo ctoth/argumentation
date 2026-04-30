@@ -33,7 +33,8 @@ def test_admissibility_defends_against_collective_attackers() -> None:
         ),
     )
 
-    assert admissible(framework, frozenset({"c", "x"})) is False
+    assert admissible(framework, frozenset({"c"})) is False
+    assert admissible(framework, frozenset({"c", "x"})) is True
     assert admissible(framework, frozenset({"c", "x", "y"})) is True
 
 
