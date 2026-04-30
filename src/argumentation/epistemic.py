@@ -547,6 +547,37 @@ def constraints_entail(
     return str(solver.check()) == "unsat"
 
 
+def least_squares_update_labelling(
+    arguments: frozenset[str],
+    current: Mapping[str, float],
+    constraints: Sequence[LinearAtomicConstraint],
+) -> dict[str, float] | None:
+    """Return a least-squares atomic labelling update, or ``None`` if unsatisfiable."""
+    arguments = frozenset(str(argument) for argument in arguments)
+    current = {str(argument): float(value) for argument, value in current.items()}
+    missing = sorted(arguments - set(current))
+    extra = sorted(set(current) - arguments)
+    if missing or extra:
+        raise ValueError(f"current labelling keys must match arguments: missing={missing!r}, extra={extra!r}")
+    if any(value < 0.0 or value > 1.0 for value in current.values()):
+        raise ValueError("current labelling values must lie in [0, 1]")
+    if all(constraint.satisfied_by(current) for constraint in constraints):
+        return {argument: current[argument] for argument in sorted(arguments)}
+    if not constraints_satisfiable(arguments, constraints):
+        return None
+
+    projection_constraints = list(constraints)
+    for argument in sorted(arguments):
+        projection_constraints.append(
+            LinearAtomicConstraint({argument: 1.0}, LinearRelation.GE, 0.0)
+        )
+        projection_constraints.append(
+            LinearAtomicConstraint({argument: 1.0}, LinearRelation.LE, 1.0)
+        )
+    updated = _project_labelling(current, projection_constraints)
+    return {argument: round(updated[argument], 12) for argument in sorted(arguments)}
+
+
 def _linear_solver(arguments: frozenset[str]):
     try:
         import z3  # type: ignore[import-not-found]
@@ -591,6 +622,45 @@ def _add_negated_linear_constraint(solver, variables, constraint: LinearAtomicCo
         solver.add(expr != constraint.constant)
     else:
         raise ValueError(f"unsupported linear relation: {constraint.relation}")
+
+
+def _project_labelling(
+    current: Mapping[str, float],
+    constraints: Sequence[LinearAtomicConstraint],
+) -> dict[str, float]:
+    point = {argument: float(value) for argument, value in current.items()}
+    for _ in range(10_000):
+        max_violation = 0.0
+        for constraint in constraints:
+            violation = _constraint_violation(point, constraint)
+            max_violation = max(max_violation, abs(violation))
+            if abs(violation) <= 1e-12:
+                continue
+            norm = sum(coefficient * coefficient for coefficient in constraint.coefficients.values())
+            if norm == 0.0:
+                continue
+            for argument, coefficient in constraint.coefficients.items():
+                point[argument] = point[argument] - (violation / norm) * coefficient
+        if max_violation <= 1e-10:
+            break
+    return point
+
+
+def _constraint_violation(
+    point: Mapping[str, float],
+    constraint: LinearAtomicConstraint,
+) -> float:
+    value = sum(
+        coefficient * float(point[argument])
+        for argument, coefficient in constraint.coefficients.items()
+    )
+    if constraint.relation == LinearRelation.LE:
+        return max(0.0, value - constraint.constant)
+    if constraint.relation == LinearRelation.GE:
+        return min(0.0, value - constraint.constant)
+    if constraint.relation == LinearRelation.EQ:
+        return value - constraint.constant
+    raise ValueError(f"unsupported linear relation: {constraint.relation}")
 
 
 @dataclass(frozen=True)
