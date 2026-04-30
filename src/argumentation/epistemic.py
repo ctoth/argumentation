@@ -1,8 +1,12 @@
-"""Epistemic graphs over argument belief levels.
+"""Finite belief-level approximation for epistemic influence graphs.
 
-The surface is deliberately finite: belief assignments are mappings from
-argument IDs to floats in ``[0, 1]``; constraints are interval bounds; and
-positive/negative influences are checked directly over those assignments.
+The surface is deliberately narrower than Hunter et al.'s full epistemic graph
+language: belief assignments are mappings from argument IDs to floats in
+``[0, 1]``; constraints are interval bounds; and positive/negative influences
+are checked directly over those assignments.  It does not implement general
+epistemic formulas, multi-labelled arcs with dependency labels, probability
+functions over possible worlds, or Potyka et al.'s linear-programming
+satisfiability and entailment procedures.
 
 References:
     Hunter, Polberg, and Thimm (2018-2020). Epistemic graphs for representing
