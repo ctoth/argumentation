@@ -62,6 +62,18 @@ class IncrementalUpdateResult:
     fallback_reason: str | None = None
 
 
+@dataclass(frozen=True)
+class DynamicAcceptanceAnswer:
+    """Acceptance query answer with an extension witness when available."""
+
+    argument: str
+    semantics: SemanticsName
+    mode: Literal["credulous", "skeptical"]
+    accepted: bool
+    witness: frozenset[str] | None = None
+    counterexample: frozenset[str] | None = None
+
+
 @dataclass
 class DynamicArgumentationFramework:
     framework: ArgumentationFramework
@@ -395,6 +407,101 @@ def incremental_extension_update(
             else "combined_extension_invalid"
         ),
     )
+
+
+@dataclass
+class IncrementalDynamicArgumentationFramework:
+    """Stateful dynamic AF using Algorithm 1 where its preconditions hold."""
+
+    framework: ArgumentationFramework
+    semantics: SemanticsName
+    current_extension: frozenset[str] | None = None
+    last_result: IncrementalUpdateResult | None = None
+
+    def __post_init__(self) -> None:
+        if self.current_extension is None:
+            self.current_extension = _first_extension(self.framework, self.semantics)
+        elif not _is_extension(self.framework, self.semantics, self.current_extension):
+            raise ValueError("current_extension is not valid for the initial framework")
+
+    def apply(self, update: DynamicUpdate) -> IncrementalUpdateResult:
+        if update.kind in {"add_att", "del_att"}:
+            try:
+                result = incremental_extension_update(
+                    self.framework,
+                    update,
+                    semantics=self.semantics,
+                    initial_extension=self.current_extension,
+                )
+            except ValueError as exc:
+                result = self._recompute_result(update, str(exc))
+        else:
+            result = self._recompute_result(update, "unsupported_update_kind")
+        self.framework = result.updated_framework
+        self.current_extension = result.extension
+        self.last_result = result
+        return result
+
+    def query_credulous(self, argument: str) -> DynamicAcceptanceAnswer:
+        self._require_argument(argument)
+        extensions = extensions_for(self.framework, self.semantics)
+        witness = next(
+            (extension for extension in extensions if argument in extension),
+            None,
+        )
+        return DynamicAcceptanceAnswer(
+            argument=argument,
+            semantics=self.semantics,
+            mode="credulous",
+            accepted=witness is not None,
+            witness=witness,
+            counterexample=None if witness is not None else (extensions[0] if extensions else None),
+        )
+
+    def query_skeptical(self, argument: str) -> DynamicAcceptanceAnswer:
+        self._require_argument(argument)
+        extensions = extensions_for(self.framework, self.semantics)
+        counterexample = next(
+            (extension for extension in extensions if argument not in extension),
+            None,
+        )
+        accepted = bool(extensions) and counterexample is None
+        return DynamicAcceptanceAnswer(
+            argument=argument,
+            semantics=self.semantics,
+            mode="skeptical",
+            accepted=accepted,
+            witness=extensions[0] if accepted else None,
+            counterexample=counterexample,
+        )
+
+    def _recompute_result(
+        self,
+        update: DynamicUpdate,
+        reason: str,
+    ) -> IncrementalUpdateResult:
+        updated = _apply_update(self.framework, update)
+        extension = _first_extension(updated, self.semantics)
+        return IncrementalUpdateResult(
+            original_framework=self.framework,
+            updated_framework=updated,
+            update=update,
+            semantics=self.semantics,
+            initial_extension=self.current_extension or frozenset(),
+            influenced=frozenset(),
+            reduced_framework=ArgumentationFramework(
+                arguments=frozenset(),
+                defeats=frozenset(),
+            ),
+            reduced_extension=None,
+            extension=extension,
+            used_incremental=False,
+            fallback_reason=reason,
+        )
+
+    def _require_argument(self, argument: str) -> None:
+        if argument not in self.framework.arguments:
+            raise ValueError(f"unknown argument: {argument}")
 
 
 def parse_update_stream(text: str) -> tuple[DynamicUpdate, ...]:
