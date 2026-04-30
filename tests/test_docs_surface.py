@@ -18,6 +18,13 @@ def test_readme_documents_new_package_surfaces() -> None:
         "argumentation.practical_reasoning",
         "argumentation.ranking_axioms",
         "argumentation.accrual",
+        "argumentation.setaf",
+        "argumentation.enforcement",
+        "argumentation.caf",
+        "argumentation.dynamic",
+        "argumentation.approximate",
+        "argumentation.epistemic",
+        "argumentation.llm_surface",
     ):
         assert expected in readme
 
@@ -41,6 +48,13 @@ def test_architecture_documents_new_package_surfaces() -> None:
         "argumentation.practical_reasoning",
         "argumentation.ranking_axioms",
         "argumentation.accrual",
+        "argumentation.setaf",
+        "argumentation.enforcement",
+        "argumentation.caf",
+        "argumentation.dynamic",
+        "argumentation.approximate",
+        "argumentation.epistemic",
+        "argumentation.llm_surface",
     ):
         assert expected in architecture
 
