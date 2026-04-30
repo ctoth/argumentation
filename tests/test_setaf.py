@@ -4,6 +4,7 @@ from argumentation.dung import ArgumentationFramework, grounded_extension, prefe
 from argumentation.setaf import (
     SETAF,
     admissible,
+    complete_extensions,
     conflict_free,
     grounded_extension as setaf_grounded_extension,
     preferred_extensions as setaf_preferred_extensions,
@@ -57,3 +58,21 @@ def test_stable_extensions_cover_outsiders_with_collective_attacks() -> None:
     )
 
     assert stable_extensions(framework) == (frozenset({"a", "b"}),)
+
+
+def test_grounded_extension_is_subset_minimal_complete_extension() -> None:
+    framework = SETAF(
+        arguments=frozenset({"a", "b", "c", "d"}),
+        attacks=frozenset(
+            {
+                (frozenset({"a", "b"}), "c"),
+                (frozenset({"c"}), "d"),
+            }
+        ),
+    )
+
+    grounded = setaf_grounded_extension(framework)
+    completes = complete_extensions(framework)
+
+    assert grounded in completes
+    assert not any(candidate < grounded for candidate in completes)
