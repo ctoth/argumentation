@@ -1,7 +1,8 @@
-"""Dynamic abstract argumentation with recompute-from-scratch queries.
+"""Dynamic abstract argumentation with recompute and incremental updates.
 
-This is a correctness reference for update streams.  It does not implement the
-incremental affected-subframework algorithms used by Alfano et al. or IPAFAIR.
+The recompute oracle remains the executable specification for update streams.
+For single attack updates, this module also implements the influenced-set and
+reduced-AF construction from Alfano, Greco, and Parisi 2017, Algorithm 1.
 """
 
 from __future__ import annotations
@@ -21,6 +22,44 @@ class DynamicUpdate:
     kind: UpdateKind
     source: str
     target: str | None = None
+
+
+@dataclass(frozen=True)
+class DynamicRecomputeOracle:
+    """Recompute-from-scratch oracle for dynamic update streams."""
+
+    framework: ArgumentationFramework
+
+    def apply(self, update: DynamicUpdate) -> DynamicRecomputeOracle:
+        dynamic = DynamicArgumentationFramework(self.framework)
+        dynamic.apply(update)
+        return DynamicRecomputeOracle(dynamic.framework)
+
+    def apply_all(self, updates: tuple[DynamicUpdate, ...]) -> DynamicRecomputeOracle:
+        oracle = self
+        for update in updates:
+            oracle = oracle.apply(update)
+        return oracle
+
+    def extensions(self, semantics: SemanticsName) -> tuple[frozenset[str], ...]:
+        return extensions_for(self.framework, semantics)
+
+
+@dataclass(frozen=True)
+class IncrementalUpdateResult:
+    """Result and instrumentation for a single incremental update."""
+
+    original_framework: ArgumentationFramework
+    updated_framework: ArgumentationFramework
+    update: DynamicUpdate
+    semantics: SemanticsName
+    initial_extension: frozenset[str]
+    influenced: frozenset[str]
+    reduced_framework: ArgumentationFramework
+    reduced_extension: frozenset[str] | None
+    extension: frozenset[str] | None
+    used_incremental: bool
+    fallback_reason: str | None = None
 
 
 @dataclass
@@ -99,6 +138,263 @@ class DynamicArgumentationFramework:
         unknown = sorted(set(arguments) - self.framework.arguments)
         if unknown:
             raise ValueError(f"unknown arguments: {unknown!r}")
+
+
+def _apply_update(
+    framework: ArgumentationFramework,
+    update: DynamicUpdate,
+) -> ArgumentationFramework:
+    dynamic = DynamicArgumentationFramework(framework)
+    dynamic.apply(update)
+    return dynamic.framework
+
+
+def _extension_status(
+    framework: ArgumentationFramework,
+    extension: frozenset[str],
+) -> dict[str, Literal["IN", "OUT", "UN"]]:
+    attacked = frozenset(
+        target for attacker, target in framework.defeats if attacker in extension
+    )
+    return {
+        argument: (
+            "IN"
+            if argument in extension
+            else "OUT"
+            if argument in attacked
+            else "UN"
+        )
+        for argument in framework.arguments
+    }
+
+
+def _attacked_by_extension(
+    framework: ArgumentationFramework,
+    extension: frozenset[str],
+) -> frozenset[str]:
+    return frozenset(
+        target for attacker, target in framework.defeats if attacker in extension
+    )
+
+
+def _reachable_from(
+    framework: ArgumentationFramework,
+    source: str,
+) -> frozenset[str]:
+    if source not in framework.arguments:
+        return frozenset()
+    reachable: set[str] = {source}
+    frontier = [source]
+    while frontier:
+        current = frontier.pop()
+        for attacker, target in framework.defeats:
+            if attacker == current and target not in reachable:
+                reachable.add(target)
+                frontier.append(target)
+    return frozenset(reachable)
+
+
+def _first_extension(
+    framework: ArgumentationFramework,
+    semantics: SemanticsName,
+) -> frozenset[str] | None:
+    extensions = extensions_for(framework, semantics)
+    if not extensions:
+        return None
+    return sorted(extensions, key=lambda extension: (len(extension), tuple(sorted(extension))))[0]
+
+
+def _is_extension(
+    framework: ArgumentationFramework,
+    semantics: SemanticsName,
+    candidate: frozenset[str],
+) -> bool:
+    return candidate in extensions_for(framework, semantics)
+
+
+def _validate_single_attack_update(
+    framework: ArgumentationFramework,
+    update: DynamicUpdate,
+) -> tuple[str, str]:
+    if update.kind not in {"add_att", "del_att"}:
+        raise ValueError("incremental_extension_update supports single attack updates")
+    if update.target is None:
+        raise ValueError(f"{update.kind} update requires a target")
+    if update.source not in framework.arguments or update.target not in framework.arguments:
+        raise ValueError("single attack updates require existing arguments")
+    if update.kind == "add_att" and (update.source, update.target) in framework.defeats:
+        raise ValueError("add_att update requires a missing attack")
+    if update.kind == "del_att" and (update.source, update.target) not in framework.defeats:
+        raise ValueError("del_att update requires an existing attack")
+    return update.source, update.target
+
+
+def influenced_arguments(
+    framework: ArgumentationFramework,
+    update: DynamicUpdate,
+    *,
+    semantics: SemanticsName,
+    initial_extension: frozenset[str],
+) -> frozenset[str]:
+    """Return Alfano et al.'s influenced set for a single attack update."""
+    attacker, target = _validate_single_attack_update(framework, update)
+    updated = _apply_update(framework, update)
+    if _is_extension(updated, semantics, initial_extension):
+        return frozenset()
+
+    reachable = _reachable_from(framework, target)
+    if any(
+        source != attacker
+        and source in initial_extension
+        and source not in reachable
+        for source, attacked in framework.defeats
+        if attacked == target
+    ):
+        return frozenset()
+
+    influenced: set[str] = {target}
+    while True:
+        next_influenced = set(influenced)
+        for source, attacked in framework.defeats:
+            if source not in influenced:
+                continue
+            defended_from_outside_reach = any(
+                defender in initial_extension and defender not in reachable
+                for defender, defended in framework.defeats
+                if defended == attacked
+            )
+            if not defended_from_outside_reach:
+                next_influenced.add(attacked)
+        if next_influenced == influenced:
+            return frozenset(influenced)
+        influenced = next_influenced
+
+
+def reduced_framework(
+    framework: ArgumentationFramework,
+    update: DynamicUpdate,
+    *,
+    semantics: SemanticsName,
+    initial_extension: frozenset[str],
+) -> ArgumentationFramework:
+    """Return Alfano et al.'s reduced AF for a single attack update."""
+    influenced = influenced_arguments(
+        framework,
+        update,
+        semantics=semantics,
+        initial_extension=initial_extension,
+    )
+    if not influenced:
+        return ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
+
+    updated = _apply_update(framework, update)
+    old_attacked = _attacked_by_extension(framework, initial_extension)
+    arguments = set(influenced)
+    defeats = {
+        defeat
+        for defeat in updated.defeats
+        if defeat[0] in influenced and defeat[1] in influenced
+    }
+    for source, target in updated.defeats:
+        if source not in influenced and source in initial_extension and target in influenced:
+            arguments.add(source)
+            arguments.add(target)
+            defeats.add((source, target))
+        if (
+            target in influenced
+            and source not in influenced
+            and source not in initial_extension
+            and source not in old_attacked
+        ):
+            arguments.add(target)
+            defeats.add((target, target))
+    return ArgumentationFramework(
+        arguments=frozenset(arguments),
+        defeats=frozenset(defeats),
+    )
+
+
+def incremental_extension_update(
+    framework: ArgumentationFramework,
+    update: DynamicUpdate,
+    *,
+    semantics: SemanticsName,
+    initial_extension: frozenset[str] | None = None,
+) -> IncrementalUpdateResult:
+    """Run Alfano et al.'s single-update incremental extension algorithm."""
+    if semantics not in {"complete", "preferred", "stable", "grounded"}:
+        raise ValueError(f"unsupported dynamic incremental semantics: {semantics}")
+    _validate_single_attack_update(framework, update)
+    if initial_extension is None:
+        initial_extension = _first_extension(framework, semantics)
+        if initial_extension is None:
+            raise ValueError(f"no initial {semantics} extension exists")
+    if not _is_extension(framework, semantics, initial_extension):
+        raise ValueError("initial_extension is not an extension of the original framework")
+
+    updated = _apply_update(framework, update)
+    influenced = influenced_arguments(
+        framework,
+        update,
+        semantics=semantics,
+        initial_extension=initial_extension,
+    )
+    empty = ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
+    if not influenced:
+        return IncrementalUpdateResult(
+            original_framework=framework,
+            updated_framework=updated,
+            update=update,
+            semantics=semantics,
+            initial_extension=initial_extension,
+            influenced=influenced,
+            reduced_framework=empty,
+            reduced_extension=None,
+            extension=initial_extension,
+            used_incremental=True,
+        )
+
+    reduced = reduced_framework(
+        framework,
+        update,
+        semantics=semantics,
+        initial_extension=initial_extension,
+    )
+    reduced_extension = _first_extension(reduced, semantics)
+    if reduced_extension is not None:
+        candidate = (initial_extension - influenced) | reduced_extension
+        if _is_extension(updated, semantics, candidate):
+            return IncrementalUpdateResult(
+                original_framework=framework,
+                updated_framework=updated,
+                update=update,
+                semantics=semantics,
+                initial_extension=initial_extension,
+                influenced=influenced,
+                reduced_framework=reduced,
+                reduced_extension=reduced_extension,
+                extension=candidate,
+                used_incremental=True,
+            )
+
+    fallback_extension = _first_extension(updated, semantics)
+    return IncrementalUpdateResult(
+        original_framework=framework,
+        updated_framework=updated,
+        update=update,
+        semantics=semantics,
+        initial_extension=initial_extension,
+        influenced=influenced,
+        reduced_framework=reduced,
+        reduced_extension=reduced_extension,
+        extension=fallback_extension,
+        used_incremental=False,
+        fallback_reason=(
+            "reduced_solver_no_extension"
+            if reduced_extension is None
+            else "combined_extension_invalid"
+        ),
+    )
 
 
 def parse_update_stream(text: str) -> tuple[DynamicUpdate, ...]:
