@@ -15,15 +15,19 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Iterable, Literal, Mapping
 
 from argumentation.dung import (
     ArgumentationFramework,
+    admissible,
     cf2_extensions,
     complete_extensions,
+    conflict_free,
     grounded_extension,
     naive_extensions,
     preferred_extensions,
+    range_of,
     semi_stable_extensions,
     stable_extensions,
     stage_extensions,
@@ -72,13 +76,45 @@ def claim_level_extensions(
     *,
     semantics: str,
 ) -> tuple[frozenset[str], ...]:
-    """Return inclusion-maximal projected claim sets."""
-    projected = list(inherited_extensions(caf, semantics=semantics))
-    return tuple(
-        claim_set
-        for claim_set in projected
-        if not any(claim_set < other for other in projected)
-    )
+    """Return KR 2020 claim-level CAF semantics.
+
+    The stable branch implements the admissible cl-stable variant.
+    """
+    if semantics == "preferred":
+        return _maximal_claim_sets(
+            _project(caf, candidate)
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+        )
+    if semantics == "naive":
+        return _maximal_claim_sets(
+            _project(caf, candidate)
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if conflict_free(candidate, caf.framework.defeats)
+        )
+    if semantics == "stable":
+        all_claims = _all_claims(caf)
+        return _deduplicate_claim_sets(
+            _project(caf, candidate)
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+            and _claim_range(caf, candidate) == all_claims
+        )
+    if semantics == "semi-stable":
+        return _claim_range_maximal(
+            caf,
+            candidate
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+        )
+    if semantics == "stage":
+        return _claim_range_maximal(
+            caf,
+            candidate
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if conflict_free(candidate, caf.framework.defeats)
+        )
+    raise ValueError(f"unsupported CAF claim-level semantics: {semantics}")
 
 
 def concurrence_holds(caf: ClaimAugmentedAF, *, semantics: str) -> bool:
@@ -127,6 +163,61 @@ def _argument_extensions(
 
 def _project(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
     return frozenset(caf.claims[argument] for argument in extension)
+
+
+def _all_claims(caf: ClaimAugmentedAF) -> frozenset[str]:
+    return frozenset(caf.claims.values())
+
+
+def _argument_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
+    ordered = sorted(arguments)
+    subsets: list[frozenset[str]] = []
+    for size in range(len(ordered) + 1):
+        for subset in combinations(ordered, size):
+            subsets.append(frozenset(subset))
+    return subsets
+
+
+def _defeated_claims(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
+    defeated_arguments = range_of(extension, caf.framework.defeats) - extension
+    defeated_claims: set[str] = set()
+    for claim in _all_claims(caf):
+        arguments_with_claim = {
+            argument
+            for argument, argument_claim in caf.claims.items()
+            if argument_claim == claim
+        }
+        if arguments_with_claim and arguments_with_claim <= defeated_arguments:
+            defeated_claims.add(claim)
+    return frozenset(defeated_claims)
+
+
+def _claim_range(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
+    return _project(caf, extension) | _defeated_claims(caf, extension)
+
+
+def _maximal_claim_sets(claim_sets: Iterable[frozenset[str]]) -> tuple[frozenset[str], ...]:
+    projected = list(_deduplicate_claim_sets(claim_sets))
+    return tuple(
+        claim_set
+        for claim_set in projected
+        if not any(claim_set < other for other in projected)
+    )
+
+
+def _claim_range_maximal(
+    caf: ClaimAugmentedAF,
+    candidates: Iterable[frozenset[str]],
+) -> tuple[frozenset[str], ...]:
+    pairs = [
+        (_project(caf, candidate), _claim_range(caf, candidate))
+        for candidate in candidates
+    ]
+    return _deduplicate_claim_sets(
+        claim_set
+        for claim_set, claim_range in pairs
+        if not any(claim_range < other_range for _, other_range in pairs)
+    )
 
 
 def _deduplicate_claim_sets(
