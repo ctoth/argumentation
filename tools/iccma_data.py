@@ -346,7 +346,7 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
         return ManifestRow(archive_name, relative, "archive_metadata", "skipped", size)
     if archive_name.startswith("results") or suffix in {".csv", ".xlsx", ".xls", ".results"}:
         return ManifestRow(archive_name, relative, "results", "skipped", size)
-    if suffix in {".arg", ".query", ".apxm", ".tgfm"}:
+    if suffix in {".arg", ".query", ".apxm", ".tgfm", ".asm"}:
         return ManifestRow(archive_name, relative, "query_or_updates", "skipped", size)
     try:
         header = first_payload_line(path)
