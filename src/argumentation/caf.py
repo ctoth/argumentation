@@ -112,16 +112,20 @@ def claim_level_extensions(
     if semantics == "semi-stable":
         return _claim_range_maximal(
             caf,
-            candidate
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+            (
+                candidate
+                for candidate in _argument_subsets(caf.framework.arguments)
+                if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+            ),
         )
     if semantics == "stage":
         return _claim_range_maximal(
             caf,
-            candidate
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if conflict_free(candidate, caf.framework.defeats)
+            (
+                candidate
+                for candidate in _argument_subsets(caf.framework.arguments)
+                if conflict_free(candidate, caf.framework.defeats)
+            ),
         )
     raise ValueError(f"unsupported CAF claim-level semantics: {semantics}")
 
