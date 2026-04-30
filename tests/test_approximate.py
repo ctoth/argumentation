@@ -12,16 +12,22 @@ def af(args: set[str], defeats: set[tuple[str, str]]) -> ArgumentationFramework:
     return ArgumentationFramework(arguments=frozenset(args), defeats=frozenset(defeats))
 
 
-def test_k_zero_stable_extensions_match_stable_semantics() -> None:
+def test_maximum_k_stable_extensions_match_stable_semantics() -> None:
     framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
 
-    assert set(k_stable_extensions(framework, k=0)) == set(stable_extensions(framework))
+    assert set(k_stable_extensions(framework, k=2)) == set(stable_extensions(framework))
 
 
-def test_k_stable_allows_bounded_uncovered_outsiders() -> None:
+def test_k_stable_uses_minimum_range_size() -> None:
     framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
 
-    assert set(k_stable_extensions(framework, k=1)) == {
+    assert set(k_stable_extensions(framework, k=2)) == {
+        frozenset({"a"}),
+        frozenset({"b"}),
+        frozenset({"c"}),
+    }
+    assert set(k_stable_extensions(framework, k=0)) == {
+        frozenset(),
         frozenset({"a"}),
         frozenset({"b"}),
         frozenset({"c"}),
