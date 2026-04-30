@@ -1,9 +1,14 @@
-"""Minimal-change enforcement for abstract argumentation frameworks.
+"""Unconstrained minimal-change enforcement for abstract AFs.
 
 The module provides a brute-force reference oracle for small Dung AFs.  It is
 intended as the executable specification for later SAT/MaxSAT-backed
 enforcement: enumerate bounded add/remove edits, apply each edit, and keep the
 least-cost witness that makes the requested acceptance condition true.
+
+This is not Baumann-style expansion enforcement: it may add or remove attacks
+between existing arguments, and the edit data type can represent argument and
+attack deletions.  Those operations are deliberately outside the conservative,
+normal, strong, and weak expansion settings used in Baumann's framework.
 
 References:
     Baumann, R. (2012). What does it take to enforce an argument?
