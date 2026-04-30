@@ -7,12 +7,27 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 ## Modules
 
 - `argumentation.dung` — Dung 1995 abstract argumentation frameworks and
-  extension semantics (grounded, complete, preferred, stable).
+  extension semantics. Core: grounded, complete, preferred, stable.
+  Extended: naive, semi-stable (Caminada 2011), stage, CF2 (Gaggl &
+  Woltran 2013), and ideal (Dung, Mancarella & Toni 2007).
+- `argumentation.labelling` — Three-valued IN / OUT / UNDEC labelling and
+  the extension-to-labelling bridge used by accrual and quantitative
+  services.
 - `argumentation.dung_z3` — SAT-backed enumeration of complete, preferred,
   and stable extensions for larger frameworks.
+- `argumentation.sat_encoding` — Solver-independent CNF encoding of stable
+  extensions, plus a reference scan-based enumerator.
+- `argumentation.iccma` — ICCMA `p af n` numeric AF I/O for interop with
+  external argumentation solvers.
 - `argumentation.aspic` — ASPIC+ literals, rules, premise/strict/defeasible
   arguments, attacks, defeats, and CSAF construction (Modgil & Prakken
   2018).
+- `argumentation.aspic_encoding` — Deterministic ASP-style fact encoding
+  of ASPIC+ theories (Lehtonen, Niskanen & Järvisalo 2024) and a typed
+  grounded query surface with a backend-dispatch entry point.
+- `argumentation.aspic_incomplete` — ASPIC+ reasoning with optional
+  ordinary premises by exact completion enumeration; classifies a query
+  as stable, relevant, unknown, or unsupported.
 - `argumentation.aba` — Flat ABA and ABA+ frameworks over ASPIC literals,
   with constructor-level rejection of non-flat frameworks and preference-aware
   attack reversal (Bondarenko et al. 1997; Čyras & Toni 2016).
@@ -21,7 +36,8 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   classification, and Dung bridges (Brewka & Woltran 2010; Brewka et al. 2013).
 - `argumentation.setaf` — SETAFs with collective attacks and Dung-style
   grounded, complete, preferred, stable, semi-stable, and stage semantics.
-- `argumentation.iccma_setaf` — Compact deterministic SETAF parser/writer.
+- `argumentation.setaf_io` — ASPARTIX SETAF facts plus package-local compact
+  SETAF parser/writer.
 - `argumentation.enforcement` — Brute-force minimal-change argument and
   extension enforcement oracle with typed edit witnesses.
 - `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
@@ -64,8 +80,9 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.weighted` — Dunne-style weighted argument systems with
   inconsistency-budget grounded semantics and deleted-attack witnesses.
 - `argumentation.gradual` — Potyka-style quadratic-energy gradual
-  strengths for weighted bipolar graphs, plus revised direct-impact
-  attribution.
+  strengths for weighted bipolar graphs, revised direct-impact
+  attribution, and exact Shapley-style per-attack impact scores
+  (Al Anaissy et al. 2024).
 - `argumentation.subjective_aspic` — Wallner-style value filtering helpers for
   ASPIC+ subjective knowledge bases and defeasible rules.
 - `argumentation.vaf` — Bench-Capon value-based argumentation frameworks,
@@ -111,8 +128,9 @@ development dependency for the test suite.
 
 ## Probabilistic backend routing
 
-`compute_probabilistic_acceptance` selects among five strategies. The `auto`
-policy is:
+`compute_probabilistic_acceptance` selects among six strategies:
+`deterministic`, `exact_enum`, `mc`, `exact_dp`, `paper_td`,
+`dfquad_quad`, and `dfquad_baf`. The `auto` policy is:
 
 1. If every argument and every relevant edge has a deterministic
    probability (within `1e-12` of 0 or 1), fall through to standard Dung
@@ -128,10 +146,18 @@ policy is:
    tree-decomposition DP.
 5. Otherwise, fall back to Monte Carlo.
 
+`paper_td` is the paper-faithful Popescu & Wallner (2024) Algorithm 1 for
+exact extension-probability queries. It is opt-in only, distinct from
+`exact_dp`, and rejects queries other than `query_kind="extension_probability"`.
+
 `dfquad_quad` and `dfquad_baf` are gradual semantics rather than Dung
 semantics; they are never selected by `auto` and require explicit
-selection. The DP backend currently supports only credulous grounded
-acceptance on defeat-only frameworks; calling it on richer queries raises.
+selection. The `exact_dp` backend currently supports only credulous
+grounded acceptance on defeat-only frameworks; calling it on richer
+queries raises. Its current implementation tracks full edge sets and
+forgotten arguments in table keys, so its asymptotic cost is not better
+than brute-force enumeration; it is effective in practice for primal-graph
+treewidth ≤ ~15.
 
 ## Generic semantics dispatch
 
