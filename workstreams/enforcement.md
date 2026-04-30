@@ -18,11 +18,14 @@ and examples before writing tests or code.
 
 ## Current State
 
-- `argumentation.enforcement` is an unconstrained Hamming edit oracle over
-  attacks between existing arguments.
-- The edit type can represent argument deletion and attack deletion.
-- That behavior is useful as a small brute-force reference, but it is not
-  Baumann-style expansion enforcement.
+- `argumentation.enforcement` keeps the unconstrained Hamming edit oracle over
+  attacks between existing arguments as a separate fixed-argument API.
+- The edit type can represent argument deletion and attack deletion, and tests
+  pin that this behavior is not Baumann-style expansion enforcement.
+- The module now also exposes Baumann-style normal, strong, and weak expansion
+  predicates and a bounded brute-force expansion-enforcement oracle whose
+  witnesses never delete old arguments, delete old attacks, or add old-old
+  attacks.
 
 ## Execution Mode
 
@@ -52,6 +55,7 @@ Acceptance criteria:
 - Public docs do not cite Baumann as if the unconstrained oracle implements his
   enforcement setting.
 - Tests pin the current oracle's intended scope.
+- Status: complete.
 
 ### Phase 2: Expansion Model
 
@@ -75,6 +79,7 @@ Paper-derived properties:
 Acceptance criteria:
 - Hypothesis generates old AFs, new argument sets, and candidate expansions,
   then checks expansion predicates against the paper constraints.
+- Status: complete.
 
 ### Phase 3: Enforcement Variants
 
@@ -96,6 +101,10 @@ Paper-derived properties:
 Acceptance criteria:
 - Every variant has at least one example where unconstrained edit enforcement
   finds a cheaper witness that Baumann enforcement correctly rejects.
+- Status: conservative normal/strong/weak expansion variants are implemented
+  for credulous, skeptical, and strict/non-strict extension targets. Liberal
+  semantics-changing variants are intentionally not implemented because this
+  pass did not reread and encode their semantics-change definition.
 
 ### Phase 4: Brute-Force Reference Oracle
 
@@ -113,6 +122,8 @@ Paper-derived properties:
 Acceptance criteria:
 - Optimized enforcement, if added, is differential-tested against the
   expansion-only brute-force oracle on small AFs.
+- Status: complete for the bounded brute-force reference oracle; no optimized
+  backend was added.
 
 ### Phase 5: Algorithmic Backends
 
@@ -123,6 +134,8 @@ Acceptance criteria:
 Acceptance criteria:
 - Backend results agree with the oracle for generated small cases.
 - Solver-unavailable behavior is structured and tested.
+- Status: not applicable in this execution pass; no SAT/MaxSAT backend was
+  added.
 
 ## Tests
 
