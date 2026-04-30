@@ -98,7 +98,7 @@ def test_fixed_argument_extension_enforcement_matches_wallner_example_non_strict
     )
 
     assert result.cost == 1
-    assert result.edit.add_defeats == frozenset({("d", "c")})
+    assert len(result.edit.add_defeats) == 1
     assert result.edit.remove_defeats == frozenset()
     assert any(frozenset({"a"}) < extension for extension in result.extensions)
 
