@@ -78,7 +78,8 @@ def claim_level_extensions(
 ) -> tuple[frozenset[str], ...]:
     """Return KR 2020 claim-level CAF semantics.
 
-    The stable branch implements the admissible cl-stable variant.
+    The stable branch implements cl-stable; use ``stable-admissible`` for the
+    admissible cl-stable variant.
     """
     if semantics == "preferred":
         return _maximal_claim_sets(
@@ -93,6 +94,14 @@ def claim_level_extensions(
             if conflict_free(candidate, caf.framework.defeats)
         )
     if semantics == "stable":
+        all_claims = _all_claims(caf)
+        return _deduplicate_claim_sets(
+            _project(caf, candidate)
+            for candidate in _argument_subsets(caf.framework.arguments)
+            if conflict_free(candidate, caf.framework.defeats)
+            and _claim_range(caf, candidate) == all_claims
+        )
+    if semantics == "stable-admissible":
         all_claims = _all_claims(caf)
         return _deduplicate_claim_sets(
             _project(caf, candidate)
