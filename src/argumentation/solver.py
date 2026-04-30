@@ -15,6 +15,7 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.solver_adapters import iccma_af
 
 
 @dataclass(frozen=True)
@@ -25,20 +26,41 @@ class SolverBackendUnavailable:
 
 
 @dataclass(frozen=True)
+class SolverBackendError:
+    backend: str
+    reason: str
+    details: dict[str, str]
+
+
+@dataclass(frozen=True)
+class ICCMAAFBackend:
+    """Explicit ICCMA 2023 AF subprocess backend for Dung extension queries."""
+
+    binary: str
+    timeout_seconds: float = 30.0
+
+
+@dataclass(frozen=True)
 class ExtensionSolverSuccess:
     extensions: tuple[frozenset[str], ...]
 
 
-ExtensionSolverResult = ExtensionSolverSuccess | SolverBackendUnavailable
+ExtensionSolverResult = (
+    ExtensionSolverSuccess
+    | SolverBackendUnavailable
+    | SolverBackendError
+)
 
 
 def solve_dung_extensions(
     framework: ArgumentationFramework,
     *,
     semantics: str,
-    backend: str = "labelling",
+    backend: str | ICCMAAFBackend = "labelling",
 ) -> ExtensionSolverResult:
-    """Solve Dung extension queries through the package's single Dung path."""
+    """Solve Dung extension queries through a package or external backend."""
+    if isinstance(backend, ICCMAAFBackend):
+        return _solve_iccma_dung_extensions(framework, semantics, backend)
     if backend == "labelling":
         return ExtensionSolverSuccess(
             _sorted_extensions(_dung_extensions(framework, semantics))
@@ -47,6 +69,46 @@ def solve_dung_extensions(
         backend=backend,
         install_hint="Use backend='labelling'.",
         reason=f"unknown backend: {backend!r}",
+    )
+
+
+def _solve_iccma_dung_extensions(
+    framework: ArgumentationFramework,
+    semantics: str,
+    backend: ICCMAAFBackend,
+) -> ExtensionSolverResult:
+    result = iccma_af.solve_af_extensions(
+        framework=framework,
+        semantics=semantics,
+        binary=backend.binary,
+        timeout_seconds=backend.timeout_seconds,
+    )
+    if isinstance(result, iccma_af.ICCMASolverSuccess):
+        return ExtensionSolverSuccess(_sorted_extensions(list(result.extensions)))
+    if isinstance(result, iccma_af.ICCMASolverUnavailable):
+        return SolverBackendUnavailable(
+            backend=result.backend,
+            install_hint=result.install_hint,
+            reason=result.reason,
+        )
+    if isinstance(result, iccma_af.ICCMASolverError):
+        return SolverBackendError(
+            backend=result.backend,
+            reason=f"solver exited with code {result.returncode}",
+            details={
+                "problem": result.problem,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            },
+        )
+    return SolverBackendError(
+        backend=result.backend,
+        reason=result.message,
+        details={
+            "problem": result.problem,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        },
     )
 
 
