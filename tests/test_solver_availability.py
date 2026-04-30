@@ -1,9 +1,11 @@
 from argumentation.dung import ArgumentationFramework
 from argumentation.solver import (
+    AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     ICCMAAFBackend,
     SolverBackendError,
     SolverBackendUnavailable,
+    solve_dung_acceptance,
     solve_dung_extensions,
 )
 from argumentation.solver_adapters.iccma_af import (
@@ -128,3 +130,91 @@ def test_solve_dung_extensions_maps_iccma_solver_error(monkeypatch) -> None:
     assert result.backend == "bad-solver"
     assert result.reason == "solver exited with code 2"
     assert result.details["stderr"] == "bad input"
+
+
+def test_solve_dung_acceptance_native_backend_returns_witnesses() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    credulous = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="credulous",
+        query="a",
+    )
+    skeptical = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="skeptical",
+        query="b",
+    )
+
+    assert isinstance(credulous, AcceptanceSolverSuccess)
+    assert credulous.answer is True
+    assert credulous.witness == frozenset({"a"})
+    assert isinstance(skeptical, AcceptanceSolverSuccess)
+    assert skeptical.answer is False
+    assert skeptical.counterexample == frozenset({"a"})
+
+
+def test_solve_dung_acceptance_routes_explicit_iccma_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"1", "2"}),
+        defeats=frozenset({("1", "2")}),
+    )
+    calls = []
+
+    def fake_solve_af_acceptance(
+        *,
+        framework,
+        semantics,
+        task,
+        query,
+        binary,
+        timeout_seconds,
+        certificate_required,
+    ):
+        calls.append(
+            (
+                framework,
+                semantics,
+                task,
+                query,
+                binary,
+                timeout_seconds,
+                certificate_required,
+            )
+        )
+        return ICCMASolverSuccess(
+            backend=binary,
+            problem="DC-ST",
+            stdout="YES\nw 1\n",
+            output=ICCMAOutput(
+                problem="DC-ST",
+                kind=ICCMAOutputKind.DECISION,
+                raw_stdout="YES\nw 1\n",
+                answer=True,
+                witness=frozenset({"1"}),
+                extensions=(frozenset({"1"}),),
+            ),
+        )
+
+    monkeypatch.setattr(
+        "argumentation.solver.iccma_af.solve_af_acceptance",
+        fake_solve_af_acceptance,
+    )
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="credulous",
+        query="1",
+        backend=ICCMAAFBackend(binary="fake-iccma", timeout_seconds=7.5),
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is True
+    assert result.witness == frozenset({"1"})
+    assert calls == [(framework, "stable", "credulous", "1", "fake-iccma", 7.5, True)]
