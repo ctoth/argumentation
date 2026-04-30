@@ -10,7 +10,9 @@ from argumentation.enforcement import (
     enforce_credulous,
     enforce_extension,
     enforce_expansion_credulous,
+    enforce_liberal_expansion_extension,
     enforce_skeptical,
+    extensions_for,
     is_normal_expansion,
     is_strong_expansion,
     is_weak_expansion,
@@ -193,3 +195,30 @@ def test_strong_and_weak_expansion_restrict_attack_direction_between_old_and_new
 
     assert is_strong_expansion(original, new_attacks_new)
     assert is_weak_expansion(original, new_attacks_new)
+
+
+def test_liberal_enforcement_uses_explicit_target_semantics() -> None:
+    framework = af(
+        {"a1", "a2", "a3", "a4", "a5"},
+        {("a1", "a2"), ("a3", "a2"), ("a3", "a4"), ("a4", "a3"), ("a4", "a5"), ("a5", "a5")},
+    )
+    target = frozenset({"a1", "a3"})
+
+    assert target not in extensions_for(framework, "stable")
+    assert target in extensions_for(framework, "preferred")
+
+    result = enforce_liberal_expansion_extension(
+        framework,
+        target,
+        source_semantics="stable",
+        target_semantics="preferred",
+        variant="strict",
+        candidate_new_arguments=frozenset(),
+        max_new_arguments=0,
+        max_added_defeats=0,
+    )
+
+    assert result.source_semantics == "stable"
+    assert result.semantics == "preferred"
+    assert result.cost == 0
+    assert result.witness_framework == framework
