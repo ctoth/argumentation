@@ -595,7 +595,7 @@ def safe_extract_tar(archive_path: Path, target: Path) -> None:
             destination = (target / member.name).resolve()
             if root not in (destination, *destination.parents):
                 raise ValueError(f"refusing unsafe tar member: {member.name}")
-        archive.extractall(target)
+        archive.extractall(target, filter="data")
 
 
 def selected_archives(specs: dict[str, ArchiveSpec], selected: str) -> list[ArchiveSpec]:
