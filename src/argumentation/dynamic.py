@@ -1,4 +1,8 @@
-"""Dynamic abstract argumentation with recompute-from-scratch queries."""
+"""Dynamic abstract argumentation with recompute-from-scratch queries.
+
+This is a correctness reference for update streams.  It does not implement the
+incremental affected-subframework algorithms used by Alfano et al. or IPAFAIR.
+"""
 
 from __future__ import annotations
 
