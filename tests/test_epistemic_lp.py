@@ -13,6 +13,7 @@ from argumentation.epistemic import (
     coherence_attack_constraint,
     constraints_entail,
     constraints_satisfiable,
+    least_squares_update_labelling,
     support_monotonic_constraint,
 )
 
@@ -81,6 +82,36 @@ def test_z3_backed_satisfiability_and_entailment_for_linear_fragment() -> None:
         frozenset({"a", "b"}),
         constraints,
         LinearAtomicConstraint({"b": 1.0}, LinearRelation.LE, 0.3),
+    )
+
+
+def test_potyka_update_operator_success_and_failure_for_labellings() -> None:
+    updated = least_squares_update_labelling(
+        frozenset({"a", "b"}),
+        {"a": 0.6, "b": 0.7},
+        (LinearAtomicConstraint({"a": 1.0, "b": 1.0}, LinearRelation.LE, 1.0),),
+    )
+    impossible = least_squares_update_labelling(
+        frozenset({"a"}),
+        {"a": 0.5},
+        (
+            LinearAtomicConstraint({"a": 1.0}, LinearRelation.GE, 0.8),
+            LinearAtomicConstraint({"a": 1.0}, LinearRelation.LE, 0.2),
+        ),
+    )
+
+    assert updated is not None
+    assert updated["a"] == pytest.approx(0.45)
+    assert updated["b"] == pytest.approx(0.55)
+    assert impossible is None
+
+
+def test_potyka_update_operator_is_idempotent_when_evidence_already_satisfied() -> None:
+    constraints = (LinearAtomicConstraint({"a": 1.0}, LinearRelation.GE, 0.4),)
+    current = {"a": 0.5}
+
+    assert least_squares_update_labelling(frozenset({"a"}), current, constraints) == pytest.approx(
+        current
     )
 
 
