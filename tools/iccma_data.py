@@ -293,6 +293,17 @@ def extract_archives(
         archive_path = archive_dir / spec.file_name
         verify_archive(archive_path, spec)
         target = extract_root / spec.extract_dir
+        if is_plain_file_archive(archive_path):
+            target.mkdir(parents=True, exist_ok=True)
+            destination = target / archive_path.name
+            if destination.exists() and not force:
+                print(f"already extracted {destination}")
+                continue
+            if destination.exists() and force:
+                destination.unlink()
+            print(f"extracting {archive_path} -> {target}")
+            safe_extract_archive(archive_path, target)
+            continue
         if target.exists() and force:
             shutil.rmtree(target)
         if target.exists() and any(target.iterdir()):
@@ -561,6 +572,10 @@ def safe_extract_archive(archive_path: Path, target: Path) -> None:
         safe_extract_tar(archive_path, target)
         return
     shutil.copy2(archive_path, target / archive_path.name)
+
+
+def is_plain_file_archive(path: Path) -> bool:
+    return not (path.suffix.lower() == ".zip" or path.name.endswith((".tar.gz", ".tgz")))
 
 
 def safe_extract_zip(archive_path: Path, target: Path) -> None:
