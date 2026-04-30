@@ -20,13 +20,13 @@ arc labels, satisfiability, entailment, or update procedures.
 
 ## Current State
 
-- `argumentation.epistemic` supports argument-to-float assignments,
-  interval-style constraints, and direct positive/negative local inequalities.
-- It does not implement Hunter's full epistemic language.
-- It does not implement multi-labelled arcs with dependency labels.
-- It does not implement probability functions over possible worlds.
-- It does not implement Potyka et al.'s LP-based satisfiability/entailment
-  procedures.
+- `argumentation.epistemic` includes Hunter's epistemic language,
+  probability functions over possible worlds, induced probability labellings,
+  multi-labelled arcs with dependent labels, Potyka-style linear atomic
+  constraints, z3-backed satisfiability/entailment, and a least-squares
+  probability-labelling update surface.
+- The older argument-to-float influence helpers remain available as an
+  explicitly approximate finite-grid API.
 
 ## Execution Mode
 

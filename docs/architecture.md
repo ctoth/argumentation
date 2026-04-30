@@ -49,9 +49,10 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   and recompute-from-scratch credulous/skeptical queries.
 - `argumentation.approximate` — k-stable semantics, bounded grounded
   iteration, and budgeted semi-stable approximation.
-- `argumentation.epistemic` — Epistemic graphs over belief levels with
-  positive/negative influences, finite model enumeration, updates, and PrAF
-  projection.
+- `argumentation.epistemic` — Hunter-style epistemic language and belief
+  distributions, labelled epistemic graphs with positive/negative/dependent
+  labels, Potyka-style linear atomic constraints over probability labellings,
+  and explicitly approximate belief-grid helpers.
 - `argumentation.llm_surface` — Dependency-free QBAF construction,
   Shapley-style explanation, and contestation witnesses for externally supplied
   argumentative LLM proposition graphs.
