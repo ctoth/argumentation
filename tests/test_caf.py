@@ -76,13 +76,10 @@ def test_claim_level_stable_uses_claim_defeat_range() -> None:
     assert claim_level_extensions(caf, semantics="stable-admissible") == ()
 
 
-def test_claim_level_stage_maximizes_claim_ranges() -> None:
+def test_claim_level_stage_discards_range_dominated_claim_sets() -> None:
     caf = ClaimAugmentedAF(
         framework=af({"a", "b", "c1", "c2"}, {("b", "a"), ("b", "c1"), ("c1", "c1"), ("c2", "c2")}),
         claims={"a": "A", "b": "B", "c1": "C", "c2": "C"},
     )
 
-    assert set(claim_level_extensions(caf, semantics="stage")) == {
-        frozenset({"A"}),
-        frozenset({"B"}),
-    }
+    assert claim_level_extensions(caf, semantics="stage") == (frozenset({"B"}),)
