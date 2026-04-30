@@ -69,13 +69,15 @@ def k_stable_extensions(
 ) -> tuple[frozenset[str], ...]:
     """Return k-stable extensions.
 
-    ``k`` bounds the tolerated deviation from stability: candidates remain
-    conflict-free, but may leave at most ``k`` outsiders undefeated.  At
-    ``k=0`` this is exactly Dung stable semantics.
+    Following Thimm (2024), ``k`` is the minimum required range size:
+    candidates are conflict-free and contain plus attack at least ``k``
+    arguments.  At ``k=|A|`` this is exactly Dung stable semantics.
     """
     if k < 0:
         raise ValueError("k must be non-negative")
-    if k == 0:
+    if k > len(framework.arguments):
+        return tuple()
+    if k == len(framework.arguments):
         return tuple(stable_extensions(framework))
 
     candidates: list[frozenset[str]] = []
@@ -83,10 +85,9 @@ def k_stable_extensions(
         if not conflict_free(candidate, framework.defeats):
             continue
         covered = range_of(candidate, framework.defeats)
-        uncovered_outsiders = len(framework.arguments - covered)
-        if uncovered_outsiders <= k:
+        if len(covered) >= k:
             candidates.append(candidate)
-    return _range_maximal(candidates, framework.defeats)
+    return tuple(candidates)
 
 
 def approximate_grounded(
