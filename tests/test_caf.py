@@ -59,6 +59,89 @@ def example_2_caf() -> ClaimAugmentedAF:
     )
 
 
+def example_3_caf() -> ClaimAugmentedAF:
+    return ClaimAugmentedAF(
+        framework=af(
+            {"a", "b1", "b2", "c", "d", "e", "f1", "f2"},
+            {
+                ("e", "e"),
+                ("e", "b2"),
+                ("c", "e"),
+                ("c", "b2"),
+                ("b2", "c"),
+                ("a", "c"),
+                ("b1", "c"),
+                ("a", "b1"),
+                ("a", "d"),
+                ("d", "a"),
+                ("a", "f1"),
+                ("f1", "f1"),
+                ("f1", "f2"),
+                ("f2", "f1"),
+                ("f2", "f2"),
+            },
+        ),
+        claims={
+            "a": "a",
+            "b1": "b",
+            "b2": "b",
+            "c": "c",
+            "d": "d",
+            "e": "e",
+            "f1": "f",
+            "f2": "f",
+        },
+    )
+
+
+def example_4_caf() -> ClaimAugmentedAF:
+    return ClaimAugmentedAF(
+        framework=af(
+            {"a", "b1", "b2", "c", "d"},
+            {
+                ("a", "a"),
+                ("b1", "a"),
+                ("b1", "b2"),
+                ("b2", "b1"),
+                ("b1", "c"),
+                ("c", "b1"),
+                ("c", "d"),
+                ("d", "d"),
+            },
+        ),
+        claims={"a": "a", "b1": "b", "b2": "b", "c": "c", "d": "d"},
+    )
+
+
+def example_5_caf() -> ClaimAugmentedAF:
+    return ClaimAugmentedAF(
+        framework=af(
+            {"a", "b", "c1", "c2"},
+            {
+                ("a", "b"),
+                ("b", "a"),
+                ("b", "c1"),
+                ("c1", "c1"),
+                ("c1", "c2"),
+                ("c2", "c1"),
+                ("c2", "c2"),
+            },
+        ),
+        claims={"a": "a", "b": "b", "c1": "c", "c2": "c"},
+    )
+
+
+def example_6_caf() -> ClaimAugmentedAF:
+    base = example_5_caf()
+    return ClaimAugmentedAF(
+        framework=af(
+            set(base.framework.arguments) | {"d1", "d2"},
+            set(base.framework.defeats) | {("d1", "d2"), ("d2", "d2"), ("b", "d1")},
+        ),
+        claims={**base.claims, "d1": "d", "d2": "d"},
+    )
+
+
 def claim_sets(values: set[frozenset[str]]) -> set[frozenset[str]]:
     return values
 
@@ -96,6 +179,66 @@ def test_kr2020_example_2_cl_naive_selects_i_maximal_claim_sets() -> None:
     assert is_i_maximal(claim_level_extensions(caf, semantics="naive")) is True
 
 
+def test_kr2020_figure_3_cl_stable_relaxes_stable_realization() -> None:
+    caf = ClaimAugmentedAF(
+        framework=af({"a1", "a2", "b"}, {("a2", "a2"), ("a2", "a1"), ("a1", "b")}),
+        claims={"a1": "a", "a2": "a", "b": "b"},
+    )
+
+    assert inherited_extensions(caf, semantics="stable") == ()
+    assert claim_level_extensions(caf, semantics="stable") == (frozenset({"a"}),)
+    assert claim_level_extensions(caf, semantics="stable-admissible") == ()
+
+
+def test_kr2020_example_3_cl_semi_stable_and_i_semi_stable_are_incomparable() -> None:
+    caf = example_3_caf()
+
+    assert is_well_formed(caf) is True
+    assert set(claim_level_extensions(caf, semantics="semi-stable")) == {
+        frozenset({"b", "d"})
+    }
+    assert set(inherited_extensions(caf, semantics="semi-stable")) == {
+        frozenset({"a"})
+    }
+
+
+def test_kr2020_example_4_cl_semi_stable_is_not_i_maximal_for_general_cafs() -> None:
+    caf = example_4_caf()
+
+    assert is_well_formed(caf) is False
+    assert inherited_extensions(caf, semantics="stable") == ()
+    assert claim_level_extensions(caf, semantics="stable") == ()
+    assert claim_level_extensions(caf, semantics="stable-admissible") == ()
+    assert set(claim_level_extensions(caf, semantics="semi-stable")) == {
+        frozenset({"b"}),
+        frozenset({"b", "c"}),
+    }
+
+
+def test_kr2020_example_5_cl_stage_and_i_stage_are_incomparable() -> None:
+    caf = example_5_caf()
+
+    assert set(inherited_extensions(caf, semantics="stage")) == {
+        frozenset({"b"})
+    }
+    assert set(claim_level_extensions(caf, semantics="stage")) == {
+        frozenset({"a"}),
+        frozenset({"b"}),
+    }
+
+
+def test_kr2020_example_6_stage_claim_level_counterexample() -> None:
+    caf = example_6_caf()
+
+    assert set(inherited_extensions(caf, semantics="stage")) == {
+        frozenset({"a", "d"}),
+        frozenset({"b"}),
+    }
+    assert set(claim_level_extensions(caf, semantics="stage")) == {
+        frozenset({"a", "d"})
+    }
+
+
 def test_duplicate_argument_claims_collapse_inherited_extensions() -> None:
     caf = ClaimAugmentedAF(
         framework=af({"a1", "a2"}, set()),
@@ -131,17 +274,6 @@ def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
         caf,
         semantics="stable",
     )
-
-
-def test_claim_level_stable_uses_claim_defeat_range() -> None:
-    caf = ClaimAugmentedAF(
-        framework=af({"a1", "a2", "b"}, {("a2", "a2"), ("a2", "a1"), ("a1", "b")}),
-        claims={"a1": "A", "a2": "A", "b": "B"},
-    )
-
-    assert inherited_extensions(caf, semantics="stable") == ()
-    assert claim_level_extensions(caf, semantics="stable") == (frozenset({"A"}),)
-    assert claim_level_extensions(caf, semantics="stable-admissible") == ()
 
 
 def test_claim_level_stage_discards_range_dominated_claim_sets() -> None:
