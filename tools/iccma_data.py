@@ -342,6 +342,8 @@ def build_manifest(
 def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
     size = path.stat().st_size
     suffix = path.suffix.lower()
+    if path.name.startswith("._") or "__MACOSX/" in relative:
+        return ManifestRow(archive_name, relative, "archive_metadata", "skipped", size)
     if archive_name.startswith("results") or suffix in {".csv", ".xlsx", ".xls", ".results"}:
         return ManifestRow(archive_name, relative, "results", "skipped", size)
     if suffix in {".arg", ".query", ".apxm", ".tgfm"}:
