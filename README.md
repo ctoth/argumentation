@@ -377,6 +377,36 @@ void-precedence, and cardinality-precedence obligations over `RankingResult`.
 and accrual envelopes for same-conclusion arguments. It does not yet implement
 the full labelling-relative defeat engine.
 
+## Additional SOTA workstream surfaces
+
+`argumentation.setaf` implements argumentation frameworks with collective
+attacks, including conflict-free, admissible, complete, preferred, grounded,
+stable, semi-stable, and stage semantics. `argumentation.iccma_setaf` provides
+a compact deterministic parser and writer for SETAF exchange.
+
+`argumentation.enforcement` provides a brute-force minimal-change oracle for
+argument and extension enforcement over Dung AFs. It returns typed witness
+edits, the edited framework, and the resulting extensions.
+
+`argumentation.caf` implements claim-augmented AFs with inherited and
+claim-level extension views plus a concurrence checker.
+
+`argumentation.dynamic` provides a recompute-from-scratch dynamic AF wrapper
+with argument/attack update streams and credulous/skeptical queries after each
+state transition.
+
+`argumentation.approximate` exposes k-stable semantics, bounded grounded
+iteration, and budgeted semi-stable approximation with exactness metadata.
+
+`argumentation.epistemic` represents epistemic graphs with positive and
+negative influences over belief levels, finite model enumeration, evidence
+updates, and projection to constellation PrAFs.
+
+`argumentation.llm_surface` is a dependency-free adapter for argumentative LLM
+pipelines: callers supply propositions and attack/support edges, while the
+package computes QBAF strengths, Shapley-style attack explanations, and
+contestation witnesses.
+
 ## Optional Z3 backend
 
 `argumentation.dung_z3` provides SAT-encoded enumeration of complete,

@@ -19,6 +19,23 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.adf` — Abstract dialectical frameworks with typed
   acceptance-condition ASTs, three-valued operator semantics, structural link
   classification, and Dung bridges (Brewka & Woltran 2010; Brewka et al. 2013).
+- `argumentation.setaf` — SETAFs with collective attacks and Dung-style
+  grounded, complete, preferred, stable, semi-stable, and stage semantics.
+- `argumentation.iccma_setaf` — Compact deterministic SETAF parser/writer.
+- `argumentation.enforcement` — Brute-force minimal-change argument and
+  extension enforcement oracle with typed edit witnesses.
+- `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
+  views plus concurrence checks.
+- `argumentation.dynamic` — Dynamic AF state wrapper, update-stream parsing,
+  and recompute-from-scratch credulous/skeptical queries.
+- `argumentation.approximate` — k-stable semantics, bounded grounded
+  iteration, and budgeted semi-stable approximation.
+- `argumentation.epistemic` — Epistemic graphs over belief levels with
+  positive/negative influences, finite model enumeration, updates, and PrAF
+  projection.
+- `argumentation.llm_surface` — Dependency-free QBAF construction,
+  Shapley-style explanation, and contestation witnesses for externally supplied
+  argumentative LLM proposition graphs.
 - `argumentation.bipolar` — Cayrol-style bipolar argumentation frameworks
   with derived defeats and d/s/c-admissibility semantics.
 - `argumentation.partial_af` — Partial argumentation frameworks with a
