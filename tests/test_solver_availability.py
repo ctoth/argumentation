@@ -3,10 +3,12 @@ from argumentation.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     ICCMAAFBackend,
+    SingleExtensionSolverSuccess,
     SolverBackendError,
     SolverBackendUnavailable,
     solve_dung_acceptance,
     solve_dung_extensions,
+    solve_dung_single_extension,
 )
 from argumentation.solver_adapters.iccma_af import (
     ICCMAOutput,
@@ -39,7 +41,23 @@ def test_solve_dung_extensions_rejects_deleted_z3_backend() -> None:
     assert result.install_hint == "Use backend='labelling'."
 
 
-def test_solve_dung_extensions_routes_explicit_iccma_backend(monkeypatch) -> None:
+def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"1", "2", "3"}),
+        defeats=frozenset({("1", "2"), ("2", "1")}),
+    )
+
+    result = solve_dung_extensions(
+        framework,
+        semantics="preferred",
+        backend=ICCMAAFBackend(binary="fake-iccma"),
+    )
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.reason == "ICCMA AF SE tasks return one extension witness, not enumeration"
+
+
+def test_solve_dung_single_extension_routes_explicit_iccma_backend(monkeypatch) -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"1", "2"}),
         defeats=frozenset({("1", "2")}),
@@ -66,14 +84,14 @@ def test_solve_dung_extensions_routes_explicit_iccma_backend(monkeypatch) -> Non
         fake_solve_af_extensions,
     )
 
-    result = solve_dung_extensions(
+    result = solve_dung_single_extension(
         framework,
         semantics="stable",
         backend=ICCMAAFBackend(binary="fake-iccma", timeout_seconds=7.5),
     )
 
-    assert isinstance(result, ExtensionSolverSuccess)
-    assert result.extensions == (frozenset({"1"}),)
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"1"})
     assert calls == [(framework, "stable", "fake-iccma", 7.5)]
 
 
