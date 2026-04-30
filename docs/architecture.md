@@ -47,8 +47,10 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   expansions, and explicit liberal source-to-target semantics changes.
 - `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
   views plus concurrence checks.
-- `argumentation.dynamic` — Dynamic AF state wrapper, update-stream parsing,
-  and recompute-from-scratch credulous/skeptical queries.
+- `argumentation.dynamic` — Dynamic AF update streams with a named
+  recompute oracle, Alfano-Greco-Parisi-style single-attack incremental
+  influenced/reduced-AF updates for grounded, complete, preferred, and stable
+  semantics, and query results with explicit fallback metadata.
 - `argumentation.approximate` — k-stable semantics, bounded grounded
   iteration, and budgeted semi-stable approximation.
 - `argumentation.epistemic` — Hunter-style epistemic language and belief
