@@ -11,8 +11,6 @@ import sys
 import urllib.request
 import zipfile
 
-from argumentation.iccma import parse_aba, parse_af
-
 
 DATA_ROOT = Path("data") / "iccma" / "2025"
 
@@ -248,34 +246,116 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
     header = first_payload_line(path)
     try:
         if header.startswith("p af "):
-            framework = parse_af(path.read_text(encoding="utf-8"))
+            arguments, attacks = scan_af_file(path)
             return ManifestRow(
                 archive_name,
                 relative,
                 "af",
                 "ok",
                 size,
-                arguments_or_atoms=len(framework.arguments),
-                attacks=len(framework.defeats),
+                arguments_or_atoms=arguments,
+                attacks=attacks,
             )
         if header.startswith("p aba"):
-            framework = parse_aba(path.read_text(encoding="utf-8"))
+            atoms, assumptions, rules, contraries = scan_aba_file(path)
             return ManifestRow(
                 archive_name,
                 relative,
                 "aba",
                 "ok",
                 size,
-                arguments_or_atoms=len(framework.language),
-                assumptions=len(framework.assumptions),
-                rules=len(framework.rules),
-                contraries=len(framework.contrary),
+                arguments_or_atoms=atoms,
+                assumptions=assumptions,
+                rules=rules,
+                contraries=contraries,
             )
         if path.suffix.lower() == ".py":
             return ManifestRow(archive_name, relative, "dynamic_app", "skipped", size)
         return ManifestRow(archive_name, relative, "unknown", "skipped", size)
     except Exception as exc:
         return ManifestRow(archive_name, relative, "unknown", "error", size, error=str(exc))
+
+
+def scan_af_file(path: Path) -> tuple[int, int]:
+    argument_count: int | None = None
+    attacks = 0
+    for line_number, parts in iter_payload_parts(path):
+        if parts[:2] == ["p", "af"]:
+            if argument_count is not None:
+                raise ValueError("multiple p af header lines")
+            if len(parts) != 3 or not parts[2].isdigit():
+                raise ValueError("p af header must be: p af <n>")
+            argument_count = int(parts[2])
+            continue
+        if argument_count is None:
+            raise ValueError("ICCMA AF input must start with a p af header")
+        if len(parts) != 2:
+            raise ValueError(f"attack line {line_number} must contain two numeric ids")
+        validate_numeric_id(parts[0], argument_count, line_number, "attack")
+        validate_numeric_id(parts[1], argument_count, line_number, "attack")
+        attacks += 1
+    if argument_count is None:
+        raise ValueError("ICCMA AF input must include a p af header")
+    return argument_count, attacks
+
+
+def scan_aba_file(path: Path) -> tuple[int, int, int, int]:
+    atom_count: int | None = None
+    assumptions: set[int] = set()
+    rule_heads: set[int] = set()
+    rule_count = 0
+    contraries: dict[int, int] = {}
+    for line_number, parts in iter_payload_parts(path):
+        if parts[:2] == ["p", "aba"]:
+            if atom_count is not None:
+                raise ValueError("multiple p aba header lines")
+            if len(parts) != 3 or not parts[2].isdigit():
+                raise ValueError("p aba header must be: p aba <n>")
+            atom_count = int(parts[2])
+            continue
+        if atom_count is None:
+            raise ValueError("ICCMA ABA input must start with a p aba header")
+        if parts[0] == "a" and len(parts) == 2:
+            assumptions.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            continue
+        if parts[0] == "c" and len(parts) == 3:
+            source = validate_numeric_id(parts[1], atom_count, line_number, "ABA")
+            target = validate_numeric_id(parts[2], atom_count, line_number, "ABA")
+            contraries[source] = target
+            continue
+        if parts[0] == "r" and len(parts) >= 2:
+            rule_heads.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            for item in parts[2:]:
+                validate_numeric_id(item, atom_count, line_number, "ABA")
+            rule_count += 1
+            continue
+        raise ValueError(f"invalid ABA line {line_number}: {' '.join(parts)!r}")
+    if atom_count is None:
+        raise ValueError("ICCMA ABA input must include a p aba header")
+    assumption_heads = assumptions & rule_heads
+    if assumption_heads:
+        raise ValueError(f"flat ABA rule heads cannot be assumptions: {sorted(assumption_heads)}")
+    if set(contraries) != assumptions:
+        raise ValueError("ABA contrary map must define exactly one contrary per assumption")
+    return atom_count, len(assumptions), rule_count, len(contraries)
+
+
+def iter_payload_parts(path: Path):
+    with path.open("r", encoding="utf-8", errors="strict") as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.strip()
+            if not line or line.startswith("#"):
+                continue
+            yield line_number, line.split()
+
+
+def validate_numeric_id(value: str, maximum: int, line_number: int, label: str) -> int:
+    if not value.isdigit():
+        raise ValueError(f"{label} line {line_number} must contain numeric ids")
+    numeric = int(value)
+    if numeric < 1 or numeric > maximum:
+        raise ValueError(f"{label} line {line_number} references id outside 1..{maximum}")
+    return numeric
 
 
 def first_payload_line(path: Path) -> str:
