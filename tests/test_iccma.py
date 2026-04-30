@@ -8,7 +8,7 @@ from argumentation.dung import ArgumentationFramework
 from argumentation.iccma import parse_af, write_af
 
 
-def test_parse_af_reads_iccma_2025_numeric_format() -> None:
+def test_parse_af_reads_iccma_2023_numeric_format() -> None:
     framework = parse_af(
         """
         # comments are ignored

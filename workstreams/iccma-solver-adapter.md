@@ -18,12 +18,11 @@ problem-code, or output-format assumption.
 
 ## Current State
 
-- `argumentation.solver_adapters.iccma_af` writes numeric `p af n` input.
-- It invokes `[binary, problem, path]`, which is not yet verified as an
-  official solver protocol.
-- It parses only witness lines such as `w 1 3`.
-- It does not model DC/DS `YES`/`NO` outputs, counterexamples, or no-extension
-  cases fully.
+- `argumentation.solver_adapters.iccma_af` writes numeric `p af n` input and
+  uses the ICCMA 2023 `solver -p <task> -f <file> [-a <query>]` protocol.
+- It parses typed DC/DS/SE outputs including `YES`, `NO`, witnesses,
+  counterexamples, and no-extension SE output.
+- Optional real-solver smoke coverage is gated by `ICCMA_AF_SOLVER`.
 
 ## Execution Mode
 

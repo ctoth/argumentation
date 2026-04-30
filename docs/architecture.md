@@ -19,6 +19,9 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   extensions, plus a reference scan-based enumerator.
 - `argumentation.iccma` — ICCMA `p af n` numeric AF I/O for interop with
   external argumentation solvers.
+- `argumentation.solver_adapters.iccma_af` — ICCMA 2023 AF solver subprocess
+  adapter for `solver -p <task> -f <file> [-a <query>]`, with typed DC/DS/SE
+  output parsing.
 - `argumentation.aspic` — ASPIC+ literals, rules, premise/strict/defeasible
   arguments, attacks, defeats, and CSAF construction (Modgil & Prakken
   2018).
