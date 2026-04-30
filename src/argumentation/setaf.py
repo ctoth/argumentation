@@ -23,6 +23,9 @@ class SETAF:
             (frozenset(str(attacker) for attacker in attackers), str(target))
             for attackers, target in self.attacks
         )
+        empty_tails = sorted(target for attackers, target in attacks if not attackers)
+        if empty_tails:
+            raise ValueError(f"collective attack tails must be non-empty: {empty_tails!r}")
         unknown = sorted(
             (tuple(sorted(attackers)), target)
             for attackers, target in attacks
