@@ -43,7 +43,8 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
   SETAF parser/writer.
 - `argumentation.enforcement` — Brute-force minimal-change argument and
   extension enforcement with separate typed witnesses for unconstrained
-  fixed-argument edits and Baumann-style normal, strong, and weak expansions.
+  fixed-argument edits, conservative Baumann-style normal/strong/weak
+  expansions, and explicit liberal source-to-target semantics changes.
 - `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
   views plus concurrence checks.
 - `argumentation.dynamic` — Dynamic AF state wrapper, update-stream parsing,
