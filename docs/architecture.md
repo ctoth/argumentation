@@ -170,7 +170,7 @@ grounded acceptance on defeat-only frameworks; calling it on richer
 queries raises. Its current implementation tracks full edge sets and
 forgotten arguments in table keys, so its asymptotic cost is not better
 than brute-force enumeration; it is effective in practice for primal-graph
-treewidth ≤ ~15.
+treewidth ≤ ~15. It is not the full Popescu & Wallner I/O/U witness-table DP.
 
 ## Generic semantics dispatch
 
