@@ -1,9 +1,9 @@
 """Claim-augmented argumentation frameworks.
 
 CAFs attach claim identifiers to Dung arguments.  Inherited semantics computes
-ordinary Dung extensions first and projects them to claim sets.  The claim-level
-view uses the same generated argument candidates but maximizes after projection,
-so duplicate arguments for the same claim do not inflate the result.
+ordinary Dung extensions first and projects them to claim sets.  Claim-level
+semantics applies the claim-centric maximization and range definitions from the
+CAF papers.
 
 References:
     Dvorak, Gressler, Rapberger, and Woltran (2023). The complexity landscape
@@ -99,7 +99,7 @@ def claim_level_extensions(
             _project(caf, candidate)
             for candidate in _argument_subsets(caf.framework.arguments)
             if conflict_free(candidate, caf.framework.defeats)
-            and _claim_range(caf, candidate) == all_claims
+            and claim_range(caf, candidate) == all_claims
         )
     if semantics == "stable-admissible":
         all_claims = _all_claims(caf)
@@ -107,7 +107,7 @@ def claim_level_extensions(
             _project(caf, candidate)
             for candidate in _argument_subsets(caf.framework.arguments)
             if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
-            and _claim_range(caf, candidate) == all_claims
+            and claim_range(caf, candidate) == all_claims
         )
     if semantics == "semi-stable":
         return _claim_range_maximal(
@@ -178,6 +178,52 @@ def _project(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]
     return frozenset(caf.claims[argument] for argument in extension)
 
 
+def is_well_formed(caf: ClaimAugmentedAF) -> bool:
+    """Return whether same-claim arguments have identical attack targets."""
+    outgoing = {
+        argument: frozenset(
+            target
+            for attacker, target in caf.framework.defeats
+            if attacker == argument
+        )
+        for argument in caf.framework.arguments
+    }
+    for left in caf.framework.arguments:
+        for right in caf.framework.arguments:
+            if caf.claims[left] == caf.claims[right] and outgoing[left] != outgoing[right]:
+                return False
+    return True
+
+
+def defeated_claims(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
+    """Return the claims defeated by ``extension`` in the CAF sense."""
+    unknown = sorted(extension - caf.framework.arguments)
+    if unknown:
+        raise ValueError(f"extension contains unknown arguments: {unknown!r}")
+    attacked_arguments = range_of(extension, caf.framework.defeats) - extension
+    defeated: set[str] = set()
+    for claim in _all_claims(caf):
+        arguments_with_claim = {
+            argument
+            for argument, argument_claim in caf.claims.items()
+            if argument_claim == claim
+        }
+        if arguments_with_claim and arguments_with_claim <= attacked_arguments:
+            defeated.add(claim)
+    return frozenset(defeated)
+
+
+def claim_range(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
+    """Return the CAF claim range ``claim(extension) union defeated_claims``."""
+    return _project(caf, extension) | defeated_claims(caf, extension)
+
+
+def is_i_maximal(claim_sets: Iterable[frozenset[str]]) -> bool:
+    """Return whether no claim set is a proper subset of another."""
+    values = list(_deduplicate_claim_sets(claim_sets))
+    return not any(left < right for left in values for right in values)
+
+
 def _all_claims(caf: ClaimAugmentedAF) -> frozenset[str]:
     return frozenset(caf.claims.values())
 
@@ -189,24 +235,6 @@ def _argument_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
         for subset in combinations(ordered, size):
             subsets.append(frozenset(subset))
     return subsets
-
-
-def _defeated_claims(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
-    defeated_arguments = range_of(extension, caf.framework.defeats) - extension
-    defeated_claims: set[str] = set()
-    for claim in _all_claims(caf):
-        arguments_with_claim = {
-            argument
-            for argument, argument_claim in caf.claims.items()
-            if argument_claim == claim
-        }
-        if arguments_with_claim and arguments_with_claim <= defeated_arguments:
-            defeated_claims.add(claim)
-    return frozenset(defeated_claims)
-
-
-def _claim_range(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:
-    return _project(caf, extension) | _defeated_claims(caf, extension)
 
 
 def _maximal_claim_sets(claim_sets: Iterable[frozenset[str]]) -> tuple[frozenset[str], ...]:
@@ -223,7 +251,7 @@ def _claim_range_maximal(
     candidates: Iterable[frozenset[str]],
 ) -> tuple[frozenset[str], ...]:
     pairs = [
-        (_project(caf, candidate), _claim_range(caf, candidate))
+        (_project(caf, candidate), claim_range(caf, candidate))
         for candidate in candidates
     ]
     return _deduplicate_claim_sets(
