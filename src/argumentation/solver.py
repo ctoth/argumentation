@@ -45,8 +45,20 @@ class ExtensionSolverSuccess:
     extensions: tuple[frozenset[str], ...]
 
 
+@dataclass(frozen=True)
+class AcceptanceSolverSuccess:
+    answer: bool
+    witness: frozenset[str] | None = None
+    counterexample: frozenset[str] | None = None
+
+
 ExtensionSolverResult = (
     ExtensionSolverSuccess
+    | SolverBackendUnavailable
+    | SolverBackendError
+)
+AcceptanceSolverResult = (
+    AcceptanceSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
 )
@@ -72,6 +84,56 @@ def solve_dung_extensions(
     )
 
 
+def solve_dung_acceptance(
+    framework: ArgumentationFramework,
+    *,
+    semantics: str,
+    task: str,
+    query: str,
+    backend: str | ICCMAAFBackend = "labelling",
+) -> AcceptanceSolverResult:
+    """Solve Dung credulous or skeptical acceptance queries."""
+    if query not in framework.arguments:
+        raise ValueError(f"query argument is not in framework: {query!r}")
+    if isinstance(backend, ICCMAAFBackend):
+        return _solve_iccma_dung_acceptance(framework, semantics, task, query, backend)
+    if backend == "labelling":
+        return _solve_native_dung_acceptance(framework, semantics, task, query)
+    return SolverBackendUnavailable(
+        backend=backend,
+        install_hint="Use backend='labelling'.",
+        reason=f"unknown backend: {backend!r}",
+    )
+
+
+def _solve_native_dung_acceptance(
+    framework: ArgumentationFramework,
+    semantics: str,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    extensions = _sorted_extensions(_dung_extensions(framework, semantics))
+    if task == "credulous":
+        witness = next(
+            (extension for extension in extensions if query in extension),
+            None,
+        )
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = next(
+            (extension for extension in extensions if query not in extension),
+            None,
+        )
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
 def _solve_iccma_dung_extensions(
     framework: ArgumentationFramework,
     semantics: str,
@@ -85,6 +147,55 @@ def _solve_iccma_dung_extensions(
     )
     if isinstance(result, iccma_af.ICCMASolverSuccess):
         return ExtensionSolverSuccess(_sorted_extensions(list(result.extensions)))
+    if isinstance(result, iccma_af.ICCMASolverUnavailable):
+        return SolverBackendUnavailable(
+            backend=result.backend,
+            install_hint=result.install_hint,
+            reason=result.reason,
+        )
+    if isinstance(result, iccma_af.ICCMASolverError):
+        return SolverBackendError(
+            backend=result.backend,
+            reason=f"solver exited with code {result.returncode}",
+            details={
+                "problem": result.problem,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            },
+        )
+    return SolverBackendError(
+        backend=result.backend,
+        reason=result.message,
+        details={
+            "problem": result.problem,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        },
+    )
+
+
+def _solve_iccma_dung_acceptance(
+    framework: ArgumentationFramework,
+    semantics: str,
+    task: str,
+    query: str,
+    backend: ICCMAAFBackend,
+) -> AcceptanceSolverResult:
+    result = iccma_af.solve_af_acceptance(
+        framework=framework,
+        semantics=semantics,
+        task=task,
+        query=query,
+        binary=backend.binary,
+        timeout_seconds=backend.timeout_seconds,
+        certificate_required=True,
+    )
+    if isinstance(result, iccma_af.ICCMASolverSuccess):
+        return AcceptanceSolverSuccess(
+            answer=result.answer is True,
+            witness=result.witness if result.answer is True else None,
+            counterexample=result.witness if result.answer is False else None,
+        )
     if isinstance(result, iccma_af.ICCMASolverUnavailable):
         return SolverBackendUnavailable(
             backend=result.backend,
