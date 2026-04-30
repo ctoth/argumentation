@@ -42,7 +42,8 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.setaf_io` — ASPARTIX SETAF facts plus package-local compact
   SETAF parser/writer.
 - `argumentation.enforcement` — Brute-force minimal-change argument and
-  extension enforcement oracle with typed edit witnesses.
+  extension enforcement with separate typed witnesses for unconstrained
+  fixed-argument edits and Baumann-style normal, strong, and weak expansions.
 - `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
   views plus concurrence checks.
 - `argumentation.dynamic` — Dynamic AF state wrapper, update-stream parsing,
