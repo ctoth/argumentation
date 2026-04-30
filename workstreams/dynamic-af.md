@@ -18,10 +18,15 @@ definitions, update classes, or API behavior.
 
 ## Current State
 
-- `argumentation.dynamic` supports update streams and recomputes semantics from
-  scratch after each update.
-- It does not use an initial extension, affected subframework, incremental SAT,
-  or IPAFAIR-style mutable solver state.
+- `argumentation.dynamic` supports update streams and keeps
+  `DynamicRecomputeOracle` as the recompute-from-scratch correctness oracle.
+- Single attack additions/deletions can use the Alfano-Greco-Parisi influenced
+  set and reduced AF algorithm for grounded, complete, preferred, and stable
+  semantics.
+- The stateful incremental wrapper reports whether the reduced-AF path was used
+  or whether a recompute fallback occurred.
+- It does not implement incremental SAT or IPAFAIR-style mutable external
+  solver state.
 
 ## Execution Mode
 
@@ -57,6 +62,7 @@ Paper/source-derived properties:
 
 Acceptance criteria:
 - Recompute oracle is trusted by tests before incremental logic is added.
+- Status: complete.
 
 ### Phase 2: Affected Subframework Detection
 
@@ -76,6 +82,8 @@ Paper-derived properties:
 
 Acceptance criteria:
 - Tests include both fixed paper examples and generated small AF/update cases.
+- Status: complete for the Alfano-Greco-Parisi influenced set used by the
+  single-attack incremental algorithm.
 
 ### Phase 3: Incremental Extension Update
 
@@ -95,6 +103,9 @@ Paper-derived properties:
 Acceptance criteria:
 - Tests can detect whether the incremental path was used, not just whether the
   answer is correct.
+- Status: complete for single attack updates under grounded, complete,
+  preferred, and stable semantics. Unsupported update kinds fall back through
+  explicit metadata.
 
 ### Phase 4: Dynamic Acceptance Queries
 
@@ -113,6 +124,8 @@ Source-derived properties:
 Acceptance criteria:
 - Query APIs have fixtures for YES/NO and witness/counterexample extraction
   where supported.
+- Status: complete for the package-native stateful wrapper; queries return
+  witness/counterexample extensions.
 
 ### Phase 5: Performance Guardrails
 
@@ -124,6 +137,7 @@ Acceptance criteria:
 Acceptance criteria:
 - Documentation distinguishes correctness, incremental execution, and measured
   performance.
+- Status: complete. No performance speedup claim is made without benchmarks.
 
 ## Tests
 
