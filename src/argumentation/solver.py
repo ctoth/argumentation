@@ -46,6 +46,11 @@ class ExtensionSolverSuccess:
 
 
 @dataclass(frozen=True)
+class SingleExtensionSolverSuccess:
+    extension: frozenset[str] | None
+
+
+@dataclass(frozen=True)
 class AcceptanceSolverSuccess:
     answer: bool
     witness: frozenset[str] | None = None
@@ -54,6 +59,11 @@ class AcceptanceSolverSuccess:
 
 ExtensionSolverResult = (
     ExtensionSolverSuccess
+    | SolverBackendUnavailable
+    | SolverBackendError
+)
+SingleExtensionSolverResult = (
+    SingleExtensionSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
 )
@@ -72,10 +82,35 @@ def solve_dung_extensions(
 ) -> ExtensionSolverResult:
     """Solve Dung extension queries through a package or external backend."""
     if isinstance(backend, ICCMAAFBackend):
-        return _solve_iccma_dung_extensions(framework, semantics, backend)
+        return SolverBackendUnavailable(
+            backend=backend.binary,
+            install_hint="Use solve_dung_single_extension for ICCMA AF SE tasks.",
+            reason="ICCMA AF SE tasks return one extension witness, not enumeration",
+        )
     if backend == "labelling":
         return ExtensionSolverSuccess(
             _sorted_extensions(_dung_extensions(framework, semantics))
+        )
+    return SolverBackendUnavailable(
+        backend=backend,
+        install_hint="Use backend='labelling'.",
+        reason=f"unknown backend: {backend!r}",
+    )
+
+
+def solve_dung_single_extension(
+    framework: ArgumentationFramework,
+    *,
+    semantics: str,
+    backend: str | ICCMAAFBackend = "labelling",
+) -> SingleExtensionSolverResult:
+    """Solve one Dung extension witness query."""
+    if isinstance(backend, ICCMAAFBackend):
+        return _solve_iccma_dung_single_extension(framework, semantics, backend)
+    if backend == "labelling":
+        extensions = _sorted_extensions(_dung_extensions(framework, semantics))
+        return SingleExtensionSolverSuccess(
+            extension=extensions[0] if extensions else None,
         )
     return SolverBackendUnavailable(
         backend=backend,
@@ -134,11 +169,11 @@ def _solve_native_dung_acceptance(
     raise ValueError(f"unsupported Dung acceptance task: {task}")
 
 
-def _solve_iccma_dung_extensions(
+def _solve_iccma_dung_single_extension(
     framework: ArgumentationFramework,
     semantics: str,
     backend: ICCMAAFBackend,
-) -> ExtensionSolverResult:
+) -> SingleExtensionSolverResult:
     result = iccma_af.solve_af_extensions(
         framework=framework,
         semantics=semantics,
@@ -146,7 +181,9 @@ def _solve_iccma_dung_extensions(
         timeout_seconds=backend.timeout_seconds,
     )
     if isinstance(result, iccma_af.ICCMASolverSuccess):
-        return ExtensionSolverSuccess(_sorted_extensions(list(result.extensions)))
+        return SingleExtensionSolverSuccess(
+            extension=result.witness if not result.output.no_extension else None,
+        )
     if isinstance(result, iccma_af.ICCMASolverUnavailable):
         return SolverBackendUnavailable(
             backend=result.backend,

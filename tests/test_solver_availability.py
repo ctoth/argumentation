@@ -95,7 +95,7 @@ def test_solve_dung_single_extension_routes_explicit_iccma_backend(monkeypatch) 
     assert calls == [(framework, "stable", "fake-iccma", 7.5)]
 
 
-def test_solve_dung_extensions_maps_iccma_unavailable(monkeypatch) -> None:
+def test_solve_dung_single_extension_maps_iccma_unavailable(monkeypatch) -> None:
     framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
 
     def fake_solve_af_extensions(*, framework, semantics, binary, timeout_seconds):
@@ -110,7 +110,7 @@ def test_solve_dung_extensions_maps_iccma_unavailable(monkeypatch) -> None:
         fake_solve_af_extensions,
     )
 
-    result = solve_dung_extensions(
+    result = solve_dung_single_extension(
         framework,
         semantics="grounded",
         backend=ICCMAAFBackend(binary="missing"),
@@ -121,7 +121,7 @@ def test_solve_dung_extensions_maps_iccma_unavailable(monkeypatch) -> None:
     assert result.reason == "binary not found on PATH"
 
 
-def test_solve_dung_extensions_maps_iccma_solver_error(monkeypatch) -> None:
+def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> None:
     framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
 
     def fake_solve_af_extensions(*, framework, semantics, binary, timeout_seconds):
@@ -138,7 +138,7 @@ def test_solve_dung_extensions_maps_iccma_solver_error(monkeypatch) -> None:
         fake_solve_af_extensions,
     )
 
-    result = solve_dung_extensions(
+    result = solve_dung_single_extension(
         framework,
         semantics="stable",
         backend=ICCMAAFBackend(binary="bad-solver"),
