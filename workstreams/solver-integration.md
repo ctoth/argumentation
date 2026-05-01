@@ -825,6 +825,30 @@ Phase 0 baseline checkpoint:
     update; Phase 4 still requires that page-image reread before SAT encoding
     implementation.
 
+Phase 1 shared result-type checkpoint:
+
+- Red test commit: `3bf4ecb`.
+  - Added shared-result identity assertions across the top-level solver and
+    ICCMA AF adapter.
+  - Added top-level protocol-error preservation tests for SE and DC tasks.
+  - Added an ICCMA-source-derived Hypothesis property generating non-numeric
+    witness arguments; these must remain protocol errors because ICCMA AF
+    witness lines use indexed positive-integer arguments.
+  - Added a generated complete-mutual-attack AF property showing preferred
+    semantics can have multiple native extensions and ICCMA SE cannot be used
+    as enumeration.
+- Green commits: `93bbfe6`, `be60e11`, `e7dfb5e`, `3861930`.
+  - Added `argumentation.solver_results`.
+  - Reused shared unavailable/process/protocol failures in the ICCMA adapter.
+  - Preserved existing process-error diagnostics through compatibility
+    properties.
+  - Preserved protocol errors distinctly through `argumentation.solver`.
+- Acceptance verification after green:
+  - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
+    reported 29 passed, 1 skipped in 0.73s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
