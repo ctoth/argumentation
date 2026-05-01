@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib import resources
 from pathlib import Path
 import re
 import shutil
@@ -40,6 +41,13 @@ class ClingoAnswerSetSuccess:
     stdout: str
 
 
+@dataclass(frozen=True)
+class ClingoExtensionEnumerationSuccess:
+    backend: str
+    extensions: tuple[frozenset[str], ...]
+    stdout: str
+
+
 ClingoUnavailable = SolverUnavailable
 ClingoProcessError = SolverProcessError
 ClingoProtocolError = SolverProtocolError
@@ -47,10 +55,82 @@ ClingoProtocolError = SolverProtocolError
 
 ClingoResult = (
     ClingoAnswerSetSuccess
+    | ClingoExtensionEnumerationSuccess
     | ClingoUnavailable
     | ClingoProcessError
     | ClingoProtocolError
 )
+
+
+def run_extension_enumeration_protocol(
+    *,
+    facts: tuple[str, ...],
+    encoding_modules: tuple[str, ...],
+    known_argument_ids: frozenset[str],
+    binary: str,
+    timeout_seconds: float = 30.0,
+    problem: str = "ASP-EXT",
+) -> ClingoResult:
+    """Run clingo over facts plus packaged modules and parse all extensions."""
+    resolved = _resolve_binary(binary)
+    if resolved is None:
+        return ClingoUnavailable(
+            backend=binary,
+            reason="binary not found on PATH",
+            install_hint="Install clingo or pass binary=... to the backend solver.",
+        )
+
+    try:
+        modules = tuple(_read_encoding_module(module) for module in encoding_modules)
+    except FileNotFoundError as exc:
+        return ClingoProtocolError(
+            backend=binary,
+            problem=problem,
+            message=f"packaged encoding module not found: {exc.filename}",
+            stderr="",
+            stdout="",
+        )
+
+    path = _write_temp_program(facts, modules=modules)
+    try:
+        completed = subprocess.run(
+            [resolved, str(path), "0"],
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    finally:
+        path.unlink(missing_ok=True)
+
+    if completed.returncode != 0:
+        return ClingoProcessError(
+            backend=binary,
+            problem=problem,
+            returncode=completed.returncode,
+            stderr=completed.stderr,
+            stdout=completed.stdout,
+        )
+
+    try:
+        extensions = _parse_extension_answer_sets(
+            completed.stdout,
+            known_argument_ids=known_argument_ids,
+        )
+    except ValueError as exc:
+        return ClingoProtocolError(
+            backend=binary,
+            problem=problem,
+            message=str(exc),
+            stderr=completed.stderr,
+            stdout=completed.stdout,
+        )
+
+    return ClingoExtensionEnumerationSuccess(
+        backend=binary,
+        extensions=extensions,
+        stdout=completed.stdout,
+    )
 
 
 def run_aspic_grounded_protocol(
@@ -136,6 +216,51 @@ def _parse_grounded_answer_set(
     return frozenset(accepted_argument_ids), frozenset(accepted_literal_ids)
 
 
+def _parse_extension_answer_sets(
+    stdout: str,
+    *,
+    known_argument_ids: frozenset[str],
+) -> tuple[frozenset[str], ...]:
+    extensions: list[frozenset[str]] = []
+    current: set[str] | None = None
+
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("Answer:"):
+            if current is not None:
+                extensions.append(frozenset(current))
+            current = set()
+            continue
+        if current is None:
+            continue
+        if not stripped:
+            continue
+        if stripped in _CLINGO_CONTROL_TOKENS or stripped.startswith("Optimization:"):
+            extensions.append(frozenset(current))
+            current = None
+            continue
+        for token in stripped.split():
+            arg_match = _ACCEPTED_ARG_RE.fullmatch(token)
+            if arg_match is None:
+                if token not in _CLINGO_CONTROL_TOKENS and not token.isdigit():
+                    raise ValueError(f"unexpected clingo output token: {token}")
+                continue
+            argument_id = arg_match.group("id")
+            if argument_id not in known_argument_ids:
+                raise ValueError("accepted argument id is not in the encoding")
+            current.add(argument_id)
+
+    if current is not None:
+        extensions.append(frozenset(current))
+
+    return tuple(
+        sorted(
+            set(extensions),
+            key=lambda extension: (len(extension), tuple(sorted(extension))),
+        )
+    )
+
+
 def _resolve_binary(binary: str) -> str | None:
     path = Path(binary)
     if path.exists():
@@ -143,13 +268,29 @@ def _resolve_binary(binary: str) -> str | None:
     return shutil.which(binary)
 
 
-def _write_temp_program(facts: tuple[str, ...]) -> Path:
+def _read_encoding_module(name: str) -> str:
+    return (
+        resources.files("argumentation")
+        .joinpath("encodings", name)
+        .read_text(encoding="utf-8")
+    )
+
+
+def _write_temp_program(
+    facts: tuple[str, ...],
+    *,
+    modules: tuple[str, ...] = (),
+) -> Path:
     with tempfile.NamedTemporaryFile(
         "w",
         encoding="utf-8",
         suffix=".lp",
         delete=False,
     ) as handle:
+        for module in modules:
+            handle.write(module)
+            if not module.endswith("\n"):
+                handle.write("\n")
         for fact in facts:
             handle.write(fact)
             handle.write("\n")
