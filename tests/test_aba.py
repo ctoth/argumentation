@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+from hypothesis import given, settings, strategies as st
+
+from argumentation import aba as native_aba
+from argumentation.aba import ABAFramework
+from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.solver import (
+    AcceptanceSolverSuccess,
+    SingleExtensionSolverSuccess,
+    SolverBackendUnavailable,
+    solve_aba_acceptance,
+    solve_aba_single_extension,
+)
+
+
+ABA_EXTENSION_ORACLES = {
+    "complete": native_aba.complete_extensions,
+    "preferred": native_aba.preferred_extensions,
+    "stable": native_aba.stable_extensions,
+    "grounded": lambda framework: (native_aba.grounded_extension(framework),),
+    "ideal": lambda framework: (native_aba.ideal_extension(framework),),
+}
+
+
+@given(flat_aba_frameworks(), st.sampled_from(sorted(ABA_EXTENSION_ORACLES)))
+@settings(deadline=10000, max_examples=40)
+def test_solve_aba_single_extension_native_returns_native_witness(
+    framework: ABAFramework,
+    semantics: str,
+) -> None:
+    result = solve_aba_single_extension(framework, semantics=semantics, backend="native")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    if result.extension is not None:
+        assert result.extension in ABA_EXTENSION_ORACLES[semantics](framework)
+
+
+@given(
+    flat_aba_frameworks(),
+    st.sampled_from(sorted(ABA_EXTENSION_ORACLES)),
+    st.sampled_from(["credulous", "skeptical"]),
+)
+@settings(deadline=10000, max_examples=50)
+def test_solve_aba_acceptance_native_matches_extension_quantification(
+    framework: ABAFramework,
+    semantics: str,
+    task: str,
+) -> None:
+    query = sorted(framework.language, key=repr)[0]
+    extensions = ABA_EXTENSION_ORACLES[semantics](framework)
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics=semantics,
+        task=task,
+        query=query,
+        backend="native",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    if task == "credulous":
+        assert result.answer is any(
+            native_aba.derives(framework, extension, query)
+            for extension in extensions
+        )
+        if result.witness is not None:
+            assert native_aba.derives(framework, result.witness, query)
+    else:
+        assert result.answer is all(
+            native_aba.derives(framework, extension, query)
+            for extension in extensions
+        )
+        if result.counterexample is not None:
+            assert not native_aba.derives(framework, result.counterexample, query)
+
+
+def test_solve_aba_aspforaba_backend_is_typed_unavailable_without_contract() -> None:
+    framework = _flat_aba(2, frozenset())
+
+    result = solve_aba_single_extension(
+        framework,
+        semantics="stable",
+        backend="aspforaba",
+    )
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.backend == "aspforaba"
+
+
+@st.composite
+def flat_aba_frameworks(draw):
+    size = draw(st.integers(min_value=1, max_value=3))
+    attacks = draw(
+        st.frozensets(
+            st.tuples(
+                st.integers(min_value=1, max_value=size),
+                st.integers(min_value=1, max_value=size),
+            ),
+            max_size=size * size,
+        )
+    )
+    return _flat_aba(size, frozenset(attacks))
+
+
+def _flat_aba(size: int, attacks: frozenset[tuple[int, int]]) -> ABAFramework:
+    assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
+    contraries = {literal(f"c{index}") for index in range(1, size + 1)}
+    assumption_by_index = {
+        index: literal(f"a{index}") for index in range(1, size + 1)
+    }
+    contrary_by_index = {
+        index: literal(f"c{index}") for index in range(1, size + 1)
+    }
+    return ABAFramework(
+        language=frozenset(assumptions | contraries),
+        rules=frozenset(
+            Rule((assumption_by_index[attacker],), contrary_by_index[target], "strict")
+            for attacker, target in attacks
+        ),
+        assumptions=frozenset(assumptions),
+        contrary={
+            assumption_by_index[index]: contrary_by_index[index]
+            for index in range(1, size + 1)
+        },
+    )
+
+
+def literal(name: str) -> Literal:
+    return Literal(GroundAtom(name))
