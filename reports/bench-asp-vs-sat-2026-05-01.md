@@ -5,7 +5,7 @@ Date: 2026-05-01
 Harness:
 
 ```powershell
-uv run python -m bench.asp_vs_sat --out out/asp-vs-reference.csv
+uv run python -m bench.asp_vs_sat --out reports/asp-vs-reference.csv
 ```
 
 Current scope:
