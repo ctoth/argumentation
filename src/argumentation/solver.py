@@ -29,6 +29,7 @@ from argumentation.dung import (
 from argumentation.sat_encoding import (
     sat_complete_extension,
     sat_extensions,
+    sat_preferred_extension,
     sat_stable_extension,
 )
 from argumentation.setaf import SETAF
@@ -226,7 +227,7 @@ def solve_dung_extensions(
     sat: SATConfig | None = None,
 ) -> ExtensionSolverResult:
     """Solve Dung extension queries through a package or external backend."""
-    backend = _auto_dung_task_backend(backend, semantics)
+    backend = _auto_dung_extension_backend(backend, semantics)
     if backend == "iccma":
         return SolverBackendUnavailable(
             backend=iccma.binary if iccma is not None else "iccma",
@@ -257,7 +258,7 @@ def solve_dung_single_extension(
     sat: SATConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one Dung extension witness query."""
-    backend = _auto_dung_task_backend(backend, semantics)
+    backend = _auto_dung_single_backend(backend, semantics)
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
@@ -281,6 +282,13 @@ def solve_dung_single_extension(
             try:
                 return SingleExtensionSolverSuccess(
                     extension=sat_complete_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
+        if semantics == "preferred":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_preferred_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
@@ -308,7 +316,7 @@ def solve_dung_acceptance(
     """Solve Dung credulous or skeptical acceptance queries."""
     if query not in framework.arguments:
         raise ValueError(f"query argument is not in framework: {query!r}")
-    backend = _auto_dung_task_backend(backend, semantics)
+    backend = _auto_dung_acceptance_backend(backend, semantics, task)
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
@@ -326,6 +334,11 @@ def solve_dung_acceptance(
         if semantics == "complete":
             try:
                 return _solve_sat_complete_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
+        if semantics == "preferred" and task == "credulous":
+            try:
+                return _solve_sat_preferred_credulous_acceptance(framework, query)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
@@ -348,9 +361,25 @@ def _missing_iccma_config() -> SolverBackendUnavailable:
     )
 
 
-def _auto_dung_task_backend(backend: str, semantics: str) -> str:
+def _auto_dung_extension_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
         return "sat" if semantics in {"complete", "stable"} else "native"
+    return backend
+
+
+def _auto_dung_single_backend(backend: str, semantics: str) -> str:
+    if backend == "auto":
+        return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
+    return backend
+
+
+def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> str:
+    if backend == "auto":
+        if semantics in {"complete", "stable"}:
+            return "sat"
+        if semantics == "preferred" and task == "credulous":
+            return "sat"
+        return "native"
     return backend
 
 
@@ -516,6 +545,17 @@ def _solve_sat_complete_acceptance(
             counterexample=counterexample,
         )
     raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
+def _solve_sat_preferred_credulous_acceptance(
+    framework: ArgumentationFramework,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    witness = sat_preferred_extension(framework, require_in=query)
+    return AcceptanceSolverSuccess(
+        answer=witness is not None,
+        witness=witness,
+    )
 
 
 def _solve_dung_acceptance_from_extensions(
