@@ -87,9 +87,11 @@ def solve_adf_models(
     framework: AbstractDialecticalFramework,
     *,
     semantics: str,
-    backend: str = "native",
+    backend: str = "auto",
 ) -> ExtensionSolverResult:
     """Solve ADF model queries through native semantics or a declared backend."""
+    if backend == "auto":
+        backend = "native"
     if backend == "native":
         return ExtensionSolverSuccess(_adf_models(framework, semantics))
     return SolverBackendUnavailable(
@@ -103,9 +105,11 @@ def solve_setaf_extensions(
     framework: SETAF,
     *,
     semantics: str,
-    backend: str = "native",
+    backend: str = "auto",
 ) -> ExtensionSolverResult:
     """Solve SETAF extension queries through native semantics or a declared backend."""
+    if backend == "auto":
+        backend = "native"
     if backend == "native":
         return ExtensionSolverSuccess(_setaf_extensions(framework, semantics))
     return SolverBackendUnavailable(
@@ -213,11 +217,12 @@ def solve_dung_extensions(
     framework: ArgumentationFramework,
     *,
     semantics: str,
-    backend: str = "native",
+    backend: str = "auto",
     iccma: ICCMAConfig | None = None,
     sat: SATConfig | None = None,
 ) -> ExtensionSolverResult:
     """Solve Dung extension queries through a package or external backend."""
+    backend = _auto_dung_task_backend(backend, semantics)
     if backend == "iccma":
         return SolverBackendUnavailable(
             backend=iccma.binary if iccma is not None else "iccma",
