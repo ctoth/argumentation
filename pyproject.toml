@@ -89,6 +89,7 @@ venv = ".venv"
 include = ["src"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "unit: focused unit-level contract tests",
     "property: property-based or metamorphic tests",
