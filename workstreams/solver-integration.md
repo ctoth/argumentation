@@ -797,6 +797,34 @@ No page-image reread was performed while drafting this file. Page-image or
 primary-source rereads are required by the phase gates above before
 paper-sensitive implementation work.
 
+Phase 0 baseline checkpoint:
+
+- Phase-order check committed as `6b598cf`; `uv run .\tools\check_workstream_phase_order.py .\workstreams\solver-integration.md`
+  prints phases 0 through 9 in the dependency-sorted order and verifies the
+  list matches the phase headings exactly.
+- Targeted solver gate passed:
+  `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py tests/test_solver_encoding.py`
+  reported 28 passed, 1 skipped in 0.66s.
+- `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+- `git diff --check` passed.
+- Solver-adjacent Hypothesis audit:
+  - `tests/test_solver_encoding.py` has `@settings(deadline=10000, max_examples=30)`.
+  - `tests/test_iccma.py` has `@settings(max_examples=100)`.
+  - `tests/test_setaf_io.py` has `@settings(max_examples=100)`.
+  - `tests/test_solver_availability.py` and `tests/test_solver_adapters.py`
+    currently have no Hypothesis properties.
+  - No unbounded `deadline=None` settings were found in the checked
+    solver-adjacent files.
+- Source-gate availability:
+  - ICCMA 2023 AIJ article and official ICCMA 2023 rules/tracks pages were
+    located as primary sources for AF/ABA formats, task codes, output grammar,
+    and witness checking.
+  - Niskanen and Järvisalo 2020 KR proceedings page and author PDF were located
+    for the µ-toksia SAT architecture and encodings.
+  - I did not reread Niskanen SAT encoding page images in this Phase 0 ledger
+    update; Phase 4 still requires that page-image reread before SAT encoding
+    implementation.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
