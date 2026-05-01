@@ -1,0 +1,13 @@
+{
+  "title": "Fudge: A light-weight solver for abstract argumentation based on SAT reductions",
+  "authors": [
+    "Matthias Thimm",
+    "Federico Cerutti",
+    "Mauro Vallati"
+  ],
+  "year": "2021",
+  "arxiv_id": "2109.03106",
+  "abstract": "We present Fudge, an abstract argumentation solver that tightly integrates satisfiability solving technology to solve a series of abstract argumentation problems. While most of the encodings used by Fudge derive from standard translation approaches, Fudge makes use of completely novel encodings to solve the skeptical reasoning problem wrt. preferred semantics and problems wrt. ideal semantics.",
+  "url": "http://arxiv.org/abs/2109.03106v1",
+  "pdf_url": "https://arxiv.org/pdf/2109.03106v1"
+}
