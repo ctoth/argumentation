@@ -1,0 +1,15 @@
+{
+  "title": "Computing Preferred Extensions in Abstract Argumentation: a SAT-based Approach",
+  "authors": [
+    "Federico Cerutti",
+    "Paul E. Dunne",
+    "Massimiliano Giacomin",
+    "Mauro Vallati"
+  ],
+  "year": "2013",
+  "arxiv_id": "1310.4986",
+  "doi": "10.1007/978-3-642-54373-9_12",
+  "abstract": "This paper presents a novel SAT-based approach for the computation of extensions in abstract argumentation, with focus on preferred semantics, and an empirical evaluation of its performances. The approach is based on the idea of reducing the problem of computing complete extensions to a SAT problem and then using a depth-first search method to derive preferred extensions. The proposed approach has been tested using two distinct SAT solvers and compared with three state-of-the-art systems for preferred extension computation. It turns out that the proposed approach delivers significantly better performances in the large majority of the considered cases.",
+  "url": "http://arxiv.org/abs/1310.4986v2",
+  "pdf_url": "https://arxiv.org/pdf/1310.4986v2"
+}
