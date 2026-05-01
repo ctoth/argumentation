@@ -4,6 +4,7 @@ import argparse
 import csv
 from dataclasses import dataclass
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -27,6 +28,7 @@ RESULT_FIELDS = [
     "subtrack",
     "instance_kind",
     "instance",
+    "backend",
     "status",
     "reason",
     "elapsed_seconds",
@@ -46,6 +48,8 @@ RESULT_FIELDS = [
 @dataclass(frozen=True)
 class RunConfig:
     root: Path
+    backend: str
+    iccma_binary: str | None
     max_af_arguments: int
     max_aba_assumptions: int
     timeout_seconds: float
@@ -55,9 +59,15 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "_worker":
         return worker_main(argv[1:])
     parser = argparse.ArgumentParser(
-        description="Run bounded native argumentation algorithms on ICCMA 2025 data."
+        description="Run bounded native or ICCMA-backed algorithms on ICCMA 2025 data."
     )
     parser.add_argument("--root", type=Path, default=DATA_ROOT)
+    parser.add_argument("--backend", choices=["native", "iccma"], default="native")
+    parser.add_argument(
+        "--iccma-binary",
+        default=os.environ.get("ICCMA_AF_SOLVER"),
+        help="ICCMA AF solver binary for --backend iccma; defaults to ICCMA_AF_SOLVER.",
+    )
     parser.add_argument("--max-af-arguments", type=int, default=100)
     parser.add_argument("--max-aba-assumptions", type=int, default=10)
     parser.add_argument("--timeout-seconds", type=float, default=5.0)
@@ -66,6 +76,8 @@ def main(argv: list[str] | None = None) -> int:
 
     config = RunConfig(
         root=args.root,
+        backend=args.backend,
+        iccma_binary=args.iccma_binary,
         max_af_arguments=args.max_af_arguments,
         max_aba_assumptions=args.max_aba_assumptions,
         timeout_seconds=args.timeout_seconds,
@@ -106,8 +118,12 @@ def run_or_skip(
     instance: dict[str, Any],
     task: dict[str, Any],
 ) -> dict[str, Any]:
-    base = base_result(instance, task)
-    if instance["kind"] == "af" and int(instance["arguments_or_atoms"]) > config.max_af_arguments:
+    base = {**base_result(instance, task), "backend": config.backend}
+    if (
+        instance["kind"] == "af"
+        and config.max_af_arguments >= 0
+        and int(instance["arguments_or_atoms"]) > config.max_af_arguments
+    ):
         return {
             **base,
             "status": "skipped",
@@ -121,11 +137,14 @@ def run_or_skip(
         }
     job = {
         "root": str(config.root),
+        "backend": config.backend,
+        "iccma_binary": config.iccma_binary,
+        "solver_timeout_seconds": config.timeout_seconds,
         "instance": instance,
         "task": task,
     }
     started = time.perf_counter()
-    result = run_child(job, timeout_seconds=config.timeout_seconds)
+    result = run_child(job, timeout_seconds=config.timeout_seconds + 10.0)
     elapsed = time.perf_counter() - started
     return {
         **base,
@@ -201,7 +220,16 @@ def worker_solve(job: dict[str, Any]) -> dict[str, Any]:
 
 def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     from argumentation.iccma import parse_af
-    from argumentation.semantics import extensions
+    from argumentation.solver import (
+        AcceptanceSolverSuccess,
+        ICCMAConfig,
+        SingleExtensionSolverSuccess,
+        SolverBackendError,
+        SolverBackendUnavailable,
+        SolverProtocolError,
+        solve_dung_acceptance,
+        solve_dung_single_extension,
+    )
 
     root = Path(job["root"])
     instance = job["instance"]
@@ -210,9 +238,56 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     query_path = Path(str(path) + ".arg")
     problem, semantics = split_subtrack(task["subtrack"])
     framework = parse_af(path.read_text(encoding="utf-8"))
-    extension_sets = extensions(framework, semantics=semantics)
+    backend = job["backend"]
+    iccma_config = None
+    if backend == "iccma":
+        binary = job.get("iccma_binary")
+        if not binary:
+            return {
+                "status": "unavailable",
+                "reason": "missing ICCMA solver configuration",
+                "error": "Pass --iccma-binary or set ICCMA_AF_SOLVER.",
+            }
+        iccma_config = ICCMAConfig(
+            binary=binary,
+            timeout_seconds=float(job["solver_timeout_seconds"]),
+        )
+    if problem == "SE":
+        result = solve_dung_single_extension(
+            framework,
+            semantics=semantics,
+            backend=backend,
+            iccma=iccma_config,
+        )
+        if isinstance(result, SingleExtensionSolverSuccess):
+            return solved_single_extension(result.extension)
+        if isinstance(result, SolverBackendUnavailable):
+            return unavailable_result(result.reason, result.install_hint)
+        if isinstance(result, SolverBackendError):
+            return solver_error_result(result.reason, result.details)
+        if isinstance(result, SolverProtocolError):
+            return protocol_error_result(result.reason, result.details)
+        raise TypeError(f"unknown solver result: {result!r}")
     query = query_path.read_text(encoding="utf-8").strip() if query_path.exists() else None
-    return solve_from_extensions(problem, extension_sets, query=query)
+    if query is None:
+        return {"status": "skipped", "reason": "missing_query", "error": None}
+    result = solve_dung_acceptance(
+        framework,
+        semantics=semantics,
+        task=acceptance_task(problem),
+        query=query,
+        backend=backend,
+        iccma=iccma_config,
+    )
+    if isinstance(result, AcceptanceSolverSuccess):
+        return solved_acceptance(result)
+    if isinstance(result, SolverBackendUnavailable):
+        return unavailable_result(result.reason, result.install_hint)
+    if isinstance(result, SolverBackendError):
+        return solver_error_result(result.reason, result.details)
+    if isinstance(result, SolverProtocolError):
+        return protocol_error_result(result.reason, result.details)
+    raise TypeError(f"unknown solver result: {result!r}")
 
 
 def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
@@ -268,11 +343,19 @@ def solve_from_extensions(
 
 def solved_se(extension_sets) -> dict[str, Any]:
     witness = first_extension(extension_sets)
+    return solved_single_extension(witness, extension_count=len(extension_sets))
+
+
+def solved_single_extension(
+    witness: frozenset[Any] | None,
+    *,
+    extension_count: int | None = None,
+) -> dict[str, Any]:
     return {
         "status": "solved",
         "reason": None,
         "answer": None,
-        "extension_count": len(extension_sets),
+        "extension_count": extension_count,
         "witness_size": len(witness) if witness is not None else None,
         "witness": extension_to_text(witness),
         "error": None,
@@ -309,6 +392,43 @@ def solved_decision(
     }
 
 
+def solved_acceptance(result) -> dict[str, Any]:
+    witness = result.witness if result.answer else result.counterexample
+    return {
+        "status": "solved",
+        "reason": None,
+        "answer": str(result.answer).lower(),
+        "extension_count": None,
+        "witness_size": len(witness) if witness is not None else None,
+        "witness": extension_to_text(witness),
+        "error": None,
+    }
+
+
+def unavailable_result(reason: str, install_hint: str) -> dict[str, Any]:
+    return {
+        "status": "unavailable",
+        "reason": reason,
+        "error": install_hint,
+    }
+
+
+def solver_error_result(reason: str, details: dict[str, str]) -> dict[str, Any]:
+    return {
+        "status": "solver_error",
+        "reason": reason,
+        "error": json.dumps(details, sort_keys=True),
+    }
+
+
+def protocol_error_result(reason: str, details: dict[str, str]) -> dict[str, Any]:
+    return {
+        "status": "protocol_error",
+        "reason": reason,
+        "error": json.dumps(details, sort_keys=True),
+    }
+
+
 def first_extension(extension_sets) -> frozenset[Any] | None:
     if not extension_sets:
         return None
@@ -333,12 +453,21 @@ def split_subtrack(subtrack: str) -> tuple[str, str]:
     return problem, TASK_TO_SEMANTICS[code]
 
 
+def acceptance_task(problem: str) -> str:
+    if problem == "DC":
+        return "credulous"
+    if problem == "DS":
+        return "skeptical"
+    raise ValueError(f"unsupported acceptance problem: {problem}")
+
+
 def base_result(instance: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
     return {
         "track": task["track"],
         "subtrack": task["subtrack"],
         "instance_kind": instance["kind"],
         "instance": instance["relative_path"],
+        "backend": None,
         "status": None,
         "reason": None,
         "elapsed_seconds": None,
