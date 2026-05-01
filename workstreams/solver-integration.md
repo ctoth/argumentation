@@ -801,6 +801,16 @@ Additional execution:
   `333b270`, `2f360af`.
 - Phase 9 consumer-neutral docs slice: `df7ad19`, `3068617`, `900b6e2`,
   `60335e6`, `9803283`, `734a480`, `35098c7`, `461b7a1`, `9b82759`.
+- Hypothesis verification hardening: `14450aa`.
+- Final package suite: `uv run pytest -q tests --timeout=600` reported
+  660 passed, 2 skipped in 55.30s.
+- Final docs/boundary gate:
+  `uv run pytest -q tests/test_docs_surface.py tests/test_import_boundaries.py tests/test_aspic_ws_f_public_api.py`
+  reported 7 passed.
+- Final `uv run pyright src`: 0 errors.
+- Final `git diff --check`: passed.
+- Final tracked-surface search for consumer-specific package naming across
+  README, docs, src, tests, and workstreams found no hits.
 - `uv run pytest -q tests/test_aspic.py::TestDefeatProperties::test_empty_ordering_still_respects_definition_19_edge_cases --timeout=180`:
   1 passed.
 - `uv run pyright src`: 0 errors.
