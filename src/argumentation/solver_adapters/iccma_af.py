@@ -11,6 +11,11 @@ import tempfile
 
 from argumentation.dung import ArgumentationFramework
 from argumentation.iccma import write_af
+from argumentation.solver_results import (
+    SolverProcessError,
+    SolverProtocolError,
+    SolverUnavailable,
+)
 
 
 SEMANTICS_TO_PROBLEM = {
@@ -81,29 +86,9 @@ class ICCMASolverSuccess:
         return self.output.extensions
 
 
-@dataclass(frozen=True)
-class ICCMASolverUnavailable:
-    backend: str
-    reason: str
-    install_hint: str
-
-
-@dataclass(frozen=True)
-class ICCMASolverError:
-    backend: str
-    problem: str
-    returncode: int
-    stderr: str
-    stdout: str
-
-
-@dataclass(frozen=True)
-class ICCMASolverProtocolError:
-    backend: str
-    problem: str
-    message: str
-    stderr: str
-    stdout: str
+ICCMASolverUnavailable = SolverUnavailable
+ICCMASolverError = SolverProcessError
+ICCMASolverProtocolError = SolverProtocolError
 
 
 ICCMASolverResult = (
