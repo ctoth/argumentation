@@ -131,6 +131,28 @@ backend name `native`. Other extension-enumeration backend names return
 old `labelling` backend name. The deleted `argumentation.dung_z3` module is
 not part of the current public surface.
 
+## Solver contracts
+
+Solver calls are separated by task result type. `ExtensionEnumerationSuccess`
+means complete extension enumeration, `SingleExtensionSuccess` means zero or
+one witness extension, and `AcceptanceSuccess` means credulous or skeptical
+acceptance plus any backend-supplied witness or counterexample.
+
+ICCMA subprocess integration is intentionally routed through task-specific
+surfaces. A single ICCMA `SE` answer is one witness: one ICCMA witness is not full enumeration.
+Full enumeration callers use native enumeration, while
+single-extension and acceptance callers can use ICCMA subprocesses through
+`ICCMAConfig(...)`. Optional smoke-test binaries are named by
+`ICCMA_AF_SOLVER`, `ICCMA_ABA_SOLVER`, and `ASPFORABA_SOLVER`.
+
+unsupported combinations return typed unavailable results before subprocess
+invocation. `solver_capability_matrix` records the package-owned capability
+surface for native, ICCMA, SAT, clingo, ADF, SETAF, and unsupported backend
+combinations. External callers supply already-projected frameworks, theories,
+or benchmark manifests and consume package result objects; this package does
+not own caller identity, storage, merge policy, provenance, or rendering
+policy.
+
 ## Z3 usage
 
 `z3-solver` remains an optional package dependency (extra: `z3`) and a
