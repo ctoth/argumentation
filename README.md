@@ -569,12 +569,30 @@ extensions = stable_extensions_from_encoding(encoding)
 
 ## Solver surfaces
 
-`argumentation.solver.solve_dung_extensions` is a typed dispatcher over the
-single in-package Dung extension path. Its supported backend name is
-`"native"`; asking for `"z3"` returns `SolverBackendUnavailable` with an
-install hint to use `"native"`. ICCMA subprocess solving is exposed through
-`backend="iccma"` plus `ICCMAConfig(...)` on the single-extension and
-acceptance solver surfaces.
+`argumentation.solver` separates solver tasks by result type:
+
+- `ExtensionEnumerationSuccess` returns all extensions for enumeration tasks.
+- `SingleExtensionSuccess` returns one witness extension or `None`.
+- `AcceptanceSuccess` returns a credulous or skeptical yes/no answer plus a
+  witness or counterexample when the backend supplies one.
+
+ICCMA `SE` tasks produce one witness, not full enumeration. Use
+`solve_dung_single_extension(..., backend="iccma", iccma=ICCMAConfig(...))`
+or `solve_aba_single_extension(..., backend="iccma", iccma=ICCMAConfig(...))`
+for that contract; `solve_dung_extensions(..., backend="iccma")` returns typed
+unavailable instead of pretending that one witness enumerates every extension.
+
+unsupported task/semantics/backend combinations return typed unavailable
+results before subprocess invocation. The main optional solver environment
+variables used by smoke tests are `ICCMA_AF_SOLVER`, `ICCMA_ABA_SOLVER`,
+and `ASPFORABA_SOLVER`. The package also includes
+`argumentation.solver_differential` with `solver_capability_matrix` and
+task-aware comparison helpers for native, ICCMA, SAT, clingo, ADF, SETAF, and
+unsupported backend combinations.
+
+External callers supply already-projected frameworks, theories, or benchmark
+manifests and consume package result objects. The package does not own caller
+identity, storage, merge policy, provenance, or rendering policy.
 
 The package still has an optional `z3` extra, but it is for
 `argumentation.epistemic` linear atomic constraint satisfiability and
