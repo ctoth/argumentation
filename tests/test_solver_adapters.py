@@ -255,6 +255,30 @@ def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
     assert calls
 
 
+def test_iccma_af_adapter_uses_local_stable_certificate_validation(monkeypatch) -> None:
+    arguments = {str(index) for index in range(1, 71)}
+    defeats = {("1", str(index)) for index in range(2, 71)} | {("2", "3"), ("3", "2")}
+    framework = af(arguments, defeats)
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="w 1\n", stderr=""),
+    )
+
+    result = solve_af_extensions(
+        framework,
+        semantics="stable",
+        binary="fake-iccma-solver",
+    )
+
+    assert isinstance(result, ICCMASolverSuccess)
+    assert result.extensions == (frozenset({"1"}),)
+
+
 def test_iccma_af_adapter_reports_missing_binary(monkeypatch) -> None:
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.shutil.which",
