@@ -1,6 +1,6 @@
-"""WS-F upstream ASPIC API contracts required by propstore.
+"""WS-F upstream ASPIC API contracts required by downstream callers.
 
-These tests pin the public surfaces propstore needs for Modgil 2014
+These tests pin the public surfaces external callers need for Modgil 2014
 Section 4.2 indirect-consistency closure and for avoiding private helper
 imports at the package boundary.
 """
