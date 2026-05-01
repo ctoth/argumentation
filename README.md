@@ -571,8 +571,10 @@ extensions = stable_extensions_from_encoding(encoding)
 
 `argumentation.solver.solve_dung_extensions` is a typed dispatcher over the
 single in-package Dung extension path. Its supported backend name is
-`"labelling"`; asking for `"z3"` returns `SolverBackendUnavailable` with an
-install hint to use `"labelling"`.
+`"native"`; asking for `"z3"` returns `SolverBackendUnavailable` with an
+install hint to use `"native"`. ICCMA subprocess solving is exposed through
+`backend="iccma"` plus `ICCMAConfig(...)` on the single-extension and
+acceptance solver surfaces.
 
 The package still has an optional `z3` extra, but it is for
 `argumentation.epistemic` linear atomic constraint satisfiability and
