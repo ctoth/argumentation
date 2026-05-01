@@ -42,10 +42,8 @@ def test_resolve_instance_path_handles_2017_archive_prefix_layout(tmp_path) -> N
 def test_compressed_query_companion_lookup_and_read(tmp_path) -> None:
     instance_path = tmp_path / "case.apx.lzma"
     query_path = tmp_path / "case.apx_arg.lzma"
-    with lzma.open(instance_path, mode="wt", encoding="utf-8") as handle:
-        handle.write("arg(a).\n")
-    with lzma.open(query_path, mode="wt", encoding="utf-8") as handle:
-        handle.write("a\n")
+    instance_path.write_bytes(lzma.compress(b"arg(a).\n"))
+    query_path.write_bytes(lzma.compress(b"a\n"))
 
     assert find_query_path(instance_path) == query_path
     assert read_instance_text(query_path) == "a\n"
