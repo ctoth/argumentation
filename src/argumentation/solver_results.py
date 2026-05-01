@@ -56,16 +56,16 @@ class SolverProtocolError:
 
 @dataclass(frozen=True)
 class ExtensionEnumerationSuccess:
-    extensions: tuple[frozenset[str], ...]
+    extensions: tuple[frozenset[object], ...]
 
 
 @dataclass(frozen=True)
 class SingleExtensionSuccess:
-    extension: frozenset[str] | None
+    extension: frozenset[object] | None
 
 
 @dataclass(frozen=True)
 class AcceptanceSuccess:
     answer: bool
-    witness: frozenset[str] | None = None
-    counterexample: frozenset[str] | None = None
+    witness: frozenset[object] | None = None
+    counterexample: frozenset[object] | None = None
