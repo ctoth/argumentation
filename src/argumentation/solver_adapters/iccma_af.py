@@ -13,12 +13,11 @@ import tempfile
 
 from argumentation.dung import (
     ArgumentationFramework,
-    complete_extensions,
-    ideal_extension,
-    preferred_extensions,
-    semi_stable_extensions,
-    stable_extensions,
-    stage_extensions,
+    admissible,
+    characteristic_fn,
+    conflict_free,
+    grounded_extension,
+    range_of,
 )
 from argumentation.iccma import write_af
 from argumentation.solver_results import (
@@ -285,7 +284,7 @@ def _run_iccma_af_solver(
             query=query,
             certificate_required=certificate_required,
         )
-        _verify_iccma_output(framework, problem, output, query=query)
+        _validate_iccma_certificate(framework, problem, output)
     except ICCMAOutputParseError as exc:
         return ICCMASolverProtocolError(
             backend=binary,
@@ -303,45 +302,25 @@ def _run_iccma_af_solver(
     )
 
 
-def _verify_iccma_output(
+def _validate_iccma_certificate(
     framework: ArgumentationFramework,
     problem: str,
     output: ICCMAOutput,
-    *,
-    query: str | None,
 ) -> None:
     prefix = _problem_prefix(problem)
-    extensions = set(_native_extensions(framework, _problem_semantics(problem)))
     if prefix == "SE":
         if output.no_extension:
-            if extensions:
-                raise ICCMAOutputParseError("SE NO output requires no native extension")
             return
-        if output.witness not in extensions:
-            raise ICCMAOutputParseError("SE witness is not a native extension")
+        _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
         return
 
-    if query is None:
-        raise ICCMAOutputParseError(f"{problem} certificate verification requires a query")
     if prefix == "DC":
         if output.answer is True:
-            if output.witness not in extensions:
-                raise ICCMAOutputParseError("DC YES witness is not a native extension")
-            if query not in output.witness:
-                raise ICCMAOutputParseError("DC YES witness must contain query")
-            return
-        if any(query in extension for extension in extensions):
-            raise ICCMAOutputParseError("DC NO output contradicted by native extension")
+            _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
         return
     if prefix == "DS":
         if output.answer is False:
-            if output.witness not in extensions:
-                raise ICCMAOutputParseError("DS NO counterexample is not a native extension")
-            if query in output.witness:
-                raise ICCMAOutputParseError("DS NO counterexample must omit query")
-            return
-        if any(query not in extension for extension in extensions):
-            raise ICCMAOutputParseError("DS YES output contradicted by native counterexample")
+            _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
         return
     raise ICCMAOutputParseError(f"unsupported ICCMA AF problem: {problem}")
 
@@ -354,23 +333,70 @@ def _problem_semantics(problem: str) -> str:
     raise ICCMAOutputParseError(f"unsupported ICCMA AF semantics code: {code}")
 
 
-def _native_extensions(
+def _validate_witness_certificate(
     framework: ArgumentationFramework,
     semantics: str,
-) -> tuple[frozenset[str], ...]:
-    if semantics == "complete":
-        return tuple(complete_extensions(framework))
-    if semantics == "preferred":
-        return tuple(preferred_extensions(framework))
+    witness: frozenset[str] | None,
+) -> None:
+    witness = _required_witness(witness)
+    unknown = sorted(witness - framework.arguments)
+    if unknown:
+        raise ICCMAOutputParseError(f"witness references unknown arguments: {unknown!r}")
+
+    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    if not conflict_free(witness, cf_relation):
+        raise ICCMAOutputParseError("witness is not conflict-free")
+
     if semantics == "stable":
-        return tuple(stable_extensions(framework))
+        if range_of(witness, framework.defeats) != framework.arguments:
+            raise ICCMAOutputParseError("stable witness does not attack every outsider")
+        return
+    if semantics == "complete":
+        if not _is_complete_certificate(framework, witness):
+            raise ICCMAOutputParseError("complete witness is not a complete extension")
+        return
+    if semantics == "grounded":
+        if witness != grounded_extension(framework):
+            raise ICCMAOutputParseError("grounded witness is not the grounded extension")
+        return
+    if semantics in {"preferred", "ideal"}:
+        if not admissible(
+            witness,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+        ):
+            raise ICCMAOutputParseError(f"{semantics} witness is not admissible")
+        return
     if semantics == "semi-stable":
-        return tuple(semi_stable_extensions(framework))
+        if not _is_complete_certificate(framework, witness):
+            raise ICCMAOutputParseError("semi-stable witness is not a complete extension")
+        return
     if semantics == "stage":
-        return tuple(stage_extensions(framework))
-    if semantics == "ideal":
-        return (ideal_extension(framework),)
+        return
     raise ICCMAOutputParseError(f"unsupported ICCMA AF semantics: {semantics}")
+
+
+def _required_witness(witness: frozenset[str] | None) -> frozenset[str]:
+    if witness is None:
+        raise ICCMAOutputParseError("certificate output is missing a witness")
+    return witness
+
+
+def _is_complete_certificate(
+    framework: ArgumentationFramework,
+    witness: frozenset[str],
+) -> bool:
+    return admissible(
+        witness,
+        framework.arguments,
+        framework.defeats,
+        attacks=framework.attacks,
+    ) and characteristic_fn(
+        witness,
+        framework.arguments,
+        framework.defeats,
+    ) == witness
 
 
 def _command(
