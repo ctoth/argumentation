@@ -24,6 +24,40 @@ from argumentation.solver_differential import (
 from tests.test_dung import argumentation_frameworks
 
 
+@st.composite
+def flat_aba_frameworks(draw):
+    size = draw(st.integers(min_value=1, max_value=3))
+    attacks = draw(
+        st.frozensets(
+            st.tuples(
+                st.integers(min_value=1, max_value=size),
+                st.integers(min_value=1, max_value=size),
+            ),
+            max_size=size * size,
+        )
+    )
+    assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
+    contraries = {literal(f"c{index}") for index in range(1, size + 1)}
+    assumption_by_index = {
+        index: literal(f"a{index}") for index in range(1, size + 1)
+    }
+    contrary_by_index = {
+        index: literal(f"c{index}") for index in range(1, size + 1)
+    }
+    return ABAFramework(
+        language=frozenset(assumptions | contraries),
+        rules=frozenset(
+            Rule((assumption_by_index[attacker],), contrary_by_index[target], "strict")
+            for attacker, target in attacks
+        ),
+        assumptions=frozenset(assumptions),
+        contrary={
+            assumption_by_index[index]: contrary_by_index[index]
+            for index in range(1, size + 1)
+        },
+    )
+
+
 @given(argumentation_frameworks(max_args=4), st.sampled_from(["complete", "stable"]))
 @settings(deadline=10000, max_examples=30)
 def test_differential_helper_compares_generated_dung_enumeration(
@@ -109,41 +143,6 @@ def test_capability_matrix_reports_unsupported_combinations_explicitly() -> None
         and entry.supported
         for entry in matrix
     )
-
-
-@st.composite
-def flat_aba_frameworks(draw):
-    size = draw(st.integers(min_value=1, max_value=3))
-    attacks = draw(
-        st.frozensets(
-            st.tuples(
-                st.integers(min_value=1, max_value=size),
-                st.integers(min_value=1, max_value=size),
-            ),
-            max_size=size * size,
-        )
-    )
-    assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
-    contraries = {literal(f"c{index}") for index in range(1, size + 1)}
-    assumption_by_index = {
-        index: literal(f"a{index}") for index in range(1, size + 1)
-    }
-    contrary_by_index = {
-        index: literal(f"c{index}") for index in range(1, size + 1)
-    }
-    return ABAFramework(
-        language=frozenset(assumptions | contraries),
-        rules=frozenset(
-            Rule((assumption_by_index[attacker],), contrary_by_index[target], "strict")
-            for attacker, target in attacks
-        ),
-        assumptions=frozenset(assumptions),
-        contrary={
-            assumption_by_index[index]: contrary_by_index[index]
-            for index in range(1, size + 1)
-        },
-    )
-
 
 def literal(name: str) -> Literal:
     return Literal(GroundAtom(name))
