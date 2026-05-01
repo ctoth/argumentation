@@ -31,6 +31,11 @@ extension enumeration. The target architecture is:
 - ABA inside `argumentation.iccma_cli` still uses native exact extension
   semantics, so real ICCMA ABA rows time out at modest caps.
 - Runner progress is logged per row as flushed JSON on stderr.
+- `solve_dung_single_extension` and `solve_dung_acceptance` default to
+  `backend="auto"`; stable Dung tasks route to SAT, while other semantics route
+  to native semantics.
+- ABA task-directed solver entry points default to `backend="auto"`, which
+  currently resolves to native semantics until a scalable ABA backend exists.
 
 ## Target Default Behavior
 
@@ -47,6 +52,8 @@ extension enumeration. The target architecture is:
 ## Implementation Plan
 
 ### Phase 1: Default Solver Dispatch
+
+Status: completed in the initial workstream setup.
 
 - Add explicit `backend="auto"` handling in task-directed solver entry points.
 - Make Dung stable single-extension and acceptance queries select the SAT
