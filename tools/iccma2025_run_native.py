@@ -92,9 +92,10 @@ def main(argv: list[str] | None = None) -> int:
     rows = run_native(config)
     output_dir = config.root / "runs"
     output_dir.mkdir(parents=True, exist_ok=True)
-    json_path = output_dir / f"iccma-2025-{args.label}.json"
-    csv_path = output_dir / f"iccma-2025-{args.label}.csv"
-    summary_path = output_dir / f"iccma-2025-{args.label}-summary.json"
+    contest_tag = infer_contest_tag(config.root)
+    json_path = output_dir / f"{contest_tag}-{args.label}.json"
+    csv_path = output_dir / f"{contest_tag}-{args.label}.csv"
+    summary_path = output_dir / f"{contest_tag}-{args.label}-summary.json"
     json_path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     write_csv(csv_path, rows)
     summary = summarize(rows)
@@ -107,8 +108,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_native(config: RunConfig) -> list[dict[str, Any]]:
-    manifest = load_json(config.root / "manifests" / "iccma-2025-manifest.json")
-    task_matrix = load_json(config.root / "manifests" / "iccma-2025-task-matrix.json")
+    manifest_path, task_matrix_path = discover_manifest_paths(config.root)
+    manifest = load_json(manifest_path)
+    task_matrix = load_json(task_matrix_path)
     jobs = [
         (instance, task)
         for instance in manifest
@@ -123,6 +125,30 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         if config.progress:
             log_progress(row, index=index, total=len(jobs))
     return rows
+
+
+def infer_contest_tag(root: Path) -> str:
+    if root.name.isdigit():
+        return f"iccma-{root.name}"
+    manifests_dir = root / "manifests"
+    manifest_paths = sorted(manifests_dir.glob("iccma-*-manifest.json"))
+    if manifest_paths:
+        return manifest_paths[0].name.removesuffix("-manifest.json")
+    return "iccma"
+
+
+def discover_manifest_paths(root: Path) -> tuple[Path, Path]:
+    manifests_dir = root / "manifests"
+    manifest_paths = sorted(manifests_dir.glob("iccma-*-manifest.json"))
+    if len(manifest_paths) != 1:
+        raise FileNotFoundError(
+            f"expected exactly one ICCMA manifest in {manifests_dir}, found {len(manifest_paths)}"
+        )
+    contest_tag = manifest_paths[0].name.removesuffix("-manifest.json")
+    task_matrix_path = manifests_dir / f"{contest_tag}-task-matrix.json"
+    if not task_matrix_path.exists():
+        raise FileNotFoundError(f"missing ICCMA task matrix: {task_matrix_path}")
+    return manifest_paths[0], task_matrix_path
 
 
 def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
