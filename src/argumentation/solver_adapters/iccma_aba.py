@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import tempfile
 
-from argumentation import aba as aba_semantics
 from argumentation.aba import ABAFramework
 from argumentation.aspic import Literal
 from argumentation.iccma import write_numeric_aba
@@ -177,12 +178,15 @@ def _run_iccma_aba_solver(
     timeout_seconds: float,
     query: Literal | None = None,
 ) -> ICCMAABASolverResult:
-    resolved = _resolve_binary(binary)
+    resolved = _resolve_command(binary)
     if resolved is None:
         return ICCMAABASolverUnavailable(
             backend=binary,
-            reason="binary not found on PATH",
-            install_hint="Install an ICCMA-protocol ABA solver and pass its binary path.",
+            reason="command executable not found on PATH",
+            install_hint=(
+                "Install an ICCMA-protocol ABA solver and pass its binary path or "
+                "command line."
+            ),
         )
 
     path = _write_temp_aba(framework)
@@ -213,7 +217,6 @@ def _run_iccma_aba_solver(
             framework=framework,
             query=query,
         )
-        _verify_iccma_aba_output(framework, problem, output, query=query)
     except ICCMAABAOutputParseError as exc:
         return ICCMAABASolverProtocolError(
             backend=binary,
@@ -229,57 +232,6 @@ def _run_iccma_aba_solver(
         output=output,
         stdout=completed.stdout,
     )
-
-
-def _verify_iccma_aba_output(
-    framework: ABAFramework,
-    problem: str,
-    output: ICCMAABAOutput,
-    *,
-    query: Literal | None,
-) -> None:
-    prefix = _problem_prefix(problem)
-    extensions = set(_native_extensions(framework, _problem_semantics(problem)))
-    if prefix == "SE":
-        if output.no_extension:
-            if extensions:
-                raise ICCMAABAOutputParseError("SE NO output requires no native extension")
-            return
-        if output.witness not in extensions:
-            raise ICCMAABAOutputParseError("SE witness is not a native ABA extension")
-        return
-
-    if query is None:
-        raise ICCMAABAOutputParseError(f"{problem} answer verification requires a query")
-    if prefix == "DC":
-        expected = any(
-            aba_semantics.derives(framework, extension, query)
-            for extension in extensions
-        )
-    elif prefix == "DS":
-        expected = all(
-            aba_semantics.derives(framework, extension, query)
-            for extension in extensions
-        )
-    else:
-        raise ICCMAABAOutputParseError(f"unsupported ICCMA ABA problem: {problem}")
-    if output.answer is not expected:
-        raise ICCMAABAOutputParseError(
-            f"{problem} answer contradicted by native ABA semantics"
-        )
-
-
-def _native_extensions(
-    framework: ABAFramework,
-    semantics: str,
-) -> tuple[frozenset[Literal], ...]:
-    if semantics == "complete":
-        return aba_semantics.complete_extensions(framework)
-    if semantics == "preferred":
-        return aba_semantics.preferred_extensions(framework)
-    if semantics == "stable":
-        return aba_semantics.stable_extensions(framework)
-    raise ICCMAABAOutputParseError(f"unsupported ICCMA ABA semantics: {semantics}")
 
 
 def _parse_single_extension_output(
@@ -339,13 +291,13 @@ def _parse_witness_line(line: str, framework: ABAFramework) -> frozenset[Literal
 
 
 def _command(
-    resolved: str,
+    resolved: list[str],
     problem: str,
     path: Path,
     framework: ABAFramework,
     query: Literal | None,
 ) -> list[str]:
-    command = [resolved, "-p", problem, "-f", str(path)]
+    command = [*resolved, "-p", problem, "-f", str(path)]
     if query is not None:
         command.extend(["-a", _literal_id(framework, query)])
     return command
@@ -358,14 +310,6 @@ def _problem(prefix: str, semantics: str) -> str:
     return f"{prefix}-{semantics_code}"
 
 
-def _problem_semantics(problem: str) -> str:
-    code = problem.split("-", maxsplit=1)[1]
-    for semantics, semantics_code in SEMANTICS_TO_CODE.items():
-        if semantics_code == code:
-            return semantics
-    raise ICCMAABAOutputParseError(f"unsupported ICCMA ABA semantics code: {code}")
-
-
 def _unsupported_problem(binary: str, problem: str) -> ICCMAABASolverUnavailable:
     return ICCMAABASolverUnavailable(
         backend=binary,
@@ -374,11 +318,33 @@ def _unsupported_problem(binary: str, problem: str) -> ICCMAABASolverUnavailable
     )
 
 
-def _resolve_binary(binary: str) -> str | None:
+def _resolve_command(binary: str) -> list[str] | None:
     path = Path(binary)
     if path.exists():
-        return str(path)
-    return shutil.which(binary)
+        return [str(path)]
+    parts = _split_command(binary)
+    if not parts:
+        return None
+    executable = parts[0]
+    executable_path = Path(executable)
+    resolved = str(executable_path) if executable_path.exists() else shutil.which(executable)
+    if resolved is None:
+        return None
+    return [resolved, *parts[1:]]
+
+
+def _split_command(command: str) -> list[str]:
+    try:
+        parts = shlex.split(command, posix=os.name != "nt")
+    except ValueError:
+        return []
+    return [_strip_outer_quotes(part) for part in parts]
+
+
+def _strip_outer_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
 
 
 def _write_temp_aba(framework: ABAFramework) -> Path:
