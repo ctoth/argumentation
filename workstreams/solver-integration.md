@@ -934,6 +934,52 @@ Phase 4 SAT backend checkpoint:
   - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
   - `git diff --check` passed.
 
+Phase 5 ABA ICCMA and ASPFORABA checkpoint:
+
+- Source gate:
+  - Reread ICCMA 2023 AIJ report page images for the ABA input grammar and
+    output formats: page images 14-16 from `jln.aij25.pdf`.
+  - Reread Bondarenko et al. 1997 page images for stable, preferred,
+    complete, and well-founded assumption-set semantics: pages 77, 84, 88,
+    and 89.
+  - Reread Toni 2014 page images for ABA framework structure, flatness,
+    argument-level semantics, and assumption-level complete, grounded, ideal,
+    and stable semantics: pages 92, 94, 97, 98, and 99.
+  - Read ASPFORABA's ICCMA 2023 source README and CLI parser from the official
+    ICCMA solver archive. The source supports
+    `./aspforaba -f <input_file> -p <problem> [-a <query>]` for
+    `DC-CO`, `DC-ST`, `DS-PR`, `DS-ST`, `SE-PR`, and `SE-ST`.
+- Red/native commits: `e3fc42c`, `58c0aee`, `cf96c78`, `41f937f`.
+  - Added generated flat ABA framework properties comparing native
+    single-extension witnesses against native ABA extension oracles.
+  - Added generated ABA acceptance properties comparing credulous and
+    skeptical answers against native extension quantification and derivability
+    of the queried literal.
+  - Generalized shared solver result payloads from string-only extensions to
+    object-valued extensions so ABA literal witnesses can use the same result
+    contracts.
+  - Added the top-level native ABA solver surface and kept `backend="aspforaba"`
+    typed-unavailable until the source-backed ICCMA contract is used.
+- Red/green ICCMA commits: `16f37e3`, `8e97ebb`, `7846023`, `e79267d`,
+  `a442686`, `9efccce`.
+  - Added `argumentation.solver_adapters.iccma_aba`.
+  - Added the official ASPFORABA/ICCMA 2023 ABA capability table.
+  - Added numeric ICCMA ABA writer usage and subprocess invocation through
+    `-p`, `-f`, and `-a`.
+  - Parsed ABA `SE` witness output as assumption literals and parsed ABA
+    `DC`/`DS` decision output as certificate-free `YES`/`NO`.
+  - Verified `SE` witnesses and `DC`/`DS` answers against native flat ABA
+    semantics before returning success.
+  - Routed top-level `solve_aba_single_extension` and `solve_aba_acceptance`
+    through `backend="iccma"` when `ICCMAConfig` is supplied.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_aba.py tests/test_aba_iccma_io.py tests/test_solver_adapters.py`
+    reported 42 passed, 2 skipped in 1.05s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+  - Optional `ASPFORABA_SOLVER` / `ICCMA_ABA_SOLVER` smoke remains path-free
+    and skipped when unset.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
