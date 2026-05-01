@@ -54,3 +54,23 @@ uv run tools\iccma2025_data.py all
 The data workflow parses official numeric `p af <n>` AF files and official
 numeric `p aba <n>` flat-ABA files. Dynamic-track applications are classified
 but not executed by this data-preparation flow.
+
+## Running
+
+The ICCMA 2025 runner can use either the package-native reference backend or
+an ICCMA-compatible AF subprocess backend through `argumentation.solver`.
+
+Skip all oversized native jobs:
+
+```powershell
+uv run tools\iccma2025_run_native.py --backend native --max-af-arguments 100 --max-aba-assumptions 10 --timeout-seconds 5
+```
+
+Run AF jobs through an external ICCMA solver:
+
+```powershell
+uv run tools\iccma2025_run_native.py --backend iccma --iccma-binary path\to\solver.exe --max-af-arguments -1 --max-aba-assumptions 0 --timeout-seconds 1200
+```
+
+`--max-af-arguments -1` disables the AF size cap. ABA jobs still use the
+package-native ABA path; there is no ABA solver dispatcher yet.
