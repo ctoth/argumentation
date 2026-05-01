@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from argumentation import aba as aba_semantics
+from argumentation import adf as adf_semantics
+from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
+from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
 from argumentation.dung import (
     ArgumentationFramework,
@@ -19,6 +22,7 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.sat_encoding import sat_extensions
+from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.solver_results import (
     AcceptanceSuccess,
@@ -72,6 +76,38 @@ AcceptanceSolverResult = (
     | SolverBackendError
     | SolverProtocolError
 )
+
+
+def solve_adf_models(
+    framework: AbstractDialecticalFramework,
+    *,
+    semantics: str,
+    backend: str = "native",
+) -> ExtensionSolverResult:
+    """Solve ADF model queries through native semantics or a declared backend."""
+    if backend == "native":
+        return ExtensionSolverSuccess(_adf_models(framework, semantics))
+    return SolverBackendUnavailable(
+        backend=backend,
+        reason="external ADF solver backend is not source-backed",
+        install_hint="Use backend='native' or add a primary-source-backed ADF adapter.",
+    )
+
+
+def solve_setaf_extensions(
+    framework: SETAF,
+    *,
+    semantics: str,
+    backend: str = "native",
+) -> ExtensionSolverResult:
+    """Solve SETAF extension queries through native semantics or a declared backend."""
+    if backend == "native":
+        return ExtensionSolverSuccess(_setaf_extensions(framework, semantics))
+    return SolverBackendUnavailable(
+        backend=backend,
+        reason="external SETAF solver backend is not source-backed",
+        install_hint="Use backend='native' or add a primary-source-backed SETAF adapter.",
+    )
 
 
 def solve_aba_single_extension(
@@ -454,6 +490,42 @@ def _dung_extensions(
     if semantics == "cf2":
         return cf2_extensions(framework)
     raise ValueError(f"Unknown Dung semantics: {semantics}")
+
+
+def _adf_models(
+    framework: AbstractDialecticalFramework,
+    semantics: str,
+) -> tuple[frozenset[object], ...]:
+    if semantics == "grounded":
+        return (frozenset(adf_semantics.grounded_interpretation(framework)),)
+    if semantics == "complete":
+        return tuple(frozenset(model) for model in adf_semantics.complete_models(framework))
+    if semantics == "model":
+        return tuple(frozenset(model) for model in adf_semantics.model_models(framework))
+    if semantics == "preferred":
+        return tuple(frozenset(model) for model in adf_semantics.preferred_models(framework))
+    if semantics == "stable":
+        return tuple(frozenset(model) for model in adf_semantics.stable_models(framework))
+    raise ValueError(f"Unknown ADF semantics: {semantics}")
+
+
+def _setaf_extensions(
+    framework: SETAF,
+    semantics: str,
+) -> tuple[frozenset[object], ...]:
+    if semantics == "grounded":
+        return (frozenset(setaf_semantics.grounded_extension(framework)),)
+    if semantics == "complete":
+        return tuple(frozenset(extension) for extension in setaf_semantics.complete_extensions(framework))
+    if semantics == "preferred":
+        return tuple(frozenset(extension) for extension in setaf_semantics.preferred_extensions(framework))
+    if semantics == "stable":
+        return tuple(frozenset(extension) for extension in setaf_semantics.stable_extensions(framework))
+    if semantics == "semi-stable":
+        return tuple(frozenset(extension) for extension in setaf_semantics.semi_stable_extensions(framework))
+    if semantics == "stage":
+        return tuple(frozenset(extension) for extension in setaf_semantics.stage_extensions(framework))
+    raise ValueError(f"Unknown SETAF semantics: {semantics}")
 
 
 def _aba_extensions(
