@@ -21,7 +21,9 @@ from argumentation.sat_encoding import (
     sat_complete_extension,
     sat_extensions,
     sat_preferred_extension,
+    sat_semi_stable_extension,
     stable_extensions_from_encoding,
+    sat_stage_extension,
 )
 from tests.test_dung import af, argumentation_frameworks
 
@@ -94,6 +96,13 @@ def test_sat_preferred_extension_handles_required_labels() -> None:
     assert sat_preferred_extension(framework, require_in="a") == frozenset({"a"})
     assert sat_preferred_extension(framework, require_in="b") == frozenset({"b"})
     assert sat_preferred_extension(framework, require_in="c") is None
+
+
+def test_sat_range_maximal_extensions_handle_basic_witnesses() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+
+    assert sat_semi_stable_extension(framework) == frozenset({"a"})
+    assert sat_stage_extension(framework) == frozenset({"a"})
 
 
 @given(argumentation_frameworks(max_args=4))
@@ -178,6 +187,26 @@ def test_sat_preferred_extension_required_in_matches_native_oracle(
             assert required_in in native_with_query
         else:
             assert required_in is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_semi_stable_extension_returns_native_witness(
+    framework: ArgumentationFramework,
+) -> None:
+    witness = sat_semi_stable_extension(framework)
+
+    assert witness in set(semi_stable_extensions(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_stage_extension_returns_native_witness(
+    framework: ArgumentationFramework,
+) -> None:
+    witness = sat_stage_extension(framework)
+
+    assert witness in set(stage_extensions(framework))
 
 
 @given(argumentation_frameworks(max_args=4))
