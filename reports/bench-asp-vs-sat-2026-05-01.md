@@ -14,10 +14,10 @@ Current scope:
 - ASPIC+: compares `materialized_reference` and `asp` on synthetic ASPIC+
   chains.
 
-Interpretation caveat: the current ASPIC+ ASP backend solves Dung semantics over
-the materialized ASPIC+ projection. It validates the clingo backend surface and
-semantics dispatch, but it is not the source-level Lehtonen assumption encoding
-needed to reproduce the asymptotic scale claims from the workstream report.
+Interpretation caveat: the non-preferential ASPIC+ ASP backend now solves over
+source-level premise/defeasible-rule selections. Preferential ASPIC+ still uses
+the materialized projection fallback while last-link preference filtering is
+ported to source-level ASP.
 
 External systems were not installed in this repository. `bench/README.md`
 records the manual status and the reason they are not pinned as dependencies.
