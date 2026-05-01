@@ -6,7 +6,9 @@ import shutil
 from types import SimpleNamespace
 
 import pytest
+from hypothesis import given, settings, strategies as st
 
+import argumentation.solver as solver_module
 from argumentation.dung import ArgumentationFramework
 from argumentation.dung import stable_extensions as native_stable_extensions
 from argumentation.solver_adapters.iccma_af import (
@@ -227,6 +229,44 @@ def test_iccma_af_adapter_reports_protocol_error(monkeypatch) -> None:
 
     assert isinstance(result, ICCMASolverProtocolError)
     assert result.stdout == "maybe\n"
+
+
+def test_iccma_backend_failures_use_shared_solver_result_classes() -> None:
+    assert ICCMASolverUnavailable is solver_module.SolverBackendUnavailable
+    assert ICCMASolverError is solver_module.SolverBackendError
+    assert ICCMASolverProtocolError is solver_module.SolverProtocolError
+
+
+@given(st.from_regex(r"[A-Za-z_]{1,12}", fullmatch=True))
+@settings(deadline=10000, max_examples=30)
+def test_iccma_source_derived_malformed_witnesses_are_protocol_errors(
+    bad_argument: str,
+) -> None:
+    # ICCMA 2023 AF witness lines use indexed positive-integer arguments.
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout=f"w 1 {bad_argument}\n",
+                stderr="protocol stderr",
+            ),
+        )
+
+        result = solve_af_extensions(
+            af({"1"}, set()),
+            semantics="stable",
+            binary="fake-iccma-solver",
+        )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.problem == "SE-ST"
+    assert result.stdout == f"w 1 {bad_argument}\n"
+    assert result.stderr == "protocol stderr"
 
 
 def test_optional_real_iccma_af_solver_smoke() -> None:

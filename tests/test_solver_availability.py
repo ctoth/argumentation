@@ -1,4 +1,5 @@
 from argumentation.dung import ArgumentationFramework
+from argumentation.dung import preferred_extensions
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
@@ -10,10 +11,12 @@ from argumentation.solver import (
     solve_dung_extensions,
     solve_dung_single_extension,
 )
+from hypothesis import given, settings, strategies as st
 from argumentation.solver_adapters.iccma_af import (
     ICCMAOutput,
     ICCMAOutputKind,
     ICCMASolverError,
+    ICCMASolverProtocolError,
     ICCMASolverSuccess,
     ICCMASolverUnavailable,
 )
@@ -150,6 +153,73 @@ def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> Non
     assert result.details["stderr"] == "bad input"
 
 
+def test_solve_dung_single_extension_preserves_iccma_protocol_error(monkeypatch) -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
+
+    def fake_solve_af_extensions(*, framework, semantics, binary, timeout_seconds):
+        return ICCMASolverProtocolError(
+            backend=binary,
+            problem="SE-ST",
+            message="SE output must be one witness line or NO",
+            stderr="solver stderr",
+            stdout="w 1\nw 2\n",
+        )
+
+    monkeypatch.setattr(
+        "argumentation.solver.iccma_af.solve_af_extensions",
+        fake_solve_af_extensions,
+    )
+
+    result = solve_dung_single_extension(
+        framework,
+        semantics="stable",
+        backend=ICCMAAFBackend(binary="bad-protocol"),
+    )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.problem == "SE-ST"
+    assert result.stdout == "w 1\nw 2\n"
+
+
+def test_solve_dung_acceptance_preserves_iccma_protocol_error(monkeypatch) -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
+
+    def fake_solve_af_acceptance(
+        *,
+        framework,
+        semantics,
+        task,
+        query,
+        binary,
+        timeout_seconds,
+        certificate_required,
+    ):
+        return ICCMASolverProtocolError(
+            backend=binary,
+            problem="DC-ST",
+            message="decision output must start with YES or NO",
+            stderr="solver stderr",
+            stdout="MAYBE\n",
+        )
+
+    monkeypatch.setattr(
+        "argumentation.solver.iccma_af.solve_af_acceptance",
+        fake_solve_af_acceptance,
+    )
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="credulous",
+        query="1",
+        backend=ICCMAAFBackend(binary="bad-protocol"),
+    )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.problem == "DC-ST"
+    assert result.stdout == "MAYBE\n"
+
+
 def test_solve_dung_acceptance_native_backend_returns_witnesses() -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
@@ -236,3 +306,44 @@ def test_solve_dung_acceptance_routes_explicit_iccma_backend(monkeypatch) -> Non
     assert result.answer is True
     assert result.witness == frozenset({"1"})
     assert calls == [(framework, "stable", "credulous", "1", "fake-iccma", 7.5, True)]
+
+
+def complete_mutual_attack_frameworks():
+    return st.integers(min_value=2, max_value=5).map(
+        lambda size: ArgumentationFramework(
+            arguments=frozenset(str(index) for index in range(1, size + 1)),
+            defeats=frozenset(
+                (str(attacker), str(target))
+                for attacker in range(1, size + 1)
+                for target in range(1, size + 1)
+                if attacker != target
+            ),
+        )
+    )
+
+
+def test_solver_success_result_types_are_task_specific() -> None:
+    assert ExtensionSolverSuccess is not SingleExtensionSolverSuccess
+    assert ExtensionSolverSuccess is not AcceptanceSolverSuccess
+    assert SingleExtensionSolverSuccess is not AcceptanceSolverSuccess
+
+
+@given(complete_mutual_attack_frameworks())
+@settings(deadline=10000, max_examples=20)
+def test_iccma_single_extension_backend_is_not_enumeration_for_multi_extension_afs(
+    framework: ArgumentationFramework,
+) -> None:
+    # Complete mutual attack graphs have one preferred extension per argument.
+    assert len(preferred_extensions(framework)) == len(framework.arguments)
+
+    enumeration = solve_dung_extensions(
+        framework,
+        semantics="preferred",
+        backend=ICCMAAFBackend(binary="fake-iccma"),
+    )
+    single = solve_dung_single_extension(framework, semantics="preferred")
+
+    assert isinstance(enumeration, SolverBackendUnavailable)
+    assert enumeration.reason == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    assert isinstance(single, SingleExtensionSolverSuccess)
+    assert not isinstance(single, ExtensionSolverSuccess)
