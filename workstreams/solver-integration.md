@@ -849,6 +849,31 @@ Phase 1 shared result-type checkpoint:
   - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
   - `git diff --check` passed.
 
+Phase 2 backend API checkpoint:
+
+- Red test commit: `f81d848`.
+  - Added generated native-backend equivalence checks against direct Dung
+    complete, grounded, preferred, and stable semantics.
+  - Added a deletion test for the old `"labelling"` backend and updated the
+    deleted `"z3"` backend hint to `"native"`.
+  - Added `backend="iccma"` / `ICCMAConfig(...)` delegation tests and
+    missing-config tests proving subprocess adapters are not invoked without
+    explicit config.
+- Green/doc commits: `dfb64e7`, `bf211bd`, `764648d`.
+  - Replaced `ICCMAAFBackend` with `ICCMAConfig`.
+  - Changed default/public in-package backend from `"labelling"` to
+    `"native"` and removed the old production backend path.
+  - Updated README and architecture docs so `"labelling"` is no longer
+    described as a public solver backend.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
+    reported 33 passed, 1 skipped in 0.80s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+  - Restricted exact search for `"labelling"` in `src`, `tests`, README, and
+    architecture found only the package module export and the negative
+    deletion test, not a public backend doc path.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
