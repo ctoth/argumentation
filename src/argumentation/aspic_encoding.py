@@ -156,12 +156,80 @@ def solve_aspic_with_backend(
     *,
     backend: str,
     semantics: str = "grounded",
+    binary: str = "clingo",
+    timeout_seconds: float = 30.0,
 ) -> ASPICQueryResult:
     """Dispatch an ASPIC+ query to a named optional backend."""
     if backend == "materialized_reference" and semantics == "grounded":
         return solve_aspic_grounded(system, kb, pref)
 
     encoding = encode_aspic_theory(system, kb, pref)
+    if backend == "clingo":
+        if semantics != "grounded":
+            return ASPICQueryResult(
+                status="unavailable_backend",
+                semantics=semantics,
+                backend=backend,
+                accepted_argument_ids=frozenset(),
+                accepted_conclusions=frozenset(),
+                encoding=encoding,
+                metadata={
+                    "reason": "ASPIC+ clingo backend supports grounded only",
+                    "encoding": encoding.metadata["encoding"],
+                },
+            )
+        from argumentation.solver_adapters import clingo
+
+        result = clingo.run_aspic_grounded_protocol(
+            facts=encoding.facts,
+            known_literal_ids=frozenset(encoding.literal_by_id),
+            binary=binary,
+            timeout_seconds=timeout_seconds,
+        )
+        if isinstance(result, clingo.ClingoAnswerSetSuccess):
+            return ASPICQueryResult(
+                status="success",
+                semantics=semantics,
+                backend=backend,
+                accepted_argument_ids=result.accepted_argument_ids,
+                accepted_conclusions=frozenset(
+                    encoding.literal_by_id[literal_id]
+                    for literal_id in result.accepted_literal_ids
+                ),
+                encoding=encoding,
+                metadata={
+                    "encoding": encoding.metadata["encoding"],
+                    "stdout": result.stdout,
+                },
+            )
+        if isinstance(result, clingo.ClingoUnavailable):
+            return _backend_failure_result(
+                status="unavailable_backend",
+                semantics=semantics,
+                backend=backend,
+                encoding=encoding,
+                reason=result.reason,
+            )
+        if isinstance(result, clingo.ClingoProcessError):
+            return _backend_failure_result(
+                status="backend_error",
+                semantics=semantics,
+                backend=backend,
+                encoding=encoding,
+                reason=result.reason,
+                stdout=result.stdout,
+                stderr=result.stderr,
+            )
+        return _backend_failure_result(
+            status="protocol_error",
+            semantics=semantics,
+            backend=backend,
+            encoding=encoding,
+            reason=result.reason,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
+
     return ASPICQueryResult(
         status="unavailable_backend",
         semantics=semantics,
@@ -173,6 +241,35 @@ def solve_aspic_with_backend(
             "reason": "backend is not installed or registered",
             "encoding": encoding.metadata["encoding"],
         },
+    )
+
+
+def _backend_failure_result(
+    *,
+    status: str,
+    semantics: str,
+    backend: str,
+    encoding: ASPICEncoding,
+    reason: str,
+    stdout: str = "",
+    stderr: str = "",
+) -> ASPICQueryResult:
+    metadata = {
+        "reason": reason,
+        "encoding": encoding.metadata["encoding"],
+    }
+    if stdout:
+        metadata["stdout"] = stdout
+    if stderr:
+        metadata["stderr"] = stderr
+    return ASPICQueryResult(
+        status=status,
+        semantics=semantics,
+        backend=backend,
+        accepted_argument_ids=frozenset(),
+        accepted_conclusions=frozenset(),
+        encoding=encoding,
+        metadata=metadata,
     )
 
 
