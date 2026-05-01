@@ -356,7 +356,7 @@ External adapters are thin:
 7. Phase 6: ADF And SETAF External-Solver Boundaries.
 8. Phase 7: ASPIC+ Clingo And Datalog Backends.
 9. Phase 8: Differential Harness And Benchmarks.
-10. Phase 9: Documentation And Propstore-Facing Guidance.
+10. Phase 9: Documentation And Consumer-Neutral Guidance.
 
 ## Phase 0: Baseline And Source Gates
 
@@ -788,6 +788,19 @@ Verification observed before this workstream:
 - `uv run pytest -q tests/test_docs_surface.py`: 2 passed.
 - `uv run pytest -q --timeout=600 -k "not test_empty_ordering_still_respects_definition_19_edge_cases"`:
   604 passed, 1 skipped, 1 deselected.
+
+Additional execution:
+
+- Phase 5 ABA ICCMA/ASPFORABA slice: `58c0aee`, `cf96c78`, `41f937f`,
+  `16f37e3`, `8e97ebb`, `7846023`, `e79267d`, `a442686`, `9efccce`,
+  `78fd096`.
+- Phase 6 ADF/SETAF boundary slice: `17c9a5b`, `9a4d4bb`, `49dbb90`.
+- Phase 7 ASPIC+ clingo slice: `ff4072f`, `b73e389`, `61ce0c4`,
+  `97bceef`, `19056f4`.
+- Phase 8 differential harness slice: `497be25`, `73f768a`, `e4039eb`,
+  `333b270`, `2f360af`.
+- Phase 9 consumer-neutral docs slice: `df7ad19`, `3068617`, `900b6e2`,
+  `60335e6`, `9803283`, `734a480`, `35098c7`, `461b7a1`, `9b82759`.
 - `uv run pytest -q tests/test_aspic.py::TestDefeatProperties::test_empty_ordering_still_respects_definition_19_edge_cases --timeout=180`:
   1 passed.
 - `uv run pyright src`: 0 errors.
