@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from argumentation.adf import (
     AcceptanceCondition,
     AbstractDialecticalFramework,
@@ -11,6 +13,9 @@ from argumentation.adf import (
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
 from argumentation.dung import ArgumentationFramework
+
+APX_ARG_RE = re.compile(r"arg\(([^)]+)\)\.")
+APX_ATT_RE = re.compile(r"att\(([^,]+),([^)]+)\)\.")
 
 
 def parse_af(text: str) -> ArgumentationFramework:
@@ -60,6 +65,62 @@ def write_af(framework: ArgumentationFramework) -> str:
     ):
         lines.append(f"{attacker} {target}")
     return "\n".join(lines) + "\n"
+
+
+def parse_apx(text: str) -> ArgumentationFramework:
+    """Parse ASPARTIX APX ``arg``/``att`` facts into a Dung AF."""
+    arguments: set[str] = set()
+    attacks: set[tuple[str, str]] = set()
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith(("%", "#")):
+            continue
+        arg_match = APX_ARG_RE.fullmatch(line)
+        if arg_match:
+            arguments.add(arg_match.group(1))
+            continue
+        att_match = APX_ATT_RE.fullmatch(line)
+        if att_match:
+            attacker, target = att_match.groups()
+            arguments.add(attacker)
+            arguments.add(target)
+            attacks.add((attacker, target))
+            continue
+        raise ValueError(f"invalid APX line {line_number}: {line!r}")
+    return ArgumentationFramework(
+        arguments=frozenset(arguments),
+        defeats=frozenset(attacks),
+    )
+
+
+def parse_tgf(text: str) -> ArgumentationFramework:
+    """Parse Trivial Graph Format into a Dung AF."""
+    arguments: set[str] = set()
+    attacks: set[tuple[str, str]] = set()
+    in_attacks = False
+    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line == "#":
+            in_attacks = True
+            continue
+        if not in_attacks:
+            arguments.add(line.split(maxsplit=1)[0])
+            continue
+        parts = line.split()
+        if len(parts) != 2:
+            raise ValueError(f"invalid TGF attack line {line_number}: {line!r}")
+        attacker, target = parts
+        arguments.add(attacker)
+        arguments.add(target)
+        attacks.add((attacker, target))
+    if not in_attacks:
+        raise ValueError("TGF input must contain # separator")
+    return ArgumentationFramework(
+        arguments=frozenset(arguments),
+        defeats=frozenset(attacks),
+    )
 
 
 def parse_adf(text: str) -> AbstractDialecticalFramework:
@@ -308,7 +369,9 @@ def _aba_name(literal: Literal) -> str:
 __all__ = [
     "parse_aba",
     "parse_adf",
+    "parse_apx",
     "parse_af",
+    "parse_tgf",
     "write_aba",
     "write_adf",
     "write_af",
