@@ -8,6 +8,7 @@ from argumentation import aba as aba_semantics
 from argumentation import adf as adf_semantics
 from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
+from argumentation.aba_sat import sat_stable_extension as sat_aba_stable_extension
 from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
 from argumentation.dung import (
@@ -119,6 +120,17 @@ def solve_aba_single_extension(
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
     backend = _auto_aba_backend(backend)
+    if backend == "sat":
+        if semantics == "stable":
+            if not isinstance(framework, ABAFramework):
+                return _aba_sat_requires_flat_framework()
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_aba_stable_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _aba_sat_runtime_unavailable(exc)
+        return _aba_sat_unsupported_semantics(semantics)
     if backend == "native":
         extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
         return SingleExtensionSolverSuccess(
@@ -150,6 +162,15 @@ def solve_aba_acceptance(
     if query not in _aba_base(framework).language:
         raise ValueError(f"query literal is not in framework language: {query!r}")
     backend = _auto_aba_backend(backend)
+    if backend == "sat":
+        if semantics == "stable":
+            if not isinstance(framework, ABAFramework):
+                return _aba_sat_requires_flat_framework()
+            try:
+                return _solve_sat_stable_aba_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _aba_sat_runtime_unavailable(exc)
+        return _aba_sat_unsupported_semantics(semantics)
     if backend == "native":
         return _solve_native_aba_acceptance(framework, semantics, task, query)
     if backend == "iccma":
@@ -290,7 +311,7 @@ def _auto_dung_task_backend(backend: str, semantics: str) -> str:
 
 
 def _auto_aba_backend(backend: str) -> str:
-    return "native" if backend == "auto" else backend
+    return "sat" if backend == "auto" else backend
 
 
 def _external_sat_unavailable() -> SolverBackendUnavailable:
@@ -306,6 +327,30 @@ def _sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
         backend="sat",
         reason=str(exc),
         install_hint="Install the z3-solver extra or use backend='native'.",
+    )
+
+
+def _aba_sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="sat",
+        reason=str(exc),
+        install_hint="Install the z3-solver extra or use backend='native'.",
+    )
+
+
+def _aba_sat_requires_flat_framework() -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="sat",
+        reason="ABA stable SAT backend requires a flat ABAFramework",
+        install_hint="Use backend='native' for ABAPlusFramework inputs.",
+    )
+
+
+def _aba_sat_unsupported_semantics(semantics: str) -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="sat",
+        reason=f"ABA SAT backend does not support {semantics!r} semantics",
+        install_hint="Use backend='native' or backend='iccma'.",
     )
 
 
@@ -346,6 +391,29 @@ def _solve_native_aba_acceptance(
                 if not aba_semantics.derives(base, _literal_extension(extension), query)
             ),
             None,
+        )
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported ABA acceptance task: {task}")
+
+
+def _solve_sat_stable_aba_acceptance(
+    framework: ABAFramework,
+    task: str,
+    query: Literal,
+) -> AcceptanceSolverSuccess:
+    if task == "credulous":
+        witness = sat_aba_stable_extension(framework, require_derived=query)
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = sat_aba_stable_extension(
+            framework,
+            require_not_derived=query,
         )
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
