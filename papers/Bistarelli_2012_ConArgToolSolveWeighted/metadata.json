@@ -1,0 +1,12 @@
+{
+  "title": "ConArg: a Tool to Solve (Weighted) Abstract Argumentation Frameworks with (Soft) Constraints",
+  "authors": [
+    "Stefano Bistarelli",
+    "Francesco Santini"
+  ],
+  "year": "2012",
+  "arxiv_id": "1212.2857",
+  "abstract": "ConArg is a Constraint Programming-based tool that can be used to model and solve different problems related to Abstract Argumentation Frameworks (AFs). To implement this tool we have used JaCoP, a Java library that provides the user with a Finite Domain Constraint Programming paradigm. ConArg is able to randomly generate networks with small-world properties in order to find conflict-free, admissible, complete, stable grounded, preferred, semi-stable, stage and ideal extensions on such interaction graphs. We present the main features of ConArg and we report the performance in time, showing also a comparison with ASPARTIX [1], a similar tool using Answer Set Programming. The use of techniques for constraint solving can tackle the complexity of the problems presented in [2]. Moreover we suggest semiring-based soft constraints as a mean to parametrically represent and solve Weighted Argumentation Frameworks: different kinds of preference levels related to attacks, e.g., a score representing a \"fuzziness\", a \"cost\" or a probability, can be represented by choosing different instantiation of the semiring algebraic structure. The basic idea is to provide a common computational and quantitative framework.",
+  "url": "http://arxiv.org/abs/1212.2857v2",
+  "pdf_url": "https://arxiv.org/pdf/1212.2857v2"
+}
