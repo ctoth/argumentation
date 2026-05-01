@@ -874,6 +874,38 @@ Phase 2 backend API checkpoint:
     architecture found only the package module export and the negative
     deletion test, not a public backend doc path.
 
+Phase 3 ICCMA AF adapter checkpoint:
+
+- Source gate:
+  - Read ICCMA 2023 AIJ report page images for organization/correctness
+    requirements, AF input format, output formats, IPAFAIR notes, and witness
+    checking: PDF pages 9-18 generated locally as page images from
+    `jln.aij25.pdf`.
+  - Cross-checked the official ICCMA 2023 Rules page for solver correctness,
+    AF input grammar, DC/DS/SE stdout grammar, CLI invocation, and positive
+    integer query requirements.
+  - Cross-checked the official ICCMA 2023 Tracks page for Main Track subtracks:
+    DC-{CO|ST|SST|STG}, DS-{PR|ST|SST|STG}, and
+    SE-{PR|ST|SST|STG|ID}.
+- Red test commit: `a8d9e8d`.
+  - Added a generated total capability-table property over ICCMA AF task and
+    semantics combinations.
+  - Added unsupported-combination tests proving subprocess is not invoked.
+  - Added generated source-derived certificate checks for SE, DC, and DS:
+    certificates must be native extensions, not only syntactically valid
+    w-lines with the right query membership.
+- Green commit: `9ca6ba2`.
+  - Added the official ICCMA 2023 Main/No-Limits AF capability table.
+  - Added pre-subprocess unsupported problem rejection.
+  - Added native certificate verification for SE witnesses, DC YES witnesses,
+    DC NO answers, DS NO counterexamples, and DS YES answers.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_solver_adapters.py tests/test_solver_availability.py tests/test_iccma.py`
+    reported 47 passed, 1 skipped in 1.00s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+  - Optional `ICCMA_AF_SOLVER` smoke remains path-free and skipped when unset.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
