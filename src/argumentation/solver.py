@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from argumentation import aba as aba_semantics
+from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
+from argumentation.aspic import Literal
 from argumentation.dung import (
     ArgumentationFramework,
     cf2_extensions,
@@ -69,6 +72,67 @@ AcceptanceSolverResult = (
     | SolverBackendError
     | SolverProtocolError
 )
+
+
+def solve_aba_single_extension(
+    framework: ABAInput,
+    *,
+    semantics: str,
+    backend: str = "native",
+    iccma: ICCMAConfig | None = None,
+) -> SingleExtensionSolverResult:
+    """Solve one flat ABA extension witness query."""
+    if backend == "native":
+        extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
+        return SingleExtensionSolverSuccess(
+            extension=extensions[0] if extensions else None,
+        )
+    if backend == "iccma":
+        if iccma is None:
+            return _missing_iccma_config()
+        return SolverBackendUnavailable(
+            backend=iccma.binary,
+            reason="ICCMA ABA backend is not implemented yet",
+            install_hint="Use backend='native' until the ICCMA ABA adapter is configured.",
+        )
+    if backend == "aspforaba":
+        return _aspforaba_unavailable()
+    return SolverBackendUnavailable(
+        backend=backend,
+        install_hint="Use backend='native'.",
+        reason=f"unknown backend: {backend!r}",
+    )
+
+
+def solve_aba_acceptance(
+    framework: ABAInput,
+    *,
+    semantics: str,
+    task: str,
+    query: Literal,
+    backend: str = "native",
+    iccma: ICCMAConfig | None = None,
+) -> AcceptanceSolverResult:
+    """Solve flat ABA credulous or skeptical acceptance queries."""
+    if query not in _aba_base(framework).language:
+        raise ValueError(f"query literal is not in framework language: {query!r}")
+    if backend == "native":
+        return _solve_native_aba_acceptance(framework, semantics, task, query)
+    if backend == "iccma":
+        if iccma is None:
+            return _missing_iccma_config()
+        return SolverBackendUnavailable(
+            backend=iccma.binary,
+            reason="ICCMA ABA backend is not implemented yet",
+            install_hint="Use backend='native' until the ICCMA ABA adapter is configured.",
+        )
+    if backend == "aspforaba":
+        return _aspforaba_unavailable()
+    return SolverBackendUnavailable(
+        backend=backend,
+        install_hint="Use backend='native'.",
+        reason=f"unknown backend: {backend!r}",
+    )
 
 
 def solve_dung_extensions(
@@ -183,6 +247,51 @@ def _external_sat_unavailable() -> SolverBackendUnavailable:
     )
 
 
+def _aspforaba_unavailable() -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="aspforaba",
+        reason="ASPFORABA invocation contract is not configured",
+        install_hint="Use backend='native' for flat ABA queries.",
+    )
+
+
+def _solve_native_aba_acceptance(
+    framework: ABAInput,
+    semantics: str,
+    task: str,
+    query: Literal,
+) -> AcceptanceSolverSuccess:
+    extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
+    base = _aba_base(framework)
+    if task == "credulous":
+        witness = next(
+            (
+                extension
+                for extension in extensions
+                if aba_semantics.derives(base, _literal_extension(extension), query)
+            ),
+            None,
+        )
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = next(
+            (
+                extension
+                for extension in extensions
+                if not aba_semantics.derives(base, _literal_extension(extension), query)
+            ),
+            None,
+        )
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported ABA acceptance task: {task}")
+
+
 def _solve_native_dung_acceptance(
     framework: ArgumentationFramework,
     semantics: str,
@@ -293,10 +402,50 @@ def _dung_extensions(
     raise ValueError(f"Unknown Dung semantics: {semantics}")
 
 
+def _aba_extensions(
+    framework: ABAInput,
+    semantics: str,
+) -> tuple[frozenset[Literal], ...]:
+    if semantics == "grounded":
+        return (aba_semantics.grounded_extension(framework),)
+    if semantics == "complete":
+        return aba_semantics.complete_extensions(framework)
+    if semantics == "preferred":
+        return aba_semantics.preferred_extensions(framework)
+    if semantics == "stable":
+        return aba_semantics.stable_extensions(framework)
+    if semantics == "well-founded":
+        return (aba_semantics.well_founded_extension(framework),)
+    if semantics == "ideal":
+        return (aba_semantics.ideal_extension(framework),)
+    raise ValueError(f"Unknown ABA semantics: {semantics}")
+
+
+def _aba_base(framework: ABAInput) -> ABAFramework:
+    return framework.framework if isinstance(framework, ABAPlusFramework) else framework
+
+
+def _literal_extension(extension: frozenset[object]) -> frozenset[Literal]:
+    if all(isinstance(item, Literal) for item in extension):
+        return frozenset(item for item in extension if isinstance(item, Literal))
+    raise TypeError("ABA extension contains non-literal members")
+
+
 def _sorted_extensions(values: list[frozenset[str]]) -> tuple[frozenset[str], ...]:
     return tuple(
         sorted(
             values,
             key=lambda extension: (len(extension), tuple(sorted(extension))),
+        )
+    )
+
+
+def _sorted_object_extensions(
+    values: tuple[frozenset[Literal], ...],
+) -> tuple[frozenset[object], ...]:
+    return tuple(
+        sorted(
+            (frozenset(extension) for extension in values),
+            key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
         )
     )
