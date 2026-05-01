@@ -3,7 +3,7 @@
 Run the in-repo benchmark harness with:
 
 ```powershell
-uv run python -m bench.asp_vs_sat --out out/asp-vs-reference.csv
+uv run python -m bench.asp_vs_sat --out reports/asp-vs-reference.csv
 ```
 
 The harness compares:
