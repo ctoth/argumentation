@@ -6,7 +6,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALLOWED_IMPORT_ROOTS = frozenset({"argumentation", "z3"}) | sys.stdlib_module_names
+ALLOWED_IMPORT_ROOTS = (
+    frozenset({"argumentation", "gunray", "z3"}) | sys.stdlib_module_names
+)
 
 
 def test_argumentation_imports_only_declared_roots() -> None:
