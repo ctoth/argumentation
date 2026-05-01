@@ -234,6 +234,76 @@ def test_default_acceptance_uses_auto_complete_sat_backend(monkeypatch) -> None:
     assert skeptical.counterexample == frozenset({"a"})
 
 
+def test_default_single_extension_uses_auto_preferred_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default preferred witness should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    result = solve_dung_single_extension(framework, semantics="preferred")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"a"})
+
+
+def test_default_credulous_acceptance_uses_auto_preferred_sat_backend(
+    monkeypatch,
+) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default preferred acceptance should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="preferred",
+        task="credulous",
+        query="a",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is True
+    assert result.witness == frozenset({"a"})
+
+
+def test_default_skeptical_preferred_acceptance_stays_native_for_direct_algorithm_gap(
+    monkeypatch,
+) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+    calls = []
+
+    def fake_native_extensions(framework, semantics):
+        calls.append((framework, semantics))
+        return [frozenset({"a"})]
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", fake_native_extensions)
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="preferred",
+        task="skeptical",
+        query="b",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is False
+    assert result.counterexample == frozenset({"a"})
+    assert calls == [(framework, "preferred")]
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
