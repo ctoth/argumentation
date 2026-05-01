@@ -603,8 +603,10 @@ def test_iccma_aba_adapter_invokes_official_2023_cli_and_writes_numeric_aba(
         assert text is True
         assert timeout == 5.0
         assert check is False
-        parsed = parse_aba(Path(command[4]).read_text(encoding="utf-8"))
-        assert parsed.assumptions == framework.assumptions
+        written = Path(command[4]).read_text(encoding="utf-8")
+        assert written.startswith("p aba 4\n")
+        parsed = parse_aba(written)
+        assert {item.atom.predicate for item in parsed.assumptions} == {"1", "2"}
         return SimpleNamespace(returncode=0, stdout="w 1 2\n", stderr="")
 
     monkeypatch.setattr(
