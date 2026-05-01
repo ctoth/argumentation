@@ -218,6 +218,43 @@ def test_iccma_af_adapter_invokes_official_2023_cli_for_acceptance(monkeypatch) 
     assert calls and calls[0][-2:] == ["-a", "1"]
 
 
+def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
+    framework = af({"1", "2"}, {("1", "2")})
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        calls.append(command)
+        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.iccma_cli"]
+        assert command[5:8] == ["-p", "SE-ST", "-f"]
+        assert command[8].endswith(".af")
+        assert capture_output is True
+        assert text is True
+        assert timeout == 5.0
+        assert check is False
+        return SimpleNamespace(returncode=0, stdout="w 1\n", stderr="")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run",
+        fake_run,
+    )
+
+    result = solve_af_extensions(
+        framework,
+        semantics="stable",
+        binary="uv run python -m argumentation.iccma_cli",
+        timeout_seconds=5.0,
+    )
+
+    assert isinstance(result, ICCMASolverSuccess)
+    assert result.extensions == (frozenset({"1"}),)
+    assert calls
+
+
 def test_iccma_af_adapter_reports_missing_binary(monkeypatch) -> None:
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.shutil.which",
