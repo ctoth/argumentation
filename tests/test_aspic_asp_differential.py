@@ -44,8 +44,8 @@ def test_aspic_asp_matches_materialized_reference_on_mutual_attack(semantics) ->
     result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics=semantics)
 
     assert result.status == "success"
-    assert set(result.extensions) == set(expected.extensions)
-    assert result.metadata["projection"] == "aspic_abstract_framework"
+    assert set(result.extension_conclusions) == set(expected.extension_conclusions)
+    assert result.metadata["projection"] == "source_assumption_pair"
 
 
 def test_aspic_asp_supports_last_link_preferences() -> None:
@@ -80,6 +80,7 @@ def test_aspic_asp_supports_last_link_preferences() -> None:
 
     assert result.status == "success"
     assert set(result.extensions) == set(expected.extensions)
+    assert result.metadata["projection"] == "aspic_abstract_framework"
 
 
 def test_aspic_asp_rejects_weakest_link_preferences() -> None:
@@ -129,4 +130,5 @@ def test_aspic_asp_matches_reference_on_generated_acyclic_theories(theory, seman
     result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics=semantics)
 
     assert result.status == "success"
-    assert set(result.extensions) == set(expected.extensions)
+    assert set(result.extension_conclusions) == set(expected.extension_conclusions)
+    assert result.metadata["projection"] == "source_assumption_pair"
