@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         description="Run bounded native or ICCMA-backed algorithms on ICCMA 2025 data."
     )
     parser.add_argument("--root", type=Path, default=DATA_ROOT)
-    parser.add_argument("--backend", choices=["native", "iccma"], default="native")
+    parser.add_argument("--backend", choices=["auto", "native", "iccma"], default="auto")
     parser.add_argument(
         "--iccma-binary",
         default=os.environ.get("ICCMA_AF_SOLVER"),
