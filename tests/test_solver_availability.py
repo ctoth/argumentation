@@ -37,11 +37,28 @@ NATIVE_EXTENSION_ORACLES = {
 }
 
 
-def test_solve_dung_extensions_returns_extensions_for_default_native_backend() -> None:
+def test_solve_dung_extensions_defaults_to_auto_backend() -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b")}),
     )
+
+    result = solve_dung_extensions(framework, semantics="stable")
+
+    assert isinstance(result, ExtensionSolverSuccess)
+    assert result.extensions == (frozenset({"a"}),)
+
+
+def test_solve_dung_extensions_default_auto_uses_sat_for_stable(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default stable solving should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
     result = solve_dung_extensions(framework, semantics="stable")
 
