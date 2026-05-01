@@ -15,7 +15,7 @@ from bench.instance_gen import aba_chain, aspic_chain
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out", default="out/asp-vs-reference.csv")
+    parser.add_argument("--out", default="reports/asp-vs-reference.csv")
     parser.add_argument("--sizes", nargs="*", type=int, default=[5, 10, 20, 40])
     parser.add_argument("--timeout", type=float, default=30.0)
     args = parser.parse_args()
