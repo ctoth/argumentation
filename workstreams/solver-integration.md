@@ -1011,6 +1011,42 @@ Phase 6 ADF and SETAF external-boundary checkpoint:
   - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
   - `git diff --check` passed.
 
+Phase 7 ASPIC+ clingo checkpoint:
+
+- Source gate:
+  - Reread Lehtonen, Wallner, and Järvisalo 2020 page images for the ASPIC+
+    ASP fact vocabulary and semantics modules: pages 6-7.
+  - Reread Lehtonen et al. 2024 page images for the preferential ASPIC+
+    ASPforASPIC modules, last-link preference handling, clingo version, and
+    benchmark task coverage: pages 8-9.
+  - Did not extend incomplete ASPIC+ claims, so Odekerken 2023/2025 were not
+    reread for this phase.
+  - Did not add Datalog grounding claims, so Diller 2025 was not reread for
+    this phase.
+- Red commit: `ff4072f`.
+  - Added mocked clingo invocation tests for `solve_aspic_with_backend` under
+    grounded semantics.
+  - Added missing-binary and malformed-answer protocol tests.
+  - Added generated no-conflict ASPIC+ theory properties comparing successful
+    clingo-grounded protocol results to `solve_aspic_grounded`.
+  - Added a stable-semantics unavailable test proving unsupported semantics
+    return before subprocess invocation.
+- Green commits: `b73e389`, `61ce0c4`, `97bceef`.
+  - Added `argumentation.solver_adapters.clingo` with shared unavailable,
+    process-error, and protocol-error results.
+  - Added a grounded ASPIC+ answer-set protocol over `accepted_arg(...)` and
+    `accepted_lit(...)` atoms.
+  - Wired `solve_aspic_with_backend(..., backend="clingo")` for grounded
+    semantics, mapping accepted literal ids back through the existing ASPIC
+    encoding.
+  - Kept preferred/stable and other non-grounded ASPIC+ clingo tasks typed
+    unavailable pending source-backed ASP program coverage.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_aspic_encodings.py tests/test_aspic.py`
+    reported 88 passed in 18.89s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
