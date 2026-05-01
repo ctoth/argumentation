@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import os
 from pathlib import Path
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -244,12 +246,15 @@ def _run_iccma_af_solver(
     query: str | None = None,
     certificate_required: bool = True,
 ) -> ICCMASolverResult:
-    resolved = _resolve_binary(binary)
+    resolved = _resolve_command(binary)
     if resolved is None:
         return ICCMASolverUnavailable(
             backend=binary,
-            reason="binary not found on PATH",
-            install_hint="Install an ICCMA-protocol AF solver and pass its binary path.",
+            reason="command executable not found on PATH",
+            install_hint=(
+                "Install an ICCMA-protocol AF solver and pass its binary path or "
+                "command line."
+            ),
         )
 
     path = _write_temp_af(framework)
@@ -368,18 +373,45 @@ def _native_extensions(
     raise ICCMAOutputParseError(f"unsupported ICCMA AF semantics: {semantics}")
 
 
-def _command(resolved: str, problem: str, path: Path, query: str | None) -> list[str]:
-    command = [resolved, "-p", problem, "-f", str(path)]
+def _command(
+    resolved: list[str],
+    problem: str,
+    path: Path,
+    query: str | None,
+) -> list[str]:
+    command = [*resolved, "-p", problem, "-f", str(path)]
     if query is not None:
         command.extend(["-a", query])
     return command
 
 
-def _resolve_binary(binary: str) -> str | None:
+def _resolve_command(binary: str) -> list[str] | None:
     path = Path(binary)
     if path.exists():
-        return str(path)
-    return shutil.which(binary)
+        return [str(path)]
+    parts = _split_command(binary)
+    if not parts:
+        return None
+    executable = parts[0]
+    executable_path = Path(executable)
+    resolved = str(executable_path) if executable_path.exists() else shutil.which(executable)
+    if resolved is None:
+        return None
+    return [resolved, *parts[1:]]
+
+
+def _split_command(command: str) -> list[str]:
+    try:
+        parts = shlex.split(command, posix=os.name != "nt")
+    except ValueError:
+        return []
+    return [_strip_outer_quotes(part) for part in parts]
+
+
+def _strip_outer_quotes(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+        return value[1:-1]
+    return value
 
 
 def _write_temp_af(framework: ArgumentationFramework) -> Path:
