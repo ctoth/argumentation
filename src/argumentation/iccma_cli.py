@@ -199,14 +199,12 @@ def _solve_aba_cli(
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
-    if backend == "sat":
-        print("ABA tasks do not support --backend sat", file=stderr)
-        return 2
     framework = parse_aba(text)
     if task == "SE":
         return _solve_aba_single_extension(
             framework=framework,
             semantics=semantics,
+            backend=backend,
             stdout=stdout,
             stderr=stderr,
         )
@@ -219,6 +217,7 @@ def _solve_aba_cli(
         semantics=semantics,
         task="credulous" if task == "DC" else "skeptical",
         query=query,
+        backend=backend,
         stdout=stdout,
         stderr=stderr,
     )
@@ -228,13 +227,14 @@ def _solve_aba_single_extension(
     *,
     framework: ABAFramework,
     semantics: str,
+    backend: str,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
     result = solve_aba_single_extension(
         framework,
         semantics=semantics,
-        backend="native",
+        backend=backend,
     )
     if isinstance(result, SingleExtensionSolverSuccess):
         if result.extension is None:
@@ -252,6 +252,7 @@ def _solve_aba_acceptance(
     semantics: str,
     task: str,
     query: Literal,
+    backend: str,
     stdout: TextIO,
     stderr: TextIO,
 ) -> int:
@@ -260,7 +261,7 @@ def _solve_aba_acceptance(
         semantics=semantics,
         task=task,
         query=query,
-        backend="native",
+        backend=backend,
     )
     if isinstance(result, AcceptanceSolverSuccess):
         print("YES" if result.answer else "NO", file=stdout)
