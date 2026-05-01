@@ -114,10 +114,11 @@ def solve_aba_single_extension(
     framework: ABAInput,
     *,
     semantics: str,
-    backend: str = "native",
+    backend: str = "auto",
     iccma: ICCMAConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
+    backend = _auto_aba_backend(backend)
     if backend == "native":
         extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
         return SingleExtensionSolverSuccess(
@@ -142,12 +143,13 @@ def solve_aba_acceptance(
     semantics: str,
     task: str,
     query: Literal,
-    backend: str = "native",
+    backend: str = "auto",
     iccma: ICCMAConfig | None = None,
 ) -> AcceptanceSolverResult:
     """Solve flat ABA credulous or skeptical acceptance queries."""
     if query not in _aba_base(framework).language:
         raise ValueError(f"query literal is not in framework language: {query!r}")
+    backend = _auto_aba_backend(backend)
     if backend == "native":
         return _solve_native_aba_acceptance(framework, semantics, task, query)
     if backend == "iccma":
@@ -197,11 +199,12 @@ def solve_dung_single_extension(
     framework: ArgumentationFramework,
     *,
     semantics: str,
-    backend: str = "native",
+    backend: str = "auto",
     iccma: ICCMAConfig | None = None,
     sat: SATConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one Dung extension witness query."""
+    backend = _auto_dung_task_backend(backend, semantics)
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
@@ -238,13 +241,14 @@ def solve_dung_acceptance(
     semantics: str,
     task: str,
     query: str,
-    backend: str = "native",
+    backend: str = "auto",
     iccma: ICCMAConfig | None = None,
     sat: SATConfig | None = None,
 ) -> AcceptanceSolverResult:
     """Solve Dung credulous or skeptical acceptance queries."""
     if query not in framework.arguments:
         raise ValueError(f"query argument is not in framework: {query!r}")
+    backend = _auto_dung_task_backend(backend, semantics)
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
@@ -277,6 +281,16 @@ def _missing_iccma_config() -> SolverBackendUnavailable:
         reason="missing ICCMA solver configuration",
         install_hint="Pass iccma=ICCMAConfig(binary=...).",
     )
+
+
+def _auto_dung_task_backend(backend: str, semantics: str) -> str:
+    if backend == "auto":
+        return "sat" if semantics == "stable" else "native"
+    return backend
+
+
+def _auto_aba_backend(backend: str) -> str:
+    return "native" if backend == "auto" else backend
 
 
 def _external_sat_unavailable() -> SolverBackendUnavailable:
