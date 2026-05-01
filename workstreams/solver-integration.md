@@ -113,6 +113,124 @@ Key planning consequences from those notes:
   paper-sensitive clauses, reread the relevant page images or primary web
   pages and record the page/source range in the red or green commit message.
 
+## Testing Doctrine
+
+Tests are the control surface for this workstream. Red/green means more than
+one fixture turning green: every solver behavior must be pinned by deterministic
+fixtures, generated properties, and differential oracle checks before it is
+called complete.
+
+### Required Test Shapes
+
+Every implementation slice must include:
+
+- at least one deterministic fixture test for the exact bug, protocol behavior,
+  or API contract being introduced;
+- at least one Hypothesis property unless the slice is pure documentation or a
+  parser branch whose full input space is already covered by fixture/fuzz
+  cases;
+- a negative test for the failure mode most likely to cause overclaiming;
+- a differential test against the native oracle for every solver success path
+  where a native oracle exists.
+
+If a slice cannot reasonably include a Hypothesis property, the red commit must
+say why in the test name or adjacent comment. "The fixture passes" is not enough
+for solver work.
+
+### Shared Strategy Library
+
+Build reusable strategies as soon as two tests need the same generator. Prefer
+small, bounded strategies that finish quickly under full-suite runs:
+
+- Dung AFs with 0-6 arguments and generated attack relations.
+- Numeric ICCMA AFs with contiguous argument IDs.
+- Flat ABA frameworks with tiny languages, acyclic rule sets where needed, and
+  generated contraries.
+- Small ADFs with bounded acceptance-condition AST depth.
+- SETAFs with bounded collective-attack tails and a singleton-tail reduction
+  generator.
+- Tiny ASPIC+ theories with bounded strict/defeasible rules and premises.
+- Protocol-output strings for ICCMA DC/DS/SE outputs, including malformed
+  witness lines.
+
+Strategies must generate edge cases intentionally: empty frameworks,
+self-attacks, isolated arguments, duplicate-looking but distinct IDs, no
+extension cases, multiple-extension cases, and unsupported task/semantics pairs.
+
+### Oracle Properties
+
+For every external or optional backend, generated tests must check the strongest
+applicable oracle property:
+
+- enumeration success equals the native extension set;
+- single-extension success is either no extension when the native set is empty
+  or a member of the native extension set;
+- credulous acceptance equals `any(query in extension for extension in native)`;
+- skeptical acceptance equals `all(query in extension for extension in native)`
+  when the native extension set is non-empty;
+- solver certificates are valid native extensions or valid counterexamples;
+- unsupported task/semantics combinations return typed unavailable before any
+  subprocess invocation.
+
+For partial or approximate semantics, tests must state the weaker oracle
+explicitly; do not reuse exact-oracle assertions when the backend intentionally
+returns approximate answers.
+
+### Metamorphic Properties
+
+Every formalism-specific solver surface should accumulate metamorphic tests:
+
+- argument or atom renaming preserves answers up to the same renaming;
+- parse/write round trips preserve native semantics;
+- adding an isolated argument behaves according to the target semantics;
+- disjoint union decomposes where the semantics supports that property;
+- singleton-tail SETAFs reduce to Dung AFs;
+- flat ABA projection to Dung agrees with native ABA semantics where the module
+  claims that correspondence;
+- ADF-encoded Dung AFs agree with Dung for implemented ADF semantics.
+
+Only encode metamorphic laws that are true for the named semantics and paper
+preconditions. If the law needs a precondition, generate only inputs satisfying
+that precondition.
+
+### Protocol Fuzzing
+
+Every subprocess adapter must have generated or table-driven malformed-output
+tests for:
+
+- missing answer line;
+- unknown answer token;
+- malformed witness prefix;
+- non-numeric AF witness item when numeric format is expected;
+- witness containing an unknown argument;
+- DC `YES` witness missing the query;
+- DS `NO` counterexample containing the query;
+- SE output with multiple witnesses where only one is allowed;
+- nonzero return code with stdout/stderr preserved;
+- timeout with enough context to diagnose the command.
+
+Malformed protocol output must produce `SolverProtocolError`, not a generic
+process error, not an empty success, and not a raw exception.
+
+### No-Overclaim Tests
+
+Each phase must include tests that make false claims unrepresentable:
+
+- ICCMA SE results must not satisfy enumeration result types.
+- Unsupported solver tasks must not invoke subprocesses.
+- Missing optional dependencies must not skip into native solving silently.
+- A backend that returns a malformed but superficially plausible witness must
+  be rejected by certificate verification.
+- Docs tests must pin every public claim about solver support and unsupported
+  semantics.
+
+### Full-Suite Discipline
+
+Hypothesis settings must be bounded enough for the full suite. If a property is
+too expensive, shrink the generator, cap examples, or split the property into a
+targeted test file. Do not rely on `deadline=None` and an unbounded generator as
+evidence that the suite is stable.
+
 ## Target Architecture
 
 ### Task Contracts
@@ -209,6 +327,8 @@ Tasks:
   `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py tests/test_solver_encoding.py`
 - Run `uv run pyright src`.
 - Run `git diff --check`.
+- Audit current Hypothesis settings for solver-adjacent test files and record
+  any unbounded or suite-slow properties that could mask regressions.
 - Record the current full-suite caveat: a recent full run timed out in
   `tests/test_aspic.py::TestDefeatProperties::test_empty_ordering_still_respects_definition_19_edge_cases`, while that exact test passed alone.
 - Before implementation starts, page-image or primary-source gates must be
@@ -223,6 +343,7 @@ Acceptance:
 - This file committed.
 - No production code changed in this phase.
 - Baseline command results recorded in the execution ledger.
+- Hypothesis audit note added to the execution ledger before Phase 1 starts.
 
 ## Phase 1: Shared Result Types And Task Contracts
 
@@ -241,18 +362,25 @@ TDD slices:
 
 1. Red: tests proving top-level Dung solver and low-level ICCMA adapter use the
    same unavailable/process/protocol result classes.
+   Include generated malformed-output cases proving protocol failures are not
+   collapsed into process failures.
 2. Green: create shared result module and switch both layers to it.
 3. Red: malformed ICCMA output must become shared `SolverProtocolError` at both
    adapter and top-level Dung solver surfaces.
+   Use table-driven and generated malformed ICCMA outputs.
 4. Green: preserve protocol errors distinctly through `argumentation.solver`.
 5. Red: result type snapshot tests proving enumeration, single-extension, and
    acceptance successes are separate classes.
+   Include a generated AF with multiple native extensions to prove a
+   single-extension result cannot be treated as enumeration.
 6. Green: remove any remaining path where a single ICCMA SE witness can be
    returned as an enumeration success.
 
 Acceptance:
 
 - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
+- At least one Hypothesis protocol-output property is present.
+- At least one generated multi-extension AF test proves SE is not enumeration.
 - `uv run pyright src`
 - `git diff --check`
 
@@ -271,11 +399,15 @@ Target architecture:
 TDD slices:
 
 1. Red: `solve_dung_extensions(..., backend="native")` succeeds.
+   Include a generated Dung AF property showing `"native"` enumeration equals
+   direct `dung.py` semantics for stable, preferred, complete, and grounded.
 2. Green: rename the native dispatch path from `"labelling"` to `"native"` and
    update every caller/test/doc. Delete the `"labelling"` production path unless
    the user explicitly requires compatibility.
 3. Red: `solve_dung_single_extension(..., backend="iccma", iccma=ICCMAConfig(...))`
    delegates to the ICCMA adapter.
+   Include a negative test proving missing `iccma=` config returns unavailable
+   before subprocess invocation.
 4. Green: replace `ICCMAAFBackend` with a formalism-neutral `ICCMAConfig`.
 5. Red: missing config for `backend="iccma"` returns typed unavailable before
    subprocess invocation.
@@ -284,6 +416,9 @@ TDD slices:
 Acceptance:
 
 - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
+- Native backend property tests cover generated Dung AFs under every native
+  semantics exposed through this solver surface.
+- Unsupported/misconfigured backend tests assert subprocess is not called.
 - README and architecture no longer mention `"labelling"` as a public backend
   unless intentionally deferred.
 - `uv run pyright src`
@@ -303,14 +438,19 @@ Mandatory source gate:
 TDD slices:
 
 1. Red: capability tests for each supported Dung `(task, semantics)` pair.
+   Generate supported/unsupported `(task, semantics)` combinations and assert
+   the capability table is total over them.
 2. Green: explicit capability table for ICCMA AF.
 3. Red: unsupported task/semantics combinations return unavailable with a
    precise reason and do not invoke subprocess.
 4. Green: pre-invocation capability validation.
 5. Red: SE witnesses are checked by native semantics before success is returned.
+   Generate small AFs and choose witnesses both inside and outside the native
+   extension set.
 6. Green: witness verifier for single-extension tasks.
 7. Red: DC/DS witnesses and counterexamples are checked against native
    semantics, not only query membership.
+   Generate AF/query pairs and deliberately malformed certificates.
 8. Green: decision certificate verifier.
 9. Red: optional real solver smoke tests support custom binary path and
    skip cleanly when unavailable.
@@ -319,6 +459,9 @@ TDD slices:
 Acceptance:
 
 - `uv run pytest -q tests/test_solver_adapters.py tests/test_solver_availability.py tests/test_iccma.py`
+- Hypothesis certificate-verification properties cover SE, DC, and DS tasks on
+  generated small Dung AFs.
+- Protocol-fuzz tests cover malformed stdout and preserve stdout/stderr.
 - Optional `ICCMA_AF_SOLVER` smoke test passes when a compatible solver is on
   PATH.
 - No claim of full enumeration via ICCMA SE tasks.
@@ -349,6 +492,8 @@ TDD slices:
    - semi-stable;
    - stage;
    - ideal.
+   Each semantics starts with a generated property comparing the encoding or
+   SAT-derived result to the native `dung.py` oracle on small AFs.
 4. Red: acceptance tasks reduce to SAT by adding query/negated-query
    constraints and agree with native semantics on generated small AFs.
 5. Green: acceptance reduction.
@@ -361,7 +506,9 @@ Acceptance:
 - `uv run pytest -q tests/test_solver_encoding.py tests/test_solver_availability.py tests/test_dung.py`
 - SAT backend unavailable path is typed and deterministic without the optional
   dependency.
-- Every SAT success is differential-tested against native semantics.
+- Every SAT success is differential-tested against native semantics with
+  Hypothesis-generated AFs.
+- Renaming-invariance properties cover every SAT-supported semantics.
 
 ## Phase 5: ABA ICCMA And ASPFORABA Adapter
 
@@ -380,12 +527,17 @@ TDD slices:
 
 1. Red: `solve_aba_single_extension(..., backend="native")` returns a native
    witness under supported ABA semantics.
+   Include generated flat ABA frameworks and assert the witness belongs to the
+   native ABA extension set.
 2. Green: top-level ABA single-extension solver surface.
 3. Red: `solve_aba_acceptance(..., backend="native")` returns credulous and
    skeptical answers with witnesses/counterexamples.
+   Include generated ABA/query pairs and compare answers to native extension
+   quantification.
 4. Green: native ABA acceptance surface.
 5. Red: ICCMA ABA subprocess adapter writes official ABA input and parses
    SE/DC/DS output according to ICCMA 2023.
+   Add protocol-fuzz tests for ABA output before subprocess implementation.
 6. Green: `argumentation.solver_adapters.iccma_aba`.
 7. Red: ICCMA ABA witnesses are verified against native ABA semantics on small
    frameworks.
@@ -397,6 +549,9 @@ TDD slices:
 Acceptance:
 
 - `uv run pytest -q tests/test_aba.py tests/test_aba_iccma_io.py tests/test_solver_adapters.py`
+- Generated flat ABA properties cover native witness validity, acceptance
+  answers, and parser/writer round trips.
+- Malformed ABA solver output returns protocol errors, not raw exceptions.
 - Optional `ICCMA_ABA_SOLVER` or `ASPFORABA_SOLVER` smoke test skips cleanly
   without a binary.
 
@@ -416,11 +571,15 @@ TDD slices:
 
 1. Red: capability table says ADF/SETAF external solver support is unavailable
    unless a source-backed adapter exists.
+   Generate representative ADF/SETAF inputs and assert unavailable is returned
+   before subprocess invocation.
 2. Green: explicit unavailable surfaces with precise reasons.
 3. If a source-backed ADF solver format is selected, add parser/writer fixture
    tests before adapter code.
+   Add generated ADF-encoded-Dung round-trip/differential properties first.
 4. If a source-backed SETAF solver format is selected, add parser/writer fixture
    tests before adapter code.
+   Add singleton-tail reduction properties first.
 5. Add external subprocess adapters only after official fixture and native
    oracle checks exist.
 
@@ -429,6 +588,8 @@ Acceptance:
 - No docs or APIs claim external ADF/SETAF solver conformance without a
   primary-source-backed adapter.
 - Native ADF/SETAF semantics remain the oracle for generated small examples.
+- Hypothesis properties cover ADF-encoded Dung agreement and SETAF singleton-tail
+  reduction for every solver-exposed semantics.
 
 ## Phase 7: ASPIC+ Clingo And Datalog Backends
 
@@ -446,10 +607,13 @@ TDD slices:
 
 1. Red: `solve_aspic_with_backend(..., backend="clingo")` invokes a mocked
    clingo subprocess and parses a grounded answer set.
+   Include generated malformed answer-set outputs and missing-binary cases.
 2. Green: `argumentation.solver_adapters.clingo` subprocess helper with typed
    unavailable/process/protocol results.
 3. Red: clingo grounded results agree with `solve_aspic_grounded` on small
    theories.
+   Use bounded generated ASPIC+ theories plus deterministic paper/source
+   fixtures.
 4. Green: wire grounded clingo path.
 5. Red: preferred/stable semantics are reported unavailable until the ASP
    program implements them.
@@ -462,6 +626,8 @@ Acceptance:
 
 - `uv run pytest -q tests/test_aspic_encodings.py tests/test_aspic.py`
 - Missing `clingo` is typed unavailable, not import crash or subprocess leak.
+- Generated tiny ASPIC+ theory properties compare clingo-backed grounded answers
+  to `solve_aspic_grounded` whenever the mocked/real backend returns success.
 - No ICCMA claim is made for ASPIC+.
 
 ## Phase 8: Differential Harness And Benchmarks
@@ -485,10 +651,16 @@ TDD slices:
 5. Red: optional benchmark smoke reads a tiny manifest fixture and invokes no
    external solver by default.
 6. Green: benchmark harness with environment-gated solver execution.
+7. Red: generated solver-comparison matrix covers every registered backend
+   capability and reports unsupported combinations explicitly.
+8. Green: backend capability matrix helper.
 
 Acceptance:
 
 - `uv run pytest -q tests/test_solver_adapters.py tests/test_solver_availability.py`
+- Differential helpers have Hypothesis coverage for generated AFs and flat ABA
+  frameworks.
+- Task-mismatch comparisons fail with precise assertion messages.
 - Benchmark data and native runners remain path-free and CI-safe.
 
 ## Phase 9: Documentation And Propstore-Facing Guidance
@@ -505,6 +677,8 @@ Tasks:
   - optional solver environment variables;
   - the distinction between one witness and full enumeration.
 - Add docs for solver result types and error handling.
+- Add docs tests that fail if README/architecture claim support for a backend,
+  task, or formalism not present in the capability table.
 - Add propstore-facing guidance: propstore supplies projected frameworks and
   consumes package result objects; argumentation does not know propstore
   identity, storage, merge policy, or provenance.
@@ -514,6 +688,8 @@ Tasks:
 Acceptance:
 
 - `uv run pytest -q tests/test_docs_surface.py`
+- Docs tests pin task separation, unsupported-task behavior, and the difference
+  between one ICCMA witness and full enumeration.
 - `uv run pyright src`
 - `git diff --check`
 
@@ -588,6 +764,7 @@ Write set:
 - `src/argumentation/solver_adapters/iccma_af.py`
 - `tests/test_solver_availability.py`
 - `tests/test_solver_adapters.py`
+- test helper module if needed for bounded Hypothesis strategies.
 
 Red commit:
 
@@ -595,6 +772,11 @@ Red commit:
   unavailable/process/protocol result classes.
 - Tests proving protocol errors remain protocol errors through
   `argumentation.solver`.
+- Hypothesis property generating malformed ICCMA outputs that must produce
+  protocol errors.
+- Hypothesis property generating small AFs with multiple native extensions,
+  proving single-extension solver results cannot satisfy enumeration result
+  contracts.
 
 Green commit:
 
@@ -606,5 +788,6 @@ Green commit:
 First-slice acceptance:
 
 - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
+- Red/green test set includes at least two Hypothesis properties.
 - `uv run pyright src`
 - `git diff --check`
