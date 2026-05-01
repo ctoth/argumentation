@@ -195,6 +195,62 @@ def sat_stable_extension(
     )
 
 
+def sat_complete_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    require_out: str | None = None,
+) -> frozenset[str] | None:
+    """Return one complete extension satisfying optional membership constraints."""
+    if require_in is not None and require_in not in framework.arguments:
+        raise ValueError(f"unknown required argument: {require_in!r}")
+    if require_out is not None and require_out not in framework.arguments:
+        raise ValueError(f"unknown excluded argument: {require_out!r}")
+
+    z3 = _load_z3()
+    ordered_arguments = tuple(sorted(framework.arguments))
+    in_vars = {argument: z3.Bool(f"in_{argument}") for argument in ordered_arguments}
+    out_vars = {argument: z3.Bool(f"out_{argument}") for argument in ordered_arguments}
+    solver = z3.Solver()
+
+    for argument in ordered_arguments:
+        solver.add(z3.Not(z3.And(in_vars[argument], out_vars[argument])))
+
+    attackers_index = _attackers_index(framework.defeats)
+    for argument in ordered_arguments:
+        attackers = tuple(sorted(attackers_index.get(argument, frozenset())))
+        if attackers:
+            solver.add(
+                in_vars[argument]
+                == z3.And(*(out_vars[attacker] for attacker in attackers))
+            )
+            solver.add(
+                out_vars[argument]
+                == z3.Or(*(in_vars[attacker] for attacker in attackers))
+            )
+        else:
+            solver.add(in_vars[argument])
+            solver.add(z3.Not(out_vars[argument]))
+
+    if framework.attacks is not None:
+        for attacker, target in sorted(framework.attacks):
+            solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
+
+    if require_in is not None:
+        solver.add(in_vars[require_in])
+    if require_out is not None:
+        solver.add(z3.Not(in_vars[require_out]))
+
+    if solver.check() != z3.sat:
+        return None
+    model = solver.model()
+    return frozenset(
+        argument
+        for argument, variable in in_vars.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+
+
 def _load_z3():
     try:
         import z3  # type: ignore[import-not-found]
@@ -253,6 +309,7 @@ def _sorted_extensions(values: list[frozenset[str]]) -> tuple[frozenset[str], ..
 __all__ = [
     "CNFEncoding",
     "encode_stable_extensions",
+    "sat_complete_extension",
     "sat_extensions",
     "sat_stable_extension",
     "stable_extensions_from_encoding",
