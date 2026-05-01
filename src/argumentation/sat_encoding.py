@@ -12,6 +12,7 @@ from argumentation.dung import (
     grounded_extension,
     ideal_extension,
     preferred_extensions,
+    range_of,
     semi_stable_extensions,
     stable_extensions,
     stage_extensions,
@@ -243,6 +244,56 @@ def sat_preferred_extension(
         current = larger
 
 
+def sat_semi_stable_extension(framework: ArgumentationFramework) -> frozenset[str] | None:
+    """Return one semi-stable extension by growing complete-labelling range."""
+    current = _sat_complete_extension(
+        framework,
+        required_in=frozenset(),
+        required_out=frozenset(),
+    )
+    if current is None:
+        return None
+    while True:
+        current_range = range_of(current, framework.defeats)
+        outside_range = framework.arguments - current_range
+        if not outside_range:
+            return current
+        larger_range = _sat_complete_extension(
+            framework,
+            required_in=frozenset(),
+            required_out=frozenset(),
+            required_range=current_range,
+            require_any_range=outside_range,
+        )
+        if larger_range is None:
+            return current
+        if not current_range < range_of(larger_range, framework.defeats):
+            raise RuntimeError("SAT semi-stable growth did not enlarge range")
+        current = larger_range
+
+
+def sat_stage_extension(framework: ArgumentationFramework) -> frozenset[str] | None:
+    """Return one stage extension by growing conflict-free range."""
+    current = _sat_conflict_free_extension(framework)
+    if current is None:
+        return None
+    while True:
+        current_range = range_of(current, framework.defeats)
+        outside_range = framework.arguments - current_range
+        if not outside_range:
+            return current
+        larger_range = _sat_conflict_free_extension(
+            framework,
+            required_range=current_range,
+            require_any_range=outside_range,
+        )
+        if larger_range is None:
+            return current
+        if not current_range < range_of(larger_range, framework.defeats):
+            raise RuntimeError("SAT stage growth did not enlarge range")
+        current = larger_range
+
+
 def _optional_required_argument(
     framework: ArgumentationFramework,
     argument: str | None,
@@ -260,9 +311,18 @@ def _sat_complete_extension(
     required_in: frozenset[str],
     required_out: frozenset[str],
     require_any_in: frozenset[str] = frozenset(),
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
 ) -> frozenset[str] | None:
     if unknown := sorted(
-        (required_in | required_out | require_any_in) - framework.arguments
+        (
+            required_in
+            | required_out
+            | require_any_in
+            | required_range
+            | require_any_range
+        )
+        - framework.arguments
     ):
         raise ValueError(f"unknown required arguments: {unknown!r}")
 
@@ -301,6 +361,15 @@ def _sat_complete_extension(
         solver.add(z3.Not(in_vars[argument]))
     if require_any_in:
         solver.add(z3.Or(*(in_vars[argument] for argument in sorted(require_any_in))))
+    if required_range or require_any_range:
+        range_vars = _range_variables(z3, solver, ordered_arguments, in_vars, framework)
+        _add_range_requirements(
+            z3,
+            solver,
+            range_vars,
+            required_range=required_range,
+            require_any_range=require_any_range,
+        )
 
     if solver.check() != z3.sat:
         return None
@@ -310,6 +379,76 @@ def _sat_complete_extension(
         for argument, variable in in_vars.items()
         if z3.is_true(model.evaluate(variable, model_completion=True))
     )
+
+
+def _sat_conflict_free_extension(
+    framework: ArgumentationFramework,
+    *,
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
+) -> frozenset[str] | None:
+    if unknown := sorted((required_range | require_any_range) - framework.arguments):
+        raise ValueError(f"unknown required arguments: {unknown!r}")
+
+    z3 = _load_z3()
+    ordered_arguments = tuple(sorted(framework.arguments))
+    in_vars = {argument: z3.Bool(f"in_{argument}") for argument in ordered_arguments}
+    solver = z3.Solver()
+
+    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    for attacker, target in sorted(cf_relation):
+        solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
+
+    if required_range or require_any_range:
+        range_vars = _range_variables(z3, solver, ordered_arguments, in_vars, framework)
+        _add_range_requirements(
+            z3,
+            solver,
+            range_vars,
+            required_range=required_range,
+            require_any_range=require_any_range,
+        )
+
+    if solver.check() != z3.sat:
+        return None
+    model = solver.model()
+    return frozenset(
+        argument
+        for argument, variable in in_vars.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+
+
+def _range_variables(z3, solver, ordered_arguments, in_vars, framework):
+    attackers_index = _attackers_index(framework.defeats)
+    range_vars = {
+        argument: z3.Bool(f"range_{argument}")
+        for argument in ordered_arguments
+    }
+    for argument in ordered_arguments:
+        range_sources = [
+            in_vars[argument],
+            *(
+                in_vars[attacker]
+                for attacker in sorted(attackers_index.get(argument, frozenset()))
+            ),
+        ]
+        solver.add(range_vars[argument] == z3.Or(*range_sources))
+    return range_vars
+
+
+def _add_range_requirements(
+    z3,
+    solver,
+    range_vars,
+    *,
+    required_range: frozenset[str],
+    require_any_range: frozenset[str],
+) -> None:
+    for argument in sorted(required_range):
+        solver.add(range_vars[argument])
+    if require_any_range:
+        solver.add(z3.Or(*(range_vars[argument] for argument in sorted(require_any_range))))
 
 
 def _load_z3():
@@ -373,6 +512,8 @@ __all__ = [
     "sat_complete_extension",
     "sat_extensions",
     "sat_preferred_extension",
+    "sat_semi_stable_extension",
     "sat_stable_extension",
+    "sat_stage_extension",
     "stable_extensions_from_encoding",
 ]
