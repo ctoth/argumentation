@@ -148,6 +148,61 @@ def sat_extensions(
     raise ValueError(f"unsupported SAT Dung semantics: {semantics}")
 
 
+def sat_stable_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    require_out: str | None = None,
+) -> frozenset[str] | None:
+    """Return one stable extension satisfying optional membership constraints."""
+    if require_in is not None and require_in not in framework.arguments:
+        raise ValueError(f"unknown required argument: {require_in!r}")
+    if require_out is not None and require_out not in framework.arguments:
+        raise ValueError(f"unknown excluded argument: {require_out!r}")
+
+    z3 = _load_z3()
+    variables = {argument: z3.Bool(f"in_{argument}") for argument in sorted(framework.arguments)}
+    solver = z3.Solver()
+
+    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    for attacker, target in sorted(cf_relation):
+        solver.add(z3.Or(z3.Not(variables[attacker]), z3.Not(variables[target])))
+
+    attackers_index = _attackers_index(framework.defeats)
+    for argument in sorted(framework.arguments):
+        solver.add(
+            z3.Or(
+                variables[argument],
+                *(
+                    variables[attacker]
+                    for attacker in sorted(attackers_index.get(argument, frozenset()))
+                ),
+            )
+        )
+
+    if require_in is not None:
+        solver.add(variables[require_in])
+    if require_out is not None:
+        solver.add(z3.Not(variables[require_out]))
+
+    if solver.check() != z3.sat:
+        return None
+    model = solver.model()
+    return frozenset(
+        argument
+        for argument, variable in variables.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+
+
+def _load_z3():
+    try:
+        import z3  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise RuntimeError("SAT stable solving requires z3-solver") from exc
+    return z3
+
+
 def _satisfies(
     clauses: tuple[tuple[int, ...], ...],
     true_variables: frozenset[int],
@@ -199,5 +254,6 @@ __all__ = [
     "CNFEncoding",
     "encode_stable_extensions",
     "sat_extensions",
+    "sat_stable_extension",
     "stable_extensions_from_encoding",
 ]
