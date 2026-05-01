@@ -7,6 +7,7 @@ from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
 from argumentation.solver import (
     AcceptanceSolverSuccess,
+    ICCMAConfig,
     SingleExtensionSolverSuccess,
     SolverBackendUnavailable,
     solve_aba_acceptance,
@@ -103,6 +104,57 @@ def test_solve_aba_aspforaba_backend_is_typed_unavailable_without_contract() -> 
     assert result.backend == "aspforaba"
 
 
+def test_solve_aba_single_extension_iccma_returns_verified_witness(monkeypatch) -> None:
+    framework = _flat_aba(1, frozenset())
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.subprocess.run",
+        lambda *args, **kwargs: completed(stdout="w 1\n"),
+    )
+
+    result = solve_aba_single_extension(
+        framework,
+        semantics="stable",
+        backend="iccma",
+        iccma=ICCMAConfig(binary="fake-aspforaba"),
+    )
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == framework.assumptions
+
+
+def test_solve_aba_acceptance_iccma_returns_verified_answer(monkeypatch) -> None:
+    framework = _flat_aba(1, frozenset())
+    query = literal("a1")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.subprocess.run",
+        lambda *args, **kwargs: completed(stdout="YES\n"),
+    )
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics="complete",
+        task="credulous",
+        query=query,
+        backend="iccma",
+        iccma=ICCMAConfig(binary="fake-aspforaba"),
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is True
+    assert result.witness is None
+    assert result.counterexample is None
+
+
 def _flat_aba(size: int, attacks: frozenset[tuple[int, int]]) -> ABAFramework:
     assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
     contraries = {literal(f"c{index}") for index in range(1, size + 1)}
@@ -128,3 +180,14 @@ def _flat_aba(size: int, attacks: frozenset[tuple[int, int]]) -> ABAFramework:
 
 def literal(name: str) -> Literal:
     return Literal(GroundAtom(name))
+
+
+def completed(*, stdout: str):
+    class Completed:
+        returncode = 0
+        stderr = ""
+
+        def __init__(self, stdout: str) -> None:
+            self.stdout = stdout
+
+    return Completed(stdout)
