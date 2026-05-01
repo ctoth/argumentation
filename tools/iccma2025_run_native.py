@@ -4,6 +4,7 @@ import argparse
 import csv
 from dataclasses import dataclass
 import json
+import lzma
 import os
 from pathlib import Path
 import subprocess
@@ -15,13 +16,34 @@ from typing import Any
 
 DATA_ROOT = Path("data") / "iccma" / "2025"
 
+AF_KINDS = frozenset({"af", "apx", "tgf", "compressed_apx", "compressed_tgf"})
+
 TASK_TO_SEMANTICS = {
     "CO": "complete",
+    "GR": "grounded",
     "PR": "preferred",
     "ST": "stable",
     "SST": "semi-stable",
+    "STG": "stage",
     "ID": "ideal",
+    "CF2": "cf2",
 }
+
+DEFAULT_AF_SUBTRACKS = (
+    "DC-CO",
+    "DC-PR",
+    "DC-ST",
+    "DC-SST",
+    "DS-PR",
+    "DS-ST",
+    "DS-SST",
+    "SE-CO",
+    "SE-GR",
+    "SE-PR",
+    "SE-ST",
+    "SE-SST",
+    "SE-ID",
+)
 
 RESULT_FIELDS = [
     "track",
@@ -110,13 +132,17 @@ def main(argv: list[str] | None = None) -> int:
 def run_native(config: RunConfig) -> list[dict[str, Any]]:
     manifest_path, task_matrix_path = discover_manifest_paths(config.root)
     manifest = load_json(manifest_path)
-    task_matrix = load_json(task_matrix_path)
+    task_matrix = (
+        load_json(task_matrix_path)
+        if task_matrix_path is not None
+        else infer_task_matrix(config.root, manifest)
+    )
     jobs = [
         (instance, task)
         for instance in manifest
-        if instance["kind"] in {"af", "aba"}
+        if normalized_instance_kind(instance) in {"af", "aba"}
         for task in task_matrix
-        if task["instance_kind"] == instance["kind"]
+        if task["instance_kind"] == normalized_instance_kind(instance)
     ]
     rows: list[dict[str, Any]] = []
     for index, (instance, task) in enumerate(jobs, start=1):
@@ -137,7 +163,7 @@ def infer_contest_tag(root: Path) -> str:
     return "iccma"
 
 
-def discover_manifest_paths(root: Path) -> tuple[Path, Path]:
+def discover_manifest_paths(root: Path) -> tuple[Path, Path | None]:
     manifests_dir = root / "manifests"
     manifest_paths = sorted(manifests_dir.glob("iccma-*-manifest.json"))
     if len(manifest_paths) != 1:
@@ -146,9 +172,40 @@ def discover_manifest_paths(root: Path) -> tuple[Path, Path]:
         )
     contest_tag = manifest_paths[0].name.removesuffix("-manifest.json")
     task_matrix_path = manifests_dir / f"{contest_tag}-task-matrix.json"
-    if not task_matrix_path.exists():
-        raise FileNotFoundError(f"missing ICCMA task matrix: {task_matrix_path}")
-    return manifest_paths[0], task_matrix_path
+    return manifest_paths[0], task_matrix_path if task_matrix_path.exists() else None
+
+
+def normalized_instance_kind(instance: dict[str, Any]) -> str:
+    kind = instance["kind"]
+    return "af" if kind in AF_KINDS else kind
+
+
+def infer_task_matrix(root: Path, manifest: list[dict[str, Any]]) -> list[dict[str, str]]:
+    has_af = any(normalized_instance_kind(instance) == "af" for instance in manifest)
+    if not has_af:
+        return []
+    subtracks = infer_af_subtracks(root)
+    return [
+        {"track": "legacy", "subtrack": subtrack, "instance_kind": "af"}
+        for subtrack in subtracks
+    ]
+
+
+def infer_af_subtracks(root: Path) -> tuple[str, ...]:
+    result_files = sorted((root / "extracted" / "results").glob("*.results"))
+    subtracks = [
+        path.name.removesuffix(".results")
+        for path in result_files
+        if supported_runner_subtrack(path.name.removesuffix(".results"))
+    ]
+    if subtracks:
+        return tuple(dict.fromkeys(subtracks))
+    return DEFAULT_AF_SUBTRACKS
+
+
+def supported_runner_subtrack(subtrack: str) -> bool:
+    parts = subtrack.split("-", maxsplit=1)
+    return len(parts) == 2 and parts[0] in {"DC", "DS", "SE"} and parts[1] in TASK_TO_SEMANTICS
 
 
 def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
@@ -176,8 +233,9 @@ def run_or_skip(
 ) -> dict[str, Any]:
     base = {**base_result(instance, task), "backend": config.backend}
     if (
-        instance["kind"] == "af"
+        normalized_instance_kind(instance) == "af"
         and config.max_af_arguments >= 0
+        and instance.get("arguments_or_atoms") is not None
         and int(instance["arguments_or_atoms"]) > config.max_af_arguments
     ):
         return {
@@ -185,7 +243,11 @@ def run_or_skip(
             "status": "skipped",
             "reason": f"af_argument_cap>{config.max_af_arguments}",
         }
-    if instance["kind"] == "aba" and int(instance["assumptions"]) > config.max_aba_assumptions:
+    if (
+        normalized_instance_kind(instance) == "aba"
+        and instance.get("assumptions") is not None
+        and int(instance["assumptions"]) > config.max_aba_assumptions
+    ):
         return {
             **base,
             "status": "skipped",
@@ -261,7 +323,7 @@ def worker_main(argv: list[str]) -> int:
 
 def worker_solve(job: dict[str, Any]) -> dict[str, Any]:
     try:
-        if job["instance"]["kind"] == "af":
+        if normalized_instance_kind(job["instance"]) == "af":
             result = solve_af_job(job)
         else:
             result = solve_aba_job(job)
@@ -274,8 +336,61 @@ def worker_solve(job: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+def resolve_instance_path(root: Path, instance: dict[str, Any]) -> Path:
+    instances_root = root / "extracted" / "instances"
+    relative = Path(instance["relative_path"])
+    direct = instances_root / relative
+    if direct.exists():
+        return direct
+
+    archive_prefix = archive_directory_prefix(instance.get("archive"))
+    if archive_prefix is not None:
+        archived = instances_root / archive_prefix / relative
+        if archived.exists():
+            return archived
+
+    matches = sorted(
+        candidate
+        for candidate in instances_root.rglob(relative.name)
+        if candidate.parts[-len(relative.parts):] == relative.parts
+        or candidate.name == relative.name
+    )
+    if matches:
+        return matches[0]
+    raise FileNotFoundError(f"could not resolve instance path: {instance['relative_path']}")
+
+
+def archive_directory_prefix(archive: str | None) -> str | None:
+    if archive is None:
+        return None
+    if archive.startswith("benchmarks-") and len(archive) == len("benchmarks-a"):
+        return archive[-1].upper()
+    return None
+
+
+def read_instance_text(path: Path) -> str:
+    if path.name.lower().endswith(".lzma"):
+        return lzma.open(path, mode="rt", encoding="utf-8", errors="ignore").read()
+    return path.read_text(encoding="utf-8", errors="ignore")
+
+
+def find_query_path(instance_path: Path) -> Path | None:
+    candidates = [Path(str(instance_path) + ".arg")]
+    if instance_path.suffix:
+        candidates.append(instance_path.with_suffix(".arg"))
+    name = instance_path.name
+    if name.endswith(".apx.lzma"):
+        candidates.append(instance_path.with_name(name.removesuffix(".apx.lzma") + ".apx_arg.lzma"))
+    if name.endswith(".tgf.lzma"):
+        candidates.append(instance_path.with_name(name.removesuffix(".tgf.lzma") + ".tgf_arg.lzma"))
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
-    from argumentation.iccma import parse_af
+    from argumentation.iccma import parse_af, parse_apx, parse_tgf
     from argumentation.solver import (
         AcceptanceSolverSuccess,
         ICCMAConfig,
@@ -290,10 +405,16 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     root = Path(job["root"])
     instance = job["instance"]
     task = job["task"]
-    path = root / "extracted" / "instances" / instance["relative_path"]
-    query_path = Path(str(path) + ".arg")
+    path = resolve_instance_path(root, instance)
+    query_path = find_query_path(path)
     problem, semantics = split_subtrack(task["subtrack"])
-    framework = parse_af(path.read_text(encoding="utf-8"))
+    text = read_instance_text(path)
+    if instance["kind"] in {"apx", "compressed_apx"}:
+        framework = parse_apx(text)
+    elif instance["kind"] in {"tgf", "compressed_tgf"}:
+        framework = parse_tgf(text)
+    else:
+        framework = parse_af(text)
     backend = job["backend"]
     iccma_config = None
     if backend == "iccma":
@@ -324,7 +445,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
         if isinstance(result, SolverProtocolError):
             return protocol_error_result(result.reason, result.details)
         raise TypeError(f"unknown solver result: {result!r}")
-    query = query_path.read_text(encoding="utf-8").strip() if query_path.exists() else None
+    query = read_instance_text(query_path).strip() if query_path is not None else None
     if query is None:
         return {"status": "skipped", "reason": "missing_query", "error": None}
     result = solve_dung_acceptance(
@@ -363,10 +484,10 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
     root = Path(job["root"])
     instance = job["instance"]
     task = job["task"]
-    path = root / "extracted" / "instances" / instance["relative_path"]
+    path = resolve_instance_path(root, instance)
     query_path = Path(str(path) + ".query")
     problem, semantics = split_subtrack(task["subtrack"])
-    framework = parse_aba(path.read_text(encoding="utf-8"))
+    framework = parse_aba(read_instance_text(path))
     backend = job["backend"]
     iccma_config = None
     if backend == "iccma":
