@@ -6,6 +6,74 @@ from argumentation.aba import ABAFramework, AssumptionSet
 from argumentation.aspic import Literal
 
 
+def support_extensions(
+    framework: ABAFramework,
+    semantics: str,
+) -> tuple[AssumptionSet, ...]:
+    """Enumerate ABA extensions using precomputed derivation support masks."""
+    state = _SupportState.from_framework(framework)
+    if semantics == "stable":
+        masks = [
+            mask
+            for mask in range(1 << len(state.assumptions))
+            if state.stable(mask)
+        ]
+    elif semantics == "complete":
+        masks = [
+            mask
+            for mask in range(1 << len(state.assumptions))
+            if state.complete(mask)
+        ]
+    elif semantics == "preferred":
+        admissible = [
+            mask
+            for mask in range(1 << len(state.assumptions))
+            if state.admissible(mask)
+        ]
+        masks = [
+            mask
+            for mask in admissible
+            if not any(mask != other and (mask | other) == other for other in admissible)
+        ]
+    else:
+        raise ValueError(f"unsupported ABA support semantics: {semantics}")
+    return tuple(
+        sorted(
+            (state.extension(mask) for mask in masks),
+            key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
+        )
+    )
+
+
+def support_acceptance(
+    framework: ABAFramework,
+    *,
+    semantics: str,
+    task: str,
+    query: Literal,
+) -> tuple[bool, AssumptionSet | None]:
+    """Return a decision and witness/counterexample for exact ABA support solving."""
+    state = _SupportState.from_framework(framework)
+    extensions = support_extensions(framework, semantics)
+    if task == "credulous":
+        witness = next(
+            (extension for extension in extensions if state.derives_extension(extension, query)),
+            None,
+        )
+        return witness is not None, witness
+    if task == "skeptical":
+        counterexample = next(
+            (
+                extension
+                for extension in extensions
+                if not state.derives_extension(extension, query)
+            ),
+            None,
+        )
+        return counterexample is None, counterexample
+    raise ValueError(f"unsupported ABA acceptance task: {task}")
+
+
 def sat_stable_extension(
     framework: ABAFramework,
     *,
@@ -64,6 +132,100 @@ def sat_stable_extension(
         for assumption, variable in variables.items()
         if z3.is_true(model.evaluate(variable, model_completion=True))
     )
+
+
+class _SupportState:
+    def __init__(
+        self,
+        framework: ABAFramework,
+        assumptions: tuple[Literal, ...],
+        supports: dict[Literal, frozenset[int]],
+    ) -> None:
+        self.framework = framework
+        self.assumptions = assumptions
+        self.index = {assumption: index for index, assumption in enumerate(assumptions)}
+        self.supports = supports
+        self.attack_supports = {
+            assumption: supports.get(framework.contrary[assumption], frozenset())
+            for assumption in assumptions
+        }
+
+    @classmethod
+    def from_framework(cls, framework: ABAFramework) -> _SupportState:
+        assumptions = tuple(sorted(framework.assumptions, key=repr))
+        index = {assumption: offset for offset, assumption in enumerate(assumptions)}
+        supports = {
+            literal: frozenset(
+                _support_mask(support, index)
+                for support in values
+            )
+            for literal, values in _minimal_supports(framework).items()
+        }
+        return cls(framework, assumptions, supports)
+
+    def extension(self, mask: int) -> AssumptionSet:
+        return frozenset(
+            assumption
+            for index, assumption in enumerate(self.assumptions)
+            if mask & (1 << index)
+        )
+
+    def derives_extension(self, extension: AssumptionSet, literal: Literal) -> bool:
+        return self.derives(_support_mask(extension, self.index), literal)
+
+    def derives(self, mask: int, literal: Literal) -> bool:
+        return any((support & mask) == support for support in self.supports.get(literal, ()))
+
+    def attacks(self, mask: int, assumption: Literal) -> bool:
+        return any(
+            (support & mask) == support
+            for support in self.attack_supports.get(assumption, ())
+        )
+
+    def conflict_free(self, mask: int) -> bool:
+        return not any(
+            mask & (1 << index) and self.attacks(mask, assumption)
+            for index, assumption in enumerate(self.assumptions)
+        )
+
+    def defends(self, mask: int, assumption: Literal) -> bool:
+        for attack_support in self.attack_supports.get(assumption, ()):
+            if attack_support == 0:
+                return False
+            if not any(
+                attack_support & (1 << index) and self.attacks(mask, target)
+                for index, target in enumerate(self.assumptions)
+            ):
+                return False
+        return True
+
+    def admissible(self, mask: int) -> bool:
+        return self.conflict_free(mask) and all(
+            not (mask & (1 << index)) or self.defends(mask, assumption)
+            for index, assumption in enumerate(self.assumptions)
+        )
+
+    def complete(self, mask: int) -> bool:
+        return self.admissible(mask) and all(
+            bool(mask & (1 << index)) == self.defends(mask, assumption)
+            for index, assumption in enumerate(self.assumptions)
+        )
+
+    def stable(self, mask: int) -> bool:
+        return self.conflict_free(mask) and all(
+            bool(mask & (1 << index)) or self.attacks(mask, assumption)
+            for index, assumption in enumerate(self.assumptions)
+        )
+
+
+def _support_mask(
+    support: AssumptionSet,
+    index: dict[Literal, int],
+) -> int:
+    mask = 0
+    for assumption in support:
+        mask |= 1 << index[assumption]
+    return mask
 
 
 def _minimal_supports(framework: ABAFramework) -> dict[Literal, frozenset[AssumptionSet]]:
@@ -156,4 +318,4 @@ def _load_z3():
     return z3
 
 
-__all__ = ["sat_stable_extension"]
+__all__ = ["sat_stable_extension", "support_acceptance", "support_extensions"]
