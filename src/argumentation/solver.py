@@ -16,20 +16,18 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.solver_adapters import iccma_af
+from argumentation.solver_results import (
+    AcceptanceSuccess,
+    ExtensionEnumerationSuccess,
+    SingleExtensionSuccess,
+    SolverProcessError,
+    SolverProtocolError,
+    SolverUnavailable,
+)
 
 
-@dataclass(frozen=True)
-class SolverBackendUnavailable:
-    backend: str
-    install_hint: str
-    reason: str
-
-
-@dataclass(frozen=True)
-class SolverBackendError:
-    backend: str
-    reason: str
-    details: dict[str, str]
+SolverBackendUnavailable = SolverUnavailable
+SolverBackendError = SolverProcessError
 
 
 @dataclass(frozen=True)
@@ -40,37 +38,28 @@ class ICCMAAFBackend:
     timeout_seconds: float = 30.0
 
 
-@dataclass(frozen=True)
-class ExtensionSolverSuccess:
-    extensions: tuple[frozenset[str], ...]
-
-
-@dataclass(frozen=True)
-class SingleExtensionSolverSuccess:
-    extension: frozenset[str] | None
-
-
-@dataclass(frozen=True)
-class AcceptanceSolverSuccess:
-    answer: bool
-    witness: frozenset[str] | None = None
-    counterexample: frozenset[str] | None = None
+ExtensionSolverSuccess = ExtensionEnumerationSuccess
+SingleExtensionSolverSuccess = SingleExtensionSuccess
+AcceptanceSolverSuccess = AcceptanceSuccess
 
 
 ExtensionSolverResult = (
     ExtensionSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverProtocolError
 )
 SingleExtensionSolverResult = (
     SingleExtensionSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverProtocolError
 )
 AcceptanceSolverResult = (
     AcceptanceSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverProtocolError
 )
 
 
@@ -185,30 +174,10 @@ def _solve_iccma_dung_single_extension(
             extension=result.witness if not result.output.no_extension else None,
         )
     if isinstance(result, iccma_af.ICCMASolverUnavailable):
-        return SolverBackendUnavailable(
-            backend=result.backend,
-            install_hint=result.install_hint,
-            reason=result.reason,
-        )
+        return result
     if isinstance(result, iccma_af.ICCMASolverError):
-        return SolverBackendError(
-            backend=result.backend,
-            reason=f"solver exited with code {result.returncode}",
-            details={
-                "problem": result.problem,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-            },
-        )
-    return SolverBackendError(
-        backend=result.backend,
-        reason=result.message,
-        details={
-            "problem": result.problem,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        },
-    )
+        return result
+    return result
 
 
 def _solve_iccma_dung_acceptance(
@@ -234,30 +203,10 @@ def _solve_iccma_dung_acceptance(
             counterexample=result.witness if result.answer is False else None,
         )
     if isinstance(result, iccma_af.ICCMASolverUnavailable):
-        return SolverBackendUnavailable(
-            backend=result.backend,
-            install_hint=result.install_hint,
-            reason=result.reason,
-        )
+        return result
     if isinstance(result, iccma_af.ICCMASolverError):
-        return SolverBackendError(
-            backend=result.backend,
-            reason=f"solver exited with code {result.returncode}",
-            details={
-                "problem": result.problem,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-            },
-        )
-    return SolverBackendError(
-        backend=result.backend,
-        reason=result.message,
-        details={
-            "problem": result.problem,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        },
-    )
+        return result
+    return result
 
 
 def _dung_extensions(
