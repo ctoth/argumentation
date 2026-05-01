@@ -980,6 +980,37 @@ Phase 5 ABA ICCMA and ASPFORABA checkpoint:
   - Optional `ASPFORABA_SOLVER` / `ICCMA_ABA_SOLVER` smoke remains path-free
     and skipped when unset.
 
+Phase 6 ADF and SETAF external-boundary checkpoint:
+
+- Source gate:
+  - Reread Brewka and Woltran 2010 page images for ADF model definitions,
+    Dung-to-ADF correspondence, grounded/well-founded operator semantics, and
+    the bipolar caveat around older preferred/stable semantics: pages 2-3.
+  - Reread Brewka et al. 2013 page images for the three-valued
+    consensus-operator semantics, admissible/complete/preferred definitions,
+    AF-to-ADF correspondence, and stable reduct semantics: pages 2-3.
+  - Selected no ADF external adapter because no target solver format was
+    source-gated in this phase.
+  - Selected no SETAF external adapter; the local `p setaf` format remains
+    package-local and is not claimed as ICCMA or another competition format.
+- Red commit: `17c9a5b`.
+  - Added generated ADF-encoded-Dung agreement properties for grounded,
+    complete, preferred, and stable semantics.
+  - Added generated SETAF singleton-tail reduction properties for grounded,
+    complete, preferred, stable, semi-stable, and stage semantics.
+  - Added generated unavailable checks proving named external ADF/SETAF
+    backends return typed unavailable before any subprocess claim.
+- Green commit: `9a4d4bb`.
+  - Added `solve_adf_models(...)` with native model enumeration and precise
+    external-backend unavailable results.
+  - Added `solve_setaf_extensions(...)` with native extension enumeration and
+    precise external-backend unavailable results.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_solver_external_boundaries.py tests/test_adf_dung_bridge.py tests/test_adf_brewka_2013_operator.py tests/test_adf_brewka_2010_examples.py tests/test_setaf.py tests/test_setaf_io.py`
+    reported 34 passed in 2.24s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
