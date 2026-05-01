@@ -1,9 +1,12 @@
 from argumentation.dung import ArgumentationFramework
+from argumentation.dung import complete_extensions
+from argumentation.dung import grounded_extension
 from argumentation.dung import preferred_extensions
+from argumentation.dung import stable_extensions
+import argumentation.solver as solver_module
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
-    ICCMAAFBackend,
     SingleExtensionSolverSuccess,
     SolverBackendError,
     SolverBackendUnavailable,
@@ -12,6 +15,7 @@ from argumentation.solver import (
     solve_dung_single_extension,
 )
 from hypothesis import given, settings, strategies as st
+from tests.test_dung import argumentation_frameworks
 from argumentation.solver_adapters.iccma_af import (
     ICCMAOutput,
     ICCMAOutputKind,
@@ -22,7 +26,15 @@ from argumentation.solver_adapters.iccma_af import (
 )
 
 
-def test_solve_dung_extensions_returns_extensions_for_single_labelling_backend() -> None:
+NATIVE_EXTENSION_ORACLES = {
+    "complete": complete_extensions,
+    "grounded": lambda framework: [grounded_extension(framework)],
+    "preferred": preferred_extensions,
+    "stable": stable_extensions,
+}
+
+
+def test_solve_dung_extensions_returns_extensions_for_default_native_backend() -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b")}),
@@ -34,6 +46,31 @@ def test_solve_dung_extensions_returns_extensions_for_single_labelling_backend()
     assert result.extensions == (frozenset({"a"}),)
 
 
+@given(
+    argumentation_frameworks(max_args=4),
+    st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
+)
+@settings(deadline=10000, max_examples=40)
+def test_native_backend_matches_direct_dung_semantic_oracles(
+    framework: ArgumentationFramework,
+    semantics: str,
+) -> None:
+    result = solve_dung_extensions(framework, semantics=semantics, backend="native")
+
+    assert isinstance(result, ExtensionSolverSuccess)
+    assert set(result.extensions) == set(NATIVE_EXTENSION_ORACLES[semantics](framework))
+
+
+def test_solve_dung_extensions_rejects_deleted_labelling_backend() -> None:
+    framework = ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
+
+    result = solve_dung_extensions(framework, semantics="stable", backend="labelling")
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.backend == "labelling"
+    assert result.install_hint == "Use backend='native'."
+
+
 def test_solve_dung_extensions_rejects_deleted_z3_backend() -> None:
     framework = ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
 
@@ -41,7 +78,7 @@ def test_solve_dung_extensions_rejects_deleted_z3_backend() -> None:
 
     assert isinstance(result, SolverBackendUnavailable)
     assert result.backend == "z3"
-    assert result.install_hint == "Use backend='labelling'."
+    assert result.install_hint == "Use backend='native'."
 
 
 def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
@@ -53,7 +90,8 @@ def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
     result = solve_dung_extensions(
         framework,
         semantics="preferred",
-        backend=ICCMAAFBackend(binary="fake-iccma"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="fake-iccma"),
     )
 
     assert isinstance(result, SolverBackendUnavailable)
@@ -90,7 +128,8 @@ def test_solve_dung_single_extension_routes_explicit_iccma_backend(monkeypatch) 
     result = solve_dung_single_extension(
         framework,
         semantics="stable",
-        backend=ICCMAAFBackend(binary="fake-iccma", timeout_seconds=7.5),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="fake-iccma", timeout_seconds=7.5),
     )
 
     assert isinstance(result, SingleExtensionSolverSuccess)
@@ -116,12 +155,44 @@ def test_solve_dung_single_extension_maps_iccma_unavailable(monkeypatch) -> None
     result = solve_dung_single_extension(
         framework,
         semantics="grounded",
-        backend=ICCMAAFBackend(binary="missing"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="missing"),
     )
 
     assert isinstance(result, SolverBackendUnavailable)
     assert result.backend == "missing"
     assert result.reason == "binary not found on PATH"
+
+
+def test_solve_dung_single_extension_requires_iccma_config_before_subprocess(
+    monkeypatch,
+) -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
+    calls = []
+
+    def fake_solve_af_extensions(*, framework, semantics, binary, timeout_seconds):
+        calls.append((framework, semantics, binary, timeout_seconds))
+        return ICCMASolverUnavailable(
+            backend=binary,
+            reason="should not be reached",
+            install_hint="should not be reached",
+        )
+
+    monkeypatch.setattr(
+        "argumentation.solver.iccma_af.solve_af_extensions",
+        fake_solve_af_extensions,
+    )
+
+    result = solve_dung_single_extension(
+        framework,
+        semantics="grounded",
+        backend="iccma",
+    )
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.backend == "iccma"
+    assert result.reason == "missing ICCMA solver configuration"
+    assert calls == []
 
 
 def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> None:
@@ -144,7 +215,8 @@ def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> Non
     result = solve_dung_single_extension(
         framework,
         semantics="stable",
-        backend=ICCMAAFBackend(binary="bad-solver"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="bad-solver"),
     )
 
     assert isinstance(result, SolverBackendError)
@@ -173,7 +245,8 @@ def test_solve_dung_single_extension_preserves_iccma_protocol_error(monkeypatch)
     result = solve_dung_single_extension(
         framework,
         semantics="stable",
-        backend=ICCMAAFBackend(binary="bad-protocol"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="bad-protocol"),
     )
 
     assert isinstance(result, ICCMASolverProtocolError)
@@ -212,12 +285,65 @@ def test_solve_dung_acceptance_preserves_iccma_protocol_error(monkeypatch) -> No
         semantics="stable",
         task="credulous",
         query="1",
-        backend=ICCMAAFBackend(binary="bad-protocol"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="bad-protocol"),
     )
 
     assert isinstance(result, ICCMASolverProtocolError)
     assert result.problem == "DC-ST"
     assert result.stdout == "MAYBE\n"
+
+
+def test_solve_dung_acceptance_requires_iccma_config_before_subprocess(
+    monkeypatch,
+) -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
+    calls = []
+
+    def fake_solve_af_acceptance(
+        *,
+        framework,
+        semantics,
+        task,
+        query,
+        binary,
+        timeout_seconds,
+        certificate_required,
+    ):
+        calls.append(
+            (
+                framework,
+                semantics,
+                task,
+                query,
+                binary,
+                timeout_seconds,
+                certificate_required,
+            )
+        )
+        return ICCMASolverUnavailable(
+            backend=binary,
+            reason="should not be reached",
+            install_hint="should not be reached",
+        )
+
+    monkeypatch.setattr(
+        "argumentation.solver.iccma_af.solve_af_acceptance",
+        fake_solve_af_acceptance,
+    )
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="credulous",
+        query="1",
+        backend="iccma",
+    )
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.backend == "iccma"
+    assert result.reason == "missing ICCMA solver configuration"
+    assert calls == []
 
 
 def test_solve_dung_acceptance_native_backend_returns_witnesses() -> None:
@@ -299,7 +425,8 @@ def test_solve_dung_acceptance_routes_explicit_iccma_backend(monkeypatch) -> Non
         semantics="stable",
         task="credulous",
         query="1",
-        backend=ICCMAAFBackend(binary="fake-iccma", timeout_seconds=7.5),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="fake-iccma", timeout_seconds=7.5),
     )
 
     assert isinstance(result, AcceptanceSolverSuccess)
@@ -339,7 +466,8 @@ def test_iccma_single_extension_backend_is_not_enumeration_for_multi_extension_a
     enumeration = solve_dung_extensions(
         framework,
         semantics="preferred",
-        backend=ICCMAAFBackend(binary="fake-iccma"),
+        backend="iccma",
+        iccma=solver_module.ICCMAConfig(binary="fake-iccma"),
     )
     single = solve_dung_single_extension(framework, semantics="preferred")
 
