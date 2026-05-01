@@ -21,7 +21,7 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
-from argumentation.sat_encoding import sat_extensions
+from argumentation.sat_encoding import sat_extensions, sat_stable_extension
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.solver_results import (
@@ -214,6 +214,13 @@ def solve_dung_single_extension(
     if backend == "sat":
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
+        if semantics == "stable":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_stable_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         extensions = sat_extensions(framework, semantics)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
@@ -247,6 +254,11 @@ def solve_dung_acceptance(
     if backend == "sat":
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
+        if semantics == "stable":
+            try:
+                return _solve_sat_stable_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
             sat_extensions(framework, semantics),
             task,
@@ -272,6 +284,14 @@ def _external_sat_unavailable() -> SolverBackendUnavailable:
         backend="sat",
         reason="external SAT backend is not configured",
         install_hint="Use SATConfig(require_external=False) for the package-native SAT enumerator.",
+    )
+
+
+def _sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="sat",
+        reason=str(exc),
+        install_hint="Install the z3-solver extra or use backend='native'.",
     )
 
 
@@ -328,6 +348,26 @@ def _solve_native_dung_acceptance(
 ) -> AcceptanceSolverSuccess:
     extensions = _sorted_extensions(_dung_extensions(framework, semantics))
     return _solve_dung_acceptance_from_extensions(extensions, task, query)
+
+
+def _solve_sat_stable_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    if task == "credulous":
+        witness = sat_stable_extension(framework, require_in=query)
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = sat_stable_extension(framework, require_out=query)
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
 
 
 def _solve_dung_acceptance_from_extensions(
