@@ -7,7 +7,7 @@
 | P-A.1: arbitrary ADF kernel absent | HIGH | `src/argumentation/adf.py` | `tests/test_adf_acceptance_condition_ast.py` | closed `06bff8a` |
 | P-A.2: flat ABA kernel absent | HIGH | `src/argumentation/aba.py` | `tests/test_aba_bondarenko_examples.py` | closed `70bc537` |
 | P-A.3: ADF and ABA foundational papers had no executable kernel | HIGH | `src/argumentation/adf.py`, `src/argumentation/aba.py` | `tests/test_workstream_o_arg_aba_adf_done.py` | closed `4719640` |
-| P-A.4: propstore/argumentation boundary for ABA/ADF unresolved | HIGH | public package surface | `tests/test_workstream_o_arg_aba_adf_done.py` | closed `4719640` |
+| P-A.4: downstream/package boundary for ABA/ADF unresolved | HIGH | public package surface | `tests/test_workstream_o_arg_aba_adf_done.py` | closed `4719640` |
 
 Non-flat ABA remains out of scope. `ABAFramework` rejects rules whose heads are assumptions via `NotFlatABAError`; a future non-flat ABA workstream must own that distinct semantics.
 
@@ -31,7 +31,7 @@ Bug 1's original "must fail today" premise was stale in the current repository: 
 
 | Finding | Severity | Production surface | First failing test | Status |
 |---|---:|---|---|---|
-| Bench-Capon p. 438 argument chains absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_argument_chain_validates_definition_6_3_and_parity` | closed `pending-propstore-pin` |
-| Bench-Capon p. 439 lines of argument absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_line_of_argument_builds_distinct_value_chains_and_stops_on_repeat` | closed `pending-propstore-pin` |
-| Bench-Capon pp. 440-441 Theorem 6.6 and Corollary 6.7 helpers absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_corollary_6_7_two_value_cycle_matches_preferred_extension` | closed `pending-propstore-pin` |
-| Bench-Capon pp. 444-447 fact-as-highest-value and factual uncertainty absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_extensions` | closed `pending-propstore-pin` |
+| Bench-Capon p. 438 argument chains absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_argument_chain_validates_definition_6_3_and_parity` | closed `pending-external-pin` |
+| Bench-Capon p. 439 lines of argument absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_line_of_argument_builds_distinct_value_chains_and_stops_on_repeat` | closed `pending-external-pin` |
+| Bench-Capon pp. 440-441 Theorem 6.6 and Corollary 6.7 helpers absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_corollary_6_7_two_value_cycle_matches_preferred_extension` | closed `pending-external-pin` |
+| Bench-Capon pp. 444-447 fact-as-highest-value and factual uncertainty absent | MED | `src/argumentation/vaf_completion.py` | `tests/test_vaf_completion.py::test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_extensions` | closed `pending-external-pin` |
