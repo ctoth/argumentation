@@ -4,7 +4,7 @@ import pytest
 
 from argumentation.aba import ABAFramework, NotFlatABAError
 from argumentation.aspic import GroundAtom, Literal, Rule
-from argumentation.iccma import parse_aba, write_aba, write_numeric_aba
+from argumentation.iccma import parse_aba, parse_apx, parse_tgf, write_aba, write_numeric_aba
 
 
 def lit(name: str) -> Literal:
@@ -73,6 +73,35 @@ def test_write_numeric_aba_emits_official_iccma_2025_header() -> None:
 
     assert text.startswith("p aba 4\n")
     assert parse_aba(text) == framework
+
+
+def test_parse_apx_reads_aspartix_argumentation_framework() -> None:
+    framework = parse_apx(
+        """
+        arg(a1).
+        arg(a2).
+        att(a1,a2).
+        att(a2,a1).
+        """
+    )
+
+    assert framework.arguments == frozenset({"a1", "a2"})
+    assert framework.defeats == frozenset({("a1", "a2"), ("a2", "a1")})
+
+
+def test_parse_tgf_reads_trivial_graph_format_framework() -> None:
+    framework = parse_tgf(
+        """
+        1 first argument
+        2 second argument
+        #
+        1 2
+        2 1
+        """
+    )
+
+    assert framework.arguments == frozenset({"1", "2"})
+    assert framework.defeats == frozenset({("1", "2"), ("2", "1")})
 
 
 def test_parse_official_numeric_aba_rejects_out_of_range_atom() -> None:
