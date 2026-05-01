@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import importlib
 import re
+from types import SimpleNamespace
 
 import argumentation
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from argumentation.aspic import (
     ArgumentationSystem,
@@ -182,6 +185,195 @@ def test_optional_aspic_backend_absence_is_typed() -> None:
     assert result.metadata["reason"] == "backend is not installed or registered"
 
 
+def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatch) -> None:
+    system, kb, pref = simple_aspic_theory()
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        calls.append(command)
+        assert command[0] == "fake-clingo"
+        assert capture_output is True
+        assert text is True
+        assert timeout == 5.0
+        assert check is False
+        return SimpleNamespace(
+            returncode=0,
+            stdout="Answer: 1\naccepted_arg(a0) accepted_lit(p) accepted_lit(q)\nSATISFIABLE\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr("argumentation.solver_adapters.clingo.subprocess.run", fake_run)
+
+    result = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="clingo",
+        semantics="grounded",
+        binary="fake-clingo",
+        timeout_seconds=5.0,
+    )
+
+    assert result.status == "success"
+    assert result.backend == "clingo"
+    assert result.accepted_conclusions == frozenset({Literal(GroundAtom("p")), Literal(GroundAtom("q"))})
+    assert result.accepted_argument_ids == frozenset({"a0"})
+    assert calls
+
+
+def test_clingo_backend_missing_binary_is_typed(monkeypatch) -> None:
+    system, kb, pref = simple_aspic_theory()
+    calls = []
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.shutil.which",
+        lambda binary: None,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.subprocess.run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    result = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="clingo",
+        semantics="grounded",
+        binary="missing-clingo",
+    )
+
+    assert result.status == "unavailable_backend"
+    assert result.backend == "clingo"
+    assert result.metadata["reason"] == "binary not found on PATH"
+    assert calls == []
+
+
+def test_clingo_backend_malformed_answer_set_is_protocol_error(monkeypatch) -> None:
+    system, kb, pref = simple_aspic_theory()
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout="Answer: 1\naccepted_lit(unknown)\nSATISFIABLE\n",
+            stderr="protocol stderr",
+        ),
+    )
+
+    result = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="clingo",
+        semantics="grounded",
+        binary="fake-clingo",
+    )
+
+    assert result.status == "protocol_error"
+    assert result.metadata["reason"] == "accepted literal id is not in the ASPIC encoding"
+    assert result.metadata["stdout"] == "Answer: 1\naccepted_lit(unknown)\nSATISFIABLE\n"
+    assert result.metadata["stderr"] == "protocol stderr"
+
+
+def test_clingo_backend_reports_unimplemented_semantics_before_subprocess(
+    monkeypatch,
+) -> None:
+    system, kb, pref = simple_aspic_theory()
+    calls = []
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.subprocess.run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+
+    result = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="clingo",
+        semantics="stable",
+        binary="fake-clingo",
+    )
+
+    assert result.status == "unavailable_backend"
+    assert result.metadata["reason"] == "ASPIC+ clingo backend supports grounded only"
+    assert calls == []
+
+
+@st.composite
+def simple_aspic_theories(draw):
+    size = draw(st.integers(min_value=1, max_value=4))
+    literals = [Literal(GroundAtom(f"p{index}")) for index in range(size)]
+    rule_count = draw(st.integers(min_value=0, max_value=max(0, size - 1)))
+    rules = frozenset(
+        Rule((literals[index],), literals[index + 1], "defeasible", f"d_{index}")
+        for index in range(rule_count)
+    )
+    system = ArgumentationSystem(
+        language=frozenset(literals),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset(),
+        defeasible_rules=rules,
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({literals[0]}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+    return system, kb, pref
+
+@given(simple_aspic_theories())
+@settings(deadline=10000, max_examples=25)
+def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
+    theory,
+) -> None:
+    system, kb, pref = theory
+    expected = solve_aspic_grounded(system, kb, pref)
+    accepted_ids = " ".join(
+        f"accepted_lit({literal_id})"
+        for literal_id, literal in expected.encoding.literal_by_id.items()
+        if literal in expected.accepted_conclusions
+    )
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.clingo.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.clingo.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout=f"Answer: 1\n{accepted_ids}\nSATISFIABLE\n",
+                stderr="",
+            ),
+        )
+
+        result = solve_aspic_with_backend(
+            system,
+            kb,
+            pref,
+            backend="clingo",
+            semantics="grounded",
+            binary="fake-clingo",
+        )
+
+    assert result.status == "success"
+    assert result.accepted_conclusions == expected.accepted_conclusions
+
+
 def test_ws_o_arg_aspic_encoding_sanitises_literal_ids_for_asp() -> None:
     """Bug 2: encoded literal identifiers must be valid ASP constants."""
     p = Literal(GroundAtom("P", (1, 2)))
@@ -237,3 +429,23 @@ def test_ws_o_arg_aspic_encoding_rejects_duplicate_defeasible_rule_names() -> No
 
     with pytest.raises(ValueError, match="duplicate defeasible rule name: 'dup'"):
         encode_aspic_theory(system, kb, pref)
+
+
+def simple_aspic_theory():
+    p = Literal(GroundAtom("p"))
+    q = Literal(GroundAtom("q"))
+    rule = Rule((p,), q, "defeasible", "d_q")
+    system = ArgumentationSystem(
+        language=frozenset({p, q}),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({rule}),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
+    pref = PreferenceConfig(
+        rule_order=frozenset(),
+        premise_order=frozenset(),
+        comparison="elitist",
+        link="last",
+    )
+    return system, kb, pref
