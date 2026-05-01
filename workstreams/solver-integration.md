@@ -44,17 +44,17 @@ explicit adapters and solver-independent encodings rather than a hidden
 
 ## Paper And Source Inventory Considered
 
-I consulted existing repo notes and `../propstore/papers` notes, descriptions,
-and claims. I did not reread page images in this planning slice.
+I consulted existing repo notes and a sibling paper collection's notes,
+descriptions, and claims. I did not reread page images in this planning slice.
 
 Primary local plan/context:
 
 - `notes/solver-integration-architecture-2026-04-30.md`
 - `workstreams/iccma-solver-adapter.md`
 - `plans/sota-completeness-and-ecosystem-workstream-2026-04-26.md`
-- `plans/follow-on-sota-and-propstore-integration-spec-2026-04-26.md`
+- the follow-on SOTA integration spec from 2026-04-26
 
-Primary paper directories already present in `../propstore/papers`:
+Primary paper directories already present in the sibling paper collection:
 
 - `Järvisalo_2025_ICCMA20235thInternational`
 - `Niskanen_2020_ToksiaEfficientAbstractArgumentation`
@@ -707,10 +707,10 @@ Acceptance:
 - Task-mismatch comparisons fail with precise assertion messages.
 - Benchmark data and native runners remain path-free and CI-safe.
 
-## Phase 9: Documentation And Propstore-Facing Guidance
+## Phase 9: Documentation And Consumer-Neutral Guidance
 
-Goal: document the solver boundary so propstore can consume it without owning
-solver policy.
+Goal: document the solver boundary so external callers can consume it without
+owning solver policy.
 
 Tasks:
 
@@ -723,9 +723,9 @@ Tasks:
 - Add docs for solver result types and error handling.
 - Add docs tests that fail if README/architecture claim support for a backend,
   task, or formalism not present in the capability table.
-- Add propstore-facing guidance: propstore supplies projected frameworks and
-  consumes package result objects; argumentation does not know propstore
-  identity, storage, merge policy, or provenance.
+- Add consumer-neutral guidance: external callers supply projected frameworks
+  and consume package result objects; argumentation does not know caller
+  identity, storage, merge policy, provenance, or rendering policy.
 - Update `CITATIONS.md` if a backend intentionally diverges from a cited paper
   or protocol.
 
