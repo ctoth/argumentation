@@ -56,6 +56,9 @@ z3 = [
 asp = [
     "clingo>=5.7",
 ]
+grounding = [
+    "gunray",
+]
 
 [project.urls]
 Homepage = "https://github.com/ctoth/argumentation"
@@ -96,9 +99,13 @@ markers = [
     "differential: differential or oracle-comparison tests",
 ]
 
+[tool.uv.sources]
+gunray = { git = "https://github.com/ctoth/gunray.git" }
+
 [dependency-groups]
 dev = [
     "clingo>=5.7",
+    "gunray",
     "hypothesis>=6.0",
     "pyright>=1.1.390",
     "pytest>=8.0",
