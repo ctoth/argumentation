@@ -47,6 +47,7 @@ class ClingoAnswerSetSuccess:
 class ClingoExtensionEnumerationSuccess:
     backend: str
     extensions: tuple[frozenset[str], ...]
+    extension_literal_ids: tuple[frozenset[str], ...]
     stdout: str
 
 
@@ -69,6 +70,7 @@ def run_extension_enumeration_protocol(
     facts: tuple[str, ...],
     encoding_modules: tuple[str, ...],
     known_argument_ids: frozenset[str],
+    known_literal_ids: frozenset[str] = frozenset(),
     binary: str,
     timeout_seconds: float = 30.0,
     problem: str = "ASP-EXT",
@@ -115,9 +117,10 @@ def run_extension_enumeration_protocol(
         )
 
     try:
-        extensions = _parse_extension_answer_sets(
+        extensions, extension_literal_ids = _parse_extension_answer_sets(
             completed.stdout,
             known_argument_ids=known_argument_ids,
+            known_literal_ids=known_literal_ids,
         )
     except ValueError as exc:
         return ClingoProtocolError(
@@ -131,6 +134,7 @@ def run_extension_enumeration_protocol(
     return ClingoExtensionEnumerationSuccess(
         backend=binary,
         extensions=extensions,
+        extension_literal_ids=extension_literal_ids,
         stdout=completed.stdout,
     )
 
@@ -222,44 +226,57 @@ def _parse_extension_answer_sets(
     stdout: str,
     *,
     known_argument_ids: frozenset[str],
-) -> tuple[frozenset[str], ...]:
-    extensions: list[frozenset[str]] = []
-    current: set[str] | None = None
+    known_literal_ids: frozenset[str],
+) -> tuple[tuple[frozenset[str], ...], tuple[frozenset[str], ...]]:
+    answer_sets: list[tuple[frozenset[str], frozenset[str]]] = []
+    current_args: set[str] | None = None
+    current_lits: set[str] | None = None
 
     for line in stdout.splitlines():
         stripped = line.strip()
         if stripped.startswith("Answer:"):
-            if current is not None:
-                extensions.append(frozenset(current))
-            current = set()
+            if current_args is not None and current_lits is not None:
+                answer_sets.append((frozenset(current_args), frozenset(current_lits)))
+            current_args = set()
+            current_lits = set()
             continue
-        if current is None:
+        if current_args is None or current_lits is None:
             continue
         if not stripped:
             continue
         if stripped in _CLINGO_CONTROL_TOKENS or stripped.startswith("Optimization:"):
-            extensions.append(frozenset(current))
-            current = None
+            answer_sets.append((frozenset(current_args), frozenset(current_lits)))
+            current_args = None
+            current_lits = None
             continue
         for token in stripped.split():
             arg_match = _ACCEPTED_ARG_RE.fullmatch(token)
-            if arg_match is None:
-                if token not in _CLINGO_CONTROL_TOKENS and not token.isdigit():
-                    raise ValueError(f"unexpected clingo output token: {token}")
+            if arg_match is not None:
+                argument_id = arg_match.group("id")
+                if argument_id not in known_argument_ids:
+                    raise ValueError("accepted argument id is not in the encoding")
+                current_args.add(argument_id)
                 continue
-            argument_id = arg_match.group("id")
-            if argument_id not in known_argument_ids:
-                raise ValueError("accepted argument id is not in the encoding")
-            current.add(argument_id)
+            lit_match = _ACCEPTED_LIT_RE.fullmatch(token)
+            if lit_match is not None:
+                literal_id = lit_match.group("id")
+                if known_literal_ids and literal_id not in known_literal_ids:
+                    raise ValueError("accepted literal id is not in the encoding")
+                current_lits.add(literal_id)
+                continue
+            if token not in _CLINGO_CONTROL_TOKENS and not token.isdigit():
+                raise ValueError(f"unexpected clingo output token: {token}")
 
-    if current is not None:
-        extensions.append(frozenset(current))
+    if current_args is not None and current_lits is not None:
+        answer_sets.append((frozenset(current_args), frozenset(current_lits)))
 
-    return tuple(
-        sorted(
-            set(extensions),
-            key=lambda extension: (len(extension), tuple(sorted(extension))),
-        )
+    answer_sets = sorted(
+        set(answer_sets),
+        key=lambda item: (len(item[0]), tuple(sorted(item[0])), tuple(sorted(item[1]))),
+    )
+    return (
+        tuple(extension for extension, _literal_ids in answer_sets),
+        tuple(literal_ids for _extension, literal_ids in answer_sets),
     )
 
 
