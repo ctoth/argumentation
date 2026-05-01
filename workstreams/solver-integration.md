@@ -117,8 +117,24 @@ Key planning consequences from those notes:
 
 Tests are the control surface for this workstream. Red/green means more than
 one fixture turning green: every solver behavior must be pinned by deterministic
-fixtures, generated properties, and differential oracle checks before it is
-called complete.
+fixtures, paper/source-derived generated properties, and differential oracle
+checks before it is called complete.
+
+Generated properties must be useful, not decorative. A property is useful only
+if it encodes one of:
+
+- a definition, proposition, theorem, algorithm invariant, or complexity-neutral
+  semantic equivalence from a cited paper after the relevant page-image reread;
+- an official protocol rule from an ICCMA report or current competition page;
+- an already-implemented native oracle contract that this workstream is wiring
+  to a solver backend;
+- a documented package boundary invariant, such as unsupported tasks returning
+  typed unavailable before subprocess invocation.
+
+Do not add arbitrary graph folklore, "seems plausible" monotonicity, or broad
+metamorphic tests unless the named paper/source states the law and its
+preconditions. Every generated property must cite the source in the test name or
+an adjacent comment.
 
 ### Required Test Shapes
 
@@ -126,21 +142,23 @@ Every implementation slice must include:
 
 - at least one deterministic fixture test for the exact bug, protocol behavior,
   or API contract being introduced;
-- at least one Hypothesis property unless the slice is pure documentation or a
-  parser branch whose full input space is already covered by fixture/fuzz
-  cases;
+- at least one paper/source-derived Hypothesis property unless the slice is pure
+  documentation or a parser branch whose full input space is already covered by
+  source-backed fixture/fuzz cases;
 - a negative test for the failure mode most likely to cause overclaiming;
 - a differential test against the native oracle for every solver success path
   where a native oracle exists.
 
-If a slice cannot reasonably include a Hypothesis property, the red commit must
-say why in the test name or adjacent comment. "The fixture passes" is not enough
-for solver work.
+If a slice cannot reasonably include a useful paper/source-derived Hypothesis
+property, the red commit must say why in the test name or adjacent comment.
+"The fixture passes" is not enough for solver work. Do not substitute random
+properties just to satisfy the rule.
 
 ### Shared Strategy Library
 
-Build reusable strategies as soon as two tests need the same generator. Prefer
-small, bounded strategies that finish quickly under full-suite runs:
+Build reusable strategies as soon as two useful properties need the same
+generator. Prefer small, bounded strategies that finish quickly under full-suite
+runs:
 
 - Dung AFs with 0-6 arguments and generated attack relations.
 - Numeric ICCMA AFs with contiguous argument IDs.
@@ -153,14 +171,18 @@ small, bounded strategies that finish quickly under full-suite runs:
 - Protocol-output strings for ICCMA DC/DS/SE outputs, including malformed
   witness lines.
 
-Strategies must generate edge cases intentionally: empty frameworks,
-self-attacks, isolated arguments, duplicate-looking but distinct IDs, no
-extension cases, multiple-extension cases, and unsupported task/semantics pairs.
+Strategies must generate source-relevant edge cases intentionally: empty
+frameworks where the semantics/protocol defines them, self-attacks where the
+paper examples or semantics permit them, isolated arguments where the source
+states their behavior, duplicate-looking but distinct IDs for parser/protocol
+rules, no-extension cases, multiple-extension cases, and unsupported
+task/semantics pairs.
 
 ### Oracle Properties
 
 For every external or optional backend, generated tests must check the strongest
-applicable oracle property:
+applicable oracle property. These properties are useful because they are exactly
+the solver contract this workstream is implementing:
 
 - enumeration success equals the native extension set;
 - single-extension success is either no extension when the native set is empty
@@ -176,18 +198,38 @@ For partial or approximate semantics, tests must state the weaker oracle
 explicitly; do not reuse exact-oracle assertions when the backend intentionally
 returns approximate answers.
 
-### Metamorphic Properties
+### Source-Derived Properties
 
-Every formalism-specific solver surface should accumulate metamorphic tests:
+Every formalism-specific solver surface should accumulate generated properties
+that come from cited papers, protocol reports, or native correspondence claims.
+Examples of acceptable properties:
 
-- argument or atom renaming preserves answers up to the same renaming;
-- parse/write round trips preserve native semantics;
-- adding an isolated argument behaves according to the target semantics;
-- disjoint union decomposes where the semantics supports that property;
-- singleton-tail SETAFs reduce to Dung AFs;
-- flat ABA projection to Dung agrees with native ABA semantics where the module
-  claims that correspondence;
-- ADF-encoded Dung AFs agree with Dung for implemented ADF semantics.
+- ICCMA 2023 output rule: DC accepted output with a certificate must contain
+  the query argument; DS rejected output with a counterexample must omit the
+  query argument; SE output is one witness or `NO`.
+- ICCMA 2023 input-format rule: numeric AF files use declared, in-range,
+  contiguous argument IDs.
+- Niskanen and Järvisalo 2020 / Dung 1995: SAT-backed stable results satisfy
+  conflict-freeness and attack every argument outside the extension.
+- Niskanen and Järvisalo 2020: SAT-backed admissible results are conflict-free
+  and defend every accepted argument.
+- Niskanen and Järvisalo 2020: grounded reasoning is the least fixed point of
+  the Dung characteristic operator; any SAT/unit-propagation route must agree
+  with the native grounded oracle on generated AFs.
+- ICCMA task contract: SE is a single-extension witness task, not full
+  enumeration.
+- Järvisalo 2025 correctness-verification lesson: solver certificates must be
+  independently checked by a reference implementation on fuzzed small inputs.
+- Bondarenko 1997 / Toni 2014 flat ABA correspondence: flat ABA solver
+  witnesses agree with the native ABA semantics and its AF projection where the
+  package claims that projection.
+- Brewka and Woltran 2010/2013 ADF reduction: ADF-encoded Dung AFs agree with
+  Dung for the implemented semantics.
+- SETAF definition: singleton-tail SETAFs reduce to the corresponding Dung AF
+  for the semantics implemented by both modules.
+- Lehtonen 2020/2024 ASPIC+ ASP encoding: clingo-backed grounded ASPIC+
+  conclusions agree with the package's materialized ASPIC-to-Dung grounded
+  reference on generated tiny theories satisfying the paper preconditions.
 
 Only encode metamorphic laws that are true for the named semantics and paper
 preconditions. If the law needs a precondition, generate only inputs satisfying
@@ -196,7 +238,7 @@ that precondition.
 ### Protocol Fuzzing
 
 Every subprocess adapter must have generated or table-driven malformed-output
-tests for:
+tests derived from the official protocol grammar for:
 
 - missing answer line;
 - unknown answer token;
@@ -379,7 +421,7 @@ TDD slices:
 Acceptance:
 
 - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
-- At least one Hypothesis protocol-output property is present.
+- At least one ICCMA-source-derived protocol-output property is present.
 - At least one generated multi-extension AF test proves SE is not enumeration.
 - `uv run pyright src`
 - `git diff --check`
@@ -399,8 +441,9 @@ Target architecture:
 TDD slices:
 
 1. Red: `solve_dung_extensions(..., backend="native")` succeeds.
-   Include a generated Dung AF property showing `"native"` enumeration equals
-   direct `dung.py` semantics for stable, preferred, complete, and grounded.
+   Include a Dung/Niskanen-source-derived generated AF property showing
+   `"native"` enumeration equals direct `dung.py` semantics for stable,
+   preferred, complete, and grounded.
 2. Green: rename the native dispatch path from `"labelling"` to `"native"` and
    update every caller/test/doc. Delete the `"labelling"` production path unless
    the user explicitly requires compatibility.
@@ -417,7 +460,8 @@ Acceptance:
 
 - `uv run pytest -q tests/test_solver_availability.py tests/test_solver_adapters.py`
 - Native backend property tests cover generated Dung AFs under every native
-  semantics exposed through this solver surface.
+  semantics exposed through this solver surface, with each property tied to the
+  relevant Dung/Niskanen semantic contract.
 - Unsupported/misconfigured backend tests assert subprocess is not called.
 - README and architecture no longer mention `"labelling"` as a public backend
   unless intentionally deferred.
@@ -492,8 +536,8 @@ TDD slices:
    - semi-stable;
    - stage;
    - ideal.
-   Each semantics starts with a generated property comparing the encoding or
-   SAT-derived result to the native `dung.py` oracle on small AFs.
+   Each semantics starts with a paper-derived generated property comparing the
+   encoding or SAT-derived result to the native `dung.py` oracle on small AFs.
 4. Red: acceptance tasks reduce to SAT by adding query/negated-query
    constraints and agree with native semantics on generated small AFs.
 5. Green: acceptance reduction.
@@ -772,11 +816,11 @@ Red commit:
   unavailable/process/protocol result classes.
 - Tests proving protocol errors remain protocol errors through
   `argumentation.solver`.
-- Hypothesis property generating malformed ICCMA outputs that must produce
-  protocol errors.
-- Hypothesis property generating small AFs with multiple native extensions,
-  proving single-extension solver results cannot satisfy enumeration result
-  contracts.
+- ICCMA-source-derived Hypothesis property generating malformed ICCMA outputs
+  that must produce protocol errors.
+- ICCMA task-contract Hypothesis property generating small AFs with multiple
+  native extensions, proving single-extension solver results cannot satisfy
+  enumeration result contracts.
 
 Green commit:
 
