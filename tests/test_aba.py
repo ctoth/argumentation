@@ -188,6 +188,58 @@ def test_solve_aba_acceptance_stable_sat_matches_native_oracle(
         )
 
 
+@given(flat_aba_frameworks(), st.sampled_from(["complete", "preferred"]))
+@settings(deadline=10000, max_examples=40)
+def test_solve_aba_single_extension_support_sat_matches_native_oracle(
+    framework: ABAFramework,
+    semantics: str,
+) -> None:
+    native_extensions = ABA_EXTENSION_ORACLES[semantics](framework)
+
+    result = solve_aba_single_extension(framework, semantics=semantics, backend="sat")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    if result.extension is None:
+        assert native_extensions == ()
+    else:
+        assert result.extension in native_extensions
+
+
+@given(
+    flat_aba_frameworks(),
+    st.sampled_from(["complete", "preferred"]),
+    st.sampled_from(["credulous", "skeptical"]),
+)
+@settings(deadline=10000, max_examples=60)
+def test_solve_aba_acceptance_support_sat_matches_native_oracle(
+    framework: ABAFramework,
+    semantics: str,
+    task: str,
+) -> None:
+    query = sorted(framework.language, key=repr)[0]
+    native_extensions = ABA_EXTENSION_ORACLES[semantics](framework)
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics=semantics,
+        task=task,
+        query=query,
+        backend="sat",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    if task == "credulous":
+        assert result.answer is any(
+            native_aba.derives(framework, extension, query)
+            for extension in native_extensions
+        )
+    else:
+        assert result.answer is all(
+            native_aba.derives(framework, extension, query)
+            for extension in native_extensions
+        )
+
+
 def test_solve_aba_single_extension_iccma_returns_verified_witness(monkeypatch) -> None:
     framework = _flat_aba(1, frozenset())
 
