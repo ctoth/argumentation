@@ -31,8 +31,8 @@ SolverBackendError = SolverProcessError
 
 
 @dataclass(frozen=True)
-class ICCMAAFBackend:
-    """Explicit ICCMA 2023 AF subprocess backend for Dung extension queries."""
+class ICCMAConfig:
+    """ICCMA subprocess configuration for solver backends."""
 
     binary: str
     timeout_seconds: float = 30.0
@@ -67,22 +67,23 @@ def solve_dung_extensions(
     framework: ArgumentationFramework,
     *,
     semantics: str,
-    backend: str | ICCMAAFBackend = "labelling",
+    backend: str = "native",
+    iccma: ICCMAConfig | None = None,
 ) -> ExtensionSolverResult:
     """Solve Dung extension queries through a package or external backend."""
-    if isinstance(backend, ICCMAAFBackend):
+    if backend == "iccma":
         return SolverBackendUnavailable(
-            backend=backend.binary,
+            backend=iccma.binary if iccma is not None else "iccma",
             install_hint="Use solve_dung_single_extension for ICCMA AF SE tasks.",
             reason="ICCMA AF SE tasks return one extension witness, not enumeration",
         )
-    if backend == "labelling":
+    if backend == "native":
         return ExtensionSolverSuccess(
             _sorted_extensions(_dung_extensions(framework, semantics))
         )
     return SolverBackendUnavailable(
         backend=backend,
-        install_hint="Use backend='labelling'.",
+        install_hint="Use backend='native'.",
         reason=f"unknown backend: {backend!r}",
     )
 
@@ -91,19 +92,22 @@ def solve_dung_single_extension(
     framework: ArgumentationFramework,
     *,
     semantics: str,
-    backend: str | ICCMAAFBackend = "labelling",
+    backend: str = "native",
+    iccma: ICCMAConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one Dung extension witness query."""
-    if isinstance(backend, ICCMAAFBackend):
-        return _solve_iccma_dung_single_extension(framework, semantics, backend)
-    if backend == "labelling":
+    if backend == "iccma":
+        if iccma is None:
+            return _missing_iccma_config()
+        return _solve_iccma_dung_single_extension(framework, semantics, iccma)
+    if backend == "native":
         extensions = _sorted_extensions(_dung_extensions(framework, semantics))
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
         )
     return SolverBackendUnavailable(
         backend=backend,
-        install_hint="Use backend='labelling'.",
+        install_hint="Use backend='native'.",
         reason=f"unknown backend: {backend!r}",
     )
 
@@ -114,19 +118,30 @@ def solve_dung_acceptance(
     semantics: str,
     task: str,
     query: str,
-    backend: str | ICCMAAFBackend = "labelling",
+    backend: str = "native",
+    iccma: ICCMAConfig | None = None,
 ) -> AcceptanceSolverResult:
     """Solve Dung credulous or skeptical acceptance queries."""
     if query not in framework.arguments:
         raise ValueError(f"query argument is not in framework: {query!r}")
-    if isinstance(backend, ICCMAAFBackend):
-        return _solve_iccma_dung_acceptance(framework, semantics, task, query, backend)
-    if backend == "labelling":
+    if backend == "iccma":
+        if iccma is None:
+            return _missing_iccma_config()
+        return _solve_iccma_dung_acceptance(framework, semantics, task, query, iccma)
+    if backend == "native":
         return _solve_native_dung_acceptance(framework, semantics, task, query)
     return SolverBackendUnavailable(
         backend=backend,
-        install_hint="Use backend='labelling'.",
+        install_hint="Use backend='native'.",
         reason=f"unknown backend: {backend!r}",
+    )
+
+
+def _missing_iccma_config() -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="iccma",
+        reason="missing ICCMA solver configuration",
+        install_hint="Pass iccma=ICCMAConfig(binary=...).",
     )
 
 
@@ -161,7 +176,7 @@ def _solve_native_dung_acceptance(
 def _solve_iccma_dung_single_extension(
     framework: ArgumentationFramework,
     semantics: str,
-    backend: ICCMAAFBackend,
+    backend: ICCMAConfig,
 ) -> SingleExtensionSolverResult:
     result = iccma_af.solve_af_extensions(
         framework=framework,
@@ -185,7 +200,7 @@ def _solve_iccma_dung_acceptance(
     semantics: str,
     task: str,
     query: str,
-    backend: ICCMAAFBackend,
+    backend: ICCMAConfig,
 ) -> AcceptanceSolverResult:
     result = iccma_af.solve_af_acceptance(
         framework=framework,
