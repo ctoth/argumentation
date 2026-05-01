@@ -3,6 +3,7 @@
 from argumentation import (
     af_revision,
     aba,
+    aba_asp,
     aba_sat,
     accrual,
     adf,
@@ -44,6 +45,7 @@ from argumentation import (
 __all__ = [
     "af_revision",
     "aba",
+    "aba_asp",
     "aba_sat",
     "accrual",
     "adf",
