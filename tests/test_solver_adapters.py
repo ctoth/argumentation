@@ -729,9 +729,46 @@ def test_iccma_aba_adapter_invokes_acceptance_with_query_atom(monkeypatch) -> No
     assert calls and calls[0][-2:] == ["-a", "1"]
 
 
+def test_iccma_aba_adapter_accepts_python_module_command(monkeypatch) -> None:
+    framework = aba_framework(1)
+    calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        calls.append(command)
+        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.iccma_cli"]
+        assert command[5:8] == ["-p", "SE-ST", "-f"]
+        assert command[8].endswith(".aba")
+        assert capture_output is True
+        assert text is True
+        assert timeout == 5.0
+        assert check is False
+        return SimpleNamespace(returncode=0, stdout="w 1\n", stderr="")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.subprocess.run",
+        fake_run,
+    )
+
+    result = solve_iccma_aba_extensions(
+        framework,
+        semantics="stable",
+        binary="uv run python -m argumentation.iccma_cli",
+        timeout_seconds=5.0,
+    )
+
+    assert isinstance(result, ICCMAABASolverSuccess)
+    assert result.extensions == (frozenset({literal("a1")}),)
+    assert calls
+
+
 @given(st.integers(min_value=2, max_value=5))
 @settings(deadline=10000, max_examples=20)
-def test_iccma_aba_se_witness_must_be_native_extension(size: int) -> None:
+def test_iccma_aba_se_witness_must_be_protocol_valid_assumptions(size: int) -> None:
     framework = aba_framework(size)
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
@@ -753,8 +790,8 @@ def test_iccma_aba_se_witness_must_be_native_extension(size: int) -> None:
             binary="fake-aspforaba",
         )
 
-    assert isinstance(result, ICCMAABASolverProtocolError)
-    assert result.stdout == "w 1\n"
+    assert isinstance(result, ICCMAABASolverSuccess)
+    assert result.extensions == (frozenset({literal("a1")}),)
 
 
 @given(st.from_regex(r"[A-Za-z_]{1,12}", fullmatch=True))
