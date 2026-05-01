@@ -8,7 +8,11 @@ from argumentation import aba as aba_semantics
 from argumentation import adf as adf_semantics
 from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
-from argumentation.aba_sat import sat_stable_extension as sat_aba_stable_extension
+from argumentation.aba_sat import (
+    sat_stable_extension as sat_aba_stable_extension,
+    support_acceptance as sat_aba_support_acceptance,
+    support_extensions as sat_aba_support_extensions,
+)
 from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
 from argumentation.dung import (
@@ -121,15 +125,22 @@ def solve_aba_single_extension(
     """Solve one flat ABA extension witness query."""
     backend = _auto_aba_backend(backend, semantics)
     if backend == "sat":
+        if not isinstance(framework, ABAFramework):
+            return _aba_sat_requires_flat_framework()
         if semantics == "stable":
-            if not isinstance(framework, ABAFramework):
-                return _aba_sat_requires_flat_framework()
             try:
                 return SingleExtensionSolverSuccess(
                     extension=sat_aba_stable_extension(framework),
                 )
             except RuntimeError as exc:
                 return _aba_sat_runtime_unavailable(exc)
+        if semantics in {"complete", "preferred"}:
+            extensions = _sorted_object_extensions(
+                sat_aba_support_extensions(framework, semantics)
+            )
+            return SingleExtensionSolverSuccess(
+                extension=extensions[0] if extensions else None,
+            )
         return _aba_sat_unsupported_semantics(semantics)
     if backend == "native":
         extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
@@ -163,13 +174,25 @@ def solve_aba_acceptance(
         raise ValueError(f"query literal is not in framework language: {query!r}")
     backend = _auto_aba_backend(backend, semantics)
     if backend == "sat":
+        if not isinstance(framework, ABAFramework):
+            return _aba_sat_requires_flat_framework()
         if semantics == "stable":
-            if not isinstance(framework, ABAFramework):
-                return _aba_sat_requires_flat_framework()
             try:
                 return _solve_sat_stable_aba_acceptance(framework, task, query)
             except RuntimeError as exc:
                 return _aba_sat_runtime_unavailable(exc)
+        if semantics in {"complete", "preferred"}:
+            answer, witness = sat_aba_support_acceptance(
+                framework,
+                semantics=semantics,
+                task=task,
+                query=query,
+            )
+            return AcceptanceSolverSuccess(
+                answer=answer,
+                witness=witness if task == "credulous" and answer else None,
+                counterexample=witness if task == "skeptical" and not answer else None,
+            )
         return _aba_sat_unsupported_semantics(semantics)
     if backend == "native":
         return _solve_native_aba_acceptance(framework, semantics, task, query)
@@ -312,7 +335,7 @@ def _auto_dung_task_backend(backend: str, semantics: str) -> str:
 
 def _auto_aba_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
-        return "sat" if semantics == "stable" else "native"
+        return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
     return backend
 
 
