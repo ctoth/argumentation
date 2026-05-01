@@ -3,13 +3,37 @@ from __future__ import annotations
 import pytest
 from hypothesis import given, settings
 
-from argumentation.dung import stable_extensions
+from argumentation.dung import (
+    ArgumentationFramework,
+    _attackers_index,
+    admissible,
+    complete_extensions,
+    grounded_extension,
+    ideal_extension,
+    preferred_extensions,
+    semi_stable_extensions,
+    stable_extensions,
+    stage_extensions,
+)
 from argumentation.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,
+    sat_extensions,
     stable_extensions_from_encoding,
 )
 from tests.test_dung import af, argumentation_frameworks
+
+
+SAT_EXTENSION_ORACLES = {
+    "admissible": lambda framework: _admissible_sets(framework),
+    "complete": complete_extensions,
+    "grounded": lambda framework: [grounded_extension(framework)],
+    "preferred": preferred_extensions,
+    "stable": stable_extensions,
+    "semi-stable": semi_stable_extensions,
+    "stage": stage_extensions,
+    "ideal": lambda framework: [ideal_extension(framework)],
+}
 
 
 def test_stable_encoding_uses_deterministic_variable_ids() -> None:
@@ -60,4 +84,71 @@ def test_stable_encoding_matches_brute_force_reference(framework) -> None:
 
     assert set(stable_extensions_from_encoding(encoding)) == set(
         stable_extensions(framework)
+    )
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_extensions_match_native_oracles_for_all_phase_four_semantics(
+    framework: ArgumentationFramework,
+) -> None:
+    for semantics, oracle in SAT_EXTENSION_ORACLES.items():
+        assert set(sat_extensions(framework, semantics)) == set(oracle(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=30)
+def test_sat_extensions_are_invariant_under_argument_renaming(
+    framework: ArgumentationFramework,
+) -> None:
+    renamed = _rename_framework(framework)
+    original_by_renamed = {
+        f"renamed_{argument}": argument
+        for argument in framework.arguments
+    }
+
+    for semantics in SAT_EXTENSION_ORACLES:
+        renamed_extensions = {
+            frozenset(original_by_renamed[argument] for argument in extension)
+            for extension in sat_extensions(renamed, semantics)
+        }
+
+        assert renamed_extensions == set(sat_extensions(framework, semantics))
+
+
+def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
+    attackers_index = _attackers_index(framework.defeats)
+    arguments = sorted(framework.arguments)
+    results: list[frozenset[str]] = []
+    for mask in range(1 << len(arguments)):
+        candidate = frozenset(
+            argument
+            for index, argument in enumerate(arguments)
+            if mask & (1 << index)
+        )
+        if admissible(
+            candidate,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+            attackers_index=attackers_index,
+        ):
+            results.append(candidate)
+    return results
+
+
+def _rename_framework(framework: ArgumentationFramework) -> ArgumentationFramework:
+    renamed = {argument: f"renamed_{argument}" for argument in framework.arguments}
+    return ArgumentationFramework(
+        arguments=frozenset(renamed.values()),
+        defeats=frozenset(
+            (renamed[attacker], renamed[target])
+            for attacker, target in framework.defeats
+        ),
+        attacks=None
+        if framework.attacks is None
+        else frozenset(
+            (renamed[attacker], renamed[target])
+            for attacker, target in framework.attacks
+        ),
     )
