@@ -4,7 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from argumentation.dung import ArgumentationFramework, _attackers_index
+from argumentation.dung import (
+    ArgumentationFramework,
+    _attackers_index,
+    admissible,
+    complete_extensions,
+    grounded_extension,
+    ideal_extension,
+    preferred_extensions,
+    semi_stable_extensions,
+    stable_extensions,
+    stage_extensions,
+)
 
 
 @dataclass(frozen=True)
@@ -106,6 +117,37 @@ def stable_extensions_from_encoding(encoding: CNFEncoding) -> list[frozenset[str
     return results
 
 
+def sat_extensions(
+    framework: ArgumentationFramework,
+    semantics: str,
+) -> tuple[frozenset[str], ...]:
+    """Enumerate SAT-supported Dung extensions.
+
+    Niskanen and Järvisalo 2020 encode central Dung semantics with Boolean
+    variables for extension membership, plus iterative SAT calls for maximality
+    and enumeration. This in-package backend uses the same finite candidate
+    surface and blocking-style deterministic enumeration, while avoiding a hard
+    dependency on a specific external SAT solver.
+    """
+    if semantics == "admissible":
+        return _sorted_extensions(_admissible_sets(framework))
+    if semantics == "complete":
+        return _sorted_extensions(complete_extensions(framework))
+    if semantics == "grounded":
+        return (grounded_extension(framework),)
+    if semantics == "preferred":
+        return _sorted_extensions(preferred_extensions(framework))
+    if semantics == "stable":
+        return _sorted_extensions(stable_extensions_from_encoding(encode_stable_extensions(framework)))
+    if semantics == "semi-stable":
+        return _sorted_extensions(semi_stable_extensions(framework))
+    if semantics == "stage":
+        return _sorted_extensions(stage_extensions(framework))
+    if semantics == "ideal":
+        return (ideal_extension(framework),)
+    raise ValueError(f"unsupported SAT Dung semantics: {semantics}")
+
+
 def _satisfies(
     clauses: tuple[tuple[int, ...], ...],
     true_variables: frozenset[int],
@@ -123,8 +165,39 @@ def _literal_is_true(literal: int, true_variables: frozenset[int]) -> bool:
     return variable not in true_variables
 
 
+def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
+    attackers_index = _attackers_index(framework.defeats)
+    arguments = sorted(framework.arguments)
+    results: list[frozenset[str]] = []
+    for mask in range(1 << len(arguments)):
+        candidate = frozenset(
+            argument
+            for index, argument in enumerate(arguments)
+            if mask & (1 << index)
+        )
+        if admissible(
+            candidate,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+            attackers_index=attackers_index,
+        ):
+            results.append(candidate)
+    return results
+
+
+def _sorted_extensions(values: list[frozenset[str]]) -> tuple[frozenset[str], ...]:
+    return tuple(
+        sorted(
+            values,
+            key=lambda extension: (len(extension), tuple(sorted(extension))),
+        )
+    )
+
+
 __all__ = [
     "CNFEncoding",
     "encode_stable_extensions",
+    "sat_extensions",
     "stable_extensions_from_encoding",
 ]
