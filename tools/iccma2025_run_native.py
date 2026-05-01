@@ -53,6 +53,7 @@ class RunConfig:
     max_af_arguments: int
     max_aba_assumptions: int
     timeout_seconds: float
+    progress: bool
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -72,6 +73,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-aba-assumptions", type=int, default=10)
     parser.add_argument("--timeout-seconds", type=float, default=5.0)
     parser.add_argument("--label", default="native-bounded")
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable per-row JSON progress logs on stderr.",
+    )
     args = parser.parse_args(argv)
 
     config = RunConfig(
@@ -81,6 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         max_af_arguments=args.max_af_arguments,
         max_aba_assumptions=args.max_aba_assumptions,
         timeout_seconds=args.timeout_seconds,
+        progress=not args.no_progress,
     )
     rows = run_native(config)
     output_dir = config.root / "runs"
@@ -102,15 +109,38 @@ def main(argv: list[str] | None = None) -> int:
 def run_native(config: RunConfig) -> list[dict[str, Any]]:
     manifest = load_json(config.root / "manifests" / "iccma-2025-manifest.json")
     task_matrix = load_json(config.root / "manifests" / "iccma-2025-task-matrix.json")
+    jobs = [
+        (instance, task)
+        for instance in manifest
+        if instance["kind"] in {"af", "aba"}
+        for task in task_matrix
+        if task["instance_kind"] == instance["kind"]
+    ]
     rows: list[dict[str, Any]] = []
-    for instance in manifest:
-        if instance["kind"] not in {"af", "aba"}:
-            continue
-        for task in task_matrix:
-            if task["instance_kind"] != instance["kind"]:
-                continue
-            rows.append(run_or_skip(config, instance, task))
+    for index, (instance, task) in enumerate(jobs, start=1):
+        row = run_or_skip(config, instance, task)
+        rows.append(row)
+        if config.progress:
+            log_progress(row, index=index, total=len(jobs))
     return rows
+
+
+def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
+    event = {
+        "event": "iccma_row",
+        "index": index,
+        "total": total,
+        "track": row["track"],
+        "subtrack": row["subtrack"],
+        "instance_kind": row["instance_kind"],
+        "instance": row["instance"],
+        "backend": row["backend"],
+        "status": row["status"],
+        "reason": row["reason"],
+        "elapsed_seconds": row["elapsed_seconds"],
+        "answer": row["answer"],
+    }
+    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
 
 
 def run_or_skip(
