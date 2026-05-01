@@ -30,7 +30,9 @@ from argumentation.sat_encoding import (
     sat_complete_extension,
     sat_extensions,
     sat_preferred_extension,
+    sat_semi_stable_extension,
     sat_stable_extension,
+    sat_stage_extension,
 )
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
@@ -292,6 +294,20 @@ def solve_dung_single_extension(
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "semi-stable":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_semi_stable_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
+        if semantics == "stage":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_stage_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         extensions = sat_extensions(framework, semantics)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
@@ -369,7 +385,11 @@ def _auto_dung_extension_backend(backend: str, semantics: str) -> str:
 
 def _auto_dung_single_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
-        return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
+        return (
+            "sat"
+            if semantics in {"complete", "preferred", "semi-stable", "stable", "stage"}
+            else "native"
+        )
     return backend
 
 
