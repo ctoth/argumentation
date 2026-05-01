@@ -114,20 +114,22 @@ any application-level concepts (storage, persistence, schedulers, CLIs).
 - `argumentation.preference` — Strict-partial-order helpers and elitist
   and democratic preference comparisons (Modgil & Prakken 2018 Def 19).
 - `argumentation.solver` — Typed Dung extension solve results. The supported
-  Dung backend is `labelling`; unknown backend names, including the deleted
-  `z3` backend name, return `SolverBackendUnavailable`.
+  in-package Dung backend is `native`; ICCMA subprocess solving uses
+  `backend="iccma"` plus explicit `ICCMAConfig(...)`; unknown backend names,
+  including the deleted `z3` backend name, return `SolverBackendUnavailable`.
 
 ## Backend policy
 
 Pure Python algorithms are the reference implementation. Dung extension
-enumeration currently has one package-owned execution path: labelling and
-finite set enumeration in `argumentation.dung` / `argumentation.labelling`.
+enumeration currently has one package-owned execution path: finite set
+enumeration in `argumentation.dung`, with `argumentation.labelling` used by
+the semantic implementations that require labelling projections.
 
 `argumentation.solver.solve_dung_extensions` exposes that path through the
-backend name `labelling`. Other backend names return
-`SolverBackendUnavailable`; this includes the old `z3` backend name. The
-deleted `argumentation.dung_z3` module is not part of the current public
-surface.
+backend name `native`. Other extension-enumeration backend names return
+`SolverBackendUnavailable`; this includes the old `z3` backend name and the
+old `labelling` backend name. The deleted `argumentation.dung_z3` module is
+not part of the current public surface.
 
 ## Z3 usage
 
