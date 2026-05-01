@@ -18,6 +18,7 @@ from argumentation.dung import (
 from argumentation.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,
+    sat_complete_extension,
     sat_extensions,
     stable_extensions_from_encoding,
 )
@@ -77,6 +78,15 @@ def test_stable_encoding_models_round_trip_to_extensions() -> None:
     }
 
 
+def test_sat_complete_extension_handles_required_labels() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+
+    assert sat_complete_extension(framework) == frozenset({"a"})
+    assert sat_complete_extension(framework, require_in="a") == frozenset({"a"})
+    assert sat_complete_extension(framework, require_out="a") is None
+    assert sat_complete_extension(framework, require_out="b") == frozenset({"a"})
+
+
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:
@@ -94,6 +104,43 @@ def test_sat_extensions_match_native_oracles_for_all_phase_four_semantics(
 ) -> None:
     for semantics, oracle in SAT_EXTENSION_ORACLES.items():
         assert set(sat_extensions(framework, semantics)) == set(oracle(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_complete_extension_returns_native_complete_witness(
+    framework: ArgumentationFramework,
+) -> None:
+    witness = sat_complete_extension(framework)
+
+    assert witness in set(complete_extensions(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_complete_extension_required_labels_match_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(complete_extensions(framework))
+
+    for query in framework.arguments:
+        required_in = sat_complete_extension(framework, require_in=query)
+        native_with_query = {
+            extension for extension in native_extensions if query in extension
+        }
+        if native_with_query:
+            assert required_in in native_with_query
+        else:
+            assert required_in is None
+
+        required_out = sat_complete_extension(framework, require_out=query)
+        native_without_query = {
+            extension for extension in native_extensions if query not in extension
+        }
+        if native_without_query:
+            assert required_out in native_without_query
+        else:
+            assert required_out is None
 
 
 @given(argumentation_frameworks(max_args=4))
