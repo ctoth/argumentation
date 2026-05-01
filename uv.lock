@@ -140,6 +140,9 @@ source = { editable = "." }
 asp = [
     { name = "clingo" },
 ]
+grounding = [
+    { name = "gunray" },
+]
 z3 = [
     { name = "z3-solver" },
 ]
@@ -147,6 +150,7 @@ z3 = [
 [package.dev-dependencies]
 dev = [
     { name = "clingo" },
+    { name = "gunray" },
     { name = "hypothesis" },
     { name = "pyright" },
     { name = "pytest" },
@@ -157,19 +161,26 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "clingo", marker = "extra == 'asp'", specifier = ">=5.7" },
+    { name = "gunray", marker = "extra == 'grounding'", git = "https://github.com/ctoth/gunray.git" },
     { name = "z3-solver", marker = "extra == 'z3'", specifier = ">=4.12" },
 ]
-provides-extras = ["z3", "asp"]
+provides-extras = ["z3", "asp", "grounding"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "clingo", specifier = ">=5.7" },
+    { name = "gunray", git = "https://github.com/ctoth/gunray.git" },
     { name = "hypothesis", specifier = ">=6.0" },
     { name = "pyright", specifier = ">=1.1.390" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-timeout", specifier = ">=2.3" },
     { name = "z3-solver", specifier = ">=4.12" },
 ]
+
+[[package]]
+name = "gunray"
+version = "0.1.0"
+source = { git = "https://github.com/ctoth/gunray.git#64c4f3d340e0ac54651a9e5dd94bdf4df3d6cb7e" }
 
 [[package]]
 name = "hypothesis"
