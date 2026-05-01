@@ -430,8 +430,8 @@ def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(monkeypatch)
 
 @given(st.integers(min_value=1, max_value=5))
 @settings(deadline=10000, max_examples=20)
-def test_iccma_se_witness_must_be_native_extension(size: int) -> None:
-    # ICCMA witness checking requires SE witnesses to be extensions.
+def test_iccma_se_stable_witness_must_pass_local_certificate_check(size: int) -> None:
+    # Stable SE witnesses must attack every argument outside the witness.
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
@@ -459,8 +459,10 @@ def test_iccma_se_witness_must_be_native_extension(size: int) -> None:
 
 @given(st.integers(min_value=2, max_value=5))
 @settings(deadline=10000, max_examples=20)
-def test_iccma_dc_yes_witness_must_be_native_extension(size: int) -> None:
-    # ICCMA DC YES certificates must contain the query and be extensions.
+def test_iccma_dc_yes_stable_witness_must_pass_local_certificate_check(
+    size: int,
+) -> None:
+    # Stable DC YES certificates must contain the query and attack every outsider.
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
@@ -490,8 +492,10 @@ def test_iccma_dc_yes_witness_must_be_native_extension(size: int) -> None:
 
 @given(st.integers(min_value=2, max_value=5))
 @settings(deadline=10000, max_examples=20)
-def test_iccma_ds_no_counterexample_must_be_native_extension(size: int) -> None:
-    # ICCMA DS NO certificates must omit the query and be extensions.
+def test_iccma_ds_no_stable_counterexample_must_pass_local_certificate_check(
+    size: int,
+) -> None:
+    # Stable DS NO counterexamples must omit the query and attack every outsider.
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
