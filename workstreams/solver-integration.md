@@ -1047,6 +1047,40 @@ Phase 7 ASPIC+ clingo checkpoint:
   - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
   - `git diff --check` passed.
 
+Phase 8 differential harness and benchmark-smoke checkpoint:
+
+- Source gate:
+  - Reread ICCMA 2023 correctness/fuzz page image 11 for DC/DS/SE witness
+    checks, dynamic fuzzing, and ABA acceptance cross-checks.
+  - Reread ICCMA 2023 witness-verification and benchmark page image 18 for
+    SAT-backed extension checking, ideal-extension caveats, and benchmark
+    construction.
+  - Reread ICCMA 2023 VBS/ranking page image 21 for ABA VBS contribution and
+    PAR-2 ranking context.
+  - Reread `docs/iccma-data.md` and `docs/iccma-2025-data.md`; both keep data
+    preparation path-free and solver-free by default.
+- Red/fix commits: `497be25`, `e4039eb`.
+  - Added generated Dung differential properties comparing native and SAT
+    enumeration results.
+  - Added generated flat ABA differential properties for acceptance results.
+  - Added a task-mismatch assertion proving enumeration and single-extension
+    results are not comparable contracts.
+  - Added a tiny JSON manifest smoke test that reads benchmark metadata without
+    invoking any external solver.
+  - Added capability-matrix tests requiring unsupported combinations to carry
+    explicit reasons.
+- Green commits: `73f768a`, `333b270`.
+  - Added `argumentation.solver_differential`.
+  - Added task-aware `assert_solver_results_agree(...)`.
+  - Added path-free benchmark manifest loading and smoke results.
+  - Added a declared solver capability matrix covering current native,
+    ICCMA, SAT, clingo, ADF, SETAF, and unsupported backend combinations.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_solver_adapters.py tests/test_solver_availability.py tests/test_solver_differential.py`
+    reported 55 passed, 2 skipped in 1.16s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
