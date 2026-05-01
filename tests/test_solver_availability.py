@@ -31,6 +31,9 @@ NATIVE_EXTENSION_ORACLES = {
     "grounded": lambda framework: [grounded_extension(framework)],
     "preferred": preferred_extensions,
     "stable": stable_extensions,
+    "semi-stable": solver_module.semi_stable_extensions,
+    "stage": solver_module.stage_extensions,
+    "ideal": lambda framework: [solver_module.ideal_extension(framework)],
 }
 
 
@@ -79,6 +82,68 @@ def test_solve_dung_extensions_rejects_deleted_z3_backend() -> None:
     assert isinstance(result, SolverBackendUnavailable)
     assert result.backend == "z3"
     assert result.install_hint == "Use backend='native'."
+
+
+def test_solve_dung_extensions_reports_unavailable_external_sat_backend() -> None:
+    framework = ArgumentationFramework(arguments=frozenset({"a"}), defeats=frozenset())
+
+    result = solve_dung_extensions(
+        framework,
+        semantics="stable",
+        backend="sat",
+        sat=solver_module.SATConfig(require_external=True),
+    )
+
+    assert isinstance(result, SolverBackendUnavailable)
+    assert result.backend == "sat"
+    assert result.reason == "external SAT backend is not configured"
+
+
+@given(
+    argumentation_frameworks(max_args=4),
+    st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
+)
+@settings(deadline=10000, max_examples=40)
+def test_sat_backend_enumeration_matches_native_dung_oracles(
+    framework: ArgumentationFramework,
+    semantics: str,
+) -> None:
+    result = solve_dung_extensions(framework, semantics=semantics, backend="sat")
+
+    assert isinstance(result, ExtensionSolverSuccess)
+    assert set(result.extensions) == set(NATIVE_EXTENSION_ORACLES[semantics](framework))
+
+
+@given(
+    argumentation_frameworks(max_args=4),
+    st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
+)
+@settings(deadline=10000, max_examples=40)
+def test_sat_backend_acceptance_matches_native_backend(
+    framework: ArgumentationFramework,
+    semantics: str,
+) -> None:
+    query = sorted(framework.arguments)[0]
+
+    for task in ("credulous", "skeptical"):
+        sat_result = solve_dung_acceptance(
+            framework,
+            semantics=semantics,
+            task=task,
+            query=query,
+            backend="sat",
+        )
+        native_result = solve_dung_acceptance(
+            framework,
+            semantics=semantics,
+            task=task,
+            query=query,
+            backend="native",
+        )
+
+        assert isinstance(sat_result, AcceptanceSolverSuccess)
+        assert isinstance(native_result, AcceptanceSolverSuccess)
+        assert sat_result == native_result
 
 
 def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
