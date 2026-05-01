@@ -9,8 +9,10 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 import argumentation.solver as solver_module
+from argumentation.solver_results import SolverUnavailable
 from argumentation.dung import ArgumentationFramework
 from argumentation.dung import stable_extensions as native_stable_extensions
+from argumentation.solver_adapters import iccma_af
 from argumentation.solver_adapters.iccma_af import (
     ICCMAOutputKind,
     ICCMAOutputParseError,
@@ -229,6 +231,189 @@ def test_iccma_af_adapter_reports_protocol_error(monkeypatch) -> None:
 
     assert isinstance(result, ICCMASolverProtocolError)
     assert result.stdout == "maybe\n"
+
+
+OFFICIAL_ICCMA_2023_MAIN_AF_PROBLEMS = {
+    ("DC", "complete"),
+    ("DC", "stable"),
+    ("DC", "semi-stable"),
+    ("DC", "stage"),
+    ("DS", "preferred"),
+    ("DS", "stable"),
+    ("DS", "semi-stable"),
+    ("DS", "stage"),
+    ("SE", "preferred"),
+    ("SE", "stable"),
+    ("SE", "semi-stable"),
+    ("SE", "stage"),
+    ("SE", "ideal"),
+}
+
+
+@given(
+    st.sampled_from(["DC", "DS", "SE"]),
+    st.sampled_from(
+        [
+            "complete",
+            "grounded",
+            "preferred",
+            "stable",
+            "semi-stable",
+            "stage",
+            "ideal",
+            "cf2",
+        ]
+    ),
+)
+@settings(deadline=10000, max_examples=60)
+def test_iccma_af_capability_table_matches_official_2023_main_track(
+    task: str,
+    semantics: str,
+) -> None:
+    assert iccma_af.supports_af_problem(task, semantics) is (
+        (task, semantics) in OFFICIAL_ICCMA_2023_MAIN_AF_PROBLEMS
+    )
+
+
+def test_iccma_af_rejects_unsupported_se_without_subprocess(monkeypatch) -> None:
+    calls = []
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(*args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout="w 1\n", stderr="")
+
+    monkeypatch.setattr("argumentation.solver_adapters.iccma_af.subprocess.run", fake_run)
+
+    result = solve_af_extensions(
+        af({"1"}, set()),
+        semantics="complete",
+        binary="fake-iccma-solver",
+    )
+
+    assert isinstance(result, SolverUnavailable)
+    assert result.reason == "unsupported ICCMA 2023 AF problem: SE-CO"
+    assert calls == []
+
+
+def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(monkeypatch) -> None:
+    calls = []
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(*args, **kwargs):
+        calls.append((args, kwargs))
+        return SimpleNamespace(returncode=0, stdout="YES\nw 1\n", stderr="")
+
+    monkeypatch.setattr("argumentation.solver_adapters.iccma_af.subprocess.run", fake_run)
+
+    result = solve_af_acceptance(
+        af({"1"}, set()),
+        semantics="preferred",
+        task="credulous",
+        query="1",
+        binary="fake-iccma-solver",
+    )
+
+    assert isinstance(result, SolverUnavailable)
+    assert result.reason == "unsupported ICCMA 2023 AF problem: DC-PR"
+    assert calls == []
+
+
+@given(st.integers(min_value=1, max_value=5))
+@settings(deadline=10000, max_examples=20)
+def test_iccma_se_witness_must_be_native_extension(size: int) -> None:
+    # ICCMA witness checking requires SE witnesses to be extensions.
+    framework = af({str(index) for index in range(1, size + 1)}, set())
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout="w\n",
+                stderr="",
+            ),
+        )
+
+        result = solve_af_extensions(
+            framework,
+            semantics="stable",
+            binary="fake-iccma-solver",
+        )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.stdout == "w\n"
+
+
+@given(st.integers(min_value=2, max_value=5))
+@settings(deadline=10000, max_examples=20)
+def test_iccma_dc_yes_witness_must_be_native_extension(size: int) -> None:
+    # ICCMA DC YES certificates must contain the query and be extensions.
+    framework = af({str(index) for index in range(1, size + 1)}, set())
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout="YES\nw 1\n",
+                stderr="",
+            ),
+        )
+
+        result = solve_af_acceptance(
+            framework,
+            semantics="stable",
+            task="credulous",
+            query="1",
+            binary="fake-iccma-solver",
+        )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.stdout == "YES\nw 1\n"
+
+
+@given(st.integers(min_value=2, max_value=5))
+@settings(deadline=10000, max_examples=20)
+def test_iccma_ds_no_counterexample_must_be_native_extension(size: int) -> None:
+    # ICCMA DS NO certificates must omit the query and be extensions.
+    framework = af({str(index) for index in range(1, size + 1)}, set())
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_af.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout="NO\nw 2\n",
+                stderr="",
+            ),
+        )
+
+        result = solve_af_acceptance(
+            framework,
+            semantics="stable",
+            task="skeptical",
+            query="1",
+            binary="fake-iccma-solver",
+        )
+
+    assert isinstance(result, ICCMASolverProtocolError)
+    assert result.stdout == "NO\nw 2\n"
 
 
 def test_iccma_backend_failures_use_shared_solver_result_classes() -> None:
