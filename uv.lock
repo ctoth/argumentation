@@ -180,7 +180,7 @@ dev = [
 [[package]]
 name = "gunray"
 version = "0.1.0"
-source = { git = "https://github.com/ctoth/gunray.git#64c4f3d340e0ac54651a9e5dd94bdf4df3d6cb7e" }
+source = { git = "https://github.com/ctoth/gunray.git#a06da9c06a8c20262edec56f8a1f55dc1901781d" }
 
 [[package]]
 name = "hypothesis"
