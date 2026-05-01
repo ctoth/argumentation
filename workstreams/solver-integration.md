@@ -906,6 +906,34 @@ Phase 3 ICCMA AF adapter checkpoint:
   - `git diff --check` passed.
   - Optional `ICCMA_AF_SOLVER` smoke remains path-free and skipped when unset.
 
+Phase 4 SAT backend checkpoint:
+
+- Source gate:
+  - Read Niskanen and Järvisalo 2020 page images for Figure 1 SAT encodings
+    and the algorithmic notes for grounded, complete, stable, preferred,
+    semi-stable, stage, and ideal semantics: PDF pages 2-3 generated locally
+    as page images from `kr2020-0082-niskanen-et-al.pdf`.
+  - Did not use Mahmood 2025 or Tang 2025 for this phase; no structure-aware
+    or alternative propositional-logic claims were implemented.
+- Red commits: `ff0b7ae`, `c22e3fc`.
+  - Added generated SAT extension properties for admissible, complete,
+    grounded, preferred, stable, semi-stable, stage, and ideal semantics.
+  - Added renaming-invariance properties for every SAT-supported semantics.
+  - Added SAT backend unavailable, enumeration, and acceptance-reduction tests.
+- Green commits: `15a17fe`, `f87e8d5`.
+  - Added `sat_extensions(...)` as the package-native SAT-style enumeration
+    surface over central Dung semantics, keeping the existing CNF stable
+    encoding and deterministic blocking-style enumeration.
+  - Added `SATConfig` and `backend="sat"` dispatch for Dung enumeration,
+    single-extension, and acceptance queries.
+  - Added a typed deterministic unavailable result for callers requiring an
+    external SAT backend.
+- Acceptance verification:
+  - `uv run pytest -q tests/test_solver_encoding.py tests/test_solver_availability.py tests/test_dung.py`
+    reported 98 passed in 6.32s.
+  - `uv run pyright src` reported 0 errors, 0 warnings, 0 informations.
+  - `git diff --check` passed.
+
 ## First Executable Slice
 
 Target: Phase 1, shared result types only.
