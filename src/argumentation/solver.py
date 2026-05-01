@@ -19,7 +19,7 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.sat_encoding import sat_extensions
-from argumentation.solver_adapters import iccma_af
+from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.solver_results import (
     AcceptanceSuccess,
     ExtensionEnumerationSuccess,
@@ -90,11 +90,7 @@ def solve_aba_single_extension(
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
-        return SolverBackendUnavailable(
-            backend=iccma.binary,
-            reason="ICCMA ABA backend is not implemented yet",
-            install_hint="Use backend='native' until the ICCMA ABA adapter is configured.",
-        )
+        return _solve_iccma_aba_single_extension(framework, semantics, iccma)
     if backend == "aspforaba":
         return _aspforaba_unavailable()
     return SolverBackendUnavailable(
@@ -121,11 +117,7 @@ def solve_aba_acceptance(
     if backend == "iccma":
         if iccma is None:
             return _missing_iccma_config()
-        return SolverBackendUnavailable(
-            backend=iccma.binary,
-            reason="ICCMA ABA backend is not implemented yet",
-            install_hint="Use backend='native' until the ICCMA ABA adapter is configured.",
-        )
+        return _solve_iccma_aba_acceptance(framework, semantics, task, query, iccma)
     if backend == "aspforaba":
         return _aspforaba_unavailable()
     return SolverBackendUnavailable(
@@ -350,6 +342,30 @@ def _solve_iccma_dung_single_extension(
     return result
 
 
+def _solve_iccma_aba_single_extension(
+    framework: ABAInput,
+    semantics: str,
+    backend: ICCMAConfig,
+) -> SingleExtensionSolverResult:
+    if not isinstance(framework, ABAFramework):
+        return _iccma_aba_requires_flat_framework(backend)
+    result = iccma_aba.solve_aba_extensions(
+        framework=framework,
+        semantics=semantics,
+        binary=backend.binary,
+        timeout_seconds=backend.timeout_seconds,
+    )
+    if isinstance(result, iccma_aba.ICCMAABASolverSuccess):
+        return SingleExtensionSolverSuccess(
+            extension=result.witness if not result.output.no_extension else None,
+        )
+    if isinstance(result, iccma_aba.ICCMAABASolverUnavailable):
+        return result
+    if isinstance(result, iccma_aba.ICCMAABASolverError):
+        return result
+    return result
+
+
 def _solve_iccma_dung_acceptance(
     framework: ArgumentationFramework,
     semantics: str,
@@ -377,6 +393,44 @@ def _solve_iccma_dung_acceptance(
     if isinstance(result, iccma_af.ICCMASolverError):
         return result
     return result
+
+
+def _solve_iccma_aba_acceptance(
+    framework: ABAInput,
+    semantics: str,
+    task: str,
+    query: Literal,
+    backend: ICCMAConfig,
+) -> AcceptanceSolverResult:
+    if not isinstance(framework, ABAFramework):
+        return _iccma_aba_requires_flat_framework(backend)
+    result = iccma_aba.solve_aba_acceptance(
+        framework=framework,
+        semantics=semantics,
+        task=task,
+        query=query,
+        binary=backend.binary,
+        timeout_seconds=backend.timeout_seconds,
+    )
+    if isinstance(result, iccma_aba.ICCMAABASolverSuccess):
+        return AcceptanceSolverSuccess(
+            answer=result.answer is True,
+        )
+    if isinstance(result, iccma_aba.ICCMAABASolverUnavailable):
+        return result
+    if isinstance(result, iccma_aba.ICCMAABASolverError):
+        return result
+    return result
+
+
+def _iccma_aba_requires_flat_framework(
+    backend: ICCMAConfig,
+) -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend=backend.binary,
+        reason="ICCMA ABA backend requires a flat ABAFramework",
+        install_hint="Use backend='native' for ABAPlusFramework inputs.",
+    )
 
 
 def _dung_extensions(
