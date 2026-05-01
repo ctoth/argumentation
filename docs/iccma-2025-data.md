@@ -72,5 +72,7 @@ Run AF jobs through an external ICCMA solver:
 uv run tools\iccma2025_run_native.py --backend iccma --iccma-binary path\to\solver.exe --max-af-arguments -1 --max-aba-assumptions 0 --timeout-seconds 1200
 ```
 
-`--max-af-arguments -1` disables the AF size cap. ABA jobs still use the
-package-native ABA path; there is no ABA solver dispatcher yet.
+`--max-af-arguments -1` disables the AF size cap. This runner still solves ABA
+jobs through the package-native ABA path; the library-level `solve_aba_*`
+surfaces separately support ICCMA-compatible ABA subprocess dispatch through
+`ICCMAConfig(...)`.
