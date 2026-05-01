@@ -187,6 +187,14 @@ def test_optional_aspic_backend_absence_is_typed() -> None:
 
 def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatch) -> None:
     system, kb, pref = simple_aspic_theory()
+    expected = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="materialized_reference",
+        semantics="grounded",
+    )
+    accepted_ids = " ".join(f"accepted_arg({arg_id})" for arg_id in expected.extensions[0])
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
@@ -203,7 +211,7 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
         assert check is False
         return SimpleNamespace(
             returncode=0,
-            stdout="Answer: 1\naccepted_arg(a0) accepted_lit(p) accepted_lit(q)\nSATISFIABLE\n",
+            stdout=f"Answer: 1\n{accepted_ids}\nSATISFIABLE\n",
             stderr="",
         )
 
@@ -222,7 +230,7 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
     assert result.status == "success"
     assert result.backend == "clingo"
     assert result.accepted_conclusions == frozenset({Literal(GroundAtom("p")), Literal(GroundAtom("q"))})
-    assert result.accepted_argument_ids == frozenset({"a0"})
+    assert result.accepted_argument_ids == expected.extensions[0]
     assert calls
 
 
@@ -265,7 +273,7 @@ def test_clingo_backend_malformed_answer_set_is_protocol_error(monkeypatch) -> N
         "argumentation.solver_adapters.clingo.subprocess.run",
         lambda *args, **kwargs: SimpleNamespace(
             returncode=0,
-            stdout="Answer: 1\naccepted_lit(unknown)\nSATISFIABLE\n",
+            stdout="Answer: 1\naccepted_arg(unknown)\nSATISFIABLE\n",
             stderr="protocol stderr",
         ),
     )
@@ -280,12 +288,12 @@ def test_clingo_backend_malformed_answer_set_is_protocol_error(monkeypatch) -> N
     )
 
     assert result.status == "protocol_error"
-    assert result.metadata["reason"] == "accepted literal id is not in the ASPIC encoding"
-    assert result.metadata["stdout"] == "Answer: 1\naccepted_lit(unknown)\nSATISFIABLE\n"
+    assert result.metadata["reason"] == "accepted argument id is not in the encoding"
+    assert result.metadata["stdout"] == "Answer: 1\naccepted_arg(unknown)\nSATISFIABLE\n"
     assert result.metadata["stderr"] == "protocol stderr"
 
 
-def test_clingo_backend_reports_unimplemented_semantics_before_subprocess(
+def test_clingo_backend_missing_binary_for_stable_is_typed(
     monkeypatch,
 ) -> None:
     system, kb, pref = simple_aspic_theory()
@@ -306,7 +314,7 @@ def test_clingo_backend_reports_unimplemented_semantics_before_subprocess(
     )
 
     assert result.status == "unavailable_backend"
-    assert result.metadata["reason"] == "ASPIC+ clingo backend supports grounded only"
+    assert result.metadata["reason"] == "binary not found on PATH"
     assert calls == []
 
 
@@ -340,11 +348,16 @@ def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
     theory,
 ) -> None:
     system, kb, pref = theory
-    expected = solve_aspic_grounded(system, kb, pref)
+    expected = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="materialized_reference",
+        semantics="grounded",
+    )
     accepted_ids = " ".join(
-        f"accepted_lit({literal_id})"
-        for literal_id, literal in expected.encoding.literal_by_id.items()
-        if literal in expected.accepted_conclusions
+        f"accepted_arg({arg_id})"
+        for arg_id in expected.extensions[0]
     )
 
     with pytest.MonkeyPatch.context() as monkeypatch:
