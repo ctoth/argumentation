@@ -28,8 +28,8 @@ extension enumeration. The target architecture is:
   `uv run python -m argumentation.iccma_cli`.
 - The 2025 runner routes ABA through `argumentation.solver` for both native and
   ICCMA backends.
-- ABA inside `argumentation.iccma_cli` still uses native exact extension
-  semantics, so real ICCMA ABA rows time out at modest caps.
+- ABA stable tasks inside `argumentation.iccma_cli` use the task-directed SAT
+  backend. ABA complete/preferred tasks still use native exact semantics.
 - Runner progress is logged per row as flushed JSON on stderr.
 - `solve_dung_single_extension` and `solve_dung_acceptance` default to
   `backend="auto"`; stable Dung tasks route to SAT, while other semantics route
@@ -64,6 +64,9 @@ Status: completed in the initial workstream setup.
 
 ### Phase 2: ABA Backend Contract
 
+Status: completed for the stable task-directed backend contract. Complete and
+preferred remain explicit native fallback paths until Phase 4.
+
 - Introduce a package-level ABA solver backend contract for SE/DC/DS tasks.
 - Preserve typed unavailable/process/protocol results for missing optional
   engines and malformed outputs.
@@ -73,6 +76,8 @@ Status: completed in the initial workstream setup.
   invocation.
 
 ### Phase 3: Task-Directed ABA Stable Solver
+
+Status: completed for flat ABA frameworks.
 
 - Build the flat ABA assumption attack surface from contraries and rules.
 - Implement stable ABA SE/DC/DS solving without full extension enumeration.
@@ -86,6 +91,10 @@ Status: completed in the initial workstream setup.
   `auto`.
 
 ### Phase 4: Preferred And Complete ABA
+
+Status: not completed. The workstream leaves complete and preferred ABA on
+native semantics until a source-backed ASP/subprocess backend or a tested
+package-local encoding is implemented.
 
 - Add preferred and complete ABA task solving only after the stable backend is
   pinned by tests and runner artifacts.
