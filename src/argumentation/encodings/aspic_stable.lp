@@ -5,10 +5,10 @@ element(R) :- d_head(R,_).
 
 derived(L) :- axiom(L).
 derived(P) :- premise(P), accepted_arg(P).
-derived(H) :- s_head(R,H),
-    #count { B : s_body(R,B) } = #count { B : s_body(R,B), derived(B) }.
-derived(H) :- d_head(R,H), accepted_arg(R),
-    #count { B : d_body(R,B) } = #count { B : d_body(R,B), derived(B) }.
+derived(H) :- s_head(R,H), s_body_count(R,N),
+    N = #count { B : s_body(R,B), derived(B) }.
+derived(H) :- d_head(R,H), accepted_arg(R), d_body_count(R,N),
+    N = #count { B : d_body(R,B), derived(B) }.
 
 attacked(X) :- element(X), contrary(C,X), derived(C).
 
