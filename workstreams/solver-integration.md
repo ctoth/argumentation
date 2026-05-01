@@ -347,16 +347,16 @@ External adapters are thin:
 
 ## Dependency-Sorted Execution Order
 
-1. Phase 0: Baseline and source gates.
-2. Phase 1: Shared result types and task contracts.
-3. Phase 2: Backend selector/config cleanup.
-4. Phase 3: Dung ICCMA adapter hardening.
-5. Phase 4: Dung SAT backend and encodings.
-6. Phase 5: ABA ICCMA/ASPFORABA adapter.
-7. Phase 6: ADF and SETAF external-solver boundaries.
-8. Phase 7: ASPIC+ clingo/Datalog backends.
-9. Phase 8: Solver differential harness and benchmark workflow.
-10. Phase 9: Documentation, release surface, and propstore-facing guidance.
+1. Phase 0: Baseline And Source Gates.
+2. Phase 1: Shared Result Types And Task Contracts.
+3. Phase 2: Backend Selector And Config Cleanup.
+4. Phase 3: Dung ICCMA Adapter Hardening.
+5. Phase 4: Dung SAT Backend And Encodings.
+6. Phase 5: ABA ICCMA And ASPFORABA Adapter.
+7. Phase 6: ADF And SETAF External-Solver Boundaries.
+8. Phase 7: ASPIC+ Clingo And Datalog Backends.
+9. Phase 8: Differential Harness And Benchmarks.
+10. Phase 9: Documentation And Propstore-Facing Guidance.
 
 ## Phase 0: Baseline And Source Gates
 
