@@ -185,6 +185,55 @@ def test_default_acceptance_uses_auto_stable_sat_backend() -> None:
     assert result.counterexample == frozenset({"1"})
 
 
+def test_default_single_extension_uses_auto_complete_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default complete solving should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    result = solve_dung_single_extension(framework, semantics="complete")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"a"})
+
+
+def test_default_acceptance_uses_auto_complete_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default complete solving should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    credulous = solve_dung_acceptance(
+        framework,
+        semantics="complete",
+        task="credulous",
+        query="a",
+    )
+    skeptical = solve_dung_acceptance(
+        framework,
+        semantics="complete",
+        task="skeptical",
+        query="b",
+    )
+
+    assert isinstance(credulous, AcceptanceSolverSuccess)
+    assert credulous.answer is True
+    assert credulous.witness == frozenset({"a"})
+    assert isinstance(skeptical, AcceptanceSolverSuccess)
+    assert skeptical.answer is False
+    assert skeptical.counterexample == frozenset({"a"})
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
