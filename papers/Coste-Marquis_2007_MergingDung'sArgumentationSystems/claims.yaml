@@ -1,0 +1,205 @@
+source:
+  paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+produced_by:
+  agent: "Claude Opus 4.6 (1M context)"
+  skill: "extract-claims"
+  timestamp: "2026-03-29T03:07:41Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "A partial argumentation framework (PAF) extends a Dung AF with a three-valued attack relation partitioning argument pairs into attack, non-attack, and ignorance, enabling agents to express incomplete knowledge about attacks without committing to a position."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 5
+      section: "4. Partial argumentation systems"
+      quote_fragment: "A partial argumentation framework (PAF) over A is a quadruple PAF = (A, R, I, N)"
+
+  - id: claim2
+    type: observation
+    statement: "Voting directly on extensions from different agents' argumentation frameworks can produce sets that are not valid extensions of any single AF, because the approach ignores the underlying attack structure."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 4
+      section: "3. Simple is not beautiful"
+      quote_fragment: "voting is not a satisfying way to aggregate the data furnished by the different agents under the form of argumentation systems"
+
+  - id: claim3
+    type: mechanism
+    statement: "Merging multiple Dung AFs works by a three-step process: (1) expand each agent's AF into a PAF over the shared argument set by marking unknown pairs as ignorance, (2) compute edit distances between each expanded PAF and every candidate AF, (3) select the AF(s) that minimize the aggregated distance to the profile."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 0
+      section: "Abstract"
+      quote_fragment: "achieved through a three step process"
+
+  - id: claim4
+    type: observation
+    statement: "The merging of a profile P of n AFs is the set of AFs over the shared arguments that minimize the aggregated pseudo-distance to the expanded PAFs: Delta_d^otimes(P) = {AF | AF minimizes otimes_{i=1}^n d(exp_i(AF_i, P), AF)}."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 9
+      section: "5. Merging operators"
+      quote_fragment: "The merging of P is the set of AFs"
+
+  - id: claim5
+    type: observation
+    statement: "The edit distance between two PAFs counts the number of argument pairs where one PAF says attack and the other says non-attack: d_e(PAF_1, PAF_2) = |R_1 intersect N_2| + |N_1 intersect R_2|."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 9
+      section: "5. Merging operators"
+      quote_fragment: "The edit distance between PAF_1 and PAF_2"
+
+  - id: claim6
+    type: observation
+    statement: "The edit distance between PAFs is a true metric: it satisfies symmetry, minimality (d_e(x,y)=0 iff x=y), and the triangle inequality."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 10
+      section: "5. Merging operators"
+      quote_fragment: "The edit distance de between PAFs is a distance"
+
+  - id: claim7
+    type: observation
+    statement: "When a profile of argumentation frameworks is concordant (all agents pairwise compatible), all aggregation functions (sum, max, leximax) produce the same unique merged AF."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 15
+      section: "6. Some properties"
+      quote_fragment: "P is concordant if and only if exp_GP(P) = {Delta_de^Sigma(P)}"
+
+  - id: claim8
+    type: observation
+    statement: "For concordant profiles, the clash-free part (attacks agreed upon by all agents) is preserved in every AF in the merging result, regardless of the aggregation function used."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 17
+      section: "6.2. Properties of merging operators"
+      quote_fragment: "the clash-free part of any profile P is included in each AF in the merging"
+
+  - id: claim9
+    type: observation
+    statement: "When using sum as the aggregation function over AFs with the same argument set, every merged AF is a completion of the majority PAF, where each attack is decided by strict majority vote among agents."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 19
+      section: "6.2. Properties of merging operators"
+      quote_fragment: "every AF over A which minimizes Sum of d_e(AF, AF_i) is a completion of MP(P)"
+
+  - id: claim10
+    type: comparison
+    statement: "Unlike extension-level voting which ignores attack structure and can produce invalid extensions, distance-based merging of attack relations preserves structural consistency by operating on the generating structure (attacks) rather than derived objects (extensions)."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 4
+      section: "3. Simple is not beautiful"
+      quote_fragment: "voting only on the set of arguments accepted by the group of agents"
+
+  - id: claim11
+    type: comparison
+    statement: "Unlike naive union or intersection of attack relations, distance-based merging with PAFs respects each agent's intended semantics: an agent's explicit non-attacks are not overridden by another agent's attacks, and ignorance is distinguished from rejection."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 5
+      section: "4. Partial argumentation systems"
+      quote_fragment: "three cases must be taken into account: an interaction between two arguments exists in the argumentation system AF_i"
+
+  - id: claim12
+    type: observation
+    statement: "The majority PAF of a profile of AFs over the same argument set A is defined by: (a,b) is attack iff more than half the AFs have the attack; (a,b) is non-attack iff more than half don't; otherwise (a,b) is ignorance."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 18
+      section: "6.2. Properties of merging operators"
+      quote_fragment: "The majority PAF MP(P) of a profile of AFs over the same set A"
+
+  - id: claim13
+    type: limitation
+    statement: "The merging framework only handles the attack relation; support relations between arguments are not modeled, limiting applicability to bipolar argumentation settings."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 22
+      section: "8. Discussion and perspectives"
+      quote_fragment: "can be extended to weighted AFs"
+
+  - id: claim14
+    type: limitation
+    statement: "The expansion policy assumes all agents agree on which arguments exist; only the attack relation differs between agents. Agents cannot disagree about argument existence."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 5
+      section: "4. Partial argumentation systems"
+      quote_fragment: "a partial argumentation system over A"
+
+  - id: claim15
+    type: mechanism
+    statement: "Consensual expansion works by treating each agent's known attacks as attacks, known non-attacks as non-attacks, and all pairs involving arguments outside the agent's original set as ignorance — this preserves the agent's committed beliefs while marking genuinely unknown territory."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 7
+      section: "4. Partial argumentation systems"
+      quote_fragment: "The consensual expansion of AF_i"
+
+  - id: claim16
+    type: observation
+    statement: "The sum aggregation function favors the majority view, the max function is more egalitarian by minimizing worst-case disagreement, and the leximax function falls between the two — each embodies a different social choice principle for multi-agent merging."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 11
+      section: "5. Merging operators"
+      quote_fragment: "The discrepancies between the merging obtained with the various aggregation operators"
+
+  - id: claim17
+    type: observation
+    statement: "Joint acceptability relations based on voting methods (skeptical, credulous, majority) do not always correspond to the extensions of the merged AF — the merged AF's extensions can include arguments that no voting method would jointly accept."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 21
+      section: "7. Acceptability for merged AFs"
+      quote_fragment: "new jointly acceptable sets were obtained after merging which they were not jointly acceptable at start"
+
+  - id: claim18
+    type: observation
+    statement: "An aggregation function for merging must satisfy three properties: non-decreasingness (increasing any agent's distance cannot decrease the aggregate), minimality (aggregate is zero iff all individual distances are zero), and identity (single-agent aggregate equals the distance itself)."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Coste-Marquis_2007_MergingDung'sArgumentationSystems
+      page: 8
+      section: "5. Merging operators"
+      quote_fragment: "An aggregation function is a mapping"

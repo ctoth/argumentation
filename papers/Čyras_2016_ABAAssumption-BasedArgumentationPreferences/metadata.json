@@ -1,0 +1,13 @@
+{
+  "title": "ABA+: Assumption-Based Argumentation with Preferences",
+  "authors": [
+    "Kristijonas Čyras",
+    "Francesca Toni"
+  ],
+  "year": "2016",
+  "arxiv_id": "1610.03024",
+  "doi": "10.25560/58340",
+  "abstract": "We present ABA+, a new approach to handling preferences in a well known structured argumentation formalism, Assumption-Based Argumentation (ABA). In ABA+, preference information given over assumptions is incorporated directly into the attack relation, thus resulting in attack reversal. ABA+ conservatively extends ABA and exhibits various desirable features regarding relationship among argumentation semantics as well as preference handling. We also introduce Weak Contraposition, a principle concerning reasoning with rules and preferences that relaxes the standard principle of contraposition, while guaranteeing additional desirable features for ABA+.",
+  "url": "http://arxiv.org/abs/1610.03024v2",
+  "pdf_url": "https://arxiv.org/pdf/1610.03024v2"
+}

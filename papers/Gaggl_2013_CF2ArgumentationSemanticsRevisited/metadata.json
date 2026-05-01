@@ -1,0 +1,13 @@
+{
+  "title": "The cf2 Argumentation Semantics Revisited",
+  "authors": [
+    "Sarah Alice Gaggl",
+    "Stefan Woltran"
+  ],
+  "year": "2013",
+  "arxiv_id": null,
+  "doi": "10.1093/logcom/exs011",
+  "abstract": "Abstract argumentation frameworks nowadays provide the most popular formalization of argumentation on a conceptual level. Numerous semantics for this paradigm have been proposed, whereby the cf2 semantics has shown to solve particular problems concerned with odd length cycles in such frameworks. Due to the complicated definition of this semantics it has somehow been neglected in the literature. In this article, we introduce an alternative characterization of the cf2 semantics which, roughly speaking, avoids the recursive computation of subframeworks. This facilitates further investigation steps, like a complete complexity analysis. Furthermore, we show how the notion of strong equivalence can be characterized in terms of the cf2 semantics. In contrast to other semantics, it turns out that for the cf2 semantics strong equivalence coincides with syntactical equivalence. We make this particular behavior more explicit by defining a new property for argumentation semantics, called the succinctness property. If a semantics satisfies the succinctness property, then for every framework, all its attacks contribute to the evaluation of at least one framework containing that framework. We finally characterize strong equivalence also for the naive and stage semantics. Together with known results these characterizations imply that none of the prominent semantics for abstract argumentation, except the cf2 semantics, satisfies the succinctness property.",
+  "url": "https://doi.org/10.1093/logcom/exs011",
+  "pdf_url": null
+}

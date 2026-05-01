@@ -1,0 +1,14 @@
+{
+  "title": "Prudent Semantics for Argumentation Frameworks",
+  "authors": [
+    "Sylvie Coste-Marquis",
+    "Caroline Devred",
+    "Pierre Marquis"
+  ],
+  "year": "2005",
+  "arxiv_id": null,
+  "doi": "10.1109/ICTAI.2005.103",
+  "abstract": "We present new prudent semantics within Dung's theory of argumentation. Under such prudent semantics, two arguments cannot belong to the same extension whenever one of them attacks indirectly the other one. We argue that our semantics lead to a better handling of controversial arguments than Dung's ones. We compare the prudent inference relations induced by our semantics w.r.t. cautiousness; we also compare them with the inference relations induced by Dung's semantics.",
+  "url": "https://dblp.org/rec/conf/ictai/Coste-MarquisDM05",
+  "pdf_url": "https://www.cril.univ-artois.fr/~coste/Articles/coste-etal-ictai05.pdf"
+}

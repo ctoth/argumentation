@@ -1,0 +1,15 @@
+{
+  "title": "On bipolarity in argumentation frameworks",
+  "authors": [
+    "Leila Amgoud",
+    "C. Cayrol",
+    "M. Lagasquie-Schiex",
+    "P. Livet"
+  ],
+  "year": "2008",
+  "arxiv_id": null,
+  "doi": "10.1002/int.20307",
+  "abstract": "In this article, we propose a survey of the use of bipolarity in argumentation frameworks. On the one hand, the notion of bipolarity relies on the presence of two kinds of entities that have a diametrically opposed nature and that represent repellent forces (a positive entity and a negative entity). The notion exists in various domains (for example with the representation of preferences in artificial intelligence, or in cognitive psychology). On the other hand, argumentation process is a promising approach for reasoning, based on the construction and the comparison of arguments. It follows five steps: building the arguments, defining the interactions between these arguments, valuating the arguments, selecting the most acceptable arguments and, finally, drawing a conclusion. Using the nomenclature proposed by Dubois and Prade, this article shows on various applications, and with some formal definitions, that bipolarity appears in argumentation (in some cases if not always) and can be used in each step of this process under different forms. © 2008 Wiley Periodicals, Inc.",
+  "url": "https://www.semanticscholar.org/paper/0f508e61079487f17d7e87c1f4577686c75d64fb",
+  "pdf_url": "https://doi.org/10.1002/int.20307"
+}

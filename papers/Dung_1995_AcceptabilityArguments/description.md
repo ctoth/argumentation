@@ -1,0 +1,4 @@
+---
+tags: [argumentation, nonmonotonic-reasoning, logic-programming, game-theory, abstract-argumentation]
+---
+Introduces abstract argumentation frameworks as pairs of arguments and attack relations, defining a hierarchy of semantics (admissible, preferred, stable, grounded, complete extensions) for determining which arguments a rational agent should accept. Key contributions include proving that Reiter's default logic, Pollock's defeasible reasoning, and logic programming with negation as failure are all special forms of argumentation, and that n-person game solutions and the stable marriage problem correspond exactly to stable extensions. Directly foundational for the propstore's conflict resolution and belief revision architecture, providing the formal semantics for reasoning about contradictory claims from different sources.

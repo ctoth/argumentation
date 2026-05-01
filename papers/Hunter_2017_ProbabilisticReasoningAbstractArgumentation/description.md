@@ -1,0 +1,4 @@
+---
+tags: [probabilistic-argumentation, dung-af, epistemic-probability, inconsistency-measures, maximum-entropy]
+---
+This paper defines the epistemic approach to probabilistic abstract argumentation, where probability functions over sets of arguments are constrained by rationality postulates derived from the attack graph topology. Key contributions include a complete hierarchy of probability function classes (COH, FOU, RAT, etc.) that generalize classical Dung semantics, maximum entropy propagation from partial probability assessments, inconsistency measures for contradictory assessments, and distance-based consolidation operators with connections to AGM belief revision. The framework provides the formal foundation for replacing bare probability floats with topology-aware probabilistic reasoning in argumentation systems.

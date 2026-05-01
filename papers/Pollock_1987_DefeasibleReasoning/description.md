@@ -1,0 +1,4 @@
+---
+tags: [defeasible-reasoning, nonmonotonic-reasoning, belief-revision, epistemology, truth-maintenance]
+---
+Develops a formal theory of defeasible reasoning grounded in epistemology, distinguishing prima facie from conclusive reasons and rebutting from undercutting defeaters, then formalizing warrant as support by ultimately undefeated arguments through iterative levels of defeat and reinstatement. Key contributions include the principle of collective defeat (resolving the lottery paradox via self-defeating argument exclusion), logical properties of warrant (consistency, closure under deductive consequence), and a concrete implementation in OSCAR with explicit rules for adoption, retraction, collective defeat, and reinstatement. Directly relevant to the propstore's need for principled management of conflicting claims, providing the epistemological complement to the engineering-oriented TMS/ATMS approaches already in the collection.

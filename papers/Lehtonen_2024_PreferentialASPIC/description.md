@@ -1,0 +1,7 @@
+This paper establishes the computational complexity landscape for preferential argumentative reasoning in ASPIC+ under the last-link principle. The key technical contribution is a rephrasing of ASPIC+ argumentation semantics (admissible, complete, stable, preferred, grounded) in terms of defeasible elements — assumptions and defeasible rules — rather than fully constructed arguments. This avoids the exponential blowup inherent in enumerating all arguments from an argumentation theory.
+
+The complexity results show that acceptance under grounded semantics remains polynomial-time decidable (matching abstract AFs), while credulous acceptance under admissible/complete/preferred/stable is NP-complete, skeptical acceptance under complete/stable is coNP-complete, and skeptical acceptance under preferred is Pi_2^P-complete. These results hold for both elitist and democratic last-link lifting, matching the complexity of reasoning directly with abstract AFs (Dvorak and Dunne 2012).
+
+The paper provides concrete ASP (Answer Set Programming) encodings using Clingo for all NP/coNP-complete reasoning tasks. Empirical evaluation against PyArg shows the ASP approach scales to instances with 1500-1900 atoms, while PyArg (which first translates to abstract AFs) stalls at 50-80 atoms.
+
+A key negative result: under the weakest-link principle, even grounded acceptance becomes NP-hard (Proposition 17), in contrast to the polynomial-time result for last-link. This has practical implications for systems choosing between preference lifting strategies.

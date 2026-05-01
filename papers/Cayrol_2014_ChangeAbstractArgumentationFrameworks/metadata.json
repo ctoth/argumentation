@@ -1,0 +1,14 @@
+{
+  "title": "Change in Abstract Argumentation Frameworks: Adding an Argument",
+  "authors": [
+    "Claudette Cayrol",
+    "Florence Dupin de Saint-Cyr",
+    "Marie-Christine Lagasquie-Schiex"
+  ],
+  "year": "2014",
+  "arxiv_id": "1401.3838",
+  "doi": "10.1613/jair.2965",
+  "abstract": "In this paper, we address the problem of change in an abstract argumentation system. We focus on a particular change: the addition of  a new argument which interacts with previous arguments. We study the impact of such an addition on the outcome of the argumentation system, more particularly on the set of its extensions. Several properties for this change operation are defined by comparing the new set of extensions to the initial one, these properties are called structural when the comparisons are based on set-cardinality or set-inclusion relations. Several other properties are proposed where comparisons are based on the status of some particular arguments: the accepted arguments; these properties refer to the evolution of this status during the change, e.g., Monotony and Priority to Recency. All these  properties may be more or less desirable according to specific applications. They are studied under two particular semantics: the grounded and preferred semantics.",
+  "url": "http://arxiv.org/abs/1401.3838v1",
+  "pdf_url": "https://arxiv.org/pdf/1401.3838v1"
+}

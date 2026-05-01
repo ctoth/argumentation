@@ -1,0 +1,6 @@
+source:
+  paper: Diller_2025_GroundingRule-BasedArgumentationDatalog
+
+# Cross-paper stances deferred: targets Caminada_2007 claims not yet promoted to master.
+# Re-run extract-stances after Caminada_2007 source is promoted.
+stances: []

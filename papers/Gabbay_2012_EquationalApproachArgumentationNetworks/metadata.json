@@ -1,0 +1,16 @@
+{
+  "title": "Equational approach to argumentation networks",
+  "authors": [
+    "D. M. Gabbay"
+  ],
+  "year": "2012",
+  "arxiv_id": null,
+  "doi": "10.1080/19462166.2012.704398",
+  "abstract": "This paper provides equational semantics for Dung's argumentation networks. The network nodes get numerical values in [0,1], and are supposed to satisfy certain equations. The solutions to these equations correspond to the 'extensions' of the network. This approach is very general and includes the Caminada labelling as a special case, as well as many other so-called network extensions, support systems, higher level attacks, Boolean networks, dependence on time, and much more.",
+  "url": "https://www.semanticscholar.org/paper/58b5343f72e91e890862af805ab99dafaacab419",
+  "pdf_url": "https://content.iospress.com:443/download/argument-and-computation/704398?id=argument-and-computation%2F704398",
+  "venue": "Argument & Computation",
+  "volume": "3",
+  "issue": "2-3",
+  "pages": "87-142"
+}

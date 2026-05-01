@@ -1,0 +1,12 @@
+{
+  "title": "Modelling Accrual of Arguments in ASPIC+",
+  "authors": [
+    "Henry Prakken"
+  ],
+  "year": "2019",
+  "arxiv_id": null,
+  "doi": "10.1145/3322640.3326703",
+  "abstract": "This paper proposes a new formal model of argument accrual in ASPIC+ that avoids the weaknesses of earlier proposals, especially exponential blow-up, awkward premise labelling, and problems with strict arguments. It defines accrual sets, a labelling-relative defeat relation, and a fixpoint semantics, then shows that the model preserves standard argumentation semantics and applies to legal reasoning, legislative balancing, factor-based reasoning, and the linked/convergent/cumulative distinction.",
+  "url": "https://doi.org/10.1145/3322640.3326703",
+  "pdf_url": null
+}

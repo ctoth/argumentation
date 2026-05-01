@@ -1,0 +1,272 @@
+source:
+  paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+produced_by:
+  agent: "Claude Opus 4.6 (1M context)"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T22:32:39Z"
+
+claims:
+  # --- Equation Claims ---
+
+  - id: claim1
+    type: equation
+    expression: "sigma_hcat(a_i) = w(a_i) / (1 + sum_{(a_j, a_i) in C} sigma_hcat(a_j))"
+    sympy: "Eq(sigma_hcat, w_i / (1 + S_att))"
+    variables:
+      - symbol: "sigma_hcat"
+        concept: "h_categoriser_score"
+        role: "dependent"
+      - symbol: "w_i"
+        concept: "argument_initial_weight"
+        role: "independent"
+      - symbol: "S_att"
+        concept: "sum_attacker_scores"
+        role: "independent"
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 2
+      section: "Background"
+      quote_fragment: "The h-categoriser semantics (hbs) assigns a value to each argument by the proportional cautious approach"
+
+  - id: claim2
+    type: equation
+    expression: "Imp_rev(X, x) = sigma_{AS'}(x) - sigma_{AS}(x)"
+    sympy: "Eq(imp_rev, sigma_prime - sigma_original)"
+    variables:
+      - symbol: "imp_rev"
+        concept: "revised_impact_measure"
+        role: "dependent"
+      - symbol: "sigma_prime"
+        concept: "score_after_attack_removal"
+        role: "independent"
+      - symbol: "sigma_original"
+        concept: "original_argument_score"
+        role: "independent"
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 4
+      section: "3.1 Revised version of impact measure"
+      quote_fragment: "Instead of removing arguments entirely, it removes only the direct attacks from X to x"
+    notes: "AS' = (A, C') where C' = C \\ {(y,x) | y in X, (y,x) in C}. Removes only direct attacks, not arguments."
+
+  - id: claim3
+    type: equation
+    expression: "phi_i(v) = sum_{S subset N\\{i}} (|S|!(|N|-|S|-1)!/|N|!) * (v(S union {i}) - v(S))"
+    sympy: "Eq(phi_i, w_coeff * (v_Si - v_S))"
+    variables:
+      - symbol: "phi_i"
+        concept: "shapley_value"
+        role: "dependent"
+      - symbol: "v_Si"
+        concept: "coalition_value_with_i"
+        role: "independent"
+      - symbol: "v_S"
+        concept: "coalition_value_without_i"
+        role: "independent"
+      - symbol: "w_coeff"
+        concept: "coalition_size"
+        role: "independent"
+        notes: "w_coeff = |S|!(|N|-|S|-1)!/|N|! is the Shapley weighting coefficient"
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 5
+      section: "3.2 Impact measure based on Shapley measure"
+      quote_fragment: "the Shapley contribution measure was used to calculate the contribution of direct attacks on an argument"
+
+  - id: claim4
+    type: equation
+    expression: "v_x(S) = sigma_AS(x) - sigma_{AS\\S}(x)"
+    sympy: "Eq(v_x, sigma_full - sigma_without_S)"
+    variables:
+      - symbol: "v_x"
+        concept: "coalition_game_value"
+        role: "dependent"
+      - symbol: "sigma_full"
+        concept: "original_argument_score"
+        role: "independent"
+      - symbol: "sigma_without_S"
+        concept: "score_without_coalition"
+        role: "independent"
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 6
+      section: "3.2 Impact measure based on Shapley measure"
+      quote_fragment: "the Shapley-based impact measure Imp_Sh"
+    notes: "Coalition game defined for target argument x, measuring how much coalition S contributes to x's score."
+
+  - id: claim5
+    type: equation
+    expression: "ImpSh(x) = sum_{z in Att(x)} phi_z(v_x)"
+    sympy: "Eq(imp_sh, phi_z)"
+    variables:
+      - symbol: "imp_sh"
+        concept: "shapley_impact_measure"
+        role: "dependent"
+      - symbol: "phi_z"
+        concept: "shapley_value"
+        role: "independent"
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 6
+      section: "3.2 Impact measure based on Shapley measure"
+      quote_fragment: "we define the Shapley based impact measure based on this extended Shapley measure"
+
+  # --- Observation Claims ---
+
+  - id: claim6
+    type: observation
+    statement: "The original Delobelle-Villata impact measure produces counterintuitive results for self-attacking arguments because removing a self-attacking argument changes its own score."
+    concepts:
+      - revised_impact_measure
+      - argument_initial_weight
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 4
+      section: "3.1 Revised version of impact measure"
+      quote_fragment: "the problem mentioned earlier is solved with the revised version because the self-attack is removed"
+
+  - id: claim7
+    type: observation
+    statement: "The counting semantics is the only one among h-categoriser, Card-based, Max-based, and counting that satisfies both Impact Independence and Impact Directionality for both ImpS^rev and ImpSh."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 10
+      section: "4.3 Extensive evaluation and discussion"
+      quote_fragment: "the counting semantics is the only one in our study because the approach used differs from the other gradual semantics"
+
+  - id: claim8
+    type: observation
+    statement: "Both ImpS^rev and ImpSh satisfy Impact Anonymity, Void Impact, Impact Minimisation, Zero Impact, and Impact Symmetry for all four gradual semantics studied."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 9
+      section: "4 Desirable principles for impact measures"
+      quote_fragment: "Imp^rev and Imp^Sh both satisfy Impact Anonymity, Void Impact, Impact Minimisation, Zero Impact, Impact Symmetry"
+
+  - id: claim9
+    type: observation
+    statement: "A gradual semantics that satisfies Attack Removal Monotonicity ensures that no argument can contribute an absolute Shapley measure greater than the degree of the attacker."
+    concepts:
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 6
+      section: "3.2 Impact measure based on Shapley measure"
+      quote_fragment: "the neat property (on gradual semantics) implies that an argument cannot contribute for an absolute Shapley measure that is greater than the degree of the attacker"
+
+  - id: claim10
+    type: observation
+    statement: "ImpS^rev satisfies Impact Independence only for the counting semantics; h-categoriser, Card-based, and Max-based semantics violate it."
+    concepts:
+      - revised_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 10
+      section: "4.3 Extensive evaluation and discussion"
+
+  - id: claim11
+    type: observation
+    statement: "Neither ImpS^rev nor ImpSh satisfies Balanced Impact for the h-categoriser semantics."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+      - h_categoriser_score
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 10
+      section: "4.3 Extensive evaluation and discussion"
+      quote_fragment: "Balanced Impact... is not satisfied by the h-categoriser semantics"
+
+  # --- Mechanism Claims ---
+
+  - id: claim12
+    type: mechanism
+    statement: "ImpS^rev fixes the self-attack problem by removing only direct attacks from the set X to the target x (preserving all other graph structure), rather than removing the arguments in X entirely which would also remove their other attacks and self-attacks."
+    concepts:
+      - revised_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 4
+      section: "3.1 Revised version of impact measure"
+      quote_fragment: "instead of removing arguments entirely, it removes only the direct attacks from X to x, preserving the rest of the framework structure"
+
+  - id: claim13
+    type: mechanism
+    statement: "The Shapley-based impact measure decomposes the total impact of all arguments on a target into individual contributions by treating argumentation as a cooperative game where each argument is a player and the game value is the change in the target's score."
+    concepts:
+      - shapley_impact_measure
+      - coalition_game_value
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 5
+      section: "3.2 Impact measure based on Shapley measure"
+      quote_fragment: "the Shapley contribution measure was used to calculate the contribution of direct attacks"
+
+  # --- Comparison Claims ---
+
+  - id: claim14
+    type: comparison
+    statement: "Unlike the original Delobelle-Villata impact measure which removes entire arguments (and all their attacks), ImpS^rev removes only the direct attacks from the measured set to the target, preserving the graph structure and avoiding the self-attack problem."
+    concepts:
+      - revised_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 4
+      section: "3.1 Revised version of impact measure"
+      quote_fragment: "we explain the drawbacks of the impact measure by Delobelle and Villata and introduce a revised version"
+
+  - id: claim15
+    type: comparison
+    statement: "ImpSh is more computationally expensive than ImpS^rev because computing Shapley values requires evaluating all 2^n subsets of arguments, whereas ImpS^rev requires only one re-evaluation of the framework after removing direct attacks."
+    concepts:
+      - shapley_impact_measure
+      - revised_impact_measure
+      - computational_complexity
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 6
+      section: "3.2 Impact measure based on Shapley measure"
+
+  # --- Limitation Claims ---
+
+  - id: claim16
+    type: limitation
+    statement: "Both ImpS^rev and ImpSh are defined only for attack-only argumentation frameworks and do not handle support relations in bipolar argumentation frameworks."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 11
+      section: "6 Conclusion and Future Work"
+      quote_fragment: "providing explanations in abstract argumentation frameworks has not been explored for gradual semantics"
+
+  - id: claim17
+    type: limitation
+    statement: "The current impact measure principles cannot distinguish two semantics that both allow an attack to weaken its target but differ in the degree of weakening."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 12
+      section: "6 Conclusion and Future Work"
+      quote_fragment: "two semantics can allow for the attack to weaken its target, however with different degrees of weakening. The current properties are incapable of capturing this difference"
+
+  - id: claim18
+    type: limitation
+    statement: "Only four gradual semantics (h-categoriser, Card-based, Max-based, counting) were evaluated; other semantics such as DF-QuAD and Euler-based were not studied."
+    concepts:
+      - revised_impact_measure
+      - shapley_impact_measure
+    provenance:
+      paper: AlAnaissy_2024_ImpactMeasuresGradualArgumentation
+      page: 10
+      section: "4.3 Extensive evaluation and discussion"
+      quote_fragment: "there exist other gradual semantics defined in the literature that have not been studied"

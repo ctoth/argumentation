@@ -1,0 +1,139 @@
+source:
+  paper: Baumann_2015_AGMMeetsAbstractArgumentation
+produced_by:
+  agent: "claude-opus-4-6"
+  skill: "extract-claims"
+  timestamp: "2026-03-29T03:04:04Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "For ten standard argumentation semantics (stable, preferred, grounded, complete, admissible, conflict-free, stage, semi-stable, ideal, eager), ordinary equivalence coincides with strong equivalence, unified under 4-equivalence where two AFs are equivalent iff their kernels are identical."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 2
+      section: "Monotone Dung-Logics"
+      quote_fragment: "it is well-known that for nonmonotonic formalisms standard notions of equivalence do not coincide"
+
+  - id: claim2
+    type: mechanism
+    statement: "The kernel operation on a Dung AF removes all attacks (a,b) where a self-attacks, producing a canonical representative for the 4-equivalence class. This works because self-attacking arguments are universally rejected under all standard semantics, making their outgoing attacks semantically irrelevant."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 2
+      section: "Abstract Argumentation Theory"
+      quote_fragment: "A kernel of F = (A,R) is defined as F^k = (A^k, R^k) where R^k = R \\ {(a,b) | (a,a) in R}"
+
+  - id: claim3
+    type: observation
+    statement: "Dung logics are monotonic logics whose models are argumentation frameworks, where satisfiability is defined via kernel equality and the consequence operator Cn satisfies Tarskian properties (inclusion, monotonicity, idempotence, compactness)."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 2
+      section: "Monotone Dung-Logics"
+      quote_fragment: "We proceed with these definitions and some first results"
+
+  - id: claim4
+    type: observation
+    statement: "AGM expansion for Dung AFs is kernel union: the expansion F + G has arguments A_F union A_G and attacks consisting of the kernel attacks from both frameworks plus attacks originating from any self-attacking argument in either framework. This operator satisfies all six AGM expansion postulates (K1-K6)."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 3
+      section: "Belief Expansion for Dung-logics"
+      quote_fragment: "Theorem 1: The following holds. + satisfies K1-K6"
+
+  - id: claim5
+    type: observation
+    statement: "Kernel union of two AFs corresponds to intersection of their model sets: Mod^I(F union_k G) = Mod^I(F) intersect Mod^I(G). Belief expansion can be generalized to arbitrary finite intersections of models representing multiple simultaneous expansions."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 3
+      section: "Belief Expansion for Dung-logics"
+      quote_fragment: "Lemma 6: The following lemma translates the semantical operation of a non-empty intersection of k models to a syntactic companion of frameworks"
+
+  - id: claim6
+    type: comparison
+    statement: "Unlike classical propositional belief revision where Dalal-style distance measures provide concrete revision operators, standard distance-based approaches do not work for AF revision because AFs have heterogeneous argument sets that are not well-metrized, requiring instead a faithful assignment (total preorder on AF models) to define revision."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 4
+      section: "Belief Revision for Dung-logics"
+      quote_fragment: "why standard approaches based on a distance measure do not do work for AFs and present an appropriate satisfying all postulates"
+
+  - id: claim7
+    type: observation
+    statement: "An AGM revision operator for Dung AFs satisfies postulates R1-R6 if and only if it can be represented as selecting the minimal models under a faithful assignment: F * G = Cn(min(G, leq_F)), where the faithful assignment maps each AF to a total preorder on models satisfying three conditions (models of F are minimal, non-models are strictly greater, kernel-equivalent AFs share the same preorder)."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 5
+      section: "Postulates for Belief Revision"
+      quote_fragment: "Theorem 2: An operator * satisfies R1-R6 iff..."
+
+  - id: claim8
+    type: limitation
+    statement: "The paper provides only the representation theorem for AF revision (existence via faithful assignments) but does not specify a concrete distance metric or total preorder for constructing a specific revision operator."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 5
+      section: "Belief Revision for Dung-logics"
+      quote_fragment: "we provide only an existence result for a concrete revision operator"
+
+  - id: claim9
+    type: limitation
+    statement: "The requirement of 4-satisfiability in AGM revision for AFs is in many cases trivially fulfilled because any AF can be made 4-satisfiable by adding self-attacking arguments, which makes revision trivial in degenerate cases."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 5
+      section: "Standard Approaches are Problematic"
+      quote_fragment: "the requirement of 4-satisfiability is in many cases trivially fulfilled"
+
+  - id: claim10
+    type: comparison
+    statement: "Cayrol et al.'s (2010, 2014) AF revision operators add new arguments and attacks but cannot remove existing ones, limiting their expressivity compared to AGM-compliant revision which can contract as well as expand the framework's content."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 5
+      section: "Towards Revision Operators for Other Kernels"
+      quote_fragment: "Their definitions are straightforward from a technical point of view since the intersection of models can be simply obtained"
+
+  - id: claim11
+    type: comparison
+    statement: "Coste-Marquis et al.'s (2014) enforcement-based revision uses a two-step procedure (selecting which arguments/attacks to add, then performing enforcement) that does not guarantee the revised extensions correspond to former extensions of the original AF under the selected semantics."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 6
+      section: "Towards Revision Operators for Other Kernels"
+      quote_fragment: "do not correspond to former extensions of F if sigma is selected"
+
+  - id: claim12
+    type: limitation
+    statement: "AGM contraction for Dung AFs is not addressed in this paper and is left to a companion paper (Baumann and Brewka 2019), meaning the full AGM belief change toolkit for AFs requires both papers."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Baumann_2015_AGMMeetsAbstractArgumentation
+      page: 1
+      section: "Introduction"
+      quote_fragment: "In the AGM approach, belief revision is a more than a pure expansion operator since it provides an addition with a meaningful result"

@@ -1,0 +1,13 @@
+{
+  "title": "Advancing Algorithmic Approaches to Probabilistic Argumentation under the Constellation Approach",
+  "authors": [
+    "Andrei Popescu",
+    "Johannes P. Wallner"
+  ],
+  "year": "2024",
+  "arxiv_id": "2407.05058",
+  "doi": "10.48550/arXiv.2407.05058",
+  "abstract": "Reasoning with defeasible and conflicting knowledge in an argumentative form is a key research field in computational argumentation. Reasoning under various forms of uncertainty is both a key feature and a challenging barrier for automated argumentative reasoning. It was shown that argumentative reasoning using probabilities faces in general high computational complexity, in particular for the so-called constellation approach. In this paper, we develop an algorithmic approach to overcome this obstacle. We refine existing complexity results and show that two main reasoning tasks, that of computing the probability of a given set being an extension and an argument being acceptable, diverge in their complexity: the former is #P-complete and the latter is #-dot-NP-complete when considering their underlying counting problems. We present an algorithm for the complex task of computing the probability of a set of arguments being a complete extension by using dynamic programming operating on tree-decompositions. An experimental evaluation shows promise of our approach.",
+  "url": "http://arxiv.org/abs/2407.05058v1",
+  "pdf_url": "https://arxiv.org/pdf/2407.05058v1"
+}

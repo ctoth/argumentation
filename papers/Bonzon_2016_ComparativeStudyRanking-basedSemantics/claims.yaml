@@ -1,0 +1,159 @@
+source:
+  paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+  extraction_model: "claude-opus-4-6-20250514"
+  extraction_date: "2026-03-24"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "Ranking-based semantics provide a finer-grained evaluation of arguments than extension-based semantics, producing a total preorder over all arguments rather than a binary accepted/rejected classification."
+    concepts:
+      - ranking_based_semantics
+      - acceptability
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 1
+      section: "Introduction"
+      quote_fragment: "rank-orders arguments from the most to the least acceptable ones"
+
+  - id: claim2
+    type: observation
+    statement: "The Categoriser function assigns each argument a score of 1/(1 + sum of attacker scores), with unattacked arguments receiving score 1, and produces a unique ranking for any argumentation framework."
+    concepts:
+      - categoriser_function
+      - argument_strength
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 3
+      section: "Existing Ranking-based Semantics"
+      quote_fragment: "Cat(a) = 1/(1 + sum Cat(b) for b in Att(a))"
+
+  - id: claim3
+    type: observation
+    statement: "No single ranking-based semantics among the five studied (Categoriser, Discussion-based, Burden-based, Matt & Toni, Tuples*) satisfies all 16 proposed axiomatic properties simultaneously."
+    concepts:
+      - ranking_based_semantics
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 6
+      section: "Discussion"
+      quote_fragment: "no single semantics satisfies all properties"
+    notes: "Central result of the paper. The property satisfaction matrix (Table 2) is the key contribution."
+
+  - id: claim4
+    type: comparison
+    statement: "The Categoriser semantics satisfies Distributed Defense Precedence (DDP) while Matt & Toni does not, meaning Categoriser distinguishes arguments with distributed defense from those with concentrated defense but Matt & Toni treats them equivalently."
+    concepts:
+      - categoriser_function
+      - distributed_defense_precedence
+      - ranking_based_semantics
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 5
+      section: "Table 2"
+
+  - id: claim5
+    type: comparison
+    statement: "The Discussion-based semantics does not satisfy Defense Precedence (DP), unlike the Categoriser and Burden-based semantics, meaning it cannot always distinguish arguments based on how their defense is distributed."
+    concepts:
+      - ranking_based_semantics
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 5
+      section: "Discussion-based semantics"
+
+  - id: claim6
+    type: observation
+    statement: "The Void Precedence property comes in two strengths: basic VP (non-attacked arguments rank at least as high as attacked ones) and VP+ (strictly higher), and the Burden-based semantics satisfies only VP while Categoriser, Discussion-based, and Matt & Toni satisfy the stronger VP+."
+    concepts:
+      - void_precedence
+      - ranking_based_semantics
+      - burden_based_semantics
+      - categoriser_function
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 5
+      section: "Table 2"
+
+  - id: claim7
+    type: observation
+    statement: "Counter-Transitivity and Strict Counter-Transitivity are distinguishing properties that separate semantics families: Categoriser and Discussion-based satisfy both CT and SCT, Burden-based satisfies CT but not SCT, and Matt & Toni satisfies SCT but not CT."
+    concepts:
+      - counter_transitivity
+      - ranking_based_semantics
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 5
+      section: "Table 2"
+    notes: "This is a key differentiator between semantics families."
+
+  - id: claim8
+    type: observation
+    statement: "No ranking-based semantics among the five studied satisfies Quality Precedence, which requires that for two arguments each attacked by one attacker, the one with the weaker attacker ranks higher."
+    concepts:
+      - quality_precedence
+      - ranking_based_semantics
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 5
+      section: "Table 2"
+    notes: "Quality Precedence is the only property not satisfied by any of the five semantics."
+
+  - id: claim9
+    type: mechanism
+    statement: "Social Abstract Argumentation Frameworks extend Dung's AF with a social support function mapping arguments to initial scores, providing a formal basis for defining properties like Copy and Non-attacked Equivalence that require reasoning about argument similarity within context."
+    concepts:
+      - social_abstract_argumentation_framework
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 3
+      section: "Social Abstract Argumentation Framework"
+
+  - id: claim10
+    type: comparison
+    statement: "The axiomatic property-based approach to evaluating ranking-based semantics is the gradual counterpart to Baroni and Giacomin's (2007) principle-based evaluation of extension-based semantics, applying the same methodology of defining independent properties and checking each semantics against them."
+    concepts:
+      - ranking_based_semantics
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 1
+      section: "Introduction"
+    notes: "Extends the principle-based evaluation methodology from extension-based to ranking-based semantics, paralleling Baroni and Giacomin 2007."
+
+  - id: claim11
+    type: limitation
+    statement: "The Tuples* semantics is only fully analyzed for acyclic argumentation frameworks; when cycles exist in the AF, some tuples can be infinite, requiring special handling not addressed in this comparison."
+    concepts:
+      - ranking_based_semantics
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 4
+      section: "Tuples*"
+
+  - id: claim12
+    type: limitation
+    statement: "The paper compares only five ranking-based semantics available at time of writing and does not prove whether any of the 16 properties are mutually incompatible, leaving open whether a semantics satisfying all properties could exist."
+    concepts:
+      - ranking_based_semantics
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Bonzon_2016_ComparativeStudyRanking-basedSemantics
+      page: 6
+      section: "Conclusion"

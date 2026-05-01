@@ -1,0 +1,12 @@
+{
+  "title": "Discontinuity-Free Decision Support with Quantitative Argumentation Debates",
+  "authors": ["Antonio Rago", "Francesca Toni", "Marco Aurisicchio", "Pietro Baroni"],
+  "year": "2016",
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": "We introduce a novel formalism for decision support, Quantitative Argumentation Debate (QuAD) frameworks, which extends the existing formalism of Argumentation Debates by equipping arguments with an intrinsic strength. We propose a novel semantics for QuAD frameworks, based on a discontinuity-free scoring function that avoids the problems of existing approaches. We prove a number of desirable properties of this semantics, and describe a case study demonstrating the use of QuAD frameworks for decision support.",
+  "url": "https://cdn.aaai.org/ocs/12874/12874-57532-1-PB.pdf",
+  "pdf_url": "https://cdn.aaai.org/ocs/12874/12874-57532-1-PB.pdf",
+  "venue": "Principles of Knowledge Representation and Reasoning (KR-16)",
+  "source": "aaai-cdn-direct"
+}

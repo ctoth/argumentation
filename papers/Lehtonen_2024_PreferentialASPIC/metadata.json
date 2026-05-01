@@ -1,0 +1,29 @@
+{
+  "title": "Complexity Results and Algorithms for Preferential Argumentative Reasoning in ASPIC+",
+  "authors": [
+    "Tuomo Lehtonen",
+    "Daphne Odekerken",
+    "Johannes P. Wallner",
+    "Matti Järvisalo"
+  ],
+  "year": 2024,
+  "venue": "KR 2024 — 21st International Conference on Principles of Knowledge Representation and Reasoning",
+  "url": "https://proceedings.kr.org/2024/49/",
+  "pdf_url": "https://proceedings.kr.org/2024/49/kr2024-0049-lehtonen-et-al.pdf",
+  "pages": "520-530",
+  "type": "conference_paper",
+  "tags": [
+    "ASPIC+",
+    "computational-complexity",
+    "answer-set-programming",
+    "preference-lifting",
+    "last-link-principle"
+  ],
+  "affiliations": [
+    "Department of Computer Science, Aalto University, Finland",
+    "Department of Information and Computing Sciences, Utrecht University, The Netherlands",
+    "National Police Lab AI, Netherlands Police, The Netherlands",
+    "Institute of Software Technology, Graz University of Technology, Austria",
+    "Department of Computer Science, University of Helsinki, Finland"
+  ]
+}

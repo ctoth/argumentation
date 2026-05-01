@@ -1,0 +1,10 @@
+{
+  "title": "Continuous Dynamical Systems for Weighted Bipolar Argumentation",
+  "authors": ["Nico Potyka"],
+  "year": "2018",
+  "arxiv_id": null,
+  "doi": "10.5555/3393515.3393530",
+  "abstract": "Weighted bipolar argumentation frameworks determine the strength of arguments based on an initial weight and the strength of their attackers and supporters. Their formal properties have been studied in terms of several axioms. In areas like social media analysis and decision support frameworks for everyday strengths, where relation structures are acyclic, argumentation graph and successively set arguments' strength based on the strength of their results. A similar approach has been proposed for complex cyclic graphs with thousands of nodes and described for monotonically computing argument strengths. We present our system of differential equations and show that it uniquely defines a strength model for every BAG.",
+  "url": null,
+  "pdf_url": null
+}

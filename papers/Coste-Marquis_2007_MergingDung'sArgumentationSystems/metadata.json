@@ -1,0 +1,19 @@
+{
+  "title": "On the merging of Dung's argumentation systems",
+  "authors": [
+    "S. Coste-Marquis",
+    "C. Devred",
+    "S. Konieczny",
+    "M. Lagasquie-Schiex",
+    "P. Marquis"
+  ],
+  "year": "2007",
+  "doi": "10.1016/j.artint.2007.04.012",
+  "url": "https://www.semanticscholar.org/paper/6230ff00f7b830342f3e27b26c0c286666216b79",
+  "pdf_url": "https://doi.org/10.1016/j.artint.2007.04.012",
+  "bibtex": "@Article{Coste-Marquis2007OnTM,\n author = {S. Coste-Marquis and C. Devred and S. Konieczny and M. Lagasquie-Schiex and P. Marquis},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {730-753},\n title = {On the merging of Dung's argumentation systems},\n volume = {171},\n year = {2007}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "171",
+  "pages": "730-753"
+}

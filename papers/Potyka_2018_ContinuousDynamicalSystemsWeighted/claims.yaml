@@ -1,0 +1,252 @@
+source:
+  paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+produced_by:
+  agent: "claude-opus-4-6-1m"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T22:42:03Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "A Bipolar Argumentation Graph (BAG) is defined as a tuple (A, R, S, tau) where A is a finite set of arguments, R is the attack relation, S is the support relation, and tau maps arguments to initial weights in [0,1]."
+    concepts:
+      - dung_framework
+      - argument_initial_weight
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 1
+      section: "Preliminaries"
+      quote_fragment: "A BAG is a tuple (A, R, S, tau)"
+
+  - id: claim2
+    type: observation
+    statement: "The aggregation function for an argument is defined as the sum of its supporters' strengths minus the sum of its attackers' strengths."
+    concepts:
+      - argument_initial_weight
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 1
+      section: "Preliminaries"
+      quote_fragment: "sum of supporter strengths minus sum of attacker strengths"
+
+  - id: claim3
+    type: model
+    name: "Quadratic Energy Model"
+    equations:
+      - "f_a(sigma) = tau(a) + agg(a) * (1 - tau(a)) if agg(a) >= 0"
+      - "f_a(sigma) = tau(a) + agg(a) * tau(a) if agg(a) < 0"
+    parameters:
+      - name: "initial_weight"
+        concept: "argument_initial_weight"
+        note: "Per-argument initial strength in [0,1]"
+      - name: "aggregation_value"
+        concept: "sum_attacker_scores"
+        note: "Net effect of supporters minus attackers"
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 7
+      section: "Proposition 19"
+      quote_fragment: "iteration scheme that defines the strength values for acyclic BAGs"
+
+  - id: claim4
+    type: observation
+    statement: "Argument strengths under the quadratic energy model always remain in the interval [0,1] for all arguments and all time steps."
+    concepts:
+      - argument_initial_weight
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 2
+      section: "Lemma 1"
+      quote_fragment: "sigma(a) in [0,1] for all a in A and all t >= 0"
+
+  - id: claim5
+    type: observation
+    statement: "The quadratic energy model converges to a unique fixed point for all acyclic Bipolar Argumentation Graphs."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 5
+      section: "Proposition 16"
+      quote_fragment: "For an acyclic BAG, the quadratic energy model converges"
+
+  - id: claim6
+    type: mechanism
+    statement: "The quadratic energy model achieves convergence for acyclic BAGs by computing argument strengths in topological order, where each argument's strength depends only on already-computed predecessors, enabling a single-pass computation."
+    concepts:
+      - dung_framework
+      - computational_complexity
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 5
+      section: "Convergence"
+      quote_fragment: "compute strength in topological order; each argument's strength depends only on predecessors already computed"
+
+  - id: claim7
+    type: observation
+    statement: "The quadratic energy model empirically converges for over 99% of randomly generated cyclic BAGs with up to thousands of nodes."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 7
+      section: "Experiments"
+      quote_fragment: "quadratic energy model converges in most cases"
+
+  - id: claim8
+    type: comparison
+    statement: "Unlike DF-QuAD, which can fail to converge for cyclic graphs due to oscillation in discrete iteration, the quadratic energy model uses continuous dynamical systems to avoid oscillation and achieves convergence in virtually all tested cyclic cases."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 5
+      section: "Convergence"
+      quote_fragment: "DF-QuAD can fail to converge for cyclic graphs"
+
+  - id: claim9
+    type: comparison
+    statement: "Unlike the continuous Euler-based model, which does not converge to the same values as the discrete Euler-based semantics in cyclic cases, the quadratic energy model provides consistent convergence behaviour."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 6
+      section: "Convergence"
+      quote_fragment: "continuous Euler-based model does not converge to the same values as the discrete Euler-based semantics in cyclic cases"
+
+  - id: claim10
+    type: observation
+    statement: "The quadratic energy model satisfies the anonymity axiom: renaming arguments does not change their computed strengths."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"
+
+  - id: claim11
+    type: observation
+    statement: "The quadratic energy model satisfies the independence axiom: the strength of an argument depends only on its direct attackers and supporters and their strengths."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"
+
+  - id: claim12
+    type: observation
+    statement: "The quadratic energy model satisfies the directionality axiom: arguments not connected to an argument do not influence its strength."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"
+
+  - id: claim13
+    type: observation
+    statement: "The quadratic energy model satisfies the neutrality axiom: if the aggregation value of an argument is zero, its strength equals its initial weight."
+    concepts:
+      - argument_initial_weight
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"
+      quote_fragment: "if agg(a) = 0, then sigma(a) = tau(a)"
+
+  - id: claim14
+    type: limitation
+    statement: "The quadratic energy model does not satisfy the Strengthening axiom in all cases: there exist BAGs where adding a supporter does not strictly increase an argument's strength."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 4
+      section: "Axiomatic Properties"
+      quote_fragment: "counterexample in Figure 4"
+
+  - id: claim15
+    type: limitation
+    statement: "The quadratic energy model does not satisfy the Weakening axiom in all cases: there exist BAGs where adding an attacker does not strictly decrease an argument's strength."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 4
+      section: "Axiomatic Properties"
+
+  - id: claim16
+    type: limitation
+    statement: "Convergence of the quadratic energy model for cyclic BAGs is only demonstrated empirically, not proven; convergence guarantees for arbitrary cyclic graphs remain an open problem."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 7
+      section: "Experiments"
+      quote_fragment: "convergence for cyclic BAGs is only demonstrated empirically, not proven"
+
+  - id: claim17
+    type: observation
+    statement: "If all relations in a BAG are support-only (no attacks), the quadratic energy model is guaranteed to converge even for cyclic graphs."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 6
+      section: "Convergence"
+      quote_fragment: "convergence is guaranteed even for cyclic BAGs"
+
+  - id: claim18
+    type: limitation
+    statement: "The quadratic energy model handles only binary attack and support relations (present or absent), not graded attack or support strengths on edges."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 1
+      section: "Preliminaries"
+
+  - id: claim19
+    type: observation
+    statement: "Runtime for computing equilibria of the quadratic energy model on acyclic BAGs with 1000 arguments is approximately 0.1 seconds on commodity hardware."
+    concepts:
+      - computational_complexity
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 7
+      section: "Experiments"
+      quote_fragment: "runtime results for computing equilibria"
+
+  - id: claim20
+    type: mechanism
+    statement: "The continuous dynamical systems approach works by formulating argument strength computation as a system of differential equations whose fixed points correspond to the desired semantics, enabling convergence analysis via Lyapunov stability theory and other dynamical systems tools."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 7
+      section: "Continuous Dynamical Systems"
+      quote_fragment: "present our system of differential equations"
+
+  - id: claim21
+    type: observation
+    statement: "The quadratic energy model satisfies the equivalence axiom: isomorphic sub-BAGs produce the same argument strengths."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"
+
+  - id: claim22
+    type: observation
+    statement: "The quadratic energy model satisfies monotonicity: increasing a supporter's initial weight does not decrease the argument's strength, and increasing an attacker's initial weight does not increase it."
+    concepts:
+      - argument_initial_weight
+    provenance:
+      paper: Potyka_2018_ContinuousDynamicalSystemsWeighted
+      page: 3
+      section: "Axiomatic Properties"

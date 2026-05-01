@@ -1,0 +1,197 @@
+source:
+  paper: Dung_2007_ComputingIdealScepticalArgumentation
+produced_by:
+  agent: "gpt-5-codex"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T08:12:11Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "Every abstract argumentation framework has a unique maximal ideal set of arguments."
+    context: ctx_abstract_argumentation
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 645
+      section: "Theorem 2.1"
+      quote_fragment: "Every abstract argumentation framework admits a unique maximal ideal set of arguments"
+
+  - id: claim2
+    type: observation
+    statement: "The maximal ideal set of arguments is complete, contains the grounded set, and is contained in the intersection of all preferred sets."
+    context: ctx_abstract_argumentation
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 645
+      section: "Theorem 2.1"
+
+  - id: claim3
+    type: observation
+    statement: "An admissible set of arguments S is ideal iff every argument attacking S belongs to no admissible set of arguments."
+    context: ctx_abstract_argumentation
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 650
+      section: "Theorem 3.3"
+      quote_fragment: "An admissible set of arguments S is ideal iff for each argument a attacking S there exists no admissible set of arguments containing a"
+
+  - id: claim4
+    type: observation
+    statement: "The defence set of an ideal dispute tree is ideal, and every argument in an ideal set has an ideal dispute tree whose defence set is a subset of that ideal set."
+    context: ctx_abstract_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 650
+      section: "Theorem 3.4"
+
+  - id: claim5
+    type: observation
+    statement: "In assumption-based argumentation, a set of assumptions A attacks a set of assumptions B iff there exists an argument A' ⊢ α with A' ⊆ A and α equal to the contrary of some assumption in B."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - logic_based_argument
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 647
+      section: "Definition 2.8"
+      quote_fragment: "A set of assumptions A attacks a set of assumptions B iff there exists an argument A' ⊢ α such that A' ⊆ A and α = β̄"
+
+  - id: claim6
+    type: observation
+    statement: "If a GB-dispute derivation computes a defence set A for a sentence α, then A is admissible, is contained in the grounded set of assumptions, and supports an argument for α."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - logic_based_argument
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 653
+      section: "Theorem 4.2"
+
+  - id: claim7
+    type: limitation
+    statement: "GB-dispute derivations are highly incomplete for admissibility: they can fail to compute admissible sets even when an infinite admissible dispute tree exists."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 653
+      section: "Section 4.1.1"
+      quote_fragment: "GB-dispute derivations are highly incomplete for admissibility"
+
+  - id: claim8
+    type: mechanism
+    statement: "AB-dispute derivations compute admissible beliefs by filtering potential defences with defence assumptions and filtering potential culprits with culprit sets so that the constructed defence set does not attack itself."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 654
+      section: "Section 4.1.2"
+      quote_fragment: "These new dispute derivations incorporate a filtering by defence assumptions"
+
+  - id: claim9
+    type: observation
+    statement: "For every AB-dispute derivation of a defence set A for a sentence α, the defence set A is admissible and some subset A' ⊆ A supports an argument for α."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - logic_based_argument
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 656
+      section: "Theorem 4.3"
+
+  - id: claim10
+    type: observation
+    statement: "In a p-acyclic assumption-based framework with finite underlying language, a sentence α is an admissible belief iff there exists an AB-dispute derivation of some defence set A for α such that a subset of A supports an argument for α."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - logic_based_argument
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 657
+      section: "Theorem 4.4"
+
+  - id: claim11
+    type: observation
+    statement: "If there exists an IB-dispute derivation for a sentence α, then α is an ideal belief."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 659
+      section: "Theorem 4.5"
+
+  - id: claim12
+    type: observation
+    statement: "In a p-acyclic framework with finite underlying language, if α is an ideal belief then there exists an IB-dispute derivation for α."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 659
+      section: "Theorem 4.6"
+
+  - id: claim13
+    type: observation
+    statement: "If there exists a Fail-dispute derivation for a multiset of sentences S, then no admissible set of assumptions supports S; for p-acyclic frameworks with finite underlying language, the converse also holds."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - logic_based_argument
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 659
+      section: "Theorem 4.7 and Theorem 4.8"
+
+  - id: claim14
+    type: comparison
+    statement: "Unlike grounded semantics, which is often too skeptical, ideal semantics remains skeptical while being strictly less skeptical than grounded semantics and less credulous than preferred semantics."
+    context: ctx_abstract_argumentation
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 645
+      section: "Section 2.2"
+      quote_fragment: "the ideal semantics is sceptical, but less sceptical than the (overly sceptical) grounded semantics"
+
+  - id: claim15
+    type: limitation
+    statement: "The full analysis of the computational complexity of ideal semantics is beyond the scope of the paper and is left for future work."
+    context: ctx_assumption_based_argumentation
+    concepts:
+      - proof_theory
+      - acceptability
+    provenance:
+      paper: Dung_2007_ComputingIdealScepticalArgumentation
+      page: 662
+      section: "Conclusions"

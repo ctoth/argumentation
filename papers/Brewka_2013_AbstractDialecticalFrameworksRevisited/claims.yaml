@@ -1,0 +1,142 @@
+source:
+  paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+produced_by:
+  agent: "gpt-5-codex"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T08:20:09Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "Abstract Dialectical Frameworks generalize Dung frameworks by assigning each node an explicit acceptance condition over its parents, allowing support, joint attack, and other non-attack dependencies to be represented directly."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 803
+      section: "1 Introduction"
+      quote_fragment: "each argument, x, is associated with an acceptance condition"
+
+  - id: claim2
+    type: mechanism
+    statement: "The ADF operator Gamma_D computes each node's status as the consensus truth value of its acceptance formula over all two-valued extensions of a three-valued interpretation, making grounded semantics the least fixpoint of that operator."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 805
+      section: "2 Background"
+      quote_fragment: "the operator returns the consensus truth value for its acceptance formula"
+
+  - id: claim3
+    type: mechanism
+    statement: "Admissible ADF interpretations are exactly those three-valued interpretations v with v <=_i Gamma_D(v), complete interpretations are the fixpoints of Gamma_D, and preferred interpretations are the information-maximal admissible ones."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 805
+      section: "3 Semantics"
+      quote_fragment: "v is admissible iff v <=i Gamma_D(v)"
+
+  - id: claim4
+    type: comparison
+    statement: "Unlike the 2010 ADF account, the revised preferred and stable semantics are defined for arbitrary ADFs rather than only bipolar ADFs, and the key move is to shift from two-valued to three-valued interpretations."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 804
+      section: "1 Introduction"
+      quote_fragment: "a shift from two-valued to three-valued interpretations"
+
+  - id: claim5
+    type: mechanism
+    statement: "A two-valued interpretation v is stable for an ADF exactly when the true nodes v^t coincide with the grounded extension of the reduct D^v obtained by deleting false nodes and simplifying acceptance formulas with the truth values fixed by v."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 806
+      section: "Definition 6"
+      quote_fragment: "v is a stable model of D iff v^t = grd(D^v)"
+
+  - id: claim6
+    type: observation
+    statement: "Every preferred ADF model is complete, the grounded model is the information-least complete model, and the complete models form a complete meet-semilattice under the information ordering."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 805
+      section: "Theorem 1"
+      quote_fragment: "Each preferred model is a complete model"
+
+  - id: claim7
+    type: observation
+    statement: "Deciding whether an ADF has a two-valued model is NP-complete."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 806
+      section: "Proposition 5"
+      quote_fragment: "Deciding whether D has a two-valued model is NP-complete"
+
+  - id: claim8
+    type: observation
+    statement: "Deciding whether an ADF has a stable model is Sigma_2^P-complete, while verifying admissibility is coNP-complete and verifying completeness is DP-complete."
+    concepts:
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 807
+      section: "4 Complexity"
+      quote_fragment: "Deciding whether D has a stable model is Sigma_2^P-complete"
+
+  - id: claim9
+    type: mechanism
+    statement: "Prioritized ADFs compile static preferences into ordinary ADF acceptance conditions by treating attacks as successful only when the attacked node is not more preferred and no more-preferred supporter blocks the attacker."
+    concepts:
+      - preference_based_argumentation
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 807
+      section: "5 Preferences in ADFs"
+      quote_fragment: "an attacker does not succeed if the attacked node is more preferred"
+
+  - id: claim10
+    type: mechanism
+    statement: "Dynamic preferences can be modeled inside the framework itself by dedicated preference nodes whose accepted contents induce a model-dependent partial order >_M, so the system can reason both with preferences and about preferences."
+    concepts:
+      - preference_based_argumentation
+      - acceptability
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 808
+      section: "Definition 8 and after"
+      quote_fragment: "we now show how this can be modeled in ADFs"
+
+  - id: claim11
+    type: comparison
+    statement: "ADFs are presented as a better target language than gadget-heavy meta-argumentation encodings because they represent set-attacks and other structured dependencies without adding artificial arguments that later require special treatment."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 803
+      section: "1 Introduction"
+      quote_fragment: "ADFs circumvent the addition of artificial arguments"
+
+  - id: claim12
+    type: limitation
+    statement: "The paper only sketches the DIAMOND implementation and reports preliminary speed observations, leaving a fuller empirical comparison to other systems for future work."
+    concepts:
+      - proof_theory
+    provenance:
+      paper: Brewka_2013_AbstractDialecticalFrameworksRevisited
+      page: 808
+      section: "6 ASP-based implementation and 7 Related work and Conclusions"
+      quote_fragment: "preliminary tests show that DIAMOND is significantly faster"

@@ -1,0 +1,10 @@
+{
+  "title": "Impact Measures for Gradual Argumentation Semantics",
+  "authors": ["Caren Al Anaissy", "Jérôme Delobelle", "Srdjan Vesic", "Bruno Yun"],
+  "year": 2024,
+  "arxiv_id": "2407.08302",
+  "doi": "10.48550/arXiv.2407.08302",
+  "s2_id": "4c59505c7bb1a70f46cf247cbfe02c98ebbac862",
+  "abstract": "Argumentation is a formalism allowing to reason with contradictory information by modeling arguments and their interactions. There are now an increasing number of gradual semantics to compute argument strengths and impact measures that have emerged to facilitate the interpretation of their outcomes. An impact measure assesses, for each argument, the impact of other arguments on its score. In this paper, we refine an existing impact measure and introduce a new impact measure rooted in Shapley values. We introduce several principles to evaluate those two impact measures w.r.t. some well-known gradual semantics. Our analysis provides deeper insights into the measures' functionality and desirability.",
+  "source": "arxiv"
+}

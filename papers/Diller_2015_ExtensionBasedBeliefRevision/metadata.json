@@ -1,0 +1,26 @@
+{
+  "title": "An Extension-Based Approach to Belief Revision in Abstract Argumentation",
+  "authors": [
+    "Martin Diller",
+    "Adrian Haret",
+    "Thomas Linsbichler",
+    "Stefan Rümmele",
+    "Stefan Woltran"
+  ],
+  "year": 2015,
+  "venue": "IJCAI 2015",
+  "venue_full": "Proceedings of the Twenty-Fourth International Joint Conference on Artificial Intelligence (IJCAI 2015)",
+  "pages": "2926-2932",
+  "url": "https://www.ijcai.org/Proceedings/15/Papers/414.pdf",
+  "doi": null,
+  "affiliations": [
+    "Institute of Information Systems, Vienna University of Technology, Austria"
+  ],
+  "tags": [
+    "belief-revision",
+    "abstract-argumentation",
+    "AGM",
+    "extension-semantics",
+    "representation-theorems"
+  ]
+}

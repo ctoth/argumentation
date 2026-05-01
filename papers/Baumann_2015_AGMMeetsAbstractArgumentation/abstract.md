@@ -1,0 +1,11 @@
+# Abstract
+
+## Original Text (Verbatim)
+
+In this paper we combine two of the most important areas of knowledge representation, namely belief revision and (abstract) argumentation. More precisely, we show how AGM-style expansion and revision operators can be defined for Dung's abstract argumentation frameworks (AFs). Our approach is based on a reformulation of the original AGM postulates for revision in terms of monotonic consequence relations for AFs. The latter are derived via a new family of logics, called Dung logics, which satisfy the main rationality criterion for logic-based approaches, namely that ordinary equivalence in these logics coincides with strong equivalence of the actual structure of the arguments. We introduced abstract argumentation frameworks (AFs) which are basically graphs with arguments as nodes and attacks as directed edges, then assign semantics to each AF of a collection of acceptable sets of arguments (so-called extensions) of AF. We show the existence of suitable AGM expansion and revision operators satisfying all relevant postulates. Based on these logics we derive expansion as a model-theoretic operation in a straightforward way. We show the existence of such operators. This is for the first time a formal and rigorous analysis including realizability results. Sect. 4 introduces our expansion operator. Based on AF consequences and AF expansion, we can then reformulate to Sect. 5 the AGM postulates. Furthermore, we illustrate why standard approaches based on distance measures do not work for AFs and present an adequate specific revision operator satisfying all postulates for a specific Dung logic.
+
+---
+
+## Our Interpretation
+
+This paper bridges AGM belief revision theory and Dung abstract argumentation by constructing "Dung logics" — formal logics whose models are AFs and where ordinary equivalence equals strong equivalence. Using these logics, the authors define concrete expansion (kernel union) and revision operators for AFs that satisfy the AGM postulates, providing the first rigorous AGM-compliant framework dynamics for argumentation. This is directly relevant to propstore's aspirational AGM operations listed in the project architecture.

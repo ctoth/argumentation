@@ -1,0 +1,4 @@
+---
+tags: [argumentation, qbaf, llm, claim-verification, explainability, contestability]
+---
+This paper presents ArgLLMs, a method that uses LLMs to generate pro/con arguments with confidence scores, structures them into Quantitative Bipolar Argumentation Frameworks (QBAFs), and applies DF-QuAD gradual semantics to produce explainable claim verification verdicts. The key contribution is bridging LLM outputs (graded confidence) with formal argumentation, proving that DF-QuAD satisfies base score monotonicity and argument relation contestability -- ensuring human overrides propagate predictably. Directly relevant to propstore's need to replace bare-float NLI with structured argumentation: LLM confidence becomes QBAF base scores, claims and stances become attack/support relations, and DF-QuAD provides principled aggregation with formal contestability guarantees.

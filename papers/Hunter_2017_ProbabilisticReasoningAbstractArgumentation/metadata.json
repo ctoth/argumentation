@@ -1,0 +1,13 @@
+{
+  "title": "Probabilistic Reasoning with Abstract Argumentation Frameworks",
+  "authors": [
+    "A. Hunter",
+    "Matthias Thimm"
+  ],
+  "year": "2017",
+  "arxiv_id": null,
+  "doi": "10.1613/jair.5393",
+  "abstract": "Abstract argumentation offers an appealing way of representing and evaluating arguments \nand counterarguments. This approach can be enhanced by considering probability \nassignments on arguments, allowing for a quantitative treatment of formal argumentation. \nIn this paper, we regard the assignment as denoting the degree of belief that an agent \nhas in an argument being acceptable. While there are various interpretations of this, an \nexample is how it could be applied to a deductive argument. Here, the degree of belief that \nan agent has in an argument being acceptable is a combination of the degree to which it \nbelieves the premises, the claim, and the derivation of the claim from the premises. We \nconsider constraints on these probability assignments, inspired by crisp notions from classical \nabstract argumentation frameworks and discuss the issue of probabilistic reasoning \nwith abstract argumentation frameworks. Moreover, we consider the scenario when assessments \non the probabilities of a subset of the arguments are given and the probabilities \nof the remaining arguments have to be derived, taking both the topology of the argumentation \nframework and principles of probabilistic reasoning into account. We generalise \nthis scenario by also considering inconsistent assessments, i.e., assessments that contradict \nthe topology of the argumentation framework. Building on approaches to inconsistency \nmeasurement, we present a general framework to measure the amount of conflict of these \nassessments and provide a method for inconsistency-tolerant reasoning.",
+  "url": "https://www.semanticscholar.org/paper/77c6f007fb81da2693c899abe7915e30e0c2165a",
+  "pdf_url": "https://jair.org/index.php/jair/article/download/11074/26256"
+}

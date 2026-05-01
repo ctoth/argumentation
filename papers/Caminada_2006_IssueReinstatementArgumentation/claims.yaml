@@ -1,0 +1,194 @@
+source:
+  paper: Caminada_2006_IssueReinstatementArgumentation
+  extraction_model: "claude-opus-4-20250514"
+  extraction_date: "2026-03-24"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "Reinstatement labellings (three-valued in/out/undec) are in exact bijection with complete extensions: every reinstatement labelling yields a complete extension via Lab2Ext, and every complete extension yields a reinstatement labelling via Ext2Lab."
+    concepts:
+      - reinstatement_labelling
+      - complete_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 4
+      section: "4.1 Reinstatement Labellings Without Restrictions"
+      quote_fragment: "L is a reinstatement labelling iff Lab2Ext(L) is a complete extension"
+
+  - id: claim2
+    type: observation
+    statement: "A reinstatement labelling with empty undec set corresponds exactly to a stable extension."
+    concepts:
+      - reinstatement_labelling
+      - stable_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 4
+      section: "4.2 Reinstatement Labellings with Empty undec"
+      quote_fragment: "L is a reinstatement labelling where undec is empty coincide with stable semantics"
+
+  - id: claim3
+    type: observation
+    statement: "A reinstatement labelling with maximal in set (equivalently, maximal out set) corresponds exactly to a preferred extension."
+    concepts:
+      - reinstatement_labelling
+      - preferred_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 5
+      section: "4.3 Reinstatement Labellings with Maximal in and Maximal out"
+
+  - id: claim4
+    type: observation
+    statement: "A reinstatement labelling with maximal undec set (equivalently, minimal in set, equivalently minimal out set) corresponds exactly to the grounded extension."
+    concepts:
+      - reinstatement_labelling
+      - grounded_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 5
+      section: "4.4 Reinstatement Labellings with Minimal in, Minimal out and Minimal undec"
+
+  - id: claim5
+    type: observation
+    statement: "A reinstatement labelling with minimal undec set corresponds exactly to a semi-stable extension."
+    concepts:
+      - reinstatement_labelling
+      - semi_stable_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 6
+      section: "4.4 Reinstatement Labellings with Minimal in, Minimal out and Minimal undec"
+
+  - id: claim6
+    type: observation
+    statement: "If a stable extension exists, the semi-stable extensions coincide with the stable extensions."
+    concepts:
+      - semi_stable_extension
+      - stable_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 7
+      section: "4.5 Overview"
+
+  - id: claim7
+    type: observation
+    statement: "There exists a strict partial ordering among Dung's semantics: every stable extension is semi-stable, every semi-stable is preferred, every preferred is complete, and every grounded extension is complete."
+    concepts:
+      - stable_extension
+      - semi_stable_extension
+      - preferred_extension
+      - complete_extension
+      - grounded_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 7
+      section: "4.5 Overview"
+
+  - id: claim8
+    type: mechanism
+    statement: "The Ext2Lab conversion works by assigning in to all arguments in the extension, out to all arguments attacked by the extension, and undec to the remainder. This is well-defined because complete extensions are conflict-free and every attacked argument has an in-labelled attacker."
+    concepts:
+      - reinstatement_labelling
+      - complete_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 3
+      section: "4 Labellings Versus Semantics"
+
+  - id: claim9
+    type: mechanism
+    statement: "Preferred semantics resolves floating conclusions that complete semantics leaves undecided, because preferred extensions maximize the in-labelled set and thereby rule out the all-undec labelling for mutually attacking arguments."
+    concepts:
+      - preferred_extension
+      - complete_extension
+      - floating_conclusion
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 8
+      section: "5 Semantics Revisited"
+      quote_fragment: "Under sceptical preferred semantics, the proposition that Lars likes ice-skating is justified"
+
+  - id: claim10
+    type: comparison
+    statement: "Semi-stable semantics is closer to stable semantics than preferred semantics is, because semi-stable minimizes the undecided set rather than maximizing the accepted set, but unlike stable semantics, semi-stable extensions are guaranteed to exist."
+    concepts:
+      - semi_stable_extension
+      - stable_extension
+      - preferred_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 7
+      section: "4.5 Overview"
+
+  - id: claim11
+    type: observation
+    statement: "An admissible stage extension (Args, Args+) where Args union Args+ is maximal is an admissible stage extension iff Args is a semi-stable extension."
+    concepts:
+      - semi_stable_extension
+      - stage_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 7
+      section: "4.5 Overview"
+
+  - id: claim12
+    type: mechanism
+    statement: "The excluded middle principle in argumentation holds when condensed labellings (which relax the in-condition from biconditional to implication) coincide with reinstatement labellings, meaning every argument with all attackers defeated must itself be accepted."
+    concepts:
+      - condensed_labelling
+      - reinstatement_labelling
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 10
+      section: "6 Summary and Discussion"
+
+  - id: claim13
+    type: limitation
+    statement: "The paper omits all proofs, deferring them to a separate technical report, so the formal verification of the labelling-semantics correspondences requires consulting the companion report."
+    concepts:
+      - reinstatement_labelling
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 1
+      section: "1 Introduction"
+      quote_fragment: "the proofs have been omitted from the current paper"
+
+  - id: claim14
+    type: comparison
+    statement: "Under preferred semantics, ruling out reinstatement labelling L2 (all-undec) for floating arguments like the Lars ice-skating example leads to justified floating conclusions, but this comes at the cost of committing to positions that depend on unresolved mutual attacks."
+    concepts:
+      - preferred_extension
+      - floating_conclusion
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 8
+      section: "5 Semantics Revisited"
+    notes: "The paper argues this is pragmatically useful but philosophically debatable -- the conclusion depends on which side of a mutual attack one takes"
+
+  - id: claim15
+    type: observation
+    statement: "A reinstatement labelling can be seen as a subjective but reasonable position an agent can take with respect to which arguments are in, out, or undec, and the set of all reinstatement labellings represents all possible reasonable positions."
+    concepts:
+      - reinstatement_labelling
+      - complete_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Caminada_2006_IssueReinstatementArgumentation
+      page: 8
+      section: "5 Semantics Revisited"

@@ -1,0 +1,155 @@
+paper: Lehtonen_2024_PreferentialASPIC
+claims:
+
+  # Core rephrasing result
+  - id: lehtonen2024-rephrasing-equivalence
+    claim: >
+      Argumentation semantics in ASPIC+ under the last-link principle can be equivalently
+      rephrased in terms of defeasible elements (assumptions and defeasible rules) rather
+      than fully constructed arguments, for admissible, complete, stable, preferred, and
+      grounded semantics under both elitist and democratic lifting.
+    type: theorem
+    confidence: 1.0
+    source: Theorem 10, Proposition 11
+    justification: >
+      The standard semantics definitions and our rephrased characterizations are shown
+      to be equivalent via correspondence between acceptance problems (Theorem 10).
+      Non-trivial extensions are shown equivalent to s-extensions (Proposition 11).
+    tags: [ASPIC+, last-link, semantics-equivalence, defeasible-elements]
+
+  # Grounded semantics polynomial result
+  - id: lehtonen2024-grounded-polynomial
+    claim: >
+      Acceptance under grounded semantics in ASPIC+ with last-link principle and either
+      elitist or democratic lifting is polynomial-time decidable.
+    type: theorem
+    confidence: 1.0
+    source: Proposition 14, follows from Theorem 16
+    justification: >
+      The grounded extension is computed as the least fixed point of a characteristic
+      function operating on assumptions. Each iteration takes polynomial time and at most
+      |R_d| + |K_a| iterations are needed to reach the fixed point.
+    tags: [ASPIC+, grounded-semantics, polynomial-time, last-link]
+
+  # Full complexity characterization
+  - id: lehtonen2024-complexity-characterization
+    claim: >
+      For ASPIC+ under last-link principle with elitist or democratic lifting:
+      credulous acceptance under admissible/complete/preferred/stable semantics is NP-complete;
+      skeptical acceptance under complete/stable is coNP-complete;
+      skeptical acceptance under preferred is Pi_2^P-complete.
+    type: theorem
+    confidence: 1.0
+    source: Theorem 16
+    justification: >
+      Upper bounds from the rephrasing to defeasible elements (Section 3). Lower bounds
+      by reduction from abstract AF reasoning, which has matching complexity
+      (Dvorak and Dunne 2012).
+    tags: [ASPIC+, computational-complexity, NP-complete, coNP-complete, last-link]
+
+  # Complexity matches abstract AFs
+  - id: lehtonen2024-no-complexity-increase
+    claim: >
+      Preferences under the last-link principle do not increase the computational
+      complexity of ASPIC+ reasoning compared to abstract argumentation frameworks,
+      in contrast to ASPIC+ under weakest-link.
+    type: corollary
+    confidence: 1.0
+    source: Theorem 16, comparison with Dvorak and Dunne 2012
+    justification: >
+      The complexity results exactly match those for standard abstract AF reasoning
+      tasks, showing the last-link preference handling adds no computational overhead
+      at the complexity-theoretic level.
+    tags: [ASPIC+, computational-complexity, last-link, abstract-AF]
+
+  # Weakest-link grounded is NP-hard
+  - id: lehtonen2024-weakest-link-np-hard
+    claim: >
+      Under the weakest-link principle, deciding whether the grounded extension
+      contains an argument for a queried atom is NP-hard, under both elitist
+      and democratic lifting.
+    type: theorem
+    confidence: 1.0
+    source: Proposition 17
+    justification: >
+      Shown via a counterexample construction where defeasible elements under
+      weakest-link do not hold under grounded and complete semantics.
+      The rephrasing approach for last-link does not transfer to weakest-link.
+    tags: [ASPIC+, weakest-link, NP-hard, grounded-semantics]
+
+  # ASP encoding scalability
+  - id: lehtonen2024-asp-scalability
+    claim: >
+      ASP-based direct reasoning on ASPIC+ argumentation theories scales significantly
+      better than first translating to abstract argumentation frameworks — solving
+      instances with up to 1500-1900 atoms vs 50-80 atoms for PyArg.
+    type: empirical
+    confidence: 0.9
+    source: Section 6, Table 1
+    justification: >
+      Empirical evaluation on random instances with 5 to 2100 atoms. ASPforASPIC
+      using Clingo 5.7.1 solves all instances up to 1200 atoms (elitist) within 600s,
+      while PyArg stalls at around 50-80 atoms. Under democratic lifting, similar but
+      slightly harder with more timeouts due to more defeats and preferences.
+    tags: [ASPIC+, ASP, scalability, empirical, Clingo]
+
+  # Rephrased defeat types
+  - id: lehtonen2024-defeat-rephrasing
+    claim: >
+      All defeat types in ASPIC+ under last-link (preference-independent, contradictory
+      rebuttal, contradictory undermine, under both elitist and democratic lifting) can
+      be captured via relations between assumptions (P,D) and individual defeasible rules,
+      without constructing full arguments.
+    type: theorem
+    confidence: 1.0
+    source: Propositions 1-4, Definitions 13-20
+    justification: >
+      Each defeat type is reformulated in terms of derivability from assumptions,
+      contradictories of conclusions, and preference comparisons on rules.
+      Propositions 1-4 establish correspondence with Definition 5 defeats.
+    tags: [ASPIC+, defeat, last-link, elitist, democratic]
+
+  # Defence by assumptions
+  - id: lehtonen2024-defence-by-assumptions
+    claim: >
+      Defence in ASPIC+ under last-link can be characterized at the level of
+      assumption sets rather than individual arguments, enabling polynomial-time
+      computation of the grounded extension via a Dung-style characteristic function
+      on assumptions.
+    type: theorem
+    confidence: 1.0
+    source: Definitions 21-22, Proposition 14
+    justification: >
+      Definition 22 defines defence by assumptions analogously to Dung's defence
+      for abstract AFs. The characteristic function on assumptions reaches a fixed
+      point in polynomial time (Proposition 14), yielding the grounded extension.
+    tags: [ASPIC+, defence, grounded-semantics, characteristic-function]
+
+  # Stable semantics correspondence
+  - id: lehtonen2024-stable-semantics
+    claim: >
+      An assumption set is an s-complete/s-preferred/s-stable assumption of an
+      argumentation theory T iff the corresponding set of arguments constitutes
+      a complete/preferred/stable extension of the AF defined by T.
+    type: theorem
+    confidence: 1.0
+    source: Theorem 10
+    justification: >
+      Direct correspondence between the standard semantics definitions and the
+      rephrased characterizations via defeasible elements.
+    tags: [ASPIC+, semantics, stable, preferred, complete]
+
+  # Weakest-link extension possibility
+  - id: lehtonen2024-weakest-link-extension
+    claim: >
+      The rephrasing approach for ASPIC+ semantics extends to the weakest-link
+      principle for admissible, complete, and stable semantics, with similar
+      complexity results, but grounded semantics becomes NP-hard.
+    type: theorem
+    confidence: 1.0
+    source: Section 7, Proposition 17
+    justification: >
+      Section 7 shows the approach can capture weakest-link but with a complexity
+      jump for grounded semantics under weakest-link (NP-hard vs polynomial for
+      last-link).
+    tags: [ASPIC+, weakest-link, complexity, extension]

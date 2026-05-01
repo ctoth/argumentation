@@ -1,0 +1,368 @@
+source:
+  paper: Caminada_2007_EvaluationArgumentationFormalisms
+  extraction_model: "claude-opus-4-6"
+  extraction_date: "2026-03-30"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "An argumentation system is a pair (A, Def) where A is a set of arguments built from a defeasible theory and Def is a binary defeat relation on A; arguments are constructed from strict rules (a1,...,an -> psi) and defeasible rules (a1,...,an => psi)."
+    concepts:
+      - argumentation_framework
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 4
+      section: "2. Argumentation process"
+      quote_fragment: "An argumentation system is a pair (A, Def) where A is a set of arguments and Def is a subset of A x A"
+
+  - id: claim2
+    type: observation
+    statement: "A defeasible theory is a pair T = (S, D) where S is a set of strict rules and D is a set of defeasible rules, from which arguments are recursively constructed."
+    concepts:
+      - defeasible_theory
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 5
+      section: "2. Argumentation process"
+      quote_fragment: "A defeasible theory T is a pair (S, D)"
+
+  - id: claim3
+    type: observation
+    statement: "An argument is strict if it contains no defeasible rules (DefRules(A) = empty set); otherwise it is defeasible. Strict arguments cannot be rebutted under standard rebutting."
+    concepts:
+      - structured_argumentation
+      - strict_argument
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 6
+      section: "2. Argumentation process"
+      quote_fragment: "An argument A is strict iff DefRules(A) = empty set"
+
+  - id: claim4
+    type: mechanism
+    statement: "Standard rebutting allows argument A to rebut argument B if A's conclusion contradicts the conclusion of a non-strict sub-argument B' of B. This attack targets the conclusion regardless of whether B' uses a defeasible or strict top rule."
+    concepts:
+      - rebutting
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 7
+      section: "2. Argumentation process"
+      quote_fragment: "A rebuts B iff there exists B' in Sub(B) with Conc(A) = -c and Conc(B') = c, where B' is a non-strict argument"
+
+  - id: claim5
+    type: mechanism
+    statement: "Undercutting allows argument A to undercut argument B if A's conclusion challenges the applicability of a defeasible rule used in some sub-argument of B, using an objectification operator that converts meta-level expressions to object-level ones."
+    concepts:
+      - undercutting
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 7
+      section: "2. Argumentation process"
+      quote_fragment: "A undercuts B iff there exists B' in Sub(B) such that Conc(A) targets the applicability of a defeasible rule"
+
+  - id: claim6
+    type: observation
+    statement: "Justified conclusions (Output) are defined as the intersection of conclusions across all extensions: Output = intersection of Conc(E_i) for all extensions E_1,...,E_n under a given Dung semantics."
+    concepts:
+      - justified_conclusion
+      - argumentation_framework
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 8
+      section: "2. Argumentation process"
+      quote_fragment: "Output = intersection of Conc(E_i) over all i"
+
+  - id: claim7
+    type: observation
+    statement: "Existing rule-based argumentation formalisms including ASPIC, Prakken & Sartor's system, and Garcia & Simari's system can produce contradictory justified conclusions when strict rules interact with defeasible rules, because the strict-rule closure of justified conclusions may be inconsistent."
+    concepts:
+      - structured_argumentation
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 9
+      section: "3. Some problematic examples"
+      quote_fragment: "the closure of Output under strict rules is inconsistent"
+
+  - id: claim8
+    type: observation
+    statement: "In Example 4 ('Married John'), under grounded semantics both 'John is married' and 'John is a bachelor' are justified, because the strict rules that would expose the contradiction are not reflected in the argument defeat structure."
+    concepts:
+      - structured_argumentation
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 10
+      section: "3. Some problematic examples"
+      quote_fragment: "both 'John is married' and 'John is a bachelor' are considered justified"
+
+  - id: claim9
+    type: observation
+    statement: "Postulate 1 (Closure): An argumentation system satisfies closure iff (1) the conclusions of each extension are closed under strict rules: Conc(E_i) = Cl_S(Conc(E_i)), and (2) Output = Cl_S(Output)."
+    concepts:
+      - rationality_postulate
+      - closure_postulate
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 13
+      section: "4. Rationality postulates"
+      quote_fragment: "Conc(E_i) = Cl_S(Conc(E_i)) for each 1 <= i <= n"
+
+  - id: claim10
+    type: observation
+    statement: "Postulate 2 (Direct Consistency): An argumentation system satisfies direct consistency iff (1) Conc(E_i) is consistent for each extension E_i, and (2) Output is consistent."
+    concepts:
+      - rationality_postulate
+      - direct_consistency_postulate
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 13
+      section: "4. Rationality postulates"
+      quote_fragment: "Conc(E_i) is consistent for each 1 <= i <= n"
+
+  - id: claim11
+    type: observation
+    statement: "Postulate 3 (Indirect Consistency): An argumentation system satisfies indirect consistency iff (1) Cl_S(Conc(E_i)) is consistent for each extension E_i, and (2) Cl_S(Output) is consistent."
+    concepts:
+      - rationality_postulate
+      - indirect_consistency_postulate
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 14
+      section: "4. Rationality postulates"
+      quote_fragment: "Cl_S(Conc(E_i)) is consistent for each 1 <= i <= n"
+
+  - id: claim12
+    type: observation
+    statement: "If an argumentation system satisfies indirect consistency, it necessarily satisfies direct consistency, because any set P is a subset of Cl_S(P), so consistency of Cl_S(P) implies consistency of P."
+    concepts:
+      - rationality_postulate
+      - direct_consistency_postulate
+      - indirect_consistency_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 14
+      section: "4. Rationality postulates"
+      quote_fragment: "indirect consistency implies direct consistency"
+
+  - id: claim13
+    type: mechanism
+    statement: "Propositional closure Cl_pp(S) converts strict rules to material implications via Prop(S), computes classical propositional closure Cn_prop, then converts back to strict rules via Rules: Cl_pp(S) = Rules(Cn_prop(Prop(S))). This is a closure operator (extensive, monotone, idempotent)."
+    concepts:
+      - propositional_closure
+      - closure_operator
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 16
+      section: "5. Possible solutions"
+      quote_fragment: "Cl_pp(S) = Rules(Cn_prop(Prop(S)))"
+
+  - id: claim14
+    type: observation
+    statement: "Theorem 1: Under grounded semantics with consistent Cl_pp(S), the argumentation system built from (Cl_pp(S), D) satisfies all three rationality postulates (closure, direct consistency, indirect consistency). But this guarantee does not extend to preferred or stable semantics."
+    concepts:
+      - propositional_closure
+      - rationality_postulate
+      - grounded_extension
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 17
+      section: "5.1. Solution 1: Cl_pp"
+      quote_fragment: "satisfies closure and indirect consistency under grounded extension"
+
+  - id: claim15
+    type: mechanism
+    statement: "Restricted rebutting (Definition 15) limits rebutting to target only conclusions of defeasible top rules: argument A restrictively rebuts B on (A', B') iff A' is a sub-argument of A with Conc(A') = -c and B' is a sub-argument of B whose top rule is defeasible with conclusion c."
+    concepts:
+      - restricted_rebutting
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 19
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "A restrictively rebuts B on (A', B') iff... the top rule of B' is a defeasible rule"
+
+  - id: claim16
+    type: mechanism
+    statement: "Transposition closure Cl_tp(S) adds to S every transposition of every rule in S: given a strict rule a1,...,an -> psi, a transposition swaps one antecedent a_i with the negated consequent -psi, yielding a1,...,-psi,...,an -> -a_i. Cl_tp is the minimal fixpoint containing S and closed under transposition."
+    concepts:
+      - transposition_closure
+      - closure_operator
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 20
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "Cl_tp(S) is a minimal set such that S is a subset and if s is in Cl_tp(S) and t is a transposition of s then t is in Cl_tp(S)"
+
+  - id: claim17
+    type: observation
+    statement: "Theorem 2: Under any of Dung's standard semantics, the argumentation system built from (Cl_tp(S), D) with restricted rebutting and consistent Cl_tp(S) satisfies direct consistency and indirect consistency."
+    concepts:
+      - transposition_closure
+      - restricted_rebutting
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 20
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "satisfies direct consistency and indirect consistency"
+
+  - id: claim18
+    type: observation
+    statement: "Theorem 3: Under complete semantics (and therefore grounded, preferred, stable), the argumentation system built from (Cl_tp(S), D) with restricted rebutting and consistent S satisfies closure."
+    concepts:
+      - transposition_closure
+      - restricted_rebutting
+      - closure_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 21
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "satisfies closure and consistency"
+
+  - id: claim19
+    type: observation
+    statement: "Theorem 4: Under any of Dung's standard semantics, transposition closure with restricted rebutting and consistent Cl_tp(S) satisfies all three rationality postulates simultaneously. This is the main result — Cl_tp + restricted rebutting is the strictly superior solution."
+    concepts:
+      - transposition_closure
+      - restricted_rebutting
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 21
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "satisfies direct consistency and indirect consistency under any Dung semantics"
+
+  - id: claim20
+    type: comparison
+    statement: "Propositional closure Cl_pp only guarantees all three postulates under grounded semantics, while transposition closure Cl_tp with restricted rebutting guarantees all three postulates under ALL of Dung's standard semantics (grounded, complete, preferred, stable)."
+    concepts:
+      - propositional_closure
+      - transposition_closure
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 22
+      section: "Table 2"
+      quote_fragment: "Table 2 summary"
+
+  - id: claim21
+    type: observation
+    statement: "The three rationality postulates apply to ANY argumentation formalism that uses Dung's semantics to compute extensions, not just the specific ASPIC-like system analyzed in this paper."
+    concepts:
+      - rationality_postulate
+      - argumentation_framework
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 23
+      section: "6. Summary and discussion"
+      quote_fragment: "these postulates apply to any argumentation formalism using Dung semantics"
+
+  - id: claim22
+    type: observation
+    statement: "Transposition closure can generate exponentially many rules in the worst case: a set of k strict rules each of size at most n can generate up to k * 4^n transpositions, though in practice far fewer are generated due to deduplication."
+    concepts:
+      - transposition_closure
+      - computational_complexity
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 23
+      section: "6. Summary and discussion"
+      quote_fragment: "at most k * 4^n transpositions"
+
+  - id: claim23
+    type: observation
+    statement: "For query-based argumentation (answering whether a specific conclusion is justified), the full transposition closure need not be materialized — only the relevant rules for the query need to be computed, avoiding the exponential blowup."
+    concepts:
+      - transposition_closure
+      - computational_complexity
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 23
+      section: "6. Summary and discussion"
+      quote_fragment: "for query-based approaches, closure doesn't cause problems"
+
+  - id: claim24
+    type: observation
+    statement: "Transposition closure is related to Clark completion for logic programs: closing a set of strict rules under transposition corresponds to computing the Clark completion of the equivalent logic program."
+    concepts:
+      - transposition_closure
+      - logic_programming
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 24
+      section: "6. Summary and discussion"
+      quote_fragment: "transposition closure relates to Clark completion"
+
+  - id: claim25
+    type: limitation
+    statement: "The paper only addresses propositional-level argumentation; extension to first-order rules, argument preferences/strengths, and stable semantics existence guarantees are left as open problems."
+    concepts:
+      - structured_argumentation
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 24
+      section: "6. Summary and discussion"
+      quote_fragment: "first-order extensions are left for future work"
+
+  - id: claim26
+    type: observation
+    statement: "Restricted rebutting is strictly weaker than standard rebutting: if A restrictively rebuts B then A rebuts B, but not vice versa. The restriction prevents defeasible arguments from attacking conclusions that follow from strict rules alone."
+    concepts:
+      - restricted_rebutting
+      - rebutting
+      - structured_argumentation
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 19
+      section: "5.2. Solution 2: Cl_tp"
+      quote_fragment: "restricted rebutting is a special case of rebutting"
+
+  - id: claim27
+    type: observation
+    statement: "ASPIC+ (Modgil & Prakken 2014, 2018) adopted both transposition closure and restricted rebutting from this paper as its solution to satisfying the rationality postulates, making this paper directly foundational for ASPIC+."
+    concepts:
+      - structured_argumentation
+      - rationality_postulate
+    context: ctx_structured_argumentation
+    provenance:
+      paper: Caminada_2007_EvaluationArgumentationFormalisms
+      page: 23
+      section: "6. Summary and discussion"
+      quote_fragment: "the preferred solution"

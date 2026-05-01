@@ -1,0 +1,14 @@
+{
+  "title": "Adapting the DF-QuAD Algorithm to Bipolar Argumentation",
+  "authors": [
+    "Antonio Rago",
+    "Kristijonas Cyras",
+    "Francesca Toni"
+  ],
+  "year": 2016,
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": "We define a quantitative semantics for evaluating the strength of arguments in Bipolar Argumentation Frameworks (BAFs) adapted from the DF-QuAD algorithm previously used for evaluating the strength of arguments in Quantitative Argumentation Debate (QuAD) frameworks. We also sketched and compared some properties of the semantics and its relationship to other argumentation frameworks, as well as some properties of the semantics.",
+  "url": "https://ceur-ws.org/Vol-1672/paper_3.pdf",
+  "pdf_url": "https://ceur-ws.org/Vol-1672/paper_3.pdf"
+}

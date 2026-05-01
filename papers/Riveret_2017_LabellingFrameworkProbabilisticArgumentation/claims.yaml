@@ -1,0 +1,185 @@
+source:
+  paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+
+claims:
+
+  - id: claim1
+    type: mechanism
+    statement: "Probabilistic labelling frames (PLFs) subsume both probabilistic graph frames (PGFs) and probabilistic theory frames (PTFs) in expressiveness, establishing a hierarchy PTF < PGF < PLF."
+    concepts:
+      - probabilistic_labelling_frame
+      - probabilistic_argumentation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 21
+      section: "3.1.2"
+      quote_fragment: "PLFs subsume both PTFs and PGFs"
+
+  - id: claim2
+    type: mechanism
+    statement: "The {ON, OFF} label pair captures structural uncertainty about argument inclusion, orthogonal to the {IN, OUT, UN} acceptance labels."
+    concepts:
+      - argument_labelling
+      - structural_uncertainty
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 9
+      section: "2.2"
+      quote_fragment: "a labelling needs also to be able to express the fact that an argument is actually included and has some effect (ON) or not included and has no effect (OFF)"
+
+  - id: claim3
+    type: mechanism
+    statement: "The combined label set {IN, OUT, UN, OFF} captures both structural and acceptance uncertainty simultaneously in a single labelling."
+    concepts:
+      - argument_labelling
+      - acceptance_uncertainty
+      - structural_uncertainty
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 13
+      section: "2.2"
+      quote_fragment: "X-{IN, OUT, UN, OFF}-labelling specification combines {ON,OFF}-labelling with {IN,OUT,UN}-labelling of the subgraph induced by ON arguments"
+
+  - id: claim4
+    type: observation
+    statement: "For any probabilistic labelling frame with {IN, OUT, UN, OFF} labels, the probabilities of all labels for a given argument sum to 1: P(IN) + P(OUT) + P(UN) + P(OFF) = 1."
+    concepts:
+      - probabilistic_labelling_frame
+      - argument_labelling
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 22
+      section: "3.2.1"
+      quote_fragment: "P(L_A = IN) + P(L_A = OUT) + P(L_A = UN) + P(L_A = OFF) = 1"
+
+  - id: claim5
+    type: observation
+    statement: "The probability of an argument being accepted (IN) is bounded above by its probability of being included (ON): P(L_A = IN) <= P(L_A = ON)."
+    concepts:
+      - acceptance_probability
+      - probabilistic_argumentation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 32
+      section: "4.3"
+      quote_fragment: "P(L_A = IN) <= P(L_A = ON)"
+
+  - id: claim6
+    type: observation
+    statement: "The probability of inclusion of an argument cannot exceed the probability of inclusion of its subarguments: P(L_B = ON) <= P(L_A = ON) when A is a subargument of B."
+    concepts:
+      - subargument_relation
+      - probabilistic_argumentation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 28
+      section: "4.1"
+      quote_fragment: "P(L_B = ON) <= P(L_A = ON)"
+
+  - id: claim7
+    type: observation
+    statement: "For two conflicting literals, the sum of their acceptance probabilities cannot exceed 1: P(K_phi1 = in) + P(K_phi2 = in) <= 1."
+    concepts:
+      - probabilistic_argumentation
+      - conflict_relation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 25
+      section: "3.3"
+      quote_fragment: "P(K_phi1 = in) + P(K_phi2 = in) <= 1"
+
+  - id: claim8
+    type: comparison
+    statement: "The PLF framework captures the constellations approach (Li et al. 2012 PAGs) as a special case using {ON, OFF}-labellings, but the constellations approach cannot capture the finer-grained acceptance uncertainty of PLFs."
+    concepts:
+      - probabilistic_labelling_frame
+      - constellations_approach
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 29
+      section: "4.1"
+      quote_fragment: "PLFs can capture constellations approach but NOT vice versa"
+
+  - id: claim9
+    type: comparison
+    statement: "The PLF framework captures the epistemic approach (Hunter and Thimm 2013) as a special case using {IN, OUT, UN}-labellings."
+    concepts:
+      - probabilistic_labelling_frame
+      - epistemic_probability
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 31
+      section: "4.2"
+      quote_fragment: "epistemic probabilities directly correspond to PLFs based on {IN, OUT, UN}-labellings"
+
+  - id: claim10
+    type: observation
+    statement: "Coherence property holds in PLFs: P(L_A = IN) + P(L_B = IN) <= 1 when argument A attacks argument B."
+    concepts:
+      - coherence
+      - probabilistic_argumentation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 31
+      section: "4.2"
+      quote_fragment: "P_PEF(A) + P_PEF(B) <= 1 for A attacks B"
+
+  - id: claim11
+    type: mechanism
+    statement: "Four justification labels (OFJ, SKJ, CRJ, NOJ) are derived from acceptance probability distributions: OFJ iff P(OFF)=1, SKJ iff P(IN)=1, CRJ iff 0<P(IN)<1, NOJ iff P(IN)=0 and P(OUT)>0 or P(UN)>0."
+    concepts:
+      - argument_justification
+      - probabilistic_labelling_frame
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 23
+      section: "3.2.2"
+      quote_fragment: "Proposition 3.2 relates justification labels to acceptance probabilities"
+
+  - id: claim12
+    type: mechanism
+    statement: "Semi-abstract argumentation graphs include both attack and direct subargument relations, intermediate between Dung's abstract AFs and fully structured formalisms."
+    concepts:
+      - argumentation_framework
+      - subargument_relation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 6
+      section: "2.1"
+      quote_fragment: "A semi-abstract argumentation graph is a tuple (A, attack, subargument)"
+
+  - id: claim13
+    type: mechanism
+    statement: "Worst-case sensitive labelling of statements uses five labels {in, out, un, off, unp} where unp (unprovable) means no argument exists with that conclusion."
+    concepts:
+      - statement_labelling
+      - argument_labelling
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 16
+      section: "2.3"
+      quote_fragment: "the label unp caters for queries about a statement for which there is no argument"
+
+  - id: claim14
+    type: limitation
+    statement: "The constellations approach (PAGs) assumes probabilistic independence of argument inclusion, which the PLF framework does not require."
+    concepts:
+      - constellations_approach
+      - probabilistic_argumentation
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 27
+      section: "4.1"
+      quote_fragment: "the probability of A appearing in the true argumentation graph is independent of the probability of appearance of every other argument"
+
+  - id: claim15
+    type: observation
+    statement: "The mapping from PTFs to PGFs is non-injective and non-surjective — different subtheories can produce the same argumentation subgraph."
+    concepts:
+      - probabilistic_argumentation
+      - structural_uncertainty
+    provenance:
+      paper: Riveret_2017_LabellingFrameworkProbabilisticArgumentation
+      page: 17
+      section: "3.1.1"
+      quote_fragment: "the mapping between the sample space of a PTF and its corresponding PGF may be neither injective nor surjective"

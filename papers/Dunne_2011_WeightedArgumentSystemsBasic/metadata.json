@@ -1,0 +1,16 @@
+{
+  "title": "Weighted argument systems: Basic definitions, algorithms, and complexity results",
+  "authors": [
+    "Paul E. Dunne",
+    "Anthony Hunter",
+    "Peter McBurney",
+    "Simon Parsons",
+    "Michael Wooldridge"
+  ],
+  "year": "2011",
+  "arxiv_id": null,
+  "doi": "10.1016/j.artint.2010.09.005",
+  "abstract": "We introduce and investigate a natural extension of Dung's well-known model of argument systems in which attacks are associated with a weight, indicating the relative strength of the attack. A key concept in our framework is the notion of an inconsistency budget, which characterises how much inconsistency we are prepared to tolerate: given an inconsistency budget β, we would be prepared to disregard attacks up to a total weight of β. The key advantage of this approach is that it permits a much finer grained level of analysis of argument systems than unweighted systems, and gives useful solutions when conventional (unweighted) argument systems have none. We begin by reviewing Dung's abstract argument systems, and motivating weights on attacks (as opposed to the alternative possibility, which is to attach weights to arguments). We then present the framework of weighted argument systems. We investigate solutions for weighted argument systems and the complexity of computing such solutions, focussing in particular on weighted variations of grounded extensions. Finally, we relate our work to the most relevant examples of argumentation frameworks that incorporate strengths.",
+  "url": "https://www.semanticscholar.org/paper/8202ca0ddd6099a2c9aab3c6e6bdd401eec36a0a",
+  "pdf_url": "https://doi.org/10.1016/j.artint.2010.09.005"
+}

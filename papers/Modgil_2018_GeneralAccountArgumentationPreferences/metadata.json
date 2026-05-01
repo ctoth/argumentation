@@ -1,0 +1,13 @@
+{
+  "title": "A General Account of Argumentation with Preferences",
+  "authors": [
+    "Sanjay Modgil",
+    "Henry Prakken"
+  ],
+  "year": "2018",
+  "arxiv_id": "1804.06763",
+  "doi": "10.1016/j.artint.2012.10.008",
+  "abstract": "This paper builds on the recent ASPIC+ formalism, to develop a general framework for argumentation with preferences. We motivate a revised definition of conflict free sets of arguments, adapt ASPIC+ to accommodate a broader range of instantiating logics, and show that under some assumptions, the resulting framework satisfies key properties and rationality postulates. We then show that the generalised framework accommodates Tarskian logic instantiations extended with preferences, and then study instantiations of the framework by classical logic approaches to argumentation. We conclude by arguing that ASPIC+'s modelling of defeasible inference rules further testifies to the generality of the framework, and then examine and counter recent critiques of Dung's framework and its extensions to accommodate preferences.",
+  "url": "http://arxiv.org/abs/1804.06763v1",
+  "pdf_url": "https://arxiv.org/pdf/1804.06763v1"
+}

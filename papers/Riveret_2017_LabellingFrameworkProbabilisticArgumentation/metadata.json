@@ -1,0 +1,23 @@
+{
+  "title": "A labelling framework for probabilistic argumentation",
+  "authors": [
+    "Régis Riveret",
+    "P. Baroni",
+    "Yang Gao",
+    "Guido Governatori",
+    "A. Rotolo",
+    "G. Sartor"
+  ],
+  "year": "2017",
+  "arxiv_id": "1708.00109",
+  "doi": "10.1007/s10472-018-9574-1",
+  "abstract": "The combination of argumentation and probability paves the way to new accounts of qualitative and quantitative uncertainty, thereby offering new theoretical and applicative opportunities. Due to a variety of interests, probabilistic argumentation is approached in the literature with different frameworks, pertaining to structured and abstract argumentation, and with respect to diverse types of uncertainty, in particular the uncertainty on the credibility of the premises, the uncertainty about which arguments to consider, and the uncertainty on the acceptance status of arguments or statements. Towards a general framework for probabilistic argumentation, we investigate a labelling-oriented framework encompassing a basic setting for rule-based argumentation and its (semi-) abstract account, along with diverse types of uncertainty. Our framework provides a systematic treatment of various kinds of uncertainty and of their relationships and allows us to back or question assertions from the literature.",
+  "url": "https://www.semanticscholar.org/paper/b0df6a1d0b3055d9fbad2fd14a891dc32a9179d5",
+  "pdf_url": "https://cris.unibo.it/bitstream/11585/644602/2/POST%20PRINT_A_Labelling_Framework.pdf",
+  "bibtex": "@Article{Riveret2017ALF,\n author = {Régis Riveret and P. Baroni and Yang Gao and Guido Governatori and A. Rotolo and G. Sartor},\n booktitle = {Annals of Mathematics and Artificial Intelligence},\n journal = {Annals of Mathematics and Artificial Intelligence},\n pages = {21 - 71},\n title = {A labelling framework for probabilistic argumentation},\n volume = {83},\n year = {2017}\n}\n",
+  "venue": "Annals of Mathematics and Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "83",
+  "pages": "21 - 71",
+  "abstract": "The combination of argumentation and probability paves the way to new accounts of qualitative and quantitative uncertainty, thereby offering new theoretical and applicative opportunities. Due to a variety of interests, probabilistic argumentation is approached in the literature with different frameworks, pertaining to structured and abstract argumentation, and with respect to diverse types of uncertainty, in particular the uncertainty on the credibility of the premises, the uncertainty about which arguments to consider, and the uncertainty on the acceptance status of arguments or statements. Towards a general framework for probabilistic argumentation, we investigate a labelling-oriented framework encompassing a basic setting for rule-based argumentation and its (semi-) abstract account, along with diverse types of uncertainty. Our framework provides a systematic treatment of various kinds of uncertainty and of their relationships and allows us to back or question assertions from the literature."
+}

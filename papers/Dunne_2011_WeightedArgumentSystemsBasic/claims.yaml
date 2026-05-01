@@ -1,0 +1,151 @@
+source:
+  paper: Dunne_2011_WeightedArgumentSystemsBasic
+produced_by:
+  agent: "gpt-5-codex"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T08:06:39Z"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "The paper defines a weighted argument system as a Dung framework whose attacks carry positive real-valued weights, and it studies semantics by evaluating reduced frameworks obtained after deleting affordable attack subsets."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 5
+      section: "Definition 4-6"
+      quote_fragment: "Weighted argument systems extend Dung-style abstract argument systems by adding numeric weights to every edge in the attack graph."
+
+  - id: claim2
+    type: mechanism
+    statement: "The paper computes weighted semantics by deleting a subset of attacks whose total weight is at most the inconsistency budget beta and then applying the ordinary Dung semantics to the reduced framework."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 5
+      section: "3.1 Inconsistency budgets"
+      quote_fragment: "We use inconsistency budgets to introduce weighted variants of the semantics introduced for abstract argument systems above."
+
+  - id: claim3
+    type: comparison
+    statement: "Weighting attacks is more appropriate than weighting arguments for this framework because attack weights can be adjusted locally, whereas a single argument-strength value must globally mediate every attack involving that argument."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 4
+      section: "2.1 Extending Dung's framework"
+      quote_fragment: "A value of attack on alpha and we want to choose a value for alpha to be stronger or weaker than alpha', but this is a global decision."
+
+  - id: claim4
+    type: observation
+    statement: "Weighted grounded semantics differs fundamentally from ordinary grounded semantics because beta-grounded extensions need not be unique and non-empty grounded solutions can emerge as the inconsistency budget increases."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 6
+      section: "Example 1 and Proposition 1"
+      quote_fragment: "In weighted systems there may be many beta-grounded extensions, while for every (X,A) we have |E_gr((X,A))| = 1."
+
+  - id: claim5
+    type: observation
+    statement: "Verifying whether a specified set is a weighted grounded extension is polynomial-time decidable, but weighted credulous grounded acceptance is NP-complete and weighted skeptical grounded acceptance is coNP-complete."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 8
+      section: "Table 2 and Proposition 2-5"
+      quote_fragment: "The decision problem WVE_GR with instances ... is polynomial time decidable ... WCA_GR is NP-complete ... WSA_GR is coNP-complete."
+
+  - id: claim6
+    type: observation
+    statement: "The hardness of weighted grounded acceptance is robust: NP-hardness and coNP-hardness persist even for acyclic, symmetric, planar, tripartite, and bounded-degree attack graphs."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 11
+      section: "Proposition 6, Corollary 1, Proposition 7, Proposition 9, Proposition 10"
+      quote_fragment: "WCA_GR is NP-complete even if (X,A) is acyclic ... WCA_GR is NP-complete even if (X,A) is symmetric."
+
+  - id: claim7
+    type: mechanism
+    statement: "Minimal-budget reasoning is treated as an optimization problem over discarded attacks, with an oracle-guided binary search algorithm and a mixed-integer linear programming formulation that minimize the total weight of disabled attacks."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 15
+      section: "Algorithm 1 and 5.1 Computing minimal budgets via mixed integer linear programming"
+      quote_fragment: "Algorithm 1 Computing MIN-BUDGET ... The MILP may be understood as follows."
+
+  - id: claim8
+    type: observation
+    statement: "Computing MIN-BUDGET and MIN-WITNESS is FP^NP-complete in general, but these functions become polynomial-time computable on bipartite acyclic weighted argument systems."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 20
+      section: "Proposition 13, Corollary 2, Proposition 16"
+      quote_fragment: "MIN-BUDGET is FP^NP-complete ... if (X,A) is bipartite and acyclic then MIN-BUDGET and MIN-WITNESS are polynomial time computable."
+
+  - id: claim9
+    type: observation
+    statement: "The extremal normalized inconsistency budget needed to force a non-empty grounded extension is exactly tau(n) = 1/n for n-argument weighted systems."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 22
+      section: "6. Combinatorial properties"
+      quote_fragment: "The following result gives an exact bound on tau(n). Proposition 17. tau(n) = 1/n."
+
+  - id: claim10
+    type: comparison
+    statement: "Every preference-based argumentation framework can be simulated by a weighted system at the preferred-semantics level, but almost all preference orderings still fail to capture the full family of weighted grounded behaviors."
+    concepts:
+      - preference_based_argumentation
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 25
+      section: "7.1 Preference-based and value-based frameworks"
+      quote_fragment: "There is a weight function w and inconsistency budget beta for which E_pr^PAF(X,A,>) subseteq E_pr^wt((X,A,w), beta)."
+
+  - id: claim11
+    type: comparison
+    statement: "Resolution-based grounded semantics and extended argumentation frameworks recover some weighted grounded behaviors, but neither provides a full replacement for weighted argument systems because certain weighted reductions and equal-weight mutual attacks fall outside those formalisms."
+    concepts:
+      - dung_framework
+      - acceptability
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 28
+      section: "7.2 Resolution-based argument semantics and 7.3 Extended argumentation frameworks"
+      quote_fragment: "We can describe quite basic weighted systems and budgets for which E_gr^wt is not encapsulated by replacing weights and budget by an alternative simplifying mechanism."
+
+  - id: claim12
+    type: limitation
+    statement: "The framework deliberately leaves the source and meaning of attack weights external to the formalism, offering examples such as majority voting, inconsistency measures, and attack rankings rather than a single canonical interpretation."
+    concepts:
+      - dung_framework
+    provenance:
+      paper: Dunne_2011_WeightedArgumentSystemsBasic
+      page: 6
+      section: "3.2 Where do weights come from?"
+      quote_fragment: "We discuss three possible interpretations of weights on attacks."

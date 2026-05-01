@@ -1,0 +1,4 @@
+---
+tags: [argumentation-merging, dung-frameworks, partial-argumentation, distance-based-merging, multi-agent]
+---
+Presents a formal framework for merging multiple Dung argumentation frameworks from different agents using distance-based operators lifted from IC merging, introducing partial argumentation frameworks (PAFs) with three-valued attack relations (attack/non-attack/ignorance) to handle incomplete agent knowledge. The paper defines edit distance between PAFs, proves properties of merging operators under sum/max/leximax aggregation, and establishes connections between majority voting and distance-based merging. Directly relevant to propstore's multi-agent argumentation layer, providing principled operators for combining conflicting attack relations while respecting agents' incomplete knowledge through the non-commitment PAF formalism.

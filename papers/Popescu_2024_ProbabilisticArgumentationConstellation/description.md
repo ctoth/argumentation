@@ -1,0 +1,4 @@
+---
+tags: [probabilistic-argumentation, tree-decomposition, dynamic-programming, complexity, constellation-approach]
+---
+Presents the first exact tree-decomposition-based dynamic programming algorithms for computing probabilities in Probabilistic Argumentation Frameworks under the constellation approach, along with new counting complexity results (#·P-complete for set-extension, #·NP-complete for acceptability). The algorithms exploit bounded treewidth to achieve fixed-parameter tractability, using nice tree-decompositions with I/O/U labellings and a witness mechanism for tracking attack justifications. Directly relevant to propstore's PrAF implementation, providing both the algorithmic blueprint for exact computation and complexity-theoretic guidance for choosing between exact DP (low treewidth) and Monte Carlo approximation (high treewidth).

@@ -1,0 +1,286 @@
+source:
+  paper: Dung_1995_AcceptabilityArguments
+  extraction_model: "claude-opus-4-6"
+  extraction_date: "2026-03-22"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "An argumentation framework is an abstract pair AF = (AR, attacks) where AR is a set of arguments and attacks is a binary relation on AR, with arguments treated as abstract entities whose role is solely determined by their relations to other arguments."
+    concepts:
+      - argumentation_framework
+      - attack_relation
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 326
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "An argumentation framework is a pair AF = <AR, attacks>"
+
+  - id: claim2
+    type: observation
+    statement: "A set of arguments is conflict-free if no argument in the set attacks another argument in the set."
+    concepts:
+      - conflict_free_set
+      - attack_relation
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 326
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim3
+    type: observation
+    statement: "An argument A is acceptable with respect to a set S iff for each attacker B of A, B is attacked by some member of S."
+    concepts:
+      - acceptability
+      - admissible_set
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 326
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim4
+    type: observation
+    statement: "A conflict-free set S is admissible iff each argument in S is acceptable with respect to S."
+    concepts:
+      - admissible_set
+      - conflict_free_set
+      - acceptability
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 326
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim5
+    type: observation
+    statement: "A preferred extension is a maximal admissible set with respect to set inclusion."
+    concepts:
+      - preferred_extension
+      - admissible_set
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 327
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim6
+    type: observation
+    statement: "Every argumentation framework possesses at least one preferred extension."
+    concepts:
+      - preferred_extension
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 327
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "Corollary 12"
+
+  - id: claim7
+    type: observation
+    statement: "A conflict-free set S is a stable extension iff S attacks every argument not in S."
+    concepts:
+      - stable_extension
+      - conflict_free_set
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 328
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim8
+    type: observation
+    statement: "Every stable extension is a preferred extension, but not vice versa."
+    concepts:
+      - stable_extension
+      - preferred_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 328
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "Lemma 15"
+
+  - id: claim9
+    type: observation
+    statement: "The characteristic function F_AF maps any set S of arguments to the set of all arguments acceptable with respect to S: F_AF(S) = {A | A is acceptable w.r.t. S}."
+    concepts:
+      - characteristic_function
+      - acceptability
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 329
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim10
+    type: observation
+    statement: "The characteristic function F_AF is monotonic with respect to set inclusion."
+    concepts:
+      - characteristic_function
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 329
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "Lemma 19"
+
+  - id: claim11
+    type: observation
+    statement: "The grounded extension is the least fixed point of the characteristic function F_AF."
+    concepts:
+      - grounded_extension
+      - characteristic_function
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 329
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim12
+    type: observation
+    statement: "A conflict-free set E is a complete extension iff E = F_AF(E), i.e., E is a fixed point of the characteristic function."
+    concepts:
+      - complete_extension
+      - characteristic_function
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 330
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "Lemma 24"
+
+  - id: claim13
+    type: observation
+    statement: "The semantics hierarchy: every stable extension is preferred, every preferred extension is complete, and the grounded extension is the least complete extension."
+    concepts:
+      - stable_extension
+      - preferred_extension
+      - complete_extension
+      - grounded_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 330
+      section: "Abstract Argumentation Frameworks"
+      quote_fragment: "Theorem 25"
+
+  - id: claim14
+    type: observation
+    statement: "An argumentation framework is well-founded iff there is no infinite sequence of arguments where each attacks the previous one."
+    concepts:
+      - well_founded_framework
+      - attack_relation
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 331
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim15
+    type: observation
+    statement: "In a well-founded argumentation framework, the grounded extension, preferred extension, and stable extension all coincide in a unique extension."
+    concepts:
+      - well_founded_framework
+      - grounded_extension
+      - preferred_extension
+      - stable_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 331
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim16
+    type: observation
+    statement: "An argumentation framework is coherent iff every preferred extension is also a stable extension."
+    concepts:
+      - coherent_framework
+      - preferred_extension
+      - stable_extension
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 332
+      section: "Abstract Argumentation Frameworks"
+
+  - id: claim17
+    type: observation
+    statement: "Reiter's default logic, Pollock's defeasible reasoning, and logic programming with negation as failure are all special forms of abstract argumentation — each can be reformulated as an argumentation framework with appropriate argument construction and attack definitions."
+    concepts:
+      - argumentation_framework
+      - default_logic
+      - logic_programming
+      - nonmonotonic_reasoning
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 339
+      section: "The Relationship between Argumentation and Logic Programming"
+      quote_fragment: "the major approaches to nonmonotonic reasoning in AI are different forms of argumentation"
+
+  - id: claim18
+    type: observation
+    statement: "Solutions to n-person games (Von Neumann-Morgenstern solutions) and the stable marriage problem correspond exactly to stable extensions of corresponding argumentation frameworks, demonstrating that game theory and argumentation share the same formal structure."
+    concepts:
+      - stable_extension
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 334
+      section: "The Relationship between Argumentation and n-Person Games"
+
+  - id: claim19
+    type: observation
+    statement: "A meta-interpreter generation method allows any argumentation system to be automatically translated into a logic program that computes its semantics, analogous to the compiler-compiler idea in programming language theory."
+    concepts:
+      - meta_interpreter
+      - argumentation_framework
+      - logic_programming
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 348
+      section: "Meta-interpreter for Argumentation Systems"
+
+  - id: claim20
+    type: observation
+    statement: "Prior work extensively analyzed argument structure but had not formalized the notion of argument acceptability — which arguments a rational agent should accept given conflicts."
+    concepts:
+      - acceptability
+      - argumentation_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 322
+      section: "Introduction"
+
+  - id: claim21
+    type: observation
+    statement: "The grounded extension can be empty, which honestly represents genuine underdetermination when evidence is in equipoise rather than forcing an arbitrary winner."
+    concepts:
+      - grounded_extension
+      - skeptical_reasoning
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 329
+      section: "Abstract Argumentation Frameworks"
+    notes: "The grounded extension is skeptical — it only includes arguments that are uncontested through iterated defense."
+
+  - id: claim22
+    type: observation
+    statement: "Arguments in the abstract framework have no internal structure — all reasoning power comes from the attack relation, making it impossible to distinguish argument strength or quality without additional preference mechanisms."
+    concepts:
+      - argumentation_framework
+      - attack_relation
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Dung_1995_AcceptabilityArguments
+      page: 326
+      section: "Abstract Argumentation Frameworks"
+    notes: "This limitation motivates ASPIC+ (Modgil & Prakken 2014) which adds internal argument structure."

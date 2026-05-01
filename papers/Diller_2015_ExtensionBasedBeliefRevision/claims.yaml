@@ -1,0 +1,130 @@
+claims:
+  - id: diller2015-representability
+    claim: >
+      For proper 1-maximal argumentation semantics (stable, semi-stable, stage, sub-stable),
+      the revision of an AF by a propositional formula or by another AF is guaranteed to be
+      representable as an AF.
+    type: theorem
+    confidence: proven
+    source: "Theorems 1-4, pp. 2928-2930"
+    tags: [belief-revision, abstract-argumentation, representation-theorem]
+    depends_on: []
+
+  - id: diller2015-propositional-postulates
+    claim: >
+      Six revision postulates P*1-P*6 (analogous to AGM postulates) characterize revision
+      of AFs by propositional formulas. An operator satisfies P*1-P*6 iff it can be characterized
+      by a faithful assignment mapping AFs to total pre-orders over 2^A.
+    type: theorem
+    confidence: proven
+    source: "Theorems 1-2, Section 3.1, pp. 2928-2929"
+    tags: [AGM, postulates, faithful-assignment]
+    depends_on: [diller2015-representability]
+
+  - id: diller2015-af-revision-postulates
+    claim: >
+      Postulates A*1-A*6 plus Acyc characterize revision of AFs by other AFs. An operator
+      satisfies these postulates iff it can be characterized by a faithful assignment mapping
+      AFs to I-faithful rankings over 2^A.
+    type: theorem
+    confidence: proven
+    source: "Theorems 3-4, Section 3.2, pp. 2929-2930"
+    tags: [AGM, postulates, faithful-assignment, AF-revision]
+    depends_on: [diller2015-representability]
+
+  - id: diller2015-sigma-comparability
+    claim: >
+      Two sets of extensions S1, S2 are sigma-comparable if they can both be realized as
+      extensions of some AF under semantics sigma. Sigma-incomparable pairs must be handled
+      specially in faithful rankings, leading to I-faithful (partial) assignments.
+    type: definition
+    confidence: stated
+    source: "Definition 1, p. 2927"
+    tags: [realizability, sigma-comparability, extension-semantics]
+    depends_on: []
+
+  - id: diller2015-proper-1-maximal
+    claim: >
+      Preferred, stable, semi-stable, and stage semantics are all proper 1-maximal
+      argumentation semantics, meaning they satisfy the realizability conditions needed
+      for the representation theorems.
+    type: proposition
+    confidence: proven
+    source: "Proposition 1, p. 2927"
+    tags: [semantics, realizability, proper-1-maximal]
+    depends_on: []
+
+  - id: diller2015-sigma-completeness
+    claim: >
+      A pre-order is sigma-compliant if every consistent formula over arguments maps to
+      a non-empty sigma-realizable set of extensions. Sigma-completeness is required for
+      the propositional revision approach but not for AF-based revision.
+    type: definition
+    confidence: stated
+    source: "Definition 4, p. 2928"
+    tags: [sigma-completeness, propositional-revision]
+    depends_on: [diller2015-sigma-comparability]
+
+  - id: diller2015-dalal-applicable
+    claim: >
+      Dalal's [1988] model-based revision operator can be directly applied to revision
+      of AFs by AFs via the extension-based approach, and any model-based revision operator
+      from the standard literature on belief change can be used as a revision operator of AFs by AFs.
+    type: corollary
+    confidence: proven
+    source: "Section 4, p. 2931; Theorem 3"
+    tags: [Dalal, model-based-revision, concrete-operator]
+    depends_on: [diller2015-af-revision-postulates]
+
+  - id: diller2015-revision-easier-than-model
+    claim: >
+      Revision by argumentation frameworks is easier than revision by propositional formulas,
+      because any subset of sigma(F) is realizable under sigma for any proper 1-maximal
+      semantics and F in AF_A, whereas sigma-completeness is harder to establish.
+    type: observation
+    confidence: stated
+    source: "Section 4, p. 2931"
+    tags: [complexity, propositional-vs-AF-revision]
+    depends_on: [diller2015-sigma-completeness]
+
+  - id: diller2015-set-of-afs-output
+    claim: >
+      The output of extension-based AF revision is a set of AFs rather than a single AF.
+      This contrasts with model-based approaches that produce a single revised AF.
+    type: limitation
+    confidence: stated
+    source: "Section 4, p. 2931"
+    tags: [limitation, output-format]
+    depends_on: [diller2015-representability]
+
+  - id: diller2015-faithful-ranking-katsuno-mendelzon
+    claim: >
+      The faithful assignment notion is based on Katsuno and Mendelzon [1991], adapted to
+      operate over sets of extensions (elements of 2^A) rather than propositional interpretations.
+      I-faithful assignments allow partial rankings for sigma-incomparable pairs.
+    type: definition
+    confidence: stated
+    source: "Definition 3, p. 2928"
+    tags: [faithful-assignment, Katsuno-Mendelzon, ranking]
+    depends_on: []
+
+  - id: diller2015-complete-excluded
+    claim: >
+      Complete semantics is excluded from the approach because it is not proper 1-maximal.
+      The representation theorems do not apply to complete semantics.
+    type: limitation
+    confidence: stated
+    source: "Section 2, Proposition 1, p. 2927"
+    tags: [limitation, complete-semantics]
+    depends_on: [diller2015-proper-1-maximal]
+
+  - id: diller2015-coste-marquis-starting-point
+    claim: >
+      The work of Coste-Marquis et al. [2014a] on model-based AF revision is the starting
+      point for this investigation. Their approach works at the model level but cannot guarantee
+      representability as an AF. This paper solves that limitation via the extension-based approach.
+    type: observation
+    confidence: stated
+    source: "Section 1, p. 2926; Section 4, p. 2931"
+    tags: [prior-work, Coste-Marquis, motivation]
+    depends_on: []

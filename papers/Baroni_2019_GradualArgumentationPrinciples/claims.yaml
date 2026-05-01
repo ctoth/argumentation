@@ -1,0 +1,172 @@
+source:
+  paper: Baroni_2019_GradualArgumentationPrinciples
+produced_by:
+  agent: "Claude Opus 4.6 (1M context)"
+  skill: "paper-reader"
+  timestamp: "2026-03-30"
+
+claims:
+  - id: claim1
+    type: theorem
+    statement: >
+      The balance principle for gradual argumentation semantics implies GP1 (vacuity),
+      GP2 (weakening), GP3 (strengthening), GP4 (weakening completeness), and GP5
+      (strengthening completeness).
+    concepts: [balance, gradual-argumentation, argumentation-principles]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 8
+      section: "4.1 (Strict) balance/monotonicity principles"
+      quote_fragment: "balance implies the conclusions of the GPs"
+
+  - id: claim2
+    type: theorem
+    statement: >
+      The monotonicity principle for gradual argumentation semantics implies GP6
+      (isomorphism), GP7 (weakening soundness), GP8 (strengthening soundness), GP9
+      (strict counter-transitivity for attack), GP10 (strict counter-transitivity for
+      support via attack), and GP11 (strict counter-transitivity for support).
+    concepts: [monotonicity, gradual-argumentation, argumentation-principles]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 9
+      section: "4.2 (Strict) monotonicity"
+      quote_fragment: "strict monotonicity implies the following"
+
+  - id: claim3
+    type: theorem
+    statement: >
+      Balance and monotonicity together imply all 11 groups of principles (GP1-GP11)
+      for gradual argumentation semantics over QBAFs.
+    concepts: [balance, monotonicity, gradual-argumentation]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 9
+      section: "4.1-4.2"
+      quote_fragment: "balance implies GP1-GP5, monotonicity implies GP6-GP11"
+
+  - id: claim4
+    type: definition
+    statement: >
+      Each group of principles (GP) is parameterized by two choices: a sigma parameter
+      (sigma_bot or sigma_not_bot, controlling whether strength can equal the bottom value)
+      and a comparison operator (<, <_bot, <_top, or <=), yielding up to 8 instantiations
+      per GP per framework type that capture all 29 fine-grained properties from the literature.
+    concepts: [gradual-argumentation, argumentation-principles, parameterization]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 3
+      section: "3. Grouping literature properties"
+      quote_fragment: "Tables 1 and 2 summarise the choices of parameters for capturing Ps"
+
+  - id: claim5
+    type: definition
+    statement: >
+      A Quantitative Bipolar Argumentation Framework (QBAF) is a quadruple
+      Q = (X, R-, R+, tau) where X is a set of arguments, R- is the attack relation,
+      R+ is the support relation, and tau: X -> [0,1] is the base score function.
+    concepts: [QBAF, bipolar-argumentation, quantitative-argumentation]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 2
+      section: "2. Definitions"
+      quote_fragment: "a QBAF Q is a quadruple (X, R-, R+, tau)"
+
+  - id: claim6
+    type: theorem
+    statement: >
+      The DF-QuAD algorithm is strictly balanced and monotonic with sigma parameter
+      *= sigma_bot and comparison <=.
+    concepts: [DF-QuAD, gradual-argumentation, balance, monotonicity]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 17
+      section: "5.8 Semantics for QuAD frameworks"
+      quote_fragment: "The DF-QuAD algorithm is balanced and monotonic"
+
+  - id: claim7
+    type: theorem
+    statement: >
+      The QuAD algorithm is NOT balanced (and therefore not monotonic), unlike the
+      DF-QuAD algorithm which is its discontinuity-free development.
+    concepts: [DF-QuAD, QuAD, gradual-argumentation]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 17
+      section: "5.8 Semantics for QuAD frameworks"
+      quote_fragment: "the QuAD algorithm is not balanced"
+
+  - id: claim8
+    type: theorem
+    statement: >
+      The h-categorizer semantics (Besnard & Hunter 2001) is strictly balanced and
+      strictly monotonic with *= sigma_bot and <<= <.
+    concepts: [h-categorizer, gradual-argumentation, balance, monotonicity]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 11
+      section: "5.1 Besnard & Hunter categorizer"
+      quote_fragment: "The h-categorizer is strictly balanced and strictly monotonic"
+
+  - id: claim9
+    type: theorem
+    statement: >
+      The CMA semantics is strictly balanced with *= sigma_bot and <<= < but is NOT
+      strictly monotonic.
+    concepts: [CMA, gradual-argumentation, balance]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 13
+      section: "5.5 Leite/0 Metrics social model"
+      quote_fragment: "The CMA semantics is strictly balanced"
+
+  - id: claim10
+    type: theorem
+    statement: >
+      The Euler-based semantics is not strictly balanced because there exist cases where
+      the strength of an argument decreases below its base score even when the maximum
+      supporter strength exceeds the maximum attacker strength.
+    concepts: [Euler-based, gradual-argumentation, balance]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 12
+      section: "5.2 Equational semantics"
+      quote_fragment: "The Euler-based semantics is not strictly balanced"
+
+  - id: claim11
+    type: theorem
+    statement: >
+      Complete labeling (Grossi & Modgil 2015) is strictly balanced and monotonic
+      with *= sigma_bot and <<= <.
+    concepts: [complete-labeling, gradual-argumentation, balance, monotonicity]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 18
+      section: "5.10 Non-gradual semantics for abstract argumentation"
+      quote_fragment: "Complete labelling is strictly balanced and monotonic"
+
+  - id: claim12
+    type: observation
+    statement: >
+      The parametric values of the GPs and the overarching principles do not provide a
+      finer classification advantage than balance/monotonicity alone for distinguishing
+      between gradual semantics.
+    concepts: [gradual-argumentation, classification, argumentation-principles]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 19
+      section: "6. Discussion and conclusion"
+      quote_fragment: "the parametric values of the group properties and of the principles turn out to not provide a further advantage as a classifier"
+
+  - id: claim13
+    type: limitation
+    statement: >
+      The paper's principle taxonomy does not capture quality/priority of
+      attacks/supporters (as opposed to strength), maximality of strength range
+      utilization, convergence/stability for cyclic graphs, or proportionality.
+    concepts: [gradual-argumentation, argumentation-principles]
+    provenance:
+      paper: Baroni_2019_GradualArgumentationPrinciples
+      page: 19
+      section: "6. Discussion and conclusion"
+      quote_fragment: "the quality or priority of attacks/supporters rather than their strength"

@@ -1,0 +1,16 @@
+{
+  "title": "Practical reasoning as presumptive argumentation using action based alternating transition systems",
+  "authors": [
+    "Katie Atkinson",
+    "Trevor J. M. Bench-Capon"
+  ],
+  "year": "2007",
+  "doi": "10.1016/j.artint.2007.04.009",
+  "url": "https://www.semanticscholar.org/paper/21bcc034b176e828e7e0674bd35731a17ab2318b",
+  "pdf_url": "https://doi.org/10.1016/j.artint.2007.04.009",
+  "bibtex": "@Article{Atkinson2007PracticalRA,\n author = {Katie Atkinson and Trevor J. M. Bench-Capon},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {855-874},\n title = {Practical reasoning as presumptive argumentation using action based alternating transition systems},\n volume = {171},\n year = {2007}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "171",
+  "pages": "855-874"
+}

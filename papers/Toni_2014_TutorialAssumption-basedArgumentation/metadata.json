@@ -1,0 +1,16 @@
+{
+  "title": "A tutorial on assumption-based argumentation",
+  "authors": [
+    "Francesca Toni"
+  ],
+  "year": "2014",
+  "doi": "10.1080/19462166.2013.869878",
+  "url": "https://www.semanticscholar.org/paper/4f4542c0df5473a609553c4458410eec8d160364",
+  "pdf_url": "https://content.iospress.com:443/download/argument-and-computation/869878?id=argument-and-computation%2F869878",
+  "arxiv_id": null,
+  "abstract": null,
+  "bibtex": "@Article{Toni2014ATO,\n author = {Francesca Toni},\n booktitle = {Argument Comput.},\n journal = {Argument & Computation},\n pages = {89 - 117},\n title = {A tutorial on assumption-based argumentation},\n volume = {5},\n year = {2014}\n}\n",
+  "venue": "Argument Comput.",
+  "volume": "5",
+  "pages": "89 - 117"
+}

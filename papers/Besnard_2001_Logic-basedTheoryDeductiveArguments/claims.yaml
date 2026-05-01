@@ -1,0 +1,210 @@
+source:
+  paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+  extraction_model: "claude-opus-4-6-20250514"
+  extraction_date: "2026-03-24"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "An argument is a pair (Phi, alpha) where Phi is a minimal consistent subset of a knowledge base Delta that deductively entails alpha, with minimality ensuring every formula in the support contributes to the proof."
+    concepts:
+      - deductive_argument
+      - logic_based_argumentation
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 205
+      section: "3. Arguments"
+      quote_fragment: "An argument is a pair (Phi, alpha) such that Phi is consistent, Phi entails alpha, and Phi is minimal"
+
+  - id: claim2
+    type: observation
+    statement: "The 'more conservative' relation on arguments, where (Phi, alpha) is more conservative than (Psi, beta) iff Phi is a subset of Psi and beta entails alpha, defines a pre-ordering over arguments."
+    concepts:
+      - deductive_argument
+      - argument_strength
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 206
+      section: "3. Arguments"
+      quote_fragment: "Being more conservative defines a pre-ordering over arguments"
+
+  - id: claim3
+    type: observation
+    statement: "A defeater for an argument (Psi, beta) is an argument (Phi, alpha) such that the consequent alpha logically implies the negation of the conjunction of some subset of the support Psi — formalizing attack as logical contradiction of support."
+    concepts:
+      - counterargument
+      - logic_based_argumentation
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 209
+      section: "4. Defeaters, rebuttals and undercuts"
+      quote_fragment: "A defeater for (Phi, alpha) is an argument (Psi, beta) such that beta entails neg(phi_1 and ... and phi_n)"
+
+  - id: claim4
+    type: observation
+    statement: "An undercut is a defeater whose consequent directly negates the conjunction of support elements, while a rebuttal is a defeater whose consequent is logically equivalent to the negation of the original argument's consequent. Every rebuttal is a defeater."
+    concepts:
+      - undercutting_attack
+      - rebutting_attack
+      - counterargument
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 209
+      section: "4. Defeaters, rebuttals and undercuts"
+      quote_fragment: "An undercut... where the consequent directly negates conjunction of support elements"
+
+  - id: claim5
+    type: mechanism
+    statement: "Canonical undercuts — maximally conservative undercuts using the canonical enumeration of the support set — are the only defeaters that need to be considered, because for every defeater there exists a canonical undercut that is more conservative."
+    concepts:
+      - canonical_undercut
+      - counterargument
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 215
+      section: "5. Canonical undercuts"
+      quote_fragment: "For each defeater there exists a canonical undercut that is more conservative"
+
+  - id: claim6
+    type: observation
+    statement: "Argument trees — trees where the root is an argument, children are canonical undercuts satisfying an acyclicity condition on support sets — are always finite, providing a terminating enumeration of all lines of counter-argumentation."
+    concepts:
+      - argument_tree
+      - canonical_undercut
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 217
+      section: "6. Argument trees"
+      quote_fragment: "Argument trees are finite"
+
+  - id: claim7
+    type: observation
+    statement: "If the knowledge base Delta is consistent, then all argument trees have exactly one node (the root argument with no undercuts), and the converse holds when no formula in Delta is inconsistent."
+    concepts:
+      - argument_tree
+      - logic_based_argumentation
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 217
+      section: "6. Argument trees"
+      quote_fragment: "If Delta is consistent, then all argument trees have exactly one node"
+
+  - id: claim8
+    type: observation
+    statement: "An argument structure for a formula alpha is a pair (P, C) where P is the set of argument trees for alpha and C is the set of argument trees for not-alpha, providing a complete enumeration of all arguments for and against a claim."
+    concepts:
+      - argument_structure
+      - argument_tree
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 220
+      section: "8. Argument structures"
+      quote_fragment: "An argument structure for alpha is a pair of sets (P, C)"
+
+  - id: claim9
+    type: mechanism
+    statement: "Argument aggregation is decomposed into two independent functions: a categoriser that maps argument trees to numerical strength values, and an accumulator that combines categorised values from pro and con trees to determine whether a formula follows — enabling different aggregation strategies via different function choices."
+    concepts:
+      - categoriser_function
+      - accumulator_function
+      - argument_structure
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 222
+      section: "8. Argument structures"
+      quote_fragment: "A categoriser is a mapping from argument trees to numbers"
+
+  - id: claim10
+    type: equation
+    expression: "h(N) = \\frac{1}{1 + h(N_1) + \\cdots + h(N_k)}"
+    sympy: "Eq(h_N, 1 / (1 + Sum(h_Ni, (i, 1, k))))"
+    variables:
+      - symbol: "h(N)"
+        concept: "categoriser_function"
+        role: "dependent"
+      - symbol: "N_1, ..., N_k"
+        concept: "argument_tree"
+        role: "independent"
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 222
+      section: "8. Argument structures"
+      quote_fragment: "The h-categoriser is defined recursively"
+    notes: "h(N) = 1 for leaf nodes; value in (0,1]; decreases with more/stronger undercuts"
+
+  - id: claim11
+    type: comparison
+    statement: "Binary argumentation systems that use restricted languages of literals and rules are a special case of the classical logic framework, since their proof rules are a form of generalized modus ponens derivable in classical logic."
+    concepts:
+      - logic_based_argumentation
+      - argumentation_system
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 224
+      section: "9.1. Binary argumentation"
+      quote_fragment: "this simple form of argumentation can be captured in our framework"
+
+  - id: claim12
+    type: comparison
+    statement: "Under the constraint that attack means the reasons of one argument contradict (in classical logic) some subset of the reasons of another, Dung's framework degenerates: every argument is acceptable with respect to itself, and therefore every conflict-free set of arguments is admissible."
+    concepts:
+      - argumentation_framework
+      - admissible_set
+      - conflict_free_set
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 230
+      section: "9.4. Comparison with Dung's system"
+      quote_fragment: "every argument is acceptable with respect to itself, and therefore every conflict-free set of arguments is admissible"
+    notes: "Theorem 9.24 — shows fundamental incompatibility between Dung's abstract attacks and logic-based attacks without additional constraints like asymmetry"
+
+  - id: claim13
+    type: comparison
+    statement: "Dung's abstract argumentation framework requires the attack relation to be asymmetric to be meaningful, but this constraint is not stated in the original definitions and is not natural for logic-based argument interaction where mutual attack is common."
+    concepts:
+      - argumentation_framework
+      - attack_relation
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 230
+      section: "9.4. Comparison with Dung's system"
+      quote_fragment: "Dung's argumentation system demands the attack relation to be asymmetric although such a requirement is not stated at all in the original definitions"
+
+  - id: claim14
+    type: limitation
+    statement: "Universal inferencing — where a formula follows only if it is entailed by every maximal consistent subset of the knowledge base — is difficult to capture in the argument tree framework because it requires cross-checking consistency of arguments across different trees."
+    concepts:
+      - logic_based_argumentation
+      - argument_tree
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 227
+      section: "9.3.3. Universal inferencing"
+      quote_fragment: "Universal inferencing is difficult to capture in our framework"
+
+  - id: claim15
+    type: limitation
+    statement: "The framework is developed for propositional logic only; first-order extensions are mentioned as possible but not formally developed, and the computational complexity of argument enumeration is not analyzed."
+    concepts:
+      - logic_based_argumentation
+      - propositional_logic_system
+    context: ctx_logic_based_argumentation
+    provenance:
+      paper: Besnard_2001_Logic-basedTheoryDeductiveArguments
+      page: 234
+      section: "11. Discussion"
+      quote_fragment: "our approach is not necessarily restricted to a propositional language"

@@ -1,0 +1,4 @@
+---
+tags: [argumentation, structured-argumentation, aspic-plus, defeasible-reasoning, abstract-argumentation]
+---
+Introduces a new inference-based model of argument accrual inside ASPIC+ that avoids the exponential blow-up and awkward premise-labelling problems of earlier approaches by making accrual a property of sets of arguments and letting defeat depend on labelling-relative set preferences. The paper defines accrual sets, a labelling-relative defeat relation, and a monotone fixpoint semantics, then proves that the new semantics preserves the usual grounded/preferred/stable/complete relations and reduces to standard ASPIC+ when each statement has at most one argument. It also shows how the framework handles strict reasons, legislative balancing, factor-based legal reasoning, and the linked/convergent/cumulative taxonomy.

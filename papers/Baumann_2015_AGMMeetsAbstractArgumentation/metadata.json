@@ -1,0 +1,10 @@
+{
+  "title": "AGM Meets Abstract Argumentation: Expansion and Revision for Dung Frameworks",
+  "authors": ["Ringo Baumann", "Gerhard Brewka"],
+  "year": "2015",
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": "In this paper we combine two of the most important areas of knowledge representation, namely belief revision and (abstract) argumentation. More precisely, we show how AGM-style expansion and revision operators can be defined for Dung's abstract argumentation frameworks (AFs). Our approach is based on a reformulation of the original AGM postulates for revision in terms of monotonic consequence relations for AFs. The latter are derived via a new family of logics, called Dung logics, which satisfy the main rationality criterion for logic-based approaches, namely that ordinary equivalence in these logics coincides with strong equivalence of the actual structure of the arguments.",
+  "url": "https://www.ijcai.org/Abstract/15/387",
+  "pdf_url": "https://www.ijcai.org/Proceedings/15/Papers/387.pdf"
+}

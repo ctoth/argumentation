@@ -1,0 +1,126 @@
+source:
+  paper: Diller_2025_GroundingRule-BasedArgumentationDatalog
+produced_by:
+  agent: "claude-opus-4-6"
+  skill: "extract-justifications"
+  timestamp: "2026-04-10T07:45:32Z"
+
+justifications:
+  - id: just1
+    conclusion: claim4
+    premises:
+      - claim3
+      - claim18
+    rule_kind: definition_application
+    provenance:
+      page: 6
+      section: "Theorem 3"
+      quote_fragment: "the complete extensions of the induced AFs coincide"
+
+  - id: just2
+    conclusion: claim5
+    premises:
+      - claim4
+      - claim6
+      - claim9
+      - claim10
+    rule_kind: definition_application
+    provenance:
+      page: 7
+      section: "Theorem 5"
+      quote_fragment: "the complete extensions coincide"
+
+  - id: just3
+    conclusion: claim1
+    premises:
+      - claim4
+      - claim5
+    rule_kind: methodological_inference
+    provenance:
+      page: 4
+      section: "Section 3"
+      quote_fragment: "we translate the first-order ASPIC+ instance into a Datalog program and query a Datalog engine to obtain ground substitutions"
+
+  - id: just4
+    conclusion: claim8
+    premises:
+      - claim2
+      - claim9
+      - claim10
+    rule_kind: comparison_based_inference
+    provenance:
+      page: 8
+      section: "Evaluation - Scenario S2"
+      quote_fragment: "Transformation 2 produces significantly smaller ground theories"
+
+  - id: just5
+    conclusion: claim9
+    premises:
+      - claim3
+    rule_kind: causal_explanation
+    provenance:
+      page: 4
+      section: "Algorithm 2"
+      quote_fragment: "rules that have no influence on the reasoning process"
+
+  - id: just6
+    conclusion: claim10
+    premises:
+      - claim3
+    rule_kind: causal_explanation
+    provenance:
+      page: 4
+      section: "Algorithm 2"
+      quote_fragment: "eliminate contraries with no ground attacking instances"
+
+  - id: just7
+    conclusion: claim16
+    premises:
+      - claim18
+    rule_kind: causal_explanation
+    provenance:
+      page: 3
+      section: "Section 2.2"
+      quote_fragment: "bottom-up evaluation naturally computes exactly the ground atoms needed"
+
+  - id: just8
+    conclusion: claim7
+    premises:
+      - claim1
+      - claim11
+    rule_kind: comparison_based_inference
+    provenance:
+      page: 0
+      section: "Introduction"
+      quote_fragment: "most existing approaches to reason over rule-based argumentation only support propositional rules"
+
+  - id: just9
+    conclusion: claim17
+    premises:
+      - claim8
+      - claim16
+    rule_kind: empirical_support
+    provenance:
+      page: 8
+      section: "Evaluation - Scenario S1"
+      quote_fragment: "configurations that naive grounding cannot handle"
+
+  - id: just10
+    conclusion: claim13
+    premises:
+      - claim17
+    rule_kind: scope_limitation
+    provenance:
+      page: 9
+      section: "Evaluation"
+      quote_fragment: "some loss of performance on small instances due to overhead of Datalog translation"
+
+  - id: just11
+    conclusion: claim15
+    premises:
+      - claim3
+    rule_kind: definition_application
+    provenance:
+      page: 3
+      section: "Section 2.2"
+      quote_fragment: "stratified negation is needed to handle the contrariness function"

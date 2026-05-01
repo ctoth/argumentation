@@ -1,0 +1,20 @@
+{
+  "title": "An Abstract, Argumentation-Theoretic Approach to Default Reasoning",
+  "authors": [
+    "A. Bondarenko",
+    "P. M. Dung",
+    "R. Kowalski",
+    "Francesca Toni"
+  ],
+  "year": "1997",
+  "doi": "10.1016/S0004-3702(97)00015-5",
+  "url": "https://www.semanticscholar.org/paper/bab8f316f785c207d4ec5ba7812610d222287f89",
+  "pdf_url": "https://doi.org/10.1016/s0004-3702(97)00015-5",
+  "arxiv_id": null,
+  "abstract": null,
+  "bibtex": "@Article{Bondarenko1997AnAA,\n author = {A. Bondarenko and P. M. Dung and R. Kowalski and Francesca Toni},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {63-101},\n title = {An Abstract, Argumentation-Theoretic Approach to Default Reasoning},\n volume = {93},\n year = {1997}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "93",
+  "pages": "63-101"
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Argumentative Large Language Models for Explainable and Contestable Claim Verification",
+  "authors": [
+    "Gabriel Freedman",
+    "Adam Dejl",
+    "Deniz Gorur",
+    "Xiang Yin",
+    "Antonio Rago",
+    "Francesca Toni"
+  ],
+  "year": 2025,
+  "arxiv_id": "2405.02079",
+  "doi": "10.48550/arXiv.2405.02079",
+  "venue": "AAAI Conference on Artificial Intelligence 2025",
+  "journal_ref": "Proceedings of the AAAI Conference on Artificial Intelligence, 39(14), 14930-14939. 2025",
+  "abstract": "The research introduces argumentative LLMs (ArgLLMs), a method enhancing language models with reasoning capabilities. ArgLLMs construct argumentation frameworks, which then serve as the basis for formal reasoning in support of decision-making. The interpretable nature of these frameworks enables explanations and contestation of decisions. The authors evaluate their approach on claim verification tasks, comparing performance against existing methods and defining novel properties to assess contestability.",
+  "url": "https://arxiv.org/abs/2405.02079",
+  "source": "arxiv"
+}

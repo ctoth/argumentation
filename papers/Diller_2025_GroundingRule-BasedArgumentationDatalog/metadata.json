@@ -1,0 +1,17 @@
+{
+  "title": "Grounding Rule-Based Argumentation Using Datalog",
+  "authors": [
+    "Martin Diller",
+    "Sarah Alice Gaggl",
+    "Philipp Hanisch",
+    "Giuseppina Monterosso",
+    "Fritz Rauschenbach"
+  ],
+  "year": "2025",
+  "arxiv_id": "2508.10976",
+  "doi": "10.48550/arXiv.2508.10976",
+  "abstract": "ASPIC+ is one of the main general frameworks for rule-based argumentation for AI. Although first-order rules are commonly used in ASPIC+ examples, most existing approaches to reason over rule-based argumentation only support propositional rules. To enable reasoning over first-order instances, a preliminary grounding step is required. As groundings can lead to an exponential increase in the size of the input theories, intelligent procedures are needed. However, there is a lack of dedicated solutions for ASPIC+. Therefore, we propose an intelligent grounding procedure that keeps the size of the grounding manageable while preserving the correctness of the reasoning process. To this end, we translate the first-order ASPIC+ instance into a Datalog program and query a Datalog engine to obtain ground substitutions to perform the grounding of rules and contraries. Additionally, we propose simplifications specific to the ASPIC+ formalism to avoid grounding of rules that have no influence on the reasoning process. Finally, we performed an empirical evaluation of a prototypical implementation to show scalability.",
+  "url": "http://arxiv.org/abs/2508.10976v1",
+  "pdf_url": "https://arxiv.org/pdf/2508.10976v1",
+  "venue": "KR-25"
+}

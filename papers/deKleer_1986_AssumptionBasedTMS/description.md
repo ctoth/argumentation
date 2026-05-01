@@ -1,0 +1,4 @@
+---
+tags: [truth-maintenance, atms, assumption-based-reasoning, dependency-tracking, nonmonotonic-reasoning]
+---
+Introduces the Assumption-based Truth Maintenance System (ATMS), which labels every datum with the minimal sets of assumptions under which it holds, enabling simultaneous exploration of multiple problem-solving contexts without backtracking or retraction. Key contributions include formal definitions of environments, labels, nogoods, and contexts, plus four label invariants (consistency, soundness, completeness, minimality) that the ATMS maintains incrementally. Directly foundational for the propstore world model's assumption-tracking, environment management, and hypothetical reasoning architecture --- this is the theoretical substrate paper for the companion problem-solving paper already in the collection.

@@ -1,0 +1,232 @@
+source:
+  paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+produced_by:
+  agent: "Claude Opus 4.6 (1M context)"
+  skill: "extract-claims"
+  timestamp: "2026-03-28T08:10:02Z"
+
+claims:
+  - id: claim1
+    type: equation
+    expression: "f(v1, v2) = v1 + (1 - v1) * v2 = v1 + v2 - v1 * v2"
+    sympy: "Eq(f, v1 + v2 - v1*v2)"
+    variables:
+      - symbol: "f"
+        concept: "base_function"
+        role: "dependent"
+      - symbol: "v1"
+        concept: "attacker_or_supporter_strength"
+        role: "independent"
+      - symbol: "v2"
+        concept: "attacker_or_supporter_strength"
+        role: "independent"
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "f(v1, v2) = v1 + (1 - v1) * v2 = v1 + v2 - v1 * v2"
+
+  - id: claim2
+    type: equation
+    expression: "mu(v_a, v_s) = 0.5 + 0.5 * (v_s - v_a)"
+    sympy: "Eq(mu, Rational(1,2) + Rational(1,2) * (v_s - v_a))"
+    variables:
+      - symbol: "mu"
+        concept: "mediating_function"
+        role: "dependent"
+      - symbol: "v_a"
+        concept: "aggregated_attack_strength"
+        role: "independent"
+      - symbol: "v_s"
+        concept: "aggregated_support_strength"
+        role: "independent"
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "mu(v_a, v_s) = 0.5 + 0.5 * (v_s - v_a)"
+
+  - id: claim3
+    type: equation
+    expression: "SF(a) = mu(sigma(SEQ_SF(R^-(a))), sigma(SEQ_SF(R^+(a))))"
+    sympy: "Eq(SF_a, mu_val)"
+    variables:
+      - symbol: "SF_a"
+        concept: "argument_score"
+        role: "dependent"
+      - symbol: "sigma_att"
+        concept: "aggregated_attack_strength"
+        role: "independent"
+      - symbol: "sigma_sup"
+        concept: "aggregated_support_strength"
+        role: "independent"
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "SF(a) = mu(sigma(SEQ_SF(R^-(a))), sigma(SEQ_SF(R^+(a))))"
+
+  - id: claim4
+    type: equation
+    expression: "SF(a) = 0.5 + 0.5 * (prod(1 - s_i) - prod(1 - a_j))"
+    sympy: "Eq(SF_a, Rational(1,2) + Rational(1,2) * (Product(1 - s_i, (i, 1, n)) - Product(1 - a_j, (j, 1, m))))"
+    variables:
+      - symbol: "SF_a"
+        concept: "argument_score"
+        role: "dependent"
+      - symbol: "s_i"
+        concept: "supporter_strength"
+        role: "independent"
+      - symbol: "a_j"
+        concept: "attacker_strength"
+        role: "independent"
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 3
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "the closed form derived from iterating the base function"
+    notes: "Closed-form expression of the score function"
+
+  - id: claim5
+    type: observation
+    statement: "The strength aggregation function sigma saturates to 1 when any element with value 1 is appended: sigma(S union (1)) = 1 for any sequence S."
+    concepts:
+      - strength_aggregation_function
+      - saturation_property
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 4
+      section: "3. Comparison with Other Approaches"
+      quote_fragment: "adding an attacker/supporter with maximum strength to the list of attackers or supporters saturates the strength aggregation function"
+
+  - id: claim6
+    type: observation
+    statement: "SF(a) = 0 if and only if aggregated attack strength v_a = 1 and aggregated support strength v_s = 0; SF(a) = 1 if and only if v_a = 0 and v_s = 1."
+    concepts:
+      - argument_score
+      - extreme_value_property
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 4
+      section: "3. Comparison with Other Approaches"
+      quote_fragment: "the extreme values, 0 and 1, can only be achieved as the strength of an argument if they are somehow already present"
+
+  - id: claim7
+    type: observation
+    statement: "The mediating function mu(v_a, v_s) equals the combination function c(v_0, v_a, v_s) when the base score v_0 is set to 0.5."
+    concepts:
+      - mediating_function
+      - combination_function
+      - base_score
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 4
+      section: "3. Comparison with Other Approaches"
+      quote_fragment: "c(0.5, v_a, v_s) = mu(v_a, v_s)"
+
+  - id: claim8
+    type: observation
+    statement: "QuAD frameworks with all base scores set to 0.5 correspond exactly to acyclic Bipolar Argumentation Frameworks under the adapted DF-QuAD semantics."
+    concepts:
+      - quad_framework
+      - bipolar_argumentation_framework
+      - df_quad_semantics
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 4
+      section: "3. Comparison with Other Approaches"
+      quote_fragment: "QuAD frameworks where all arguments have a base score of 0.5 can be mapped to BAF frameworks"
+
+  - id: claim9
+    type: observation
+    statement: "The score function SF is continuous on [0,1] because it is a composition of continuous functions: the base function f is a polynomial and the mediating function mu is linear."
+    concepts:
+      - argument_score
+      - continuity
+      - df_quad_semantics
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 3
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "SF is continuous"
+
+  - id: claim10
+    type: observation
+    statement: "For any argument with no attackers and no supporters in a BAF, SF(a) = 0.5."
+    concepts:
+      - argument_score
+      - isolated_argument
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"
+
+  - id: claim11
+    type: mechanism
+    statement: "The adapted DF-QuAD semantics eliminates the need for base scores in BAFs by using the mediating function mu centered at 0.5, which represents a neutral position with no prior evidence for or against the argument. The base function f(v1,v2) = v1 + v2 - v1*v2 (probabilistic OR) proportionally increases aggregated strength towards 1."
+    concepts:
+      - df_quad_semantics
+      - mediating_function
+      - base_function
+      - bipolar_argumentation_framework
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "the base function is the building block to handle sequences of strengths of attackers or supporters by sigma, proportionally increasing the attacking or supporting arguments' strength towards 1"
+
+  - id: claim12
+    type: comparison
+    statement: "Unlike social models of AFs which use simple summation for aggregation (unbounded with more supporters), the adapted DF-QuAD uses probabilistic OR for aggregation which saturates at 1, preventing argument strength from growing without bound."
+    concepts:
+      - df_quad_semantics
+      - social_model_argumentation
+      - strength_aggregation_function
+      - saturation_property
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 5
+      section: "3. Comparison with Other Approaches"
+      quote_fragment: "the equivalent of Proposition 1 on saturation does not hold"
+
+  - id: claim13
+    type: limitation
+    statement: "Uniqueness of the score function fixed point is conjectured but not proven; the paper only proves existence via Brouwer's fixed-point theorem."
+    concepts:
+      - argument_score
+      - fixed_point_uniqueness
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 3
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "we conjecture that this is amenable and that...SF have a unique solution. Proving this conjecture is left for future work"
+
+  - id: claim14
+    type: limitation
+    statement: "The adapted DF-QuAD semantics only works for acyclic BAFs; cyclic argumentation frameworks are not addressed."
+    concepts:
+      - df_quad_semantics
+      - bipolar_argumentation_framework
+      - acyclicity_requirement
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 3
+      section: "2. Adapting DF-QuAD"
+      quote_fragment: "R is acyclic"
+
+  - id: claim15
+    type: model
+    name: "DF-QuAD for BAFs"
+    equations:
+      - "claim1"
+      - "claim2"
+      - "claim3"
+      - "claim4"
+    parameters:
+      - name: "implicit_base_score"
+        concept: "base_score"
+        note: "Fixed at 0.5 for all arguments in BAFs; not user-configurable"
+    provenance:
+      paper: Rago_2016_AdaptingDFQuADBipolarArgumentation
+      page: 2
+      section: "2. Adapting DF-QuAD"

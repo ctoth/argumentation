@@ -1,0 +1,14 @@
+{
+  "title": "From fine-grained properties to broad principles for gradual argumentation: A principled spectrum",
+  "authors": ["Pietro Baroni", "Antonio Rago", "Francesca Toni"],
+  "year": 2019,
+  "doi": "10.1016/J.IJAR.2018.11.019",
+  "journal": "International Journal of Approximate Reasoning",
+  "volume": 105,
+  "pages": "252-286",
+  "s2id": "1c70ea01f7ecdd256bb847d12a2ba85d7b20c91f",
+  "source": "sci-hub.st",
+  "retrieved": "2026-03-30",
+  "abstract": "The investigation of gradual evaluation methods in argumentation has received increasing attention in recent years, with studies devoted to various classes of frameworks and/or semantics. The authors identify groups of conceptually related properties from the literature, organized into 11 groups of principles (GPs) for quantitative bipolar argumentation frameworks. They show that all GPs are implied by two overarching principles: balance and monotonicity. Finally, they show that instances of these principles can be used to classify gradual argumentation semantics, demonstrating general validity and utility to support a compact yet comprehensive analysis.",
+  "tags": ["gradual-argumentation", "bipolar-argumentation", "quantitative-argumentation", "argumentation-principles", "DF-QuAD"]
+}

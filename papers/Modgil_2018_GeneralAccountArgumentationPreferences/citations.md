@@ -1,0 +1,97 @@
+# Citations
+
+## Reference List
+
+[9] L. Amgoud and S. Vesic. A new approach for preference-based argumentation frameworks. *Annals of Mathematics and Artificial Intelligence*, 63(2):149-183, 2011.
+
+[10] T.J.M. Bench-Capon. Persuasion in practical argument using value-based argumentation frameworks. *Journal of Logic and Computation*, 13(3):429-448, 2003.
+
+[11] T.J.M. Bench-Capon and P.E. Dunne. Argumentation in artificial intelligence. *Artificial Intelligence*, 171:10-15, 2007.
+
+[12] P. Besnard and A. Hunter. A logic-based theory of deductive arguments. *Artificial Intelligence*, 128:203-235, 2001.
+
+[13] P. Besnard and A. Hunter. *Elements of Argumentation*. MIT Press, 2008.
+
+[14] P.E. Bos, S. Modgil, H. Prakken, and C. Reed. On logical specifications of the argument interchange format. *Journal of Logic and Computation*, doi: 10.1093/logcom/ext033, 2012.
+
+[15] A. Bondarenko, P.M. Dung, R.A. Kowalski, and F. Toni. An abstract, argumentation-theoretic approach to default reasoning. *Artificial Intelligence*, 93:63-101, 1997.
+
+[16] G. Brewka. Preferred subtheories: an extended logical framework for default reasoning. In *Proc. 11th International Joint Conference on Artificial Intelligence*, pages 1043-1048, 1989.
+
+[17] G. Brewka. *Nonmonotonic Reasoning: Logical Foundations of Commonsense*. Cambridge University Press, 1991.
+
+[18] M. Caminada and L. Amgoud. On the evaluation of argumentation formalisms. *Artificial Intelligence*, 171(5-6):286-310, 2007.
+
+[19] M. Caminada, W. Carnielli, and P.E. Dunne. Semi-stable semantics. *Journal of Logic and Computation*, 22(5):1207-1254, 2012.
+
+[20] C. Cayrol. On the relation between argumentation and non-monotonic coherence-based entailment. In *Proc. 14th International Joint Conference on Artificial Intelligence*, pages 1443-1448, 1995.
+
+[21] C. Cayrol, V. Royer, and C. Saurel. Management of preferences in assumption-based reasoning. In *Proc. 4th International Conference on Information Processing and Management of Uncertainty in Knowledge Based Systems (IPMU'92)*, pages 23-26, 1992.
+
+[22] C. Chesnevar, J. McGinnis, S. Modgil, I. Rahwan, C. Reed, G. Simari, M. South, G. Vreeswijk, and S. Willmott. Towards an argument interchange format. *The Knowledge Engineering Review*, 21(4):293-316, 2006.
+
+[23] P.M. Dung. On the acceptability of arguments and its fundamental role in nonmonotonic reasoning, logic programming and n-person games. *Artificial Intelligence*, 77(2):321-358, 1995.
+
+[24] M.L. Ginsberg. AI and nonmonotonic reasoning. In D. Gabbay, C.J. Hogger, and J.A. Robinson, editors, *Handbook of Logic in Artificial Intelligence and Logic Programming*, pages 1-33. Clarendon Press, Oxford, 1994.
+
+[25] T.F. Gordon, H. Prakken, and D.N. Walton. The Carneades model of argument and burdens of proof. *Artificial Intelligence*, 171:875-896, 2007.
+
+[26] N. Gorogiannis and A. Hunter. Instantiating abstract argumentation with classical logic arguments: Postulates and properties. *Artificial Intelligence*, 175:1479-1497, 2011.
+
+[27] G. Governatori and M.J. Maher. An argumentation-theoretic characterization of defeasible logic. In *Proc. 14th European Conference on Artificial Intelligence*, pages 469-473, 2000.
+
+[28] S. Kaci. Refined preference-based argumentation frameworks. In P. Baroni, F. Cerutti, M. Giacomin, and G.R. Simari, editors, *Computational Models of Argument. Proceedings of COMMA 2010*, pages 299-310.
+
+[29] R.A.A. Kowalski and F. Toni. Abstract argumentation. *Artificial Intelligence and Law*, 4(3):275-296, 1996.
+
+[30] F. Lin and Y. Shoham. Argument systems: A uniform basis for nonmonotonic reasoning. In *Proc. 1st International Conference on Principles of Knowledge Representation and Reasoning (KR-89)*, pages 245-255, 1989.
+
+[31] R.P. Loui. Defeat among arguments: a system of defeasible inference. *Computational Intelligence*, 2:100-106, 1987.
+
+[32] H. Mercier and D. Sperber. Why do humans reason? Arguments for an argumentative theory. *Behavioral and Brain Sciences*, 34(2):57-74, 2011.
+
+[33] S. Modgil. Reasoning about preferences in argumentation frameworks. *Artificial Intelligence*, 173(9-10):901-934, 2009.
+
+[34] S. Modgil and M. Caminada. Proof theories and algorithms for abstract argumentation frameworks. In I. Rahwan and G. Simari, editors, *Argumentation in AI*, pages 105-129. Springer-Verlag, 2009.
+
+[35] S. Modgil and H. Prakken. Reasoning about preferences in structured extended argumentation frameworks. In P. Baroni, F. Cerutti, M. Giacomin, and G.R. Simari, editors, *Computational Models of Argument. Proceedings of COMMA 2010*, pages 347-358.
+
+[36] S. Modgil and H. Prakken. Revisiting preferences and argumentation. In *International Joint Conference on Artificial Intelligence (IJCAI 2011)*, pages 1021-1026, 2011.
+
+[37] J.L. Pollock. Defeasible reasoning. *Cognitive Science*, 11:481-518, 1987.
+
+[38] J.L. Pollock. Justification and defeat. *Artificial Intelligence*, 67:377-408, 1994.
+
+[39] J.L. Pollock. *Cognitive Carpentry: A Blueprint for How to Build a Person*. MIT Press, Cambridge, MA, 1995.
+
+[40] H. Prakken. An abstract framework for argumentation with structured arguments. *Argument and Computation*, 1(2):93-124, 2010.
+
+[41] H. Prakken. Reconstructing Popov v. Hayashi in a framework for argumentation with structured arguments and dungean semantics. *Artificial Intelligence and Law*, 20(1):57-82, 2012.
+
+[42] H. Prakken. Some reflections on two current trends in formal argumentation. In *Logic Programs, Norms and Action. Essays in Honour of Marek J. Sergot on the Occasion of his 60th Birthday*, pages 249-272. Springer, Berlin/Heidelberg, 2012.
+
+[43] H. Prakken and S. Modgil. Clarifying some misconceptions on the ASPIC+ framework. In B. Verheij, S. Woltran, and S. Szeider, editors, *Computational Models of Argument. Proceedings of COMMA 2012*, pages 442-453.
+
+[44] H. Prakken and G. Sartor. Argument-based extended logic programming with defeasible priorities. *Journal of Applied Non-Classical Logics*, 7:25-75, 1997.
+
+[45] I. Rahwan and G. Simari, editors. *Argumentation in AI*. Springer-Verlag, 2009.
+
+[46] G.R. Simari and R.P. Loui. A mathematical treatment of defeasible argumentation and its implementation. *Artificial Intelligence*, 53:125-157, 1992.
+
+[47] B. van Gijzel and H. Prakken. Relating Carneades with abstract argumentation via the ASPIC+ framework for structured argumentation. *Argument and Computation*, 1:21-47, 2012.
+
+[48] G.A.W. Vreeswijk. Abstract argumentation systems. *Artificial Intelligence*, 90:225-279, 1997.
+
+[49] D.N. Walton. *Argument Schemes for Presumptive Reasoning*. Lawrence Erlbaum Associates, Mahwah, NJ, USA, 1996.
+
+## Key Citations for Follow-up
+
+**Caminada & Amgoud 2007** [18] -- Introduced the rationality postulates (sub-argument closure, consistency, closure under strict rules) that this paper proves for revised ASPIC+. Essential for understanding what "rationality" means in structured argumentation and why the postulates matter.
+
+**Prakken 2010** [40] -- The original ASPIC+ paper that this work revises and extends. Required reading to understand what changed (attack-based vs defeat-based conflict-free, broader instantiations, new proofs).
+
+**Brewka 1989** [16] -- Preferred subtheories for default reasoning with prioritized information. Theorem 31 of this paper formally connects ASPIC+ stable extensions to preferred subtheories, making this the bridge between flat and structured approaches.
+
+**Amgoud & Vesic 2011** [9] -- The main critique paper arguing that ASPIC+ conflates preference-dependent and independent attacks and can yield inconsistent extensions. Understanding this critique is necessary to appreciate Section 6.2's systematic rebuttal.
+
+**Dung 1995** [23] -- The foundational abstract argumentation paper. Already in the propstore collection. All of ASPIC+'s semantics (complete, preferred, grounded, stable extensions) are defined in terms of Dung's framework.

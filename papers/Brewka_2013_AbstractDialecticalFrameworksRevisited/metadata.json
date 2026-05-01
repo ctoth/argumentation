@@ -1,0 +1,16 @@
+{
+  "title": "Abstract Dialectical Frameworks Revisited",
+  "authors": [
+    "Gerhard Brewka",
+    "Stefan Ellmauthaler",
+    "Hannes Strass",
+    "Johannes Peter Wallner",
+    "Stefan Woltran"
+  ],
+  "year": "2013",
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": "We present various new concepts and results related to abstract dialectical frameworks (ADFs), a powerful generalization of Dung's argumentation frameworks (AFs). In particular, we show how the existing definitions of stable and preferred semantics which are restricted to the subcase of so-called bipolar ADFs can be improved and generalized to arbitrary frameworks. Furthermore, we introduce preference handling methods for ADFs, allowing for both reasoning with and about preferences. Finally, we present an implementation based on an encoding in answer set programming.",
+  "url": "https://www.ijcai.org/Abstract/13/125",
+  "pdf_url": "https://www.ijcai.org/Proceedings/13/Papers/125.pdf"
+}

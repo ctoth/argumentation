@@ -1,0 +1,14 @@
+{
+  "title": "Abstract Dialectical Frameworks",
+  "authors": [
+    {"name": "Gerhard Brewka"},
+    {"name": "Stefan Woltran"}
+  ],
+  "year": 2010,
+  "venue": "Proceedings of the Twelfth International Conference on Principles of Knowledge Representation and Reasoning (KR 2010)",
+  "doi": "10.1007/978-3-642-14741-2_8",
+  "url": "https://dl.acm.org/doi/10.5555/3031843.3031847",
+  "source": "author-website",
+  "source_url": "https://www.informatik.uni-leipzig.de/~brewka/papers/KR10dialectical.pdf",
+  "abstract": "In this paper we introduce dialectical frameworks, a powerful generalization of Dung-style argumentation frameworks where each node comes with an associated acceptance condition. This allows us to model different types of dependencies, e.g. support and attack, as well as different types of nodes within a single framework. We show that Dung's standard semantics can be generalized to dialectical frameworks, in case of stable and preferred semantics to a slightly restricted class which we call bipolar frameworks. We show how acceptance conditions can be conveniently represented using weights respectively priorities on the links and demonstrate how some of the legal proof standards can be modeled based on this idea."
+}
