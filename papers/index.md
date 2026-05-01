@@ -8,3 +8,6 @@ Describes Fudge, a lightweight C++ SAT-based abstract-argumentation solver. Its 
 
 ## [ArgSemSAT-1.0: Exploiting SAT Solvers in Abstract Argumentation](Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/notes.md)  (abstract-argumentation, sat-solving, preferred-semantics)
 Describes ArgSemSAT, a C++/Glucose solver built around SAT encodings of complete labellings. It gives a compact implementation model for complete, grounded, preferred, stable, and acceptance tasks. It supports the package direction of making complete labellings the shared SAT surface.
+
+## [argmat-sat: Applying SAT Solvers for Argumentation Problems based on Boolean Matrix Algebra](Pu_2017_ArgmatSatApplyingSATSolver/notes.md)  (abstract-argumentation, sat-solving, semi-stable-semantics, stage-semantics)
+Describes argmat-sat, a Boolean-matrix/SAT solver for ICCMA tasks. Its key project value is the range-vector encoding and assumption-space procedure for semi-stable and stage semantics. It supports the next workstream step of replacing range-maximal native acceptance with task-directed SAT loops.
