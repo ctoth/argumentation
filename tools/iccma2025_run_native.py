@@ -291,14 +291,18 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
 
 
 def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
-    from argumentation.aba import (
-        complete_extensions,
-        derives,
-        preferred_extensions,
-        stable_extensions,
-    )
     from argumentation.aspic import GroundAtom, Literal
     from argumentation.iccma import parse_aba
+    from argumentation.solver import (
+        AcceptanceSolverSuccess,
+        ICCMAConfig,
+        SingleExtensionSolverSuccess,
+        SolverBackendError,
+        SolverBackendUnavailable,
+        SolverProtocolError,
+        solve_aba_acceptance,
+        solve_aba_single_extension,
+    )
 
     root = Path(job["root"])
     instance = job["instance"]
@@ -307,24 +311,59 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
     query_path = Path(str(path) + ".query")
     problem, semantics = split_subtrack(task["subtrack"])
     framework = parse_aba(path.read_text(encoding="utf-8"))
-    if semantics == "complete":
-        extension_sets = complete_extensions(framework)
-    elif semantics == "preferred":
-        extension_sets = preferred_extensions(framework)
-    elif semantics == "stable":
-        extension_sets = stable_extensions(framework)
-    else:
-        raise ValueError(f"unsupported ABA semantics: {semantics}")
+    backend = job["backend"]
+    iccma_config = None
+    if backend == "iccma":
+        binary = job.get("iccma_binary")
+        if not binary:
+            return {
+                "status": "unavailable",
+                "reason": "missing ICCMA solver configuration",
+                "error": "Pass --iccma-binary or set ICCMA_AF_SOLVER.",
+            }
+        iccma_config = ICCMAConfig(
+            binary=binary,
+            timeout_seconds=float(job["solver_timeout_seconds"]),
+        )
+    if problem == "SE":
+        result = solve_aba_single_extension(
+            framework,
+            semantics=semantics,
+            backend=backend,
+            iccma=iccma_config,
+        )
+        if isinstance(result, SingleExtensionSolverSuccess):
+            return solved_single_extension(result.extension)
+        if isinstance(result, SolverBackendUnavailable):
+            return unavailable_result(result.reason, result.install_hint)
+        if isinstance(result, SolverBackendError):
+            return solver_error_result(result.reason, result.details)
+        if isinstance(result, SolverProtocolError):
+            return protocol_error_result(result.reason, result.details)
+        raise TypeError(f"unknown solver result: {result!r}")
     query = None
     if query_path.exists():
         query_name = query_path.read_text(encoding="utf-8").strip()
         query = Literal(GroundAtom(query_name))
-    if problem == "SE":
-        return solved_se(extension_sets)
     if query is None:
         return {"status": "skipped", "reason": "missing_query", "error": None}
-    accepted_by_extension = tuple(derives(framework, extension, query) for extension in extension_sets)
-    return solved_decision(problem, extension_sets, accepted_by_extension)
+    result = solve_aba_acceptance(
+        framework,
+        semantics=semantics,
+        task=acceptance_task(problem),
+        query=query,
+        backend=backend,
+        iccma=iccma_config,
+    )
+    if isinstance(result, AcceptanceSolverSuccess):
+        return solved_acceptance(result)
+    if isinstance(result, SolverBackendUnavailable):
+        return unavailable_result(result.reason, result.install_hint)
+    if isinstance(result, SolverBackendError):
+        return solver_error_result(result.reason, result.details)
+    if isinstance(result, SolverProtocolError):
+        return protocol_error_result(result.reason, result.details)
+    raise TypeError(f"unknown solver result: {result!r}")
 
 
 def solve_from_extensions(
