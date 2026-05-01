@@ -9,7 +9,15 @@ import shutil
 import subprocess
 import tempfile
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.dung import (
+    ArgumentationFramework,
+    complete_extensions,
+    ideal_extension,
+    preferred_extensions,
+    semi_stable_extensions,
+    stable_extensions,
+    stage_extensions,
+)
 from argumentation.iccma import write_af
 from argumentation.solver_results import (
     SolverProcessError,
@@ -42,6 +50,24 @@ SEMANTICS_TO_CODE = {
     "stage": "STG",
     "ideal": "ID",
 }
+
+SUPPORTED_AF_PROBLEMS = frozenset(
+    {
+        "DC-CO",
+        "DC-ST",
+        "DC-SST",
+        "DC-STG",
+        "DS-PR",
+        "DS-ST",
+        "DS-SST",
+        "DS-STG",
+        "SE-PR",
+        "SE-ST",
+        "SE-SST",
+        "SE-STG",
+        "SE-ID",
+    }
+)
 
 
 class ICCMAOutputKind(Enum):
@@ -151,6 +177,8 @@ def solve_af_extensions(
     problem = SEMANTICS_TO_PROBLEM.get(semantics)
     if problem is None:
         raise ValueError(f"unsupported ICCMA AF semantics: {semantics}")
+    if not supports_af_problem("SE", semantics):
+        return _unsupported_problem(binary, problem)
 
     return _run_iccma_af_solver(
         framework,
@@ -179,14 +207,31 @@ def solve_af_acceptance(
         raise ValueError(f"unsupported ICCMA AF semantics: {semantics}")
     if query not in framework.arguments:
         raise ValueError(f"query argument is not in framework: {query!r}")
+    problem = f"{prefix}-{semantics_code}"
+    if not supports_af_problem(prefix, semantics):
+        return _unsupported_problem(binary, problem)
 
     return _run_iccma_af_solver(
         framework,
-        problem=f"{prefix}-{semantics_code}",
+        problem=problem,
         binary=binary,
         timeout_seconds=timeout_seconds,
         query=query,
         certificate_required=certificate_required,
+    )
+
+
+def supports_af_problem(task: str, semantics: str) -> bool:
+    prefix = ACCEPTANCE_TASK_TO_PREFIX.get(task, task)
+    semantics_code = SEMANTICS_TO_CODE.get(semantics)
+    return semantics_code is not None and f"{prefix}-{semantics_code}" in SUPPORTED_AF_PROBLEMS
+
+
+def _unsupported_problem(binary: str, problem: str) -> ICCMASolverUnavailable:
+    return ICCMASolverUnavailable(
+        backend=binary,
+        reason=f"unsupported ICCMA 2023 AF problem: {problem}",
+        install_hint="Use an ICCMA 2023 Main/No-Limits AF subtrack problem.",
     )
 
 
@@ -235,6 +280,7 @@ def _run_iccma_af_solver(
             query=query,
             certificate_required=certificate_required,
         )
+        _verify_iccma_output(framework, problem, output, query=query)
     except ICCMAOutputParseError as exc:
         return ICCMASolverProtocolError(
             backend=binary,
@@ -250,6 +296,76 @@ def _run_iccma_af_solver(
         output=output,
         stdout=completed.stdout,
     )
+
+
+def _verify_iccma_output(
+    framework: ArgumentationFramework,
+    problem: str,
+    output: ICCMAOutput,
+    *,
+    query: str | None,
+) -> None:
+    prefix = _problem_prefix(problem)
+    extensions = set(_native_extensions(framework, _problem_semantics(problem)))
+    if prefix == "SE":
+        if output.no_extension:
+            if extensions:
+                raise ICCMAOutputParseError("SE NO output requires no native extension")
+            return
+        if output.witness not in extensions:
+            raise ICCMAOutputParseError("SE witness is not a native extension")
+        return
+
+    if query is None:
+        raise ICCMAOutputParseError(f"{problem} certificate verification requires a query")
+    if prefix == "DC":
+        if output.answer is True:
+            if output.witness not in extensions:
+                raise ICCMAOutputParseError("DC YES witness is not a native extension")
+            if query not in output.witness:
+                raise ICCMAOutputParseError("DC YES witness must contain query")
+            return
+        if any(query in extension for extension in extensions):
+            raise ICCMAOutputParseError("DC NO output contradicted by native extension")
+        return
+    if prefix == "DS":
+        if output.answer is False:
+            if output.witness not in extensions:
+                raise ICCMAOutputParseError("DS NO counterexample is not a native extension")
+            if query in output.witness:
+                raise ICCMAOutputParseError("DS NO counterexample must omit query")
+            return
+        if any(query not in extension for extension in extensions):
+            raise ICCMAOutputParseError("DS YES output contradicted by native counterexample")
+        return
+    raise ICCMAOutputParseError(f"unsupported ICCMA AF problem: {problem}")
+
+
+def _problem_semantics(problem: str) -> str:
+    code = problem.split("-", maxsplit=1)[1]
+    for semantics, semantics_code in SEMANTICS_TO_CODE.items():
+        if semantics_code == code:
+            return semantics
+    raise ICCMAOutputParseError(f"unsupported ICCMA AF semantics code: {code}")
+
+
+def _native_extensions(
+    framework: ArgumentationFramework,
+    semantics: str,
+) -> tuple[frozenset[str], ...]:
+    if semantics == "complete":
+        return tuple(complete_extensions(framework))
+    if semantics == "preferred":
+        return tuple(preferred_extensions(framework))
+    if semantics == "stable":
+        return tuple(stable_extensions(framework))
+    if semantics == "semi-stable":
+        return tuple(semi_stable_extensions(framework))
+    if semantics == "stage":
+        return tuple(stage_extensions(framework))
+    if semantics == "ideal":
+        return (ideal_extension(framework),)
+    raise ICCMAOutputParseError(f"unsupported ICCMA AF semantics: {semantics}")
 
 
 def _command(resolved: str, problem: str, path: Path, query: str | None) -> list[str]:
