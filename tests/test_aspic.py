@@ -1907,15 +1907,13 @@ class TestDefeatProperties:
         pref = data.draw(preference_config(R_d, kb.premises))
         defeats = compute_defeats(attacks, arguments, system, kb, pref)
 
+        attack_pairs = {
+            (atk.attacker, atk.target, atk.target_sub)
+            for atk in attacks
+        }
         for d in defeats:
-            # The defeat must correspond to an attack in the same direction
-            matching_attack = any(
-                atk.attacker == d.attacker
-                and atk.target == d.target
-                and atk.target_sub == d.target_sub
-                for atk in attacks
-            )
-            assert matching_attack, (
+            # The defeat must correspond to an attack in the same direction.
+            assert (d.attacker, d.target, d.target_sub) in attack_pairs, (
                 f"Defeat from {d.attacker} to {d.target} has no matching "
                 f"attack in the same direction"
             )
