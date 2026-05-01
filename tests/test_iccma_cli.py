@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argumentation import iccma_cli
+from argumentation.labelling import ExactEnumerationExceeded
 
 
 def test_iccma_cli_prints_single_extension(tmp_path, capsys) -> None:
@@ -49,3 +50,27 @@ def test_iccma_cli_rejects_acceptance_without_query(tmp_path, capsys) -> None:
     assert status == 2
     assert captured.out == ""
     assert captured.err == "DC tasks require -a/--argument\n"
+
+
+def test_iccma_cli_reports_exact_enumeration_limits(
+    tmp_path,
+    capsys,
+    monkeypatch,
+) -> None:
+    path = tmp_path / "instance.af"
+    path.write_text("p af 1\n", encoding="utf-8")
+
+    def fake_solve_single_extension(*args, **kwargs):
+        raise ExactEnumerationExceeded("too many candidate subsets")
+
+    monkeypatch.setattr(
+        "argumentation.iccma_cli.solve_dung_single_extension",
+        fake_solve_single_extension,
+    )
+
+    status = iccma_cli.main(["-p", "SE-ST", "-f", str(path)])
+
+    captured = capsys.readouterr()
+    assert status == 2
+    assert captured.out == ""
+    assert captured.err == "too many candidate subsets\n"
