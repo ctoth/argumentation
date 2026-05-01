@@ -1,0 +1,17 @@
+{
+  "title": "Skeptical Reasoning with Preferred Semantics in Abstract Argumentation without Computing Preferred Extensions",
+  "authors": [
+    "Matthias Thimm",
+    "F. Cerutti",
+    "M. Vallati"
+  ],
+  "year": "2021",
+  "doi": "10.24963/ijcai.2021/285",
+  "abstract": "We address the problem of deciding skeptical acceptance wrt. preferred semantics of an argument in abstract argumentation frameworks, i.e., the problem of deciding whether an argument is contained in all maximally admissible sets, a.k.a. preferred extensions. State-of-the-art algorithms solve this problem with iterative calls to an external SAT-solver to determine preferred extensions. We provide a new characterisation of skeptical acceptance wrt. preferred semantics that does not involve the notion of a preferred extension. We then develop a new algorithm that also relies on iterative calls to an external SAT-solver but avoids the costly part of maximising admissible sets. We present the results of an experimental evaluation that shows that this new approach significantly outperforms the state of the art. We also apply similar ideas to develop a new algorithm for computing the ideal extension.",
+  "url": "https://www.semanticscholar.org/paper/8e6e38dc717d010db7355355d7fcf0497264ee5d",
+  "pdf_url": "https://www.ijcai.org/proceedings/2021/0285.pdf",
+  "bibtex": "@Article{Thimm2021SkepticalRW,\n author = {Matthias Thimm and F. Cerutti and M. Vallati},\n booktitle = {International Joint Conference on Artificial Intelligence},\n pages = {2069-2075},\n title = {Skeptical Reasoning with Preferred Semantics in Abstract Argumentation without Computing Preferred Extensions},\n year = {2021}\n}\n",
+  "venue": "International Joint Conference on Artificial Intelligence",
+  "venue_type": "conference",
+  "pages": "2069-2075"
+}
