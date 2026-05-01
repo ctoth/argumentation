@@ -119,7 +119,7 @@ def solve_aba_single_extension(
     iccma: ICCMAConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
-    backend = _auto_aba_backend(backend)
+    backend = _auto_aba_backend(backend, semantics)
     if backend == "sat":
         if semantics == "stable":
             if not isinstance(framework, ABAFramework):
@@ -161,7 +161,7 @@ def solve_aba_acceptance(
     """Solve flat ABA credulous or skeptical acceptance queries."""
     if query not in _aba_base(framework).language:
         raise ValueError(f"query literal is not in framework language: {query!r}")
-    backend = _auto_aba_backend(backend)
+    backend = _auto_aba_backend(backend, semantics)
     if backend == "sat":
         if semantics == "stable":
             if not isinstance(framework, ABAFramework):
@@ -310,8 +310,10 @@ def _auto_dung_task_backend(backend: str, semantics: str) -> str:
     return backend
 
 
-def _auto_aba_backend(backend: str) -> str:
-    return "sat" if backend == "auto" else backend
+def _auto_aba_backend(backend: str, semantics: str) -> str:
+    if backend == "auto":
+        return "sat" if semantics == "stable" else "native"
+    return backend
 
 
 def _external_sat_unavailable() -> SolverBackendUnavailable:
