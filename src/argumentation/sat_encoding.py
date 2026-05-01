@@ -202,10 +202,69 @@ def sat_complete_extension(
     require_out: str | None = None,
 ) -> frozenset[str] | None:
     """Return one complete extension satisfying optional membership constraints."""
-    if require_in is not None and require_in not in framework.arguments:
-        raise ValueError(f"unknown required argument: {require_in!r}")
-    if require_out is not None and require_out not in framework.arguments:
-        raise ValueError(f"unknown excluded argument: {require_out!r}")
+    required_in = _optional_required_argument(framework, require_in)
+    required_out = _optional_required_argument(framework, require_out)
+    return _sat_complete_extension(
+        framework,
+        required_in=required_in,
+        required_out=required_out,
+    )
+
+
+def sat_preferred_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+) -> frozenset[str] | None:
+    """Return one preferred extension satisfying an optional membership constraint."""
+    required_in = _optional_required_argument(framework, require_in)
+    current = _sat_complete_extension(
+        framework,
+        required_in=required_in,
+        required_out=frozenset(),
+    )
+    if current is None:
+        return None
+
+    while True:
+        outside = framework.arguments - current
+        if not outside:
+            return current
+        larger = _sat_complete_extension(
+            framework,
+            required_in=current,
+            required_out=frozenset(),
+            require_any_in=outside,
+        )
+        if larger is None:
+            return current
+        if not current < larger:
+            raise RuntimeError("SAT preferred growth did not produce a strict superset")
+        current = larger
+
+
+def _optional_required_argument(
+    framework: ArgumentationFramework,
+    argument: str | None,
+) -> frozenset[str]:
+    if argument is None:
+        return frozenset()
+    if argument not in framework.arguments:
+        raise ValueError(f"unknown required argument: {argument!r}")
+    return frozenset({argument})
+
+
+def _sat_complete_extension(
+    framework: ArgumentationFramework,
+    *,
+    required_in: frozenset[str],
+    required_out: frozenset[str],
+    require_any_in: frozenset[str] = frozenset(),
+) -> frozenset[str] | None:
+    if unknown := sorted(
+        (required_in | required_out | require_any_in) - framework.arguments
+    ):
+        raise ValueError(f"unknown required arguments: {unknown!r}")
 
     z3 = _load_z3()
     ordered_arguments = tuple(sorted(framework.arguments))
@@ -236,10 +295,12 @@ def sat_complete_extension(
         for attacker, target in sorted(framework.attacks):
             solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
-    if require_in is not None:
-        solver.add(in_vars[require_in])
-    if require_out is not None:
-        solver.add(z3.Not(in_vars[require_out]))
+    for argument in sorted(required_in):
+        solver.add(in_vars[argument])
+    for argument in sorted(required_out):
+        solver.add(z3.Not(in_vars[argument]))
+    if require_any_in:
+        solver.add(z3.Or(*(in_vars[argument] for argument in sorted(require_any_in))))
 
     if solver.check() != z3.sat:
         return None
@@ -311,6 +372,7 @@ __all__ = [
     "encode_stable_extensions",
     "sat_complete_extension",
     "sat_extensions",
+    "sat_preferred_extension",
     "sat_stable_extension",
     "stable_extensions_from_encoding",
 ]
