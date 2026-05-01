@@ -304,6 +304,42 @@ def test_default_skeptical_preferred_acceptance_stays_native_for_direct_algorith
     assert calls == [(framework, "preferred")]
 
 
+def test_default_single_extension_uses_auto_semi_stable_sat_backend(
+    monkeypatch,
+) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default semi-stable witness should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    result = solve_dung_single_extension(framework, semantics="semi-stable")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"a"})
+
+
+def test_default_single_extension_uses_auto_stage_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default stage witness should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    result = solve_dung_single_extension(framework, semantics="stage")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"a"})
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
