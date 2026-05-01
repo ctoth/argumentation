@@ -20,6 +20,18 @@ class SolverProcessError:
     stderr: str
     stdout: str
 
+    @property
+    def reason(self) -> str:
+        return f"solver exited with code {self.returncode}"
+
+    @property
+    def details(self) -> dict[str, str]:
+        return {
+            "problem": self.problem,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+        }
+
 
 @dataclass(frozen=True)
 class SolverProtocolError:
@@ -28,6 +40,18 @@ class SolverProtocolError:
     message: str
     stderr: str
     stdout: str
+
+    @property
+    def reason(self) -> str:
+        return self.message
+
+    @property
+    def details(self) -> dict[str, str]:
+        return {
+            "problem": self.problem,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+        }
 
 
 @dataclass(frozen=True)
