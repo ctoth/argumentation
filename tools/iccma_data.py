@@ -5,6 +5,7 @@ import csv
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import lzma
 from pathlib import Path
 import re
 import shutil
@@ -353,12 +354,20 @@ def build_manifest(
 def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
     size = path.stat().st_size
     suffix = path.suffix.lower()
+    name = path.name.lower()
     if path.name.startswith("._") or "__MACOSX/" in relative:
         return ManifestRow(archive_name, relative, "archive_metadata", "skipped", size)
     if archive_name.startswith("results") or suffix in {".csv", ".xlsx", ".xls", ".results"}:
         return ManifestRow(archive_name, relative, "results", "skipped", size)
-    if suffix in {".arg", ".query", ".apxm", ".tgfm", ".asm"}:
+    if (
+        suffix in {".arg", ".query", ".apxm", ".tgfm", ".asm"}
+        or name.endswith(("_arg.lzma", "_query.lzma"))
+    ):
         return ManifestRow(archive_name, relative, "query_or_updates", "skipped", size)
+    if name.endswith(".apx.lzma"):
+        return ManifestRow(archive_name, relative, "compressed_apx", "skipped", size)
+    if name.endswith(".tgf.lzma"):
+        return ManifestRow(archive_name, relative, "compressed_tgf", "skipped", size)
     try:
         header = first_payload_line(path)
         if header.startswith("p af "):
@@ -457,7 +466,7 @@ def scan_numeric_aba_file(path: Path) -> tuple[int, int, int, int]:
 def scan_apx_file(path: Path) -> tuple[int, int]:
     arguments: set[str] = set()
     attacks = 0
-    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+    with open_text(path, errors="ignore") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
             line = raw_line.strip()
             if not line or line.startswith(("%", "#")):
@@ -480,7 +489,7 @@ def scan_tgf_file(path: Path) -> tuple[int, int]:
     arguments: set[str] = set()
     attacks = 0
     in_attacks = False
-    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+    with open_text(path, errors="ignore") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
             line = raw_line.strip()
             if not line:
@@ -503,15 +512,21 @@ def scan_tgf_file(path: Path) -> tuple[int, int]:
 
 
 def looks_like_apx(path: Path, header: str) -> bool:
-    return path.suffix.lower() == ".apx" or bool(APX_ARG_RE.match(header) or APX_ATT_RE.match(header))
+    name = path.name.lower()
+    return (
+        path.suffix.lower() == ".apx"
+        or name.endswith(".apx.lzma")
+        or bool(APX_ARG_RE.match(header) or APX_ATT_RE.match(header))
+    )
 
 
 def looks_like_tgf(path: Path, header: str) -> bool:
-    return path.suffix.lower() == ".tgf" or header == "#" or header.isdigit()
+    name = path.name.lower()
+    return path.suffix.lower() == ".tgf" or name.endswith(".tgf.lzma") or header == "#" or header.isdigit()
 
 
 def iter_payload_parts(path: Path):
-    with path.open("r", encoding="utf-8", errors="strict") as handle:
+    with open_text(path, errors="strict") as handle:
         for line_number, raw_line in enumerate(handle, start=1):
             line = raw_line.strip()
             if not line or line.startswith("#"):
@@ -529,12 +544,18 @@ def validate_numeric_id(value: str, maximum: int, line_number: int, label: str) 
 
 
 def first_payload_line(path: Path) -> str:
-    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+    with open_text(path, errors="ignore") as handle:
         for raw_line in handle:
             line = raw_line.strip()
             if line and not line.startswith(("%", "#")):
                 return line
     return ""
+
+
+def open_text(path: Path, *, errors: str):
+    if path.name.lower().endswith(".lzma"):
+        return lzma.open(path, mode="rt", encoding="utf-8", errors=errors)
+    return path.open("r", encoding="utf-8", errors=errors)
 
 
 def download(url: str, target: Path) -> None:
