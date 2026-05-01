@@ -23,6 +23,21 @@ ABA_EXTENSION_ORACLES = {
 }
 
 
+@st.composite
+def flat_aba_frameworks(draw):
+    size = draw(st.integers(min_value=1, max_value=3))
+    attacks = draw(
+        st.frozensets(
+            st.tuples(
+                st.integers(min_value=1, max_value=size),
+                st.integers(min_value=1, max_value=size),
+            ),
+            max_size=size * size,
+        )
+    )
+    return _flat_aba(size, frozenset(attacks))
+
+
 @given(flat_aba_frameworks(), st.sampled_from(sorted(ABA_EXTENSION_ORACLES)))
 @settings(deadline=10000, max_examples=40)
 def test_solve_aba_single_extension_native_returns_native_witness(
@@ -86,21 +101,6 @@ def test_solve_aba_aspforaba_backend_is_typed_unavailable_without_contract() -> 
 
     assert isinstance(result, SolverBackendUnavailable)
     assert result.backend == "aspforaba"
-
-
-@st.composite
-def flat_aba_frameworks(draw):
-    size = draw(st.integers(min_value=1, max_value=3))
-    attacks = draw(
-        st.frozensets(
-            st.tuples(
-                st.integers(min_value=1, max_value=size),
-                st.integers(min_value=1, max_value=size),
-            ),
-            max_size=size * size,
-        )
-    )
-    return _flat_aba(size, frozenset(attacks))
 
 
 def _flat_aba(size: int, attacks: frozenset[tuple[int, int]]) -> ABAFramework:
