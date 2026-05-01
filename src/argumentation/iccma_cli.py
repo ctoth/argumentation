@@ -8,6 +8,7 @@ import sys
 from typing import Sequence, TextIO
 
 from argumentation.iccma import parse_af
+from argumentation.labelling import ExactEnumerationExceeded
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     SingleExtensionSolverSuccess,
@@ -57,7 +58,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             stdout=sys.stdout,
             stderr=sys.stderr,
         )
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, ExactEnumerationExceeded) as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
