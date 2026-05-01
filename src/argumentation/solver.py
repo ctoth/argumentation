@@ -26,7 +26,11 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
-from argumentation.sat_encoding import sat_extensions, sat_stable_extension
+from argumentation.sat_encoding import (
+    sat_complete_extension,
+    sat_extensions,
+    sat_stable_extension,
+)
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.solver_results import (
@@ -273,6 +277,13 @@ def solve_dung_single_extension(
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "complete":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_complete_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         extensions = sat_extensions(framework, semantics)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
@@ -312,6 +323,11 @@ def solve_dung_acceptance(
                 return _solve_sat_stable_acceptance(framework, task, query)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "complete":
+            try:
+                return _solve_sat_complete_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
             sat_extensions(framework, semantics),
             task,
@@ -334,7 +350,7 @@ def _missing_iccma_config() -> SolverBackendUnavailable:
 
 def _auto_dung_task_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
-        return "sat" if semantics == "stable" else "native"
+        return "sat" if semantics in {"complete", "stable"} else "native"
     return backend
 
 
@@ -475,6 +491,26 @@ def _solve_sat_stable_acceptance(
         )
     if task == "skeptical":
         counterexample = sat_stable_extension(framework, require_out=query)
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
+def _solve_sat_complete_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    if task == "credulous":
+        witness = sat_complete_extension(framework, require_in=query)
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = sat_complete_extension(framework, require_out=query)
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
             counterexample=counterexample,
