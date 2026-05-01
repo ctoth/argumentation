@@ -20,6 +20,7 @@ from argumentation.sat_encoding import (
     encode_stable_extensions,
     sat_complete_extension,
     sat_extensions,
+    sat_preferred_extension,
     stable_extensions_from_encoding,
 )
 from tests.test_dung import af, argumentation_frameworks
@@ -87,6 +88,14 @@ def test_sat_complete_extension_handles_required_labels() -> None:
     assert sat_complete_extension(framework, require_out="b") == frozenset({"a"})
 
 
+def test_sat_preferred_extension_handles_required_labels() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("c", "c")})
+
+    assert sat_preferred_extension(framework, require_in="a") == frozenset({"a"})
+    assert sat_preferred_extension(framework, require_in="b") == frozenset({"b"})
+    assert sat_preferred_extension(framework, require_in="c") is None
+
+
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:
@@ -141,6 +150,34 @@ def test_sat_complete_extension_required_labels_match_native_oracle(
             assert required_out in native_without_query
         else:
             assert required_out is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_preferred_extension_returns_native_preferred_witness(
+    framework: ArgumentationFramework,
+) -> None:
+    witness = sat_preferred_extension(framework)
+
+    assert witness in set(preferred_extensions(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_sat_preferred_extension_required_in_matches_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(preferred_extensions(framework))
+
+    for query in framework.arguments:
+        required_in = sat_preferred_extension(framework, require_in=query)
+        native_with_query = {
+            extension for extension in native_extensions if query in extension
+        }
+        if native_with_query:
+            assert required_in in native_with_query
+        else:
+            assert required_in is None
 
 
 @given(argumentation_frameworks(max_args=4))
