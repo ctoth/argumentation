@@ -136,6 +136,38 @@ def test_sat_backend_solves_stable_acceptance_without_native_enumeration() -> No
     assert result.witness == frozenset({"1"})
 
 
+def test_default_single_extension_uses_auto_stable_sat_backend() -> None:
+    arguments = frozenset(str(index) for index in range(1, 71))
+    defeats = frozenset(
+        {("1", str(index)) for index in range(2, 71)} | {("2", "3"), ("3", "2")}
+    )
+    framework = ArgumentationFramework(arguments=arguments, defeats=defeats)
+
+    result = solve_dung_single_extension(framework, semantics="stable")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"1"})
+
+
+def test_default_acceptance_uses_auto_stable_sat_backend() -> None:
+    arguments = frozenset(str(index) for index in range(1, 71))
+    defeats = frozenset(
+        {("1", str(index)) for index in range(2, 71)} | {("2", "3"), ("3", "2")}
+    )
+    framework = ArgumentationFramework(arguments=arguments, defeats=defeats)
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="stable",
+        task="skeptical",
+        query="2",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is False
+    assert result.counterexample == frozenset({"1"})
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
