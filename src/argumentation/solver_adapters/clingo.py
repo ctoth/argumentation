@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import resources
+import importlib.util
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from argumentation.solver_results import (
@@ -72,8 +74,8 @@ def run_extension_enumeration_protocol(
     problem: str = "ASP-EXT",
 ) -> ClingoResult:
     """Run clingo over facts plus packaged modules and parse all extensions."""
-    resolved = _resolve_binary(binary)
-    if resolved is None:
+    command_prefix = _resolve_command(binary)
+    if command_prefix is None:
         return ClingoUnavailable(
             backend=binary,
             reason="binary not found on PATH",
@@ -94,7 +96,7 @@ def run_extension_enumeration_protocol(
     path = _write_temp_program(facts, modules=modules)
     try:
         completed = subprocess.run(
-            [resolved, str(path), "0"],
+            [*command_prefix, str(path), "0"],
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
@@ -141,8 +143,8 @@ def run_aspic_grounded_protocol(
     timeout_seconds: float = 30.0,
 ) -> ClingoResult:
     """Run clingo and parse ASPIC grounded accepted-atom protocol output."""
-    resolved = _resolve_binary(binary)
-    if resolved is None:
+    command_prefix = _resolve_command(binary)
+    if command_prefix is None:
         return ClingoUnavailable(
             backend=binary,
             reason="binary not found on PATH",
@@ -152,7 +154,7 @@ def run_aspic_grounded_protocol(
     path = _write_temp_program(facts)
     try:
         completed = subprocess.run(
-            [resolved, str(path)],
+            [*command_prefix, str(path)],
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
@@ -261,11 +263,16 @@ def _parse_extension_answer_sets(
     )
 
 
-def _resolve_binary(binary: str) -> str | None:
+def _resolve_command(binary: str) -> list[str] | None:
     path = Path(binary)
     if path.exists():
-        return str(path)
-    return shutil.which(binary)
+        return [str(path)]
+    resolved = shutil.which(binary)
+    if resolved is not None:
+        return [resolved]
+    if binary == "clingo" and importlib.util.find_spec("clingo") is not None:
+        return [sys.executable, "-m", "clingo"]
+    return None
 
 
 def _read_encoding_module(name: str) -> str:
