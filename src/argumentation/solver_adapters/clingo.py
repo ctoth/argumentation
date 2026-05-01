@@ -1,0 +1,156 @@
+"""Subprocess helper for clingo-backed ASP-style solver protocols."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tempfile
+
+from argumentation.solver_results import (
+    SolverProcessError,
+    SolverProtocolError,
+    SolverUnavailable,
+)
+
+
+_ACCEPTED_ARG_RE = re.compile(r"^accepted_arg\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
+_ACCEPTED_LIT_RE = re.compile(r"^accepted_lit\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
+_CLINGO_CONTROL_TOKENS = {
+    "Answer:",
+    "SATISFIABLE",
+    "UNSATISFIABLE",
+    "UNKNOWN",
+    "OPTIMUM",
+    "FOUND",
+    "Models",
+    "Calls",
+    "Time",
+    "CPU",
+}
+
+
+@dataclass(frozen=True)
+class ClingoAnswerSetSuccess:
+    backend: str
+    accepted_argument_ids: frozenset[str]
+    accepted_literal_ids: frozenset[str]
+    stdout: str
+
+
+ClingoUnavailable = SolverUnavailable
+ClingoProcessError = SolverProcessError
+ClingoProtocolError = SolverProtocolError
+
+
+ClingoResult = (
+    ClingoAnswerSetSuccess
+    | ClingoUnavailable
+    | ClingoProcessError
+    | ClingoProtocolError
+)
+
+
+def run_aspic_grounded_protocol(
+    *,
+    facts: tuple[str, ...],
+    known_literal_ids: frozenset[str],
+    binary: str,
+    timeout_seconds: float = 30.0,
+) -> ClingoResult:
+    """Run clingo and parse ASPIC grounded accepted-atom protocol output."""
+    resolved = _resolve_binary(binary)
+    if resolved is None:
+        return ClingoUnavailable(
+            backend=binary,
+            reason="binary not found on PATH",
+            install_hint="Install clingo or pass binary=... to solve_aspic_with_backend.",
+        )
+
+    path = _write_temp_program(facts)
+    try:
+        completed = subprocess.run(
+            [resolved, str(path)],
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    finally:
+        path.unlink(missing_ok=True)
+
+    if completed.returncode != 0:
+        return ClingoProcessError(
+            backend=binary,
+            problem="ASPIC-GR",
+            returncode=completed.returncode,
+            stderr=completed.stderr,
+            stdout=completed.stdout,
+        )
+
+    try:
+        accepted_argument_ids, accepted_literal_ids = _parse_grounded_answer_set(
+            completed.stdout,
+            known_literal_ids=known_literal_ids,
+        )
+    except ValueError as exc:
+        return ClingoProtocolError(
+            backend=binary,
+            problem="ASPIC-GR",
+            message=str(exc),
+            stderr=completed.stderr,
+            stdout=completed.stdout,
+        )
+
+    return ClingoAnswerSetSuccess(
+        backend=binary,
+        accepted_argument_ids=accepted_argument_ids,
+        accepted_literal_ids=accepted_literal_ids,
+        stdout=completed.stdout,
+    )
+
+
+def _parse_grounded_answer_set(
+    stdout: str,
+    *,
+    known_literal_ids: frozenset[str],
+) -> tuple[frozenset[str], frozenset[str]]:
+    accepted_argument_ids: set[str] = set()
+    accepted_literal_ids: set[str] = set()
+    for token in stdout.split():
+        if token.isdigit() or token in _CLINGO_CONTROL_TOKENS:
+            continue
+        arg_match = _ACCEPTED_ARG_RE.fullmatch(token)
+        if arg_match is not None:
+            accepted_argument_ids.add(arg_match.group("id"))
+            continue
+        lit_match = _ACCEPTED_LIT_RE.fullmatch(token)
+        if lit_match is not None:
+            literal_id = lit_match.group("id")
+            if literal_id not in known_literal_ids:
+                raise ValueError("accepted literal id is not in the ASPIC encoding")
+            accepted_literal_ids.add(literal_id)
+            continue
+    return frozenset(accepted_argument_ids), frozenset(accepted_literal_ids)
+
+
+def _resolve_binary(binary: str) -> str | None:
+    path = Path(binary)
+    if path.exists():
+        return str(path)
+    return shutil.which(binary)
+
+
+def _write_temp_program(facts: tuple[str, ...]) -> Path:
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        suffix=".lp",
+        delete=False,
+    ) as handle:
+        for fact in facts:
+            handle.write(fact)
+            handle.write("\n")
+        return Path(handle.name)
