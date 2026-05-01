@@ -59,6 +59,31 @@ def ground_defeasible_theory(
 
     gunray = _require_gunray()
     inspection = gunray.inspect_grounding(theory)
+    return grounding_inspection_to_aspic(
+        inspection,
+        superiority=theory.superiority,
+        conflicts=theory.conflicts,
+        comparison=comparison,
+        link=link,
+        simplify=simplify,
+    )
+
+
+def grounding_inspection_to_aspic(
+    inspection: "GroundingInspection",
+    *,
+    superiority: tuple[tuple[str, str], ...] = (),
+    conflicts: tuple[tuple[str, str], ...] = (),
+    comparison: str = "elitist",
+    link: str = "last",
+    simplify: bool = True,
+) -> GroundedDatalogTheory:
+    """Project a Gunray ``GroundingInspection`` into ASPIC+ objects.
+
+    This is the direct integration point for callers that already ran Gunray
+    and kept the inspection report, such as propstore's ``GroundedRulesBundle``.
+    """
+
     simplification = inspection.simplification
 
     if simplify:
@@ -92,7 +117,7 @@ def ground_defeasible_theory(
         tuple(defeasible_rules),
     )
     pref = PreferenceConfig(
-        rule_order=_project_rule_order(theory, source_to_ground),
+        rule_order=_project_rule_order(superiority, source_to_ground),
         premise_order=frozenset(),
         comparison=comparison,
         link=link,
@@ -100,7 +125,7 @@ def ground_defeasible_theory(
     kb = KnowledgeBase(axioms=axioms, premises=frozenset())
 
     language = _language_from_parts(axioms, strict_rules, tuple(defeasible_rules))
-    contrariness = _contrariness_from_language(language, theory)
+    contrariness = _contrariness_from_language(language, conflicts)
     system = ArgumentationSystem(
         language=language,
         contrariness=contrariness,
@@ -249,11 +274,11 @@ def _source_to_ground_rules(
 
 
 def _project_rule_order(
-    theory: "DefeasibleTheory",
+    superiority: tuple[tuple[str, str], ...],
     source_to_ground: Mapping[str, frozenset[Rule]],
 ) -> frozenset[tuple[Rule, Rule]]:
     projected: set[tuple[Rule, Rule]] = set()
-    for superior_id, inferior_id in theory.superiority:
+    for superior_id, inferior_id in superiority:
         stronger_rules = source_to_ground.get(superior_id, frozenset())
         weaker_rules = source_to_ground.get(inferior_id, frozenset())
         for weaker in weaker_rules:
@@ -284,7 +309,7 @@ def _language_from_parts(
 
 def _contrariness_from_language(
     language: frozenset[Literal],
-    theory: "DefeasibleTheory",
+    conflicts: tuple[tuple[str, str], ...],
 ) -> ContrarinessFn:
     contradictories = {
         (literal, literal.contrary)
@@ -298,7 +323,7 @@ def _contrariness_from_language(
         key = (literal.atom.predicate, tuple(literal.atom.arguments))
         by_shape.setdefault(key, set()).add(literal)
 
-    for left_predicate, right_predicate in theory.conflicts:
+    for left_predicate, right_predicate in conflicts:
         for left, right in _conflict_literals(left_predicate, right_predicate, by_shape):
             if left == right:
                 continue
@@ -344,4 +369,5 @@ def _decode_predicate_polarity(predicate: str) -> tuple[str, bool]:
 __all__ = [
     "GroundedDatalogTheory",
     "ground_defeasible_theory",
+    "grounding_inspection_to_aspic",
 ]

@@ -3,7 +3,10 @@ from __future__ import annotations
 from gunray import DefeasibleTheory, Rule as GunrayRule
 
 from argumentation.aspic import GroundAtom, Literal, build_arguments
-from argumentation.datalog_grounding import ground_defeasible_theory
+from argumentation.datalog_grounding import (
+    ground_defeasible_theory,
+    grounding_inspection_to_aspic,
+)
 
 
 def test_ground_defeasible_theory_uses_gunray_simplification() -> None:
@@ -92,3 +95,32 @@ def test_ground_defeasible_theory_output_builds_aspic_arguments() -> None:
         for argument in arguments
         if hasattr(argument, "rule")
     )
+
+
+def test_grounding_inspection_to_aspic_uses_existing_gunray_result() -> None:
+    from gunray import inspect_grounding
+
+    theory = DefeasibleTheory(
+        facts={"bird": {("tweety",)}},
+        defeasible_rules=[
+            GunrayRule(id="d1", head="flies(X)", body=["bird(X)"]),
+            GunrayRule(id="d2", head="~flies(X)", body=["bird(X)"]),
+        ],
+        superiority=(("d2", "d1"),),
+    )
+
+    grounded = grounding_inspection_to_aspic(
+        inspect_grounding(theory),
+        superiority=theory.superiority,
+    )
+
+    assert {
+        rule.consequent
+        for rule in grounded.system.defeasible_rules
+    } == {
+        Literal(GroundAtom("flies", ("tweety",))),
+        Literal(GroundAtom("flies", ("tweety",)), negated=True),
+    }
+    weaker, stronger = next(iter(grounded.pref.rule_order))
+    assert weaker.name is not None and weaker.name.startswith("d1#")
+    assert stronger.name is not None and stronger.name.startswith("d2#")
