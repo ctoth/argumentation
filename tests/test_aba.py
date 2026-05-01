@@ -104,6 +104,44 @@ def test_solve_aba_aspforaba_backend_is_typed_unavailable_without_contract() -> 
     assert result.backend == "aspforaba"
 
 
+def test_solve_aba_single_extension_auto_uses_stable_sat_without_native_enumeration(
+    monkeypatch,
+) -> None:
+    framework = _flat_aba(70, frozenset((1, target) for target in range(2, 71)))
+
+    def fail_native(*args, **kwargs):
+        raise AssertionError("native ABA stable enumeration should not run")
+
+    monkeypatch.setattr("argumentation.solver.aba_semantics.stable_extensions", fail_native)
+
+    result = solve_aba_single_extension(framework, semantics="stable")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({literal("a1")})
+
+
+def test_solve_aba_acceptance_auto_uses_stable_sat_without_native_enumeration(
+    monkeypatch,
+) -> None:
+    framework = _flat_aba(70, frozenset((1, target) for target in range(2, 71)))
+
+    def fail_native(*args, **kwargs):
+        raise AssertionError("native ABA stable enumeration should not run")
+
+    monkeypatch.setattr("argumentation.solver.aba_semantics.stable_extensions", fail_native)
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics="stable",
+        task="skeptical",
+        query=literal("a2"),
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is False
+    assert result.counterexample == frozenset({literal("a1")})
+
+
 def test_solve_aba_single_extension_iccma_returns_verified_witness(monkeypatch) -> None:
     framework = _flat_aba(1, frozenset())
 
