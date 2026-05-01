@@ -405,6 +405,10 @@ def _source_aspic_facts(
         | set(defeasible_rule_ids.values())
     )
     supports = _source_literal_supports(system, kb, strict_rule_ids, defeasible_rule_ids)
+    for rule in system.strict_rules:
+        facts.add(f"s_body_count({strict_rule_ids[rule]},{len(rule.antecedents)}).")
+    for rule in system.defeasible_rules:
+        facts.add(f"d_body_count({defeasible_rule_ids[rule]},{len(rule.antecedents)}).")
     support_index = 0
     for literal, literal_supports in sorted(supports.items(), key=lambda item: repr(item[0])):
         for support in sorted(literal_supports, key=lambda item: (len(item), tuple(sorted(item)))):
