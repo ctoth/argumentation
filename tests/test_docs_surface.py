@@ -60,3 +60,41 @@ def test_architecture_documents_new_package_surfaces() -> None:
 
     assert "adapted grounded edge-tracking" in architecture
     assert "not the full Popescu & Wallner I/O/U witness-table DP" in architecture
+
+
+def test_readme_documents_solver_contracts_and_capabilities() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    for expected in (
+        "solver_capability_matrix",
+        "ExtensionEnumerationSuccess",
+        "SingleExtensionSuccess",
+        "AcceptanceSuccess",
+        "ICCMA_ABA_SOLVER",
+        "ASPFORABA_SOLVER",
+        "one witness, not full enumeration",
+        "unsupported task/semantics/backend combinations return typed unavailable",
+    ):
+        assert expected in readme
+
+    assert "there is no ABA solver dispatcher yet" not in readme
+    assert "propstore" not in readme.casefold()
+
+
+def test_architecture_documents_solver_contracts_and_capabilities() -> None:
+    architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
+
+    for expected in (
+        "solver_capability_matrix",
+        "ExtensionEnumerationSuccess",
+        "SingleExtensionSuccess",
+        "AcceptanceSuccess",
+        "ICCMA_AF_SOLVER",
+        "ASPFORABA_SOLVER",
+        "one ICCMA witness is not full enumeration",
+        "unsupported combinations return typed unavailable",
+    ):
+        assert expected in architecture
+
+    assert "there is no ABA solver dispatcher yet" not in architecture
+    assert "propstore" not in architecture.casefold()
