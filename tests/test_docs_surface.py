@@ -74,11 +74,13 @@ def test_readme_documents_solver_contracts_and_capabilities() -> None:
         "ASPFORABA_SOLVER",
         "one witness, not full enumeration",
         "unsupported task/semantics/backend combinations return typed unavailable",
+        "External callers supply already-projected frameworks",
+        "does not own caller",
+        "identity, storage, merge policy, provenance, or rendering policy",
     ):
         assert expected in readme
 
     assert "there is no ABA solver dispatcher yet" not in readme
-    assert "propstore" not in readme.casefold()
 
 
 def test_architecture_documents_solver_contracts_and_capabilities() -> None:
@@ -93,8 +95,10 @@ def test_architecture_documents_solver_contracts_and_capabilities() -> None:
         "ASPFORABA_SOLVER",
         "one ICCMA witness is not full enumeration",
         "unsupported combinations return typed unavailable",
+        "External callers supply already-projected frameworks",
+        "not own caller",
+        "identity, storage, merge policy, provenance, or rendering",
     ):
         assert expected in architecture
 
     assert "there is no ABA solver dispatcher yet" not in architecture
-    assert "propstore" not in architecture.casefold()
