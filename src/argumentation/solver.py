@@ -15,6 +15,7 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.sat_encoding import sat_extensions
 from argumentation.solver_adapters import iccma_af
 from argumentation.solver_results import (
     AcceptanceSuccess,
@@ -36,6 +37,13 @@ class ICCMAConfig:
 
     binary: str
     timeout_seconds: float = 30.0
+
+
+@dataclass(frozen=True)
+class SATConfig:
+    """Configuration for package-native or externally supplied SAT solving."""
+
+    require_external: bool = False
 
 
 ExtensionSolverSuccess = ExtensionEnumerationSuccess
@@ -69,6 +77,7 @@ def solve_dung_extensions(
     semantics: str,
     backend: str = "native",
     iccma: ICCMAConfig | None = None,
+    sat: SATConfig | None = None,
 ) -> ExtensionSolverResult:
     """Solve Dung extension queries through a package or external backend."""
     if backend == "iccma":
@@ -77,6 +86,10 @@ def solve_dung_extensions(
             install_hint="Use solve_dung_single_extension for ICCMA AF SE tasks.",
             reason="ICCMA AF SE tasks return one extension witness, not enumeration",
         )
+    if backend == "sat":
+        if sat is not None and sat.require_external:
+            return _external_sat_unavailable()
+        return ExtensionSolverSuccess(sat_extensions(framework, semantics))
     if backend == "native":
         return ExtensionSolverSuccess(
             _sorted_extensions(_dung_extensions(framework, semantics))
@@ -94,6 +107,7 @@ def solve_dung_single_extension(
     semantics: str,
     backend: str = "native",
     iccma: ICCMAConfig | None = None,
+    sat: SATConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one Dung extension witness query."""
     if backend == "iccma":
@@ -102,6 +116,13 @@ def solve_dung_single_extension(
         return _solve_iccma_dung_single_extension(framework, semantics, iccma)
     if backend == "native":
         extensions = _sorted_extensions(_dung_extensions(framework, semantics))
+        return SingleExtensionSolverSuccess(
+            extension=extensions[0] if extensions else None,
+        )
+    if backend == "sat":
+        if sat is not None and sat.require_external:
+            return _external_sat_unavailable()
+        extensions = sat_extensions(framework, semantics)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
         )
@@ -120,6 +141,7 @@ def solve_dung_acceptance(
     query: str,
     backend: str = "native",
     iccma: ICCMAConfig | None = None,
+    sat: SATConfig | None = None,
 ) -> AcceptanceSolverResult:
     """Solve Dung credulous or skeptical acceptance queries."""
     if query not in framework.arguments:
@@ -130,6 +152,14 @@ def solve_dung_acceptance(
         return _solve_iccma_dung_acceptance(framework, semantics, task, query, iccma)
     if backend == "native":
         return _solve_native_dung_acceptance(framework, semantics, task, query)
+    if backend == "sat":
+        if sat is not None and sat.require_external:
+            return _external_sat_unavailable()
+        return _solve_dung_acceptance_from_extensions(
+            sat_extensions(framework, semantics),
+            task,
+            query,
+        )
     return SolverBackendUnavailable(
         backend=backend,
         install_hint="Use backend='native'.",
@@ -145,6 +175,14 @@ def _missing_iccma_config() -> SolverBackendUnavailable:
     )
 
 
+def _external_sat_unavailable() -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend="sat",
+        reason="external SAT backend is not configured",
+        install_hint="Use SATConfig(require_external=False) for the package-native SAT enumerator.",
+    )
+
+
 def _solve_native_dung_acceptance(
     framework: ArgumentationFramework,
     semantics: str,
@@ -152,6 +190,14 @@ def _solve_native_dung_acceptance(
     query: str,
 ) -> AcceptanceSolverSuccess:
     extensions = _sorted_extensions(_dung_extensions(framework, semantics))
+    return _solve_dung_acceptance_from_extensions(extensions, task, query)
+
+
+def _solve_dung_acceptance_from_extensions(
+    extensions: tuple[frozenset[str], ...],
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
     if task == "credulous":
         witness = next(
             (extension for extension in extensions if query in extension),
