@@ -191,10 +191,15 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
         system,
         kb,
         pref,
-        backend="materialized_reference",
+        backend="asp",
         semantics="grounded",
     )
     accepted_ids = " ".join(f"accepted_arg({arg_id})" for arg_id in expected.extensions[0])
+    accepted_lits = " ".join(
+        f"accepted_lit({literal_id})"
+        for literal_id, literal in expected.encoding.literal_by_id.items()
+        if literal in expected.accepted_conclusions
+    )
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
@@ -211,7 +216,7 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
         assert check is False
         return SimpleNamespace(
             returncode=0,
-            stdout=f"Answer: 1\n{accepted_ids}\nSATISFIABLE\n",
+            stdout=f"Answer: 1\n{accepted_ids} {accepted_lits}\nSATISFIABLE\n",
             stderr="",
         )
 
@@ -352,12 +357,17 @@ def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
         system,
         kb,
         pref,
-        backend="materialized_reference",
+        backend="asp",
         semantics="grounded",
     )
     accepted_ids = " ".join(
         f"accepted_arg({arg_id})"
         for arg_id in expected.extensions[0]
+    )
+    accepted_lits = " ".join(
+        f"accepted_lit({literal_id})"
+        for literal_id, literal in expected.encoding.literal_by_id.items()
+        if literal in expected.accepted_conclusions
     )
 
     with pytest.MonkeyPatch.context() as monkeypatch:
@@ -369,7 +379,7 @@ def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
             "argumentation.solver_adapters.clingo.subprocess.run",
             lambda *args, **kwargs: SimpleNamespace(
                 returncode=0,
-                stdout=f"Answer: 1\n{accepted_ids}\nSATISFIABLE\n",
+                stdout=f"Answer: 1\n{accepted_ids} {accepted_lits}\nSATISFIABLE\n",
                 stderr="",
             ),
         )
