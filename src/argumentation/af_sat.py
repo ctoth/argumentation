@@ -21,6 +21,8 @@ class SATCheck:
     argument_count: int
     attack_count: int
     model_extension_size: int | None = None
+    range_bound: int | None = None
+    range_constraint: str | None = None
     metadata: Mapping[str, object] | None = None
 
 
@@ -177,6 +179,26 @@ class AfSatKernel:
                 self.z3.Or(*(self.range_vars[argument] for argument in sorted(arguments)))
             )
 
+    def require_range_size_at_least(self, size: int) -> None:
+        self._validate_range_size(size)
+        self.add_range_definition()
+        self.solver.add(
+            self.z3.PbGe(
+                [(self.range_vars[argument], 1) for argument in self.arguments],
+                size,
+            )
+        )
+
+    def require_range_size_exactly(self, size: int) -> None:
+        self._validate_range_size(size)
+        self.add_range_definition()
+        self.solver.add(
+            self.z3.PbEq(
+                [(self.range_vars[argument], 1) for argument in self.arguments],
+                size,
+            )
+        )
+
     def require_attacks_any(self, targets: frozenset[str]) -> None:
         self._validate(targets)
         attackers = frozenset(
@@ -214,7 +236,14 @@ class AfSatKernel:
         outside = self.framework.arguments - range_set
         self.require_any_range(outside)
 
-    def check(self, utility_name: str, assumptions: tuple[Any, ...] = ()) -> str:
+    def check(
+        self,
+        utility_name: str,
+        assumptions: tuple[Any, ...] = (),
+        *,
+        range_bound: int | None = None,
+        range_constraint: str | None = None,
+    ) -> str:
         started = perf_counter()
         result_ref = self.solver.check(*assumptions)
         elapsed_ms = (perf_counter() - started) * 1000
@@ -232,6 +261,8 @@ class AfSatKernel:
                     argument_count=len(self.framework.arguments),
                     attack_count=len(self.framework.defeats),
                     model_extension_size=model_size,
+                    range_bound=range_bound,
+                    range_constraint=range_constraint,
                     metadata=self.metadata,
                 )
             )
@@ -254,10 +285,17 @@ class AfSatKernel:
             if self.z3.is_true(model.evaluate(variable, model_completion=True))
         )
 
+    def model_range_size(self) -> int:
+        return len(self.model_range())
+
     def _validate(self, arguments: frozenset[str]) -> None:
         unknown = sorted(arguments - self.framework.arguments)
         if unknown:
             raise ValueError(f"unknown arguments: {unknown!r}")
+
+    def _validate_range_size(self, size: int) -> None:
+        if size < 0 or size > len(self.arguments):
+            raise ValueError(f"range size {size!r} outside 0..{len(self.arguments)}")
 
 
 def find_stable_extension(
@@ -458,6 +496,8 @@ def _complete_extension(
     require_any_in: frozenset[str] = frozenset(),
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
+    required_range_size: int | None = None,
+    required_range_size_at_least: int | None = None,
     excluded_exact: list[frozenset[str]] | None = None,
     excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
@@ -469,11 +509,20 @@ def _complete_extension(
         problem.require_any_in(require_any_in)
         problem.require_range(required_range)
         problem.require_any_range(require_any_range)
+        range_bound, range_constraint = _apply_range_size_constraints(
+            problem,
+            required_range_size=required_range_size,
+            required_range_size_at_least=required_range_size_at_least,
+        )
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
         for blocked_range in excluded_range_subsets or []:
             problem.exclude_range_subset(blocked_range)
-        if problem.check(utility_name) != "sat":
+        if problem.check(
+            utility_name,
+            range_bound=range_bound,
+            range_constraint=range_constraint,
+        ) != "sat":
             return None
         return problem.model_extension()
     finally:
@@ -649,32 +698,53 @@ def _range_maximal_extension(
     seed_utility_name: str,
     test_utility_name: str,
 ) -> frozenset[str] | None:
-    blocked_range_subsets: list[frozenset[str]] = []
-    while True:
+    del framework, test_utility_name
+    max_range_size = _max_range_size(
+        problem,
+        base=base,
+        utility_name=_max_range_utility(seed_utility_name, "at_least"),
+    )
+    if max_range_size is None:
+        return None
+    return _base_extension(
+        problem,
+        base=base,
+        required_in=required_in,
+        required_out=required_out,
+        required_range_size=max_range_size,
+        utility_name=_max_range_utility(seed_utility_name, "exact"),
+    )
+
+
+def _max_range_size(
+    problem: AfSatKernel,
+    *,
+    base: str,
+    utility_name: str,
+) -> int | None:
+    low = 0
+    high = len(problem.arguments)
+    best: int | None = None
+    while low <= high:
+        midpoint = (low + high) // 2
         candidate = _base_extension(
             problem,
             base=base,
-            required_in=required_in,
-            required_out=required_out,
-            excluded_range_subsets=blocked_range_subsets,
-            utility_name=seed_utility_name,
+            required_range_size_at_least=midpoint,
+            utility_name=utility_name,
         )
         if candidate is None:
-            return None
-        candidate_range = range_of(candidate, framework.defeats)
-        outside_range = framework.arguments - candidate_range
-        if not outside_range:
-            return candidate
-        larger_range = _base_extension(
-            problem,
-            base=base,
-            required_range=candidate_range,
-            require_any_range=outside_range,
-            utility_name=test_utility_name,
-        )
-        if larger_range is None:
-            return candidate
-        blocked_range_subsets.append(candidate_range)
+            high = midpoint - 1
+        else:
+            best = midpoint
+            low = midpoint + 1
+    return best
+
+
+def _max_range_utility(seed_utility_name: str, kind: str) -> str:
+    if seed_utility_name.endswith("_seed"):
+        return f"{seed_utility_name.removesuffix('_seed')}_max_range_{kind}"
+    return f"{seed_utility_name}_max_range_{kind}"
 
 
 def _base_extension(
@@ -685,6 +755,8 @@ def _base_extension(
     required_out: frozenset[str] = frozenset(),
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
+    required_range_size: int | None = None,
+    required_range_size_at_least: int | None = None,
     excluded_exact: list[frozenset[str]] | None = None,
     excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
@@ -696,6 +768,8 @@ def _base_extension(
             required_out=required_out,
             required_range=required_range,
             require_any_range=require_any_range,
+            required_range_size=required_range_size,
+            required_range_size_at_least=required_range_size_at_least,
             excluded_exact=excluded_exact,
             excluded_range_subsets=excluded_range_subsets,
             utility_name=utility_name,
@@ -707,6 +781,8 @@ def _base_extension(
             required_out=required_out,
             required_range=required_range,
             require_any_range=require_any_range,
+            required_range_size=required_range_size,
+            required_range_size_at_least=required_range_size_at_least,
             excluded_exact=excluded_exact,
             excluded_range_subsets=excluded_range_subsets,
             utility_name=utility_name,
@@ -721,6 +797,8 @@ def _conflict_free_extension(
     required_out: frozenset[str] = frozenset(),
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
+    required_range_size: int | None = None,
+    required_range_size_at_least: int | None = None,
     excluded_exact: list[frozenset[str]] | None = None,
     excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
@@ -731,15 +809,41 @@ def _conflict_free_extension(
         problem.require_out(required_out)
         problem.require_range(required_range)
         problem.require_any_range(require_any_range)
+        range_bound, range_constraint = _apply_range_size_constraints(
+            problem,
+            required_range_size=required_range_size,
+            required_range_size_at_least=required_range_size_at_least,
+        )
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
         for blocked_range in excluded_range_subsets or []:
             problem.exclude_range_subset(blocked_range)
-        if problem.check(utility_name) != "sat":
+        if problem.check(
+            utility_name,
+            range_bound=range_bound,
+            range_constraint=range_constraint,
+        ) != "sat":
             return None
         return problem.model_extension()
     finally:
         problem.solver.pop()
+
+
+def _apply_range_size_constraints(
+    problem: AfSatKernel,
+    *,
+    required_range_size: int | None,
+    required_range_size_at_least: int | None,
+) -> tuple[int | None, str | None]:
+    if required_range_size is not None and required_range_size_at_least is not None:
+        raise ValueError("range size exact and lower-bound constraints are mutually exclusive")
+    if required_range_size is not None:
+        problem.require_range_size_exactly(required_range_size)
+        return required_range_size, "exact"
+    if required_range_size_at_least is not None:
+        problem.require_range_size_at_least(required_range_size_at_least)
+        return required_range_size_at_least, "at_least"
+    return None, None
 
 
 def _optional_argument(
