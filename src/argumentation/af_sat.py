@@ -400,39 +400,65 @@ def is_preferred_skeptically_accepted(
     metadata: Mapping[str, object] | None = None,
 ) -> bool:
     """Decide preferred skeptical acceptance using CDAS admissibility checks."""
-    required_query = _optional_argument(framework, query)
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
-    problem.add_admissible_labelling()
-    seed = _admissible_extension(
-        problem,
-        required_in=required_query,
-        utility_name="preferred_skeptical_seed",
-    )
-    if seed is None:
-        return False
-
-    attacker_problem = _PreferredSkepticalAttackerSolver(
+    return PreferredSkepticalTaskSolver(
         framework,
-        required_in=required_query,
         trace_sink=trace_sink,
         metadata=metadata,
-    )
-    loop_index = 0
-    while True:
-        attacker = attacker_problem.find_attacker(loop_index=loop_index)
-        if attacker is None:
-            return True
-        extended = _admissible_extension(
-            problem,
-            required_in=attacker | required_query,
-            utility_name="preferred_skeptical_extend_attacker",
-            loop_index=loop_index,
-            learned_count=attacker_problem.learned_count,
+    ).decide(query)
+
+
+class PreferredSkepticalTaskSolver:
+    """CDAS-style skeptical preferred acceptance solver for one AF."""
+
+    def __init__(
+        self,
+        framework: ArgumentationFramework,
+        *,
+        trace_sink: SATTraceSink | None = None,
+        metadata: Mapping[str, object] | None = None,
+    ) -> None:
+        self.framework = framework
+        self.trace_sink = trace_sink
+        self.metadata = metadata
+
+    def decide(self, query: str) -> bool:
+        required_query = _optional_argument(self.framework, query)
+        extension_problem = AfSatKernel(
+            self.framework,
+            trace_sink=self.trace_sink,
+            metadata=self.metadata,
         )
-        if extended is None:
+        extension_problem.add_admissible_labelling()
+        seed = _admissible_extension(
+            extension_problem,
+            required_in=required_query,
+            utility_name="preferred_skeptical_seed",
+        )
+        if seed is None:
             return False
-        attacker_problem.exclude_subset(extended)
-        loop_index += 1
+
+        attacker_problem = _PreferredSkepticalAttackerSolver(
+            self.framework,
+            required_in=required_query,
+            trace_sink=self.trace_sink,
+            metadata=self.metadata,
+        )
+        loop_index = 0
+        while True:
+            attacker = attacker_problem.find_attacker(loop_index=loop_index)
+            if attacker is None:
+                return True
+            extended = _admissible_extension(
+                extension_problem,
+                required_in=attacker | required_query,
+                utility_name="preferred_skeptical_extend_attacker",
+                loop_index=loop_index,
+                learned_count=attacker_problem.learned_count,
+            )
+            if extended is None:
+                return False
+            attacker_problem.exclude_subset(extended)
+            loop_index += 1
 
 
 def find_semi_stable_extension(
@@ -1070,6 +1096,7 @@ def _load_z3():
 
 __all__ = [
     "AfSatKernel",
+    "PreferredSkepticalTaskSolver",
     "SATCheck",
     "SATTraceSink",
     "find_complete_extension",

@@ -20,6 +20,7 @@ from argumentation.dung import (
 )
 from argumentation.af_sat import (
     AfSatKernel,
+    PreferredSkepticalTaskSolver,
     SATCheck,
     find_complete_extension,
     find_ideal_extension,
@@ -117,16 +118,26 @@ def test_kernel_direct_skeptical_preferred_handles_basic_counterexample() -> Non
     assert is_preferred_skeptically_accepted(framework, "b") is False
 
 
+def test_preferred_skeptical_task_solver_handles_paper_shaped_cdas_cases() -> None:
+    assert PreferredSkepticalTaskSolver(af({"q"}, {("q", "q")})).decide("q") is False
+    assert PreferredSkepticalTaskSolver(af({"q", "b"}, set())).decide("q") is True
+    assert (
+        PreferredSkepticalTaskSolver(
+            af({"q", "b"}, {("q", "b"), ("b", "q")})
+        ).decide("q")
+        is False
+    )
+
+
 def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
     framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
     checks: list[SATCheck] = []
 
-    assert is_preferred_skeptically_accepted(
+    assert PreferredSkepticalTaskSolver(
         framework,
-        "q",
         trace_sink=checks.append,
         metadata={"subtrack": "DS-PR"},
-    ) is False
+    ).decide("q") is False
 
     assert [check.utility_name for check in checks] == [
         "preferred_skeptical_seed",
