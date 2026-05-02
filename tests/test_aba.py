@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from hypothesis import given, settings, strategies as st
 
 from argumentation import aba as native_aba
@@ -140,6 +141,27 @@ def test_solve_aba_acceptance_auto_uses_stable_sat_without_native_enumeration(
     assert isinstance(result, AcceptanceSolverSuccess)
     assert result.answer is False
     assert result.counterexample == frozenset({literal("a1")})
+
+
+@pytest.mark.parametrize("semantics", ["complete", "preferred"])
+def test_solve_aba_single_extension_auto_uses_support_sat_without_enumeration(
+    monkeypatch,
+    semantics: str,
+) -> None:
+    framework = _flat_aba(70, frozenset((1, target) for target in range(2, 71)))
+
+    def fail_support_enumeration(*args, **kwargs):
+        raise AssertionError("ABA support extension enumeration should not run")
+
+    monkeypatch.setattr(
+        "argumentation.solver.sat_aba_support_extensions",
+        fail_support_enumeration,
+    )
+
+    result = solve_aba_single_extension(framework, semantics=semantics)
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension is not None
 
 
 @given(flat_aba_frameworks())

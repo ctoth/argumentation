@@ -74,6 +74,69 @@ def support_acceptance(
     raise ValueError(f"unsupported ABA acceptance task: {task}")
 
 
+def sat_support_extension(
+    framework: ABAFramework,
+    semantics: str,
+    *,
+    require_derived: Literal | None = None,
+    require_not_derived: Literal | None = None,
+) -> AssumptionSet | None:
+    """Return one complete/preferred ABA extension using support-aware SAT."""
+    if semantics not in {"complete", "preferred"}:
+        raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
+    if require_derived is not None and require_derived not in framework.language:
+        raise ValueError(f"required literal is not in framework language: {require_derived!r}")
+    if require_not_derived is not None and require_not_derived not in framework.language:
+        raise ValueError(
+            f"excluded literal is not in framework language: {require_not_derived!r}"
+        )
+
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    supports = _minimal_supports(framework)
+    solver = z3.Solver()
+    _add_admissible_constraints(z3, solver, framework, variables, supports)
+    if semantics == "complete":
+        _add_complete_constraints(z3, solver, framework, variables, supports)
+    _add_derived_constraints(
+        z3,
+        solver,
+        variables,
+        supports,
+        require_derived=require_derived,
+        require_not_derived=require_not_derived,
+    )
+
+    if semantics == "complete":
+        if solver.check() != z3.sat:
+            return None
+        return _model_extension(z3, solver, variables)
+
+    if solver.check() != z3.sat:
+        return None
+    current = _model_extension(z3, solver, variables)
+    while True:
+        outside = framework.assumptions - current
+        if not outside:
+            return current
+        solver.push()
+        try:
+            for assumption in sorted(current, key=repr):
+                solver.add(variables[assumption])
+            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+            if solver.check() != z3.sat:
+                return current
+            larger = _model_extension(z3, solver, variables)
+        finally:
+            solver.pop()
+        if not current < larger:
+            raise RuntimeError("ABA preferred SAT growth did not produce a strict superset")
+        current = larger
+
+
 def sat_stable_extension(
     framework: ABAFramework,
     *,
@@ -305,6 +368,89 @@ def _support_selected(z3, variables, support: AssumptionSet):
     return z3.And(*(variables[assumption] for assumption in sorted(support, key=repr)))
 
 
+def _add_admissible_constraints(z3, solver, framework, variables, supports) -> None:
+    for assumption in sorted(framework.assumptions, key=repr):
+        attack_supports = supports.get(framework.contrary[assumption], frozenset())
+        solver.add(
+            z3.Implies(
+                variables[assumption],
+                z3.Not(_any_support_selected(z3, variables, attack_supports)),
+            )
+        )
+        solver.add(
+            z3.Implies(
+                variables[assumption],
+                _defended_expr(z3, framework, variables, supports, assumption),
+            )
+        )
+
+
+def _add_complete_constraints(z3, solver, framework, variables, supports) -> None:
+    for assumption in sorted(framework.assumptions, key=repr):
+        solver.add(
+            z3.Implies(
+                _defended_expr(z3, framework, variables, supports, assumption),
+                variables[assumption],
+            )
+        )
+
+
+def _defended_expr(z3, framework, variables, supports, assumption):
+    attack_supports = supports.get(framework.contrary[assumption], frozenset())
+    defenses = []
+    for attack_support in sorted(
+        attack_supports,
+        key=lambda item: (len(item), tuple(sorted(map(repr, item)))),
+    ):
+        if not attack_support:
+            return z3.BoolVal(False)
+        defenses.append(
+            z3.Or(
+                *(
+                    _any_support_selected(
+                        z3,
+                        variables,
+                        supports.get(framework.contrary[target], frozenset()),
+                    )
+                    for target in sorted(attack_support, key=repr)
+                )
+            )
+        )
+    return z3.And(*defenses) if defenses else z3.BoolVal(True)
+
+
+def _add_derived_constraints(
+    z3,
+    solver,
+    variables,
+    supports,
+    *,
+    require_derived: Literal | None,
+    require_not_derived: Literal | None,
+) -> None:
+    if require_derived is not None:
+        solver.add(_any_support_selected(z3, variables, supports.get(require_derived, frozenset())))
+    if require_not_derived is not None:
+        solver.add(
+            z3.Not(
+                _any_support_selected(
+                    z3,
+                    variables,
+                    supports.get(require_not_derived, frozenset()),
+                )
+            )
+        )
+
+
+def _model_extension(z3, solver, variables) -> AssumptionSet:
+    model = solver.model()
+    return frozenset(
+        assumption
+        for assumption, variable in variables.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+
+
 def _literal_key(literal: Literal) -> str:
     text = repr(literal)
     return "".join(character if character.isalnum() else "_" for character in text)
@@ -318,4 +464,9 @@ def _load_z3():
     return z3
 
 
-__all__ = ["sat_stable_extension", "support_acceptance", "support_extensions"]
+__all__ = [
+    "sat_stable_extension",
+    "sat_support_extension",
+    "support_acceptance",
+    "support_extensions",
+]

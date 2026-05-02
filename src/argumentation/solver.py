@@ -11,6 +11,7 @@ from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
     sat_stable_extension as sat_aba_stable_extension,
+    sat_support_extension as sat_aba_support_extension,
     support_acceptance as sat_aba_support_acceptance,
     support_extensions as sat_aba_support_extensions,
 )
@@ -154,11 +155,8 @@ def solve_aba_single_extension(
             except RuntimeError as exc:
                 return _aba_sat_runtime_unavailable(exc)
         if semantics in {"complete", "preferred"}:
-            extensions = _sorted_object_extensions(
-                sat_aba_support_extensions(framework, semantics)
-            )
             return SingleExtensionSolverSuccess(
-                extension=extensions[0] if extensions else None,
+                extension=sat_aba_support_extension(framework, semantics),
             )
         return _aba_sat_unsupported_semantics(semantics)
     if backend == "native":
