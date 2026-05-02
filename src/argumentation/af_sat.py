@@ -423,6 +423,14 @@ class PreferredSkepticalTaskSolver:
 
     def decide(self, query: str) -> bool:
         required_query = _optional_argument(self.framework, query)
+        super_core = PreferredSuperCoreSolver(
+            self.framework,
+            trace_sink=self.trace_sink,
+            metadata=self.metadata,
+        ).compute()
+        if required_query and required_query <= super_core:
+            return True
+
         extension_problem = AfSatKernel(
             self.framework,
             trace_sink=self.trace_sink,
@@ -459,6 +467,47 @@ class PreferredSkepticalTaskSolver:
                 return False
             attacker_problem.exclude_subset(extended)
             loop_index += 1
+
+
+class PreferredSuperCoreSolver:
+    """Conservative admissibility-backed core contained in every preferred extension."""
+
+    def __init__(
+        self,
+        framework: ArgumentationFramework,
+        *,
+        trace_sink: SATTraceSink | None = None,
+        metadata: Mapping[str, object] | None = None,
+    ) -> None:
+        self.framework = framework
+        self.trace_sink = trace_sink
+        self.metadata = metadata
+
+    def compute(self) -> frozenset[str]:
+        problem = AfSatKernel(
+            self.framework,
+            trace_sink=self.trace_sink,
+            metadata=self.metadata,
+        )
+        problem.add_admissible_labelling()
+        current = self.framework.arguments
+        while True:
+            attacker = _admissible_attacker_of_set(
+                problem,
+                current,
+                utility_name="preferred_super_core_admissible_attacker",
+            )
+            if attacker is None:
+                break
+            current = current - _attacked_by(attacker, self.framework.defeats)
+
+        current = current - _attacked_by(current, self.framework.defeats)
+        while True:
+            undefended_attackers = current - _attacked_by(current, self.framework.defeats)
+            next_current = current - _attacked_by(undefended_attackers, self.framework.defeats)
+            if next_current == current:
+                return current
+            current = next_current
 
 
 def find_semi_stable_extension(
@@ -1097,6 +1146,7 @@ def _load_z3():
 __all__ = [
     "AfSatKernel",
     "PreferredSkepticalTaskSolver",
+    "PreferredSuperCoreSolver",
     "SATCheck",
     "SATTraceSink",
     "find_complete_extension",

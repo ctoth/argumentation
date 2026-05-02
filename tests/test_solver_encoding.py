@@ -21,6 +21,7 @@ from argumentation.dung import (
 from argumentation.af_sat import (
     AfSatKernel,
     PreferredSkepticalTaskSolver,
+    PreferredSuperCoreSolver,
     SATCheck,
     find_complete_extension,
     find_ideal_extension,
@@ -129,6 +130,32 @@ def test_preferred_skeptical_task_solver_handles_paper_shaped_cdas_cases() -> No
     )
 
 
+def test_preferred_super_core_fast_path_accepts_without_attacker_churn() -> None:
+    framework = af({"q", "b"}, set())
+    checks: list[SATCheck] = []
+
+    assert PreferredSkepticalTaskSolver(
+        framework,
+        trace_sink=checks.append,
+        metadata={"subtrack": "DS-PR"},
+    ).decide("q") is True
+
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names == ["preferred_super_core_admissible_attacker"]
+    assert "preferred_skeptical_adm_ext_att" not in utility_names
+
+
+def test_preferred_super_core_outside_argument_routes_to_cdas() -> None:
+    framework = af({"q"}, {("q", "q")})
+    checks: list[SATCheck] = []
+
+    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is False
+
+    utility_names = [check.utility_name for check in checks]
+    assert "preferred_super_core_admissible_attacker" in utility_names
+    assert "preferred_skeptical_seed" in utility_names
+
+
 def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
     framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
     checks: list[SATCheck] = []
@@ -139,19 +166,24 @@ def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
         metadata={"subtrack": "DS-PR"},
     ).decide("q") is False
 
-    assert [check.utility_name for check in checks] == [
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names[:2] == [
+        "preferred_super_core_admissible_attacker",
+        "preferred_super_core_admissible_attacker",
+    ]
+    assert utility_names[-3:] == [
         "preferred_skeptical_seed",
         "preferred_skeptical_adm_ext_att",
         "preferred_skeptical_extend_attacker",
     ]
-    assert checks[0].loop_index is None
-    assert checks[1].loop_index == 0
-    assert checks[1].learned_count == 0
-    assert checks[1].model_extension_size == 1
-    assert checks[1].model_extension_fingerprint is not None
-    assert checks[2].loop_index == 0
-    assert checks[2].learned_count == 0
-    assert checks[2].result == "unsat"
+    assert checks[-3].loop_index is None
+    assert checks[-2].loop_index == 0
+    assert checks[-2].learned_count == 0
+    assert checks[-2].model_extension_size == 1
+    assert checks[-2].model_extension_fingerprint is not None
+    assert checks[-1].loop_index == 0
+    assert checks[-1].learned_count == 0
+    assert checks[-1].result == "unsat"
     assert all(check.metadata == {"subtrack": "DS-PR"} for check in checks)
 
 
@@ -541,6 +573,17 @@ def test_kernel_direct_skeptical_preferred_matches_native_oracle(
         assert is_preferred_skeptically_accepted(framework, query) is all(
             query in extension for extension in native_extensions
         )
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_preferred_super_core_is_contained_in_every_native_preferred_extension(
+    framework: ArgumentationFramework,
+) -> None:
+    super_core = PreferredSuperCoreSolver(framework).compute()
+
+    for extension in preferred_extensions(framework):
+        assert super_core <= extension
 
 
 @given(argumentation_frameworks(max_args=4))
