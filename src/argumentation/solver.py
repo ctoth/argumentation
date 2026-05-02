@@ -13,6 +13,13 @@ from argumentation.aba_sat import (
     support_acceptance as sat_aba_support_acceptance,
     support_extensions as sat_aba_support_extensions,
 )
+from argumentation.af_sat import (
+    find_complete_extension,
+    find_preferred_extension,
+    find_semi_stable_extension,
+    find_stable_extension,
+    find_stage_extension,
+)
 from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
 from argumentation.dung import (
@@ -27,12 +34,7 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.sat_encoding import (
-    sat_complete_extension,
     sat_extensions,
-    sat_preferred_extension,
-    sat_semi_stable_extension,
-    sat_stable_extension,
-    sat_stage_extension,
 )
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
@@ -276,35 +278,35 @@ def solve_dung_single_extension(
         if semantics == "stable":
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=sat_stable_extension(framework),
+                    extension=find_stable_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         if semantics == "complete":
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=sat_complete_extension(framework),
+                    extension=find_complete_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         if semantics == "preferred":
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=sat_preferred_extension(framework),
+                    extension=find_preferred_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         if semantics == "semi-stable":
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=sat_semi_stable_extension(framework),
+                    extension=find_semi_stable_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         if semantics == "stage":
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=sat_stage_extension(framework),
+                    extension=find_stage_extension(framework),
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
@@ -533,13 +535,13 @@ def _solve_sat_stable_acceptance(
     query: str,
 ) -> AcceptanceSolverSuccess:
     if task == "credulous":
-        witness = sat_stable_extension(framework, require_in=query)
+        witness = find_stable_extension(framework, require_in=query)
         return AcceptanceSolverSuccess(
             answer=witness is not None,
             witness=witness,
         )
     if task == "skeptical":
-        counterexample = sat_stable_extension(framework, require_out=query)
+        counterexample = find_stable_extension(framework, require_out=query)
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
             counterexample=counterexample,
@@ -553,13 +555,13 @@ def _solve_sat_complete_acceptance(
     query: str,
 ) -> AcceptanceSolverSuccess:
     if task == "credulous":
-        witness = sat_complete_extension(framework, require_in=query)
+        witness = find_complete_extension(framework, require_in=query)
         return AcceptanceSolverSuccess(
             answer=witness is not None,
             witness=witness,
         )
     if task == "skeptical":
-        counterexample = sat_complete_extension(framework, require_out=query)
+        counterexample = find_complete_extension(framework, require_out=query)
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
             counterexample=counterexample,
@@ -571,7 +573,7 @@ def _solve_sat_preferred_credulous_acceptance(
     framework: ArgumentationFramework,
     query: str,
 ) -> AcceptanceSolverSuccess:
-    witness = sat_preferred_extension(framework, require_in=query)
+    witness = find_preferred_extension(framework, require_in=query)
     return AcceptanceSolverSuccess(
         answer=witness is not None,
         witness=witness,

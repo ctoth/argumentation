@@ -1,0 +1,451 @@
+"""Incremental SAT kernel for Dung abstract argumentation frameworks."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
+from time import perf_counter
+from typing import Any
+
+from argumentation.dung import ArgumentationFramework, _attackers_index, range_of
+
+
+@dataclass(frozen=True)
+class SATCheck:
+    """Telemetry for one SAT solver check."""
+
+    utility_name: str
+    result: str
+    elapsed_ms: float
+    assumptions_count: int
+    argument_count: int
+    attack_count: int
+    model_extension_size: int | None = None
+    metadata: Mapping[str, object] | None = None
+
+
+SATTraceSink = Callable[[SATCheck], None]
+
+
+class AFSatProblem:
+    """Reusable SAT state for one Dung AF."""
+
+    def __init__(
+        self,
+        framework: ArgumentationFramework,
+        *,
+        trace_sink: SATTraceSink | None = None,
+        metadata: Mapping[str, object] | None = None,
+    ) -> None:
+        self.framework = framework
+        self.trace_sink = trace_sink
+        self.metadata = metadata
+        self.z3 = _load_z3()
+        self.solver = self.z3.Solver()
+        self.arguments = tuple(sorted(framework.arguments))
+        self.in_vars = {
+            argument: self.z3.Bool(f"af_in_{index}")
+            for index, argument in enumerate(self.arguments)
+        }
+        self.out_vars = {
+            argument: self.z3.Bool(f"af_out_{index}")
+            for index, argument in enumerate(self.arguments)
+        }
+        self.range_vars = {
+            argument: self.z3.Bool(f"af_range_{index}")
+            for index, argument in enumerate(self.arguments)
+        }
+        self.attackers_index = _attackers_index(framework.defeats)
+        self._added: set[str] = set()
+
+    @property
+    def conflict_relation(self) -> frozenset[tuple[str, str]]:
+        return self.framework.attacks if self.framework.attacks is not None else self.framework.defeats
+
+    def add_conflict_free(self) -> None:
+        if "conflict_free" in self._added:
+            return
+        for attacker, target in sorted(self.conflict_relation):
+            self.solver.add(
+                self.z3.Or(
+                    self.z3.Not(self.in_vars[attacker]),
+                    self.z3.Not(self.in_vars[target]),
+                )
+            )
+        self._added.add("conflict_free")
+
+    def add_admissible_labelling(self) -> None:
+        if "admissible" in self._added:
+            return
+        self.add_conflict_free()
+        defenders_index = _attackers_index(
+            frozenset((target, attacker) for attacker, target in self.framework.defeats)
+        )
+        for argument in self.arguments:
+            for attacker in sorted(self.attackers_index.get(argument, frozenset())):
+                defenders = tuple(sorted(defenders_index.get(attacker, frozenset())))
+                if defenders:
+                    self.solver.add(
+                        self.z3.Implies(
+                            self.in_vars[argument],
+                            self.z3.Or(*(self.in_vars[defender] for defender in defenders)),
+                        )
+                    )
+                else:
+                    self.solver.add(self.z3.Not(self.in_vars[argument]))
+        self._added.add("admissible")
+
+    def add_complete_labelling(self) -> None:
+        if "complete" in self._added:
+            return
+        for argument in self.arguments:
+            self.solver.add(
+                self.z3.Not(self.z3.And(self.in_vars[argument], self.out_vars[argument]))
+            )
+
+        for argument in self.arguments:
+            attackers = tuple(sorted(self.attackers_index.get(argument, frozenset())))
+            if attackers:
+                self.solver.add(
+                    self.in_vars[argument]
+                    == self.z3.And(*(self.out_vars[attacker] for attacker in attackers))
+                )
+                self.solver.add(
+                    self.out_vars[argument]
+                    == self.z3.Or(*(self.in_vars[attacker] for attacker in attackers))
+                )
+            else:
+                self.solver.add(self.in_vars[argument])
+                self.solver.add(self.z3.Not(self.out_vars[argument]))
+
+        self.add_conflict_free()
+        self._added.add("complete")
+
+    def add_stable_coverage(self) -> None:
+        if "stable" in self._added:
+            return
+        self.add_conflict_free()
+        for argument in self.arguments:
+            attackers = tuple(sorted(self.attackers_index.get(argument, frozenset())))
+            self.solver.add(
+                self.z3.Or(
+                    self.in_vars[argument],
+                    *(self.in_vars[attacker] for attacker in attackers),
+                )
+            )
+        self._added.add("stable")
+
+    def add_range_definition(self) -> None:
+        if "range" in self._added:
+            return
+        for argument in self.arguments:
+            range_sources = [
+                self.in_vars[argument],
+                *(
+                    self.in_vars[attacker]
+                    for attacker in sorted(self.attackers_index.get(argument, frozenset()))
+                ),
+            ]
+            self.solver.add(self.range_vars[argument] == self.z3.Or(*range_sources))
+        self._added.add("range")
+
+    def require_in(self, arguments: frozenset[str]) -> None:
+        self._validate(arguments)
+        for argument in sorted(arguments):
+            self.solver.add(self.in_vars[argument])
+
+    def require_out(self, arguments: frozenset[str]) -> None:
+        self._validate(arguments)
+        for argument in sorted(arguments):
+            self.solver.add(self.z3.Not(self.in_vars[argument]))
+
+    def require_any_in(self, arguments: frozenset[str]) -> None:
+        self._validate(arguments)
+        if arguments:
+            self.solver.add(
+                self.z3.Or(*(self.in_vars[argument] for argument in sorted(arguments)))
+            )
+
+    def require_range(self, arguments: frozenset[str]) -> None:
+        self._validate(arguments)
+        self.add_range_definition()
+        for argument in sorted(arguments):
+            self.solver.add(self.range_vars[argument])
+
+    def require_any_range(self, arguments: frozenset[str]) -> None:
+        self._validate(arguments)
+        self.add_range_definition()
+        if arguments:
+            self.solver.add(
+                self.z3.Or(*(self.range_vars[argument] for argument in sorted(arguments)))
+            )
+
+    def require_attacks_any(self, targets: frozenset[str]) -> None:
+        self._validate(targets)
+        attackers = frozenset(
+            attacker
+            for attacker, target in self.framework.defeats
+            if target in targets
+        )
+        self.require_any_in(attackers)
+
+    def exclude_extension(self, extension: frozenset[str]) -> None:
+        self._validate(extension)
+        self.solver.add(
+            self.z3.Or(*(self.z3.Not(self.in_vars[argument]) for argument in sorted(extension)))
+        )
+
+    def exclude_range_subset(self, range_set: frozenset[str]) -> None:
+        self._validate(range_set)
+        self.add_range_definition()
+        outside = self.framework.arguments - range_set
+        self.require_any_range(outside)
+
+    def check(self, utility_name: str, assumptions: tuple[Any, ...] = ()) -> str:
+        started = perf_counter()
+        result_ref = self.solver.check(*assumptions)
+        elapsed_ms = (perf_counter() - started) * 1000
+        result = str(result_ref)
+        model_size = None
+        if result == "sat":
+            model_size = len(self.model_extension())
+        if self.trace_sink is not None:
+            self.trace_sink(
+                SATCheck(
+                    utility_name=utility_name,
+                    result=result,
+                    elapsed_ms=elapsed_ms,
+                    assumptions_count=len(assumptions),
+                    argument_count=len(self.framework.arguments),
+                    attack_count=len(self.framework.defeats),
+                    model_extension_size=model_size,
+                    metadata=self.metadata,
+                )
+            )
+        return result
+
+    def model_extension(self) -> frozenset[str]:
+        model = self.solver.model()
+        return frozenset(
+            argument
+            for argument, variable in self.in_vars.items()
+            if self.z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+
+    def model_range(self) -> frozenset[str]:
+        self.add_range_definition()
+        model = self.solver.model()
+        return frozenset(
+            argument
+            for argument, variable in self.range_vars.items()
+            if self.z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+
+    def _validate(self, arguments: frozenset[str]) -> None:
+        unknown = sorted(arguments - self.framework.arguments)
+        if unknown:
+            raise ValueError(f"unknown arguments: {unknown!r}")
+
+
+def find_stable_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    require_out: str | None = None,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str] | None:
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_stable_coverage()
+    problem.require_in(_optional_argument(framework, require_in))
+    problem.require_out(_optional_argument(framework, require_out))
+    if problem.check("stable_extension") != "sat":
+        return None
+    return problem.model_extension()
+
+
+def find_complete_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    require_out: str | None = None,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str] | None:
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_complete_labelling()
+    return _complete_extension(
+        problem,
+        required_in=_optional_argument(framework, require_in),
+        required_out=_optional_argument(framework, require_out),
+        utility_name="complete_extension",
+    )
+
+
+def find_preferred_extension(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str] | None:
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_complete_labelling()
+    current = _complete_extension(
+        problem,
+        required_in=_optional_argument(framework, require_in),
+        utility_name="preferred_seed",
+    )
+    if current is None:
+        return None
+
+    while True:
+        outside = framework.arguments - current
+        if not outside:
+            return current
+        larger = _complete_extension(
+            problem,
+            required_in=current,
+            require_any_in=outside,
+            utility_name="preferred_grow",
+        )
+        if larger is None:
+            return current
+        if not current < larger:
+            raise RuntimeError("SAT preferred growth did not produce a strict superset")
+        current = larger
+
+
+def find_semi_stable_extension(
+    framework: ArgumentationFramework,
+    *,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str] | None:
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_complete_labelling()
+    problem.add_range_definition()
+    current = _complete_extension(problem, utility_name="semi_stable_seed")
+    if current is None:
+        return None
+
+    while True:
+        current_range = range_of(current, framework.defeats)
+        outside_range = framework.arguments - current_range
+        if not outside_range:
+            return current
+        larger_range = _complete_extension(
+            problem,
+            required_range=current_range,
+            require_any_range=outside_range,
+            utility_name="semi_stable_grow_range",
+        )
+        if larger_range is None:
+            return current
+        if not current_range < range_of(larger_range, framework.defeats):
+            raise RuntimeError("SAT semi-stable growth did not enlarge range")
+        current = larger_range
+
+
+def find_stage_extension(
+    framework: ArgumentationFramework,
+    *,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str] | None:
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_conflict_free()
+    problem.add_range_definition()
+    current = _conflict_free_extension(problem, utility_name="stage_seed")
+    if current is None:
+        return None
+
+    while True:
+        current_range = range_of(current, framework.defeats)
+        outside_range = framework.arguments - current_range
+        if not outside_range:
+            return current
+        larger_range = _conflict_free_extension(
+            problem,
+            required_range=current_range,
+            require_any_range=outside_range,
+            utility_name="stage_grow_range",
+        )
+        if larger_range is None:
+            return current
+        if not current_range < range_of(larger_range, framework.defeats):
+            raise RuntimeError("SAT stage growth did not enlarge range")
+        current = larger_range
+
+
+def _complete_extension(
+    problem: AFSatProblem,
+    *,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
+    require_any_in: frozenset[str] = frozenset(),
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
+    utility_name: str,
+) -> frozenset[str] | None:
+    problem.solver.push()
+    try:
+        problem.require_in(required_in)
+        problem.require_out(required_out)
+        problem.require_any_in(require_any_in)
+        problem.require_range(required_range)
+        problem.require_any_range(require_any_range)
+        if problem.check(utility_name) != "sat":
+            return None
+        return problem.model_extension()
+    finally:
+        problem.solver.pop()
+
+
+def _conflict_free_extension(
+    problem: AFSatProblem,
+    *,
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
+    utility_name: str,
+) -> frozenset[str] | None:
+    problem.solver.push()
+    try:
+        problem.require_range(required_range)
+        problem.require_any_range(require_any_range)
+        if problem.check(utility_name) != "sat":
+            return None
+        return problem.model_extension()
+    finally:
+        problem.solver.pop()
+
+
+def _optional_argument(
+    framework: ArgumentationFramework,
+    argument: str | None,
+) -> frozenset[str]:
+    if argument is None:
+        return frozenset()
+    if argument not in framework.arguments:
+        raise ValueError(f"unknown argument: {argument!r}")
+    return frozenset({argument})
+
+
+def _load_z3():
+    try:
+        import z3  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise RuntimeError("SAT solving requires z3-solver") from exc
+    return z3
+
+
+__all__ = [
+    "AFSatProblem",
+    "SATCheck",
+    "SATTraceSink",
+    "find_complete_extension",
+    "find_preferred_extension",
+    "find_semi_stable_extension",
+    "find_stable_extension",
+    "find_stage_extension",
+]

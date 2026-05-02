@@ -15,15 +15,17 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.af_sat import (
+    find_complete_extension,
+    find_preferred_extension,
+    find_semi_stable_extension,
+    find_stage_extension,
+)
 from argumentation.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,
-    sat_complete_extension,
     sat_extensions,
-    sat_preferred_extension,
-    sat_semi_stable_extension,
     stable_extensions_from_encoding,
-    sat_stage_extension,
 )
 from tests.test_dung import af, argumentation_frameworks
 
@@ -81,28 +83,28 @@ def test_stable_encoding_models_round_trip_to_extensions() -> None:
     }
 
 
-def test_sat_complete_extension_handles_required_labels() -> None:
+def test_kernel_complete_extension_handles_required_labels() -> None:
     framework = af({"a", "b"}, {("a", "b")})
 
-    assert sat_complete_extension(framework) == frozenset({"a"})
-    assert sat_complete_extension(framework, require_in="a") == frozenset({"a"})
-    assert sat_complete_extension(framework, require_out="a") is None
-    assert sat_complete_extension(framework, require_out="b") == frozenset({"a"})
+    assert find_complete_extension(framework) == frozenset({"a"})
+    assert find_complete_extension(framework, require_in="a") == frozenset({"a"})
+    assert find_complete_extension(framework, require_out="a") is None
+    assert find_complete_extension(framework, require_out="b") == frozenset({"a"})
 
 
-def test_sat_preferred_extension_handles_required_labels() -> None:
+def test_kernel_preferred_extension_handles_required_labels() -> None:
     framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("c", "c")})
 
-    assert sat_preferred_extension(framework, require_in="a") == frozenset({"a"})
-    assert sat_preferred_extension(framework, require_in="b") == frozenset({"b"})
-    assert sat_preferred_extension(framework, require_in="c") is None
+    assert find_preferred_extension(framework, require_in="a") == frozenset({"a"})
+    assert find_preferred_extension(framework, require_in="b") == frozenset({"b"})
+    assert find_preferred_extension(framework, require_in="c") is None
 
 
-def test_sat_range_maximal_extensions_handle_basic_witnesses() -> None:
+def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
     framework = af({"a", "b"}, {("a", "b")})
 
-    assert sat_semi_stable_extension(framework) == frozenset({"a"})
-    assert sat_stage_extension(framework) == frozenset({"a"})
+    assert find_semi_stable_extension(framework) == frozenset({"a"})
+    assert find_stage_extension(framework) == frozenset({"a"})
 
 
 @given(argumentation_frameworks(max_args=4))
@@ -126,23 +128,23 @@ def test_sat_extensions_match_native_oracles_for_all_phase_four_semantics(
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_complete_extension_returns_native_complete_witness(
+def test_kernel_complete_extension_returns_native_complete_witness(
     framework: ArgumentationFramework,
 ) -> None:
-    witness = sat_complete_extension(framework)
+    witness = find_complete_extension(framework)
 
     assert witness in set(complete_extensions(framework))
 
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_complete_extension_required_labels_match_native_oracle(
+def test_kernel_complete_extension_required_labels_match_native_oracle(
     framework: ArgumentationFramework,
 ) -> None:
     native_extensions = set(complete_extensions(framework))
 
     for query in framework.arguments:
-        required_in = sat_complete_extension(framework, require_in=query)
+        required_in = find_complete_extension(framework, require_in=query)
         native_with_query = {
             extension for extension in native_extensions if query in extension
         }
@@ -151,7 +153,7 @@ def test_sat_complete_extension_required_labels_match_native_oracle(
         else:
             assert required_in is None
 
-        required_out = sat_complete_extension(framework, require_out=query)
+        required_out = find_complete_extension(framework, require_out=query)
         native_without_query = {
             extension for extension in native_extensions if query not in extension
         }
@@ -163,23 +165,23 @@ def test_sat_complete_extension_required_labels_match_native_oracle(
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_preferred_extension_returns_native_preferred_witness(
+def test_kernel_preferred_extension_returns_native_preferred_witness(
     framework: ArgumentationFramework,
 ) -> None:
-    witness = sat_preferred_extension(framework)
+    witness = find_preferred_extension(framework)
 
     assert witness in set(preferred_extensions(framework))
 
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_preferred_extension_required_in_matches_native_oracle(
+def test_kernel_preferred_extension_required_in_matches_native_oracle(
     framework: ArgumentationFramework,
 ) -> None:
     native_extensions = set(preferred_extensions(framework))
 
     for query in framework.arguments:
-        required_in = sat_preferred_extension(framework, require_in=query)
+        required_in = find_preferred_extension(framework, require_in=query)
         native_with_query = {
             extension for extension in native_extensions if query in extension
         }
@@ -191,20 +193,20 @@ def test_sat_preferred_extension_required_in_matches_native_oracle(
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_semi_stable_extension_returns_native_witness(
+def test_kernel_semi_stable_extension_returns_native_witness(
     framework: ArgumentationFramework,
 ) -> None:
-    witness = sat_semi_stable_extension(framework)
+    witness = find_semi_stable_extension(framework)
 
     assert witness in set(semi_stable_extensions(framework))
 
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
-def test_sat_stage_extension_returns_native_witness(
+def test_kernel_stage_extension_returns_native_witness(
     framework: ArgumentationFramework,
 ) -> None:
-    witness = sat_stage_extension(framework)
+    witness = find_stage_extension(framework)
 
     assert witness in set(stage_extensions(framework))
 
