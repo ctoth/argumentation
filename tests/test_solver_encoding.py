@@ -117,6 +117,33 @@ def test_kernel_direct_skeptical_preferred_handles_basic_counterexample() -> Non
     assert is_preferred_skeptically_accepted(framework, "b") is False
 
 
+def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
+    framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
+    checks: list[SATCheck] = []
+
+    assert is_preferred_skeptically_accepted(
+        framework,
+        "q",
+        trace_sink=checks.append,
+        metadata={"subtrack": "DS-PR"},
+    ) is False
+
+    assert [check.utility_name for check in checks] == [
+        "preferred_skeptical_seed",
+        "preferred_skeptical_adm_ext_att",
+        "preferred_skeptical_extend_attacker",
+    ]
+    assert checks[0].loop_index is None
+    assert checks[1].loop_index == 0
+    assert checks[1].learned_count == 0
+    assert checks[1].model_extension_size == 1
+    assert checks[1].model_extension_fingerprint is not None
+    assert checks[2].loop_index == 0
+    assert checks[2].learned_count == 0
+    assert checks[2].result == "unsat"
+    assert all(check.metadata == {"subtrack": "DS-PR"} for check in checks)
+
+
 def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
     framework = af({"a", "b"}, {("a", "b")})
 

@@ -643,6 +643,9 @@ def sat_trace_sink(
             "result": check.result,
             "elapsed_ms": f"{check.elapsed_ms:.6f}",
             "model_extension_size": check.model_extension_size,
+            "model_extension_fingerprint": check.model_extension_fingerprint,
+            "loop_index": check.loop_index,
+            "learned_count": check.learned_count,
             "range_bound": check.range_bound,
             "range_constraint": check.range_constraint,
         }
