@@ -377,6 +377,16 @@ def solve_dung_acceptance(
                 return _solve_sat_ideal_acceptance(framework, task, query)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "semi-stable":
+            try:
+                return _solve_sat_semi_stable_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
+        if semantics == "stage":
+            try:
+                return _solve_sat_stage_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
             sat_extensions(framework, semantics),
             task,
@@ -415,7 +425,7 @@ def _auto_dung_single_backend(backend: str, semantics: str) -> str:
 
 def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> str:
     if backend == "auto":
-        if semantics in {"complete", "ideal", "stable"}:
+        if semantics in {"complete", "ideal", "semi-stable", "stable", "stage"}:
             return "sat"
         if semantics == "preferred" and task in {"credulous", "skeptical"}:
             return "sat"
@@ -624,6 +634,46 @@ def _solve_sat_ideal_acceptance(
         return AcceptanceSolverSuccess(
             answer=query in extension,
             counterexample=None if query in extension else extension,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
+def _solve_sat_semi_stable_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    if task == "credulous":
+        witness = find_semi_stable_extension(framework, require_in=query)
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = find_semi_stable_extension(framework, require_out=query)
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
+def _solve_sat_stage_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    if task == "credulous":
+        witness = find_stage_extension(framework, require_in=query)
+        return AcceptanceSolverSuccess(
+            answer=witness is not None,
+            witness=witness,
+        )
+    if task == "skeptical":
+        counterexample = find_stage_extension(framework, require_out=query)
+        return AcceptanceSolverSuccess(
+            answer=counterexample is None,
+            counterexample=counterexample,
         )
     raise ValueError(f"unsupported Dung acceptance task: {task}")
 

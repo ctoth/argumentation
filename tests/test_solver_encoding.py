@@ -109,6 +109,9 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
 
     assert find_semi_stable_extension(framework) == frozenset({"a"})
     assert find_stage_extension(framework) == frozenset({"a"})
+    assert find_semi_stable_extension(framework, require_in="a") == frozenset({"a"})
+    assert find_stage_extension(framework, require_out="b") == frozenset({"a"})
+    assert find_semi_stable_extension(framework, require_in="b") is None
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
@@ -303,12 +306,66 @@ def test_kernel_semi_stable_extension_returns_native_witness(
 
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
+def test_kernel_semi_stable_required_labels_match_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(semi_stable_extensions(framework))
+
+    for query in framework.arguments:
+        required_in = find_semi_stable_extension(framework, require_in=query)
+        native_with_query = {
+            extension for extension in native_extensions if query in extension
+        }
+        if native_with_query:
+            assert required_in in native_with_query
+        else:
+            assert required_in is None
+
+        required_out = find_semi_stable_extension(framework, require_out=query)
+        native_without_query = {
+            extension for extension in native_extensions if query not in extension
+        }
+        if native_without_query:
+            assert required_out in native_without_query
+        else:
+            assert required_out is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
 def test_kernel_stage_extension_returns_native_witness(
     framework: ArgumentationFramework,
 ) -> None:
     witness = find_stage_extension(framework)
 
     assert witness in set(stage_extensions(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_stage_required_labels_match_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(stage_extensions(framework))
+
+    for query in framework.arguments:
+        required_in = find_stage_extension(framework, require_in=query)
+        native_with_query = {
+            extension for extension in native_extensions if query in extension
+        }
+        if native_with_query:
+            assert required_in in native_with_query
+        else:
+            assert required_in is None
+
+        required_out = find_stage_extension(framework, require_out=query)
+        native_without_query = {
+            extension for extension in native_extensions if query not in extension
+        }
+        if native_without_query:
+            assert required_out in native_without_query
+        else:
+            assert required_out is None
 
 
 @given(argumentation_frameworks(max_args=4))

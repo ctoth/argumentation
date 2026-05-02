@@ -338,32 +338,23 @@ def find_preferred_extension(
 def find_semi_stable_extension(
     framework: ArgumentationFramework,
     *,
+    require_in: str | None = None,
+    require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
     problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     problem.add_range_definition()
-    current = _complete_extension(problem, utility_name="semi_stable_seed")
-    if current is None:
-        return None
-
-    while True:
-        current_range = range_of(current, framework.defeats)
-        outside_range = framework.arguments - current_range
-        if not outside_range:
-            return current
-        larger_range = _complete_extension(
-            problem,
-            required_range=current_range,
-            require_any_range=outside_range,
-            utility_name="semi_stable_grow_range",
-        )
-        if larger_range is None:
-            return current
-        if not current_range < range_of(larger_range, framework.defeats):
-            raise RuntimeError("SAT semi-stable growth did not enlarge range")
-        current = larger_range
+    return _range_maximal_extension(
+        problem,
+        framework,
+        base="complete",
+        required_in=_optional_argument(framework, require_in),
+        required_out=_optional_argument(framework, require_out),
+        seed_utility_name="semi_stable_seed",
+        test_utility_name="semi_stable_range_maximality",
+    )
 
 
 def find_ideal_extension(
@@ -414,32 +405,23 @@ def find_ideal_extension(
 def find_stage_extension(
     framework: ArgumentationFramework,
     *,
+    require_in: str | None = None,
+    require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
     problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_conflict_free()
     problem.add_range_definition()
-    current = _conflict_free_extension(problem, utility_name="stage_seed")
-    if current is None:
-        return None
-
-    while True:
-        current_range = range_of(current, framework.defeats)
-        outside_range = framework.arguments - current_range
-        if not outside_range:
-            return current
-        larger_range = _conflict_free_extension(
-            problem,
-            required_range=current_range,
-            require_any_range=outside_range,
-            utility_name="stage_grow_range",
-        )
-        if larger_range is None:
-            return current
-        if not current_range < range_of(larger_range, framework.defeats):
-            raise RuntimeError("SAT stage growth did not enlarge range")
-        current = larger_range
+    return _range_maximal_extension(
+        problem,
+        framework,
+        base="conflict_free",
+        required_in=_optional_argument(framework, require_in),
+        required_out=_optional_argument(framework, require_out),
+        seed_utility_name="stage_seed",
+        test_utility_name="stage_range_maximality",
+    )
 
 
 def _complete_extension(
@@ -450,6 +432,7 @@ def _complete_extension(
     require_any_in: frozenset[str] = frozenset(),
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
+    excluded_exact: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
     problem.solver.push()
@@ -459,6 +442,8 @@ def _complete_extension(
         problem.require_any_in(require_any_in)
         problem.require_range(required_range)
         problem.require_any_range(require_any_range)
+        for blocked in excluded_exact or []:
+            problem.exclude_exact_extension(blocked)
         if problem.check(utility_name) != "sat":
             return None
         return problem.model_extension()
@@ -509,17 +494,96 @@ def _grow_preferred(
         current = larger
 
 
+def _range_maximal_extension(
+    problem: AFSatProblem,
+    framework: ArgumentationFramework,
+    *,
+    base: str,
+    required_in: frozenset[str],
+    required_out: frozenset[str],
+    seed_utility_name: str,
+    test_utility_name: str,
+) -> frozenset[str] | None:
+    blocked_candidates: list[frozenset[str]] = []
+    while True:
+        candidate = _base_extension(
+            problem,
+            base=base,
+            required_in=required_in,
+            required_out=required_out,
+            excluded_exact=blocked_candidates,
+            utility_name=seed_utility_name,
+        )
+        if candidate is None:
+            return None
+        candidate_range = range_of(candidate, framework.defeats)
+        outside_range = framework.arguments - candidate_range
+        if not outside_range:
+            return candidate
+        larger_range = _base_extension(
+            problem,
+            base=base,
+            required_range=candidate_range,
+            require_any_range=outside_range,
+            utility_name=test_utility_name,
+        )
+        if larger_range is None:
+            return candidate
+        blocked_candidates.append(candidate)
+
+
+def _base_extension(
+    problem: AFSatProblem,
+    *,
+    base: str,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
+    excluded_exact: list[frozenset[str]] | None = None,
+    utility_name: str,
+) -> frozenset[str] | None:
+    if base == "complete":
+        return _complete_extension(
+            problem,
+            required_in=required_in,
+            required_out=required_out,
+            required_range=required_range,
+            require_any_range=require_any_range,
+            excluded_exact=excluded_exact,
+            utility_name=utility_name,
+        )
+    if base == "conflict_free":
+        return _conflict_free_extension(
+            problem,
+            required_in=required_in,
+            required_out=required_out,
+            required_range=required_range,
+            require_any_range=require_any_range,
+            excluded_exact=excluded_exact,
+            utility_name=utility_name,
+        )
+    raise ValueError(f"unknown SAT base semantics: {base!r}")
+
+
 def _conflict_free_extension(
     problem: AFSatProblem,
     *,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
+    excluded_exact: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
     problem.solver.push()
     try:
+        problem.require_in(required_in)
+        problem.require_out(required_out)
         problem.require_range(required_range)
         problem.require_any_range(require_any_range)
+        for blocked in excluded_exact or []:
+            problem.exclude_exact_extension(blocked)
         if problem.check(utility_name) != "sat":
             return None
         return problem.model_extension()

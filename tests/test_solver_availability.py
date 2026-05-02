@@ -386,6 +386,70 @@ def test_default_acceptance_uses_auto_ideal_sat_backend(monkeypatch) -> None:
     assert result.answer is True
 
 
+def test_default_acceptance_uses_auto_semi_stable_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default semi-stable acceptance should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    credulous = solve_dung_acceptance(
+        framework,
+        semantics="semi-stable",
+        task="credulous",
+        query="a",
+    )
+    skeptical = solve_dung_acceptance(
+        framework,
+        semantics="semi-stable",
+        task="skeptical",
+        query="b",
+    )
+
+    assert isinstance(credulous, AcceptanceSolverSuccess)
+    assert credulous.answer is True
+    assert credulous.witness == frozenset({"a"})
+    assert isinstance(skeptical, AcceptanceSolverSuccess)
+    assert skeptical.answer is False
+    assert skeptical.counterexample == frozenset({"a"})
+
+
+def test_default_acceptance_uses_auto_stage_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default stage acceptance should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+
+    credulous = solve_dung_acceptance(
+        framework,
+        semantics="stage",
+        task="credulous",
+        query="a",
+    )
+    skeptical = solve_dung_acceptance(
+        framework,
+        semantics="stage",
+        task="skeptical",
+        query="b",
+    )
+
+    assert isinstance(credulous, AcceptanceSolverSuccess)
+    assert credulous.answer is True
+    assert credulous.witness == frozenset({"a"})
+    assert isinstance(skeptical, AcceptanceSolverSuccess)
+    assert skeptical.answer is False
+    assert skeptical.counterexample == frozenset({"a"})
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),
