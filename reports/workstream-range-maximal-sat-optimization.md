@@ -2,13 +2,19 @@
 
 Author: Codex
 Date: 2026-05-02
-Status: proposed implementation workstream; no solver code changed in this document
+Status: executed on 2026-05-02
 
 ## Evidence Level
 
-This plan is based on the local `paper-reader` notes already present in
+The original plan was based on the local `paper-reader` notes already present in
 `papers/` plus the post-workstream ICCMA traces from May 2, 2026. I did not
 reread PDF page images in this turn.
+
+Execution note: implementation exposed an important correction to the initial
+cardinality phrasing. Stage and semi-stable semantics are range-maximal by set
+inclusion, not by range cardinality alone. The final implementation therefore
+uses full/high/cardinality probes to order candidate seeds, but it only returns
+a witness after a global strict-range-inclusion maximality check.
 
 The key observed bottleneck is no longer preferred skeptical or ideal reasoning.
 After the incremental AF SAT workstream, 2017 improved from 2572 solved / 278
@@ -37,7 +43,7 @@ maximality checks were often cheaper than seed rediscovery.
 
 ## Target Architecture
 
-Replace open-ended range ascent with an exact range-optimization controller on
+Replace open-ended range ascent with an exact range-maximality controller on
 top of `AfSatKernel`.
 
 The existing range formula stays:
@@ -49,9 +55,9 @@ range[a] <-> in[a] or exists b in in such that b attacks a
 The changed control surface is:
 
 1. Maintain reusable base solvers for stage and semi-stable.
-2. Search by range cardinality and range subset refinements, not by repeatedly
-   asking for any seed and then any strict improvement.
-3. Learn range no-goods globally within the task.
+2. Search with full/high/cardinality seed probes plus range subset refinements,
+   not by repeatedly asking for unconstrained old seed utilities.
+3. Learn rejected range subsets within the task.
 4. Keep the Dvorak/CEGARTIX shortcut procedure for high-range candidates:
    prioritize ranges missing at most `d` arguments before general search.
 5. Use exact fallback only after the shortcut/cardinality path is exhausted.
@@ -210,6 +216,50 @@ Success criteria:
 - Do not use wall-clock-only tests.
 - Do not claim PDF rereads unless page images are actually read.
 
+## Executed Result
+
+Implemented commits:
+
+- `145b866` through `1378479`: TDD coverage, cardinality primitives, task
+  solver extraction, streamed SAT telemetry, comparison tooling, and selected
+  row runner.
+- `8535eda`: bounded Dvorak-style high-range shortcut probes with depth `d=2`
+  and a probe budget.
+- `0281031`: correctness fix restoring set-inclusion range maximality; the
+  cardinality path remains a seed-ordering heuristic, not the semantic oracle.
+
+Verification:
+
+- `uv run pytest tests\test_solver_encoding.py tests\test_solver_availability.py tests\test_iccma_runner.py tests\test_iccma_range_trace_compare.py tests\test_iccma_run_selected.py -q`
+  passed with `84 passed`.
+- `uv run pytest -q` passed with `761 passed, 2 skipped in 71.80s`.
+
+Selected 2017 slow rows after the correctness fix:
+
+- `C/1/BA_80_20_4.apx`, `SE-STG`: solved via one
+  `stage_full_range_shortcut` check; witness size 56.
+- `T/3/BA_80_70_5.apx`, `SE-STG`: solved via one
+  `stage_full_range_shortcut` check; witness size 44.
+- `D/1/WS_100_12_50_30.tgf`, `SE-STG`: solved via bounded
+  `stage_high_range_shortcut` checks plus one `stage_range_maximality` check;
+  witness size 21.
+
+Cap-100 comparison against the previous post-workstream run:
+
+| Year | Previous solved | Previous timeout | New solved | New timeout |
+| --- | ---: | ---: | ---: | ---: |
+| 2017 | 2834 | 16 | 2834 | 16 |
+| 2019 | 2558 | 7 | 2558 | 7 |
+| 2023 | 486 | 84 | 487 | 83 |
+| 2025 | 199 | 54 | 199 | 54 |
+
+Run artifacts:
+
+- `data/iccma/2017/runs/iccma-2017-range-max-inclusion-cap100-summary.json`
+- `data/iccma/2019/runs/iccma-2019-range-max-inclusion-cap100-summary.json`
+- `data/iccma/2023/runs/iccma-2023-range-max-inclusion-cap100-summary.json`
+- `data/iccma/2025/runs/iccma-2025-range-max-inclusion-cap100-summary.json`
+
 ## Expected Result
 
 The expected improvement is concentrated in `STG` and some `SST` rows. The
@@ -217,4 +267,3 @@ previous workstream made preferred skeptical and ideal fast enough that range
 maximality now dominates. This workstream attacks that dominant cost directly
 by turning stage/semi-stable into exact maximum-range tasks with Dvorak-style
 shortcuts and reusable SAT state.
-
