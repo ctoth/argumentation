@@ -699,6 +699,17 @@ def _range_maximal_extension(
     test_utility_name: str,
 ) -> frozenset[str] | None:
     del framework, test_utility_name
+    full_range = _base_extension(
+        problem,
+        base=base,
+        required_in=required_in,
+        required_out=required_out,
+        required_range=frozenset(problem.arguments),
+        utility_name=_range_shortcut_utility(seed_utility_name, "full"),
+    )
+    if full_range is not None:
+        return full_range
+
     max_range_size = _max_range_size(
         problem,
         base=base,
@@ -745,6 +756,12 @@ def _max_range_utility(seed_utility_name: str, kind: str) -> str:
     if seed_utility_name.endswith("_seed"):
         return f"{seed_utility_name.removesuffix('_seed')}_max_range_{kind}"
     return f"{seed_utility_name}_max_range_{kind}"
+
+
+def _range_shortcut_utility(seed_utility_name: str, kind: str) -> str:
+    if seed_utility_name.endswith("_seed"):
+        return f"{seed_utility_name.removesuffix('_seed')}_{kind}_range_shortcut"
+    return f"{seed_utility_name}_{kind}_range_shortcut"
 
 
 def _base_extension(

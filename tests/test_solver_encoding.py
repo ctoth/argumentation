@@ -128,13 +128,14 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
 
 
 def test_kernel_range_maximal_search_traces_range_checks() -> None:
-    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("b", "c")})
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
     checks: list[SATCheck] = []
 
     witness = find_stage_extension(framework, trace_sink=checks.append)
 
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
+    assert "stage_full_range_shortcut" in utility_names
     assert "stage_max_range_at_least" in utility_names
     assert "stage_max_range_exact" in utility_names
     assert "stage_seed" not in utility_names
@@ -226,19 +227,27 @@ def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
         attacker not in witness or target not in witness
         for attacker, target in framework.defeats
     )
-    exact_checks = [
+    deciding_checks = [
         check
         for check in checks
-        if check.utility_name == "stage_max_range_exact"
-        and check.range_constraint == "exact"
+        if check.utility_name
+        in {"stage_full_range_shortcut", "stage_max_range_exact"}
         and check.result == "sat"
     ]
-    assert exact_checks
-    assert len(range_of(witness, framework.defeats)) == exact_checks[-1].range_bound
+    assert deciding_checks
+    deciding_check = deciding_checks[-1]
+    expected_range_size = (
+        len(framework.arguments)
+        if deciding_check.utility_name == "stage_full_range_shortcut"
+        else deciding_check.range_bound
+    )
+    assert len(range_of(witness, framework.defeats)) == expected_range_size
     utility_names = [check.utility_name for check in checks]
     assert utility_names.count("stage_seed") == 0
-    assert "stage_max_range_at_least" in utility_names
-    assert "stage_max_range_exact" in utility_names
+    assert (
+        "stage_full_range_shortcut" in utility_names
+        or "stage_max_range_at_least" in utility_names
+    )
 
 
 def test_stage_full_range_shortcut_runs_before_cardinality_search() -> None:
