@@ -184,7 +184,10 @@ class AfSatKernel:
             for attacker, target in self.framework.defeats
             if target in targets
         )
-        self.require_any_in(attackers)
+        if attackers:
+            self.require_any_in(attackers)
+        else:
+            self.solver.add(self.z3.BoolVal(False))
 
     def exclude_extension(self, extension: frozenset[str]) -> None:
         self._validate(extension)
@@ -403,43 +406,26 @@ def find_ideal_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str]:
-    preferred_super_core = frozenset(
-        argument
-        for argument in sorted(framework.arguments)
-        if find_preferred_extension(
-            framework,
-            require_out=argument,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        is None
-    )
     problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_admissible_labelling()
-    current = _admissible_extension(
-        problem,
-        required_out=framework.arguments - preferred_super_core,
-        utility_name="ideal_seed",
-    )
-    if current is None:
-        return frozenset()
-
+    current = framework.arguments
     while True:
-        outside = preferred_super_core - current
-        if not outside:
-            return current
-        larger = _admissible_extension(
+        attacker = _admissible_attacker_of_set(
             problem,
-            required_in=current,
-            required_out=framework.arguments - preferred_super_core,
-            require_any_in=outside,
-            utility_name="ideal_grow_admissible",
+            current,
+            utility_name="ideal_admissible_attacker",
         )
-        if larger is None:
+        if attacker is None:
+            break
+        current = current - _attacked_by(attacker, framework.defeats)
+
+    current = current - _attacked_by(current, framework.defeats)
+    while True:
+        undefended_attackers = current - _attacked_by(current, framework.defeats)
+        next_current = current - _attacked_by(undefended_attackers, framework.defeats)
+        if next_current == current:
             return current
-        if not current < larger:
-            raise RuntimeError("SAT ideal growth did not produce a strict superset")
-        current = larger
+        current = next_current
 
 
 def find_stage_extension(
@@ -511,6 +497,24 @@ def _admissible_extension(
         problem.solver.pop()
 
 
+def _admissible_attacker_of_set(
+    problem: AfSatKernel,
+    targets: frozenset[str],
+    *,
+    utility_name: str,
+) -> frozenset[str] | None:
+    if not targets:
+        return None
+    problem.solver.push()
+    try:
+        problem.require_attacks_any(targets)
+        if problem.check(utility_name) != "sat":
+            return None
+        return problem.model_extension()
+    finally:
+        problem.solver.pop()
+
+
 def _admissible_attacker_against_compatible_candidate(
     framework: ArgumentationFramework,
     *,
@@ -575,6 +579,13 @@ def _admissible_attacker_against_compatible_candidate(
             )
         )
     return extension
+
+
+def _attacked_by(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    return frozenset(target for attacker, target in defeats if attacker in arguments)
 
 
 def _add_admissible_constraints(

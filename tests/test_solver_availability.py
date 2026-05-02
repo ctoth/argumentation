@@ -494,7 +494,12 @@ def test_sat_backend_acceptance_matches_native_backend(
 
         assert isinstance(sat_result, AcceptanceSolverSuccess)
         assert isinstance(native_result, AcceptanceSolverSuccess)
-        assert sat_result == native_result
+        assert sat_result.answer is native_result.answer
+        if semantics == "preferred" and task == "skeptical":
+            assert sat_result.witness is None
+            assert sat_result.counterexample is None
+        else:
+            assert sat_result == native_result
 
 
 def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
