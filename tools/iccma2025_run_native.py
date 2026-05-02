@@ -643,6 +643,8 @@ def sat_trace_sink(
             "result": check.result,
             "elapsed_ms": f"{check.elapsed_ms:.6f}",
             "model_extension_size": check.model_extension_size,
+            "range_bound": check.range_bound,
+            "range_constraint": check.range_constraint,
         }
         print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
 
