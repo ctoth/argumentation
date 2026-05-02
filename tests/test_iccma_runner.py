@@ -128,3 +128,36 @@ def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
     stderr = capsys.readouterr().err
     assert '"event": "sat_check"' in stderr
     assert '"subtrack": "DS-PR"' in stderr
+
+
+def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "cycle.apx"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text(
+        "arg(a).\narg(b).\narg(c).\natt(a,b).\natt(b,c).\natt(c,a).\n",
+        encoding="utf-8",
+    )
+    job = {
+        "root": str(tmp_path),
+        "backend": "auto",
+        "iccma_binary": None,
+        "solver_timeout_seconds": 5.0,
+        "instance": {
+            "kind": "apx",
+            "relative_path": "cycle.apx",
+            "arguments_or_atoms": 3,
+        },
+        "task": {
+            "track": "legacy",
+            "subtrack": "SE-STG",
+            "instance_kind": "af",
+        },
+    }
+
+    result = run_child(job, timeout_seconds=15.0)
+
+    assert result["status"] == "solved"
+    stderr = capsys.readouterr().err
+    assert '"utility_name": "stage_max_range_at_least"' in stderr
+    assert '"range_bound":' in stderr
+    assert '"range_constraint": "at_least"' in stderr
