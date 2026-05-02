@@ -20,6 +20,7 @@ from argumentation.dung import (
 )
 from argumentation.af_sat import (
     AfSatKernel,
+    PreferredSkepticalTaskSolver,
     SATCheck,
     find_complete_extension,
     find_ideal_extension,
@@ -115,6 +116,40 @@ def test_kernel_direct_skeptical_preferred_handles_basic_counterexample() -> Non
 
     assert is_preferred_skeptically_accepted(framework, "a") is True
     assert is_preferred_skeptically_accepted(framework, "b") is False
+
+
+def test_kernel_direct_skeptical_preferred_handles_paper_shaped_cdas_cases() -> None:
+    assert is_preferred_skeptically_accepted(
+        af({"q"}, {("q", "q")}),
+        "q",
+    ) is False
+    assert is_preferred_skeptically_accepted(
+        af({"q", "b"}, set()),
+        "q",
+    ) is True
+    assert is_preferred_skeptically_accepted(
+        af({"q", "b"}, {("q", "b"), ("b", "q")}),
+        "q",
+    ) is False
+
+
+def test_preferred_skeptical_task_solver_streams_cdas_utilities() -> None:
+    framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
+    checks: list[SATCheck] = []
+
+    solver = PreferredSkepticalTaskSolver(
+        framework,
+        trace_sink=checks.append,
+        metadata={"subtrack": "DS-PR"},
+    )
+
+    assert solver.decide("q") is False
+    assert [check.utility_name for check in checks] == [
+        "preferred_skeptical_seed",
+        "preferred_skeptical_adm_ext_att",
+        "preferred_skeptical_extend_attacker",
+    ]
+    assert all(check.metadata == {"subtrack": "DS-PR"} for check in checks)
 
 
 def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
