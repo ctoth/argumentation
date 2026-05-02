@@ -7,6 +7,7 @@ import json
 import lzma
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -18,6 +19,9 @@ from typing import Any
 DATA_ROOT = Path("data") / "iccma" / "2025"
 
 AF_KINDS = frozenset({"af", "apx", "tgf", "compressed_apx", "compressed_tgf"})
+
+APX_ARG_RE = re.compile(r"^arg\(([^(),\s]+)\)\.$")
+APX_ATT_RE = re.compile(r"^att\(([^(),\s]+),([^(),\s]+)\)\.$")
 
 TASK_TO_SEMANTICS = {
     "CO": "complete",
@@ -233,14 +237,16 @@ def run_or_skip(
     task: dict[str, Any],
 ) -> dict[str, Any]:
     base = {**base_result(instance, task), "backend": config.backend}
+    argument_count = af_argument_count_for_cap(config, instance)
     if (
         normalized_instance_kind(instance) == "af"
         and config.max_af_arguments >= 0
-        and instance.get("arguments_or_atoms") is not None
-        and int(instance["arguments_or_atoms"]) > config.max_af_arguments
+        and argument_count is not None
+        and argument_count > config.max_af_arguments
     ):
         return {
             **base,
+            "arguments_or_atoms": argument_count,
             "status": "skipped",
             "reason": f"af_argument_cap>{config.max_af_arguments}",
         }
@@ -270,6 +276,91 @@ def run_or_skip(
         **result,
         "elapsed_seconds": f"{elapsed:.6f}",
     }
+
+
+def af_argument_count_for_cap(config: RunConfig, instance: dict[str, Any]) -> int | None:
+    if normalized_instance_kind(instance) != "af" or config.max_af_arguments < 0:
+        return None
+    manifest_count = instance.get("arguments_or_atoms")
+    if manifest_count is not None:
+        return int(manifest_count)
+    try:
+        path = resolve_instance_path(config.root, instance)
+        return scan_af_argument_count(path, kind=instance["kind"], cap=config.max_af_arguments)
+    except Exception:
+        return None
+
+
+def scan_af_argument_count(path: Path, *, kind: str, cap: int) -> int | None:
+    if kind == "af":
+        return scan_numeric_af_argument_count(path)
+    if kind in {"apx", "compressed_apx"}:
+        return scan_apx_argument_count(path, cap=cap)
+    if kind in {"tgf", "compressed_tgf"}:
+        return scan_tgf_argument_count(path, cap=cap)
+    return None
+
+
+def scan_numeric_af_argument_count(path: Path) -> int | None:
+    for raw_line in iter_instance_lines(path):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split()
+        if len(parts) == 3 and parts[:2] == ["p", "af"] and parts[2].isdigit():
+            return int(parts[2])
+        return None
+    return None
+
+
+def scan_apx_argument_count(path: Path, *, cap: int) -> int:
+    arguments: set[str] = set()
+    for raw_line in iter_instance_lines(path):
+        line = raw_line.strip()
+        if not line or line.startswith(("%", "#")):
+            continue
+        arg_match = APX_ARG_RE.match(line)
+        if arg_match:
+            arguments.add(arg_match.group(1))
+        else:
+            att_match = APX_ATT_RE.match(line)
+            if att_match:
+                arguments.add(att_match.group(1))
+                arguments.add(att_match.group(2))
+        if len(arguments) > cap:
+            return len(arguments)
+    return len(arguments)
+
+
+def scan_tgf_argument_count(path: Path, *, cap: int) -> int:
+    arguments: set[str] = set()
+    in_attacks = False
+    for raw_line in iter_instance_lines(path):
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line == "#":
+            in_attacks = True
+            continue
+        if not in_attacks:
+            arguments.add(line.split(maxsplit=1)[0])
+        else:
+            parts = line.split()
+            if len(parts) == 2:
+                arguments.add(parts[0])
+                arguments.add(parts[1])
+        if len(arguments) > cap:
+            return len(arguments)
+    return len(arguments)
+
+
+def iter_instance_lines(path: Path):
+    if path.name.lower().endswith(".lzma"):
+        with lzma.open(path, mode="rt", encoding="utf-8", errors="ignore") as handle:
+            yield from handle
+        return
+    with path.open("r", encoding="utf-8", errors="ignore") as handle:
+        yield from handle
 
 
 def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
