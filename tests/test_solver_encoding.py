@@ -241,6 +241,28 @@ def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
     assert "stage_max_range_exact" in utility_names
 
 
+def test_stage_full_range_shortcut_runs_before_cardinality_search() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+
+    assert find_stage_extension(framework, trace_sink=checks.append) == frozenset({"a"})
+
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names[0] == "stage_full_range_shortcut"
+    assert "stage_max_range_at_least" not in utility_names
+
+
+def test_semi_stable_full_range_shortcut_runs_before_cardinality_search() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+
+    assert find_semi_stable_extension(framework, trace_sink=checks.append) == frozenset({"a"})
+
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names[0] == "semi_stable_full_range_shortcut"
+    assert "semi_stable_max_range_at_least" not in utility_names
+
+
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
     framework = af({"a", "b"}, {("a", "b")})
     problem = AfSatKernel(framework)
