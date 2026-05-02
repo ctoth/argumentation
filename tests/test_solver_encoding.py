@@ -213,7 +213,7 @@ def test_kernel_range_bound_trace_fields_are_recorded() -> None:
 
 
 def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
-    path = Path("data/iccma/2017/instances/C/1/BA_80_20_4.apx")
+    path = Path("data/iccma/2017/extracted/instances/C/C/1/BA_80_20_4.apx")
     if not path.exists():
         pytest.skip("ICCMA 2017 data not available")
     framework = parse_apx(path.read_text())
@@ -222,7 +222,19 @@ def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
     witness = find_stage_extension(framework, trace_sink=checks.append)
 
     assert witness is not None
-    assert witness in set(stage_extensions(framework))
+    assert all(
+        attacker not in witness or target not in witness
+        for attacker, target in framework.defeats
+    )
+    exact_checks = [
+        check
+        for check in checks
+        if check.utility_name == "stage_max_range_exact"
+        and check.range_constraint == "exact"
+        and check.result == "sat"
+    ]
+    assert exact_checks
+    assert len(range_of(witness, framework.defeats)) == exact_checks[-1].range_bound
     utility_names = [check.utility_name for check in checks]
     assert utility_names.count("stage_seed") == 0
     assert "stage_max_range_at_least" in utility_names
