@@ -128,7 +128,10 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
 
 
 def test_kernel_range_maximal_search_traces_range_checks() -> None:
-    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
+    framework = af(
+        {"a", "b", "c", "d"},
+        {("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")},
+    )
     checks: list[SATCheck] = []
 
     witness = find_stage_extension(framework, trace_sink=checks.append)
@@ -136,6 +139,7 @@ def test_kernel_range_maximal_search_traces_range_checks() -> None:
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
     assert "stage_full_range_shortcut" in utility_names
+    assert "stage_high_range_shortcut" in utility_names
     assert "stage_max_range_at_least" in utility_names
     assert "stage_max_range_exact" in utility_names
     assert "stage_seed" not in utility_names
@@ -270,6 +274,35 @@ def test_semi_stable_full_range_shortcut_runs_before_cardinality_search() -> Non
     utility_names = [check.utility_name for check in checks]
     assert utility_names[0] == "semi_stable_full_range_shortcut"
     assert "semi_stable_max_range_at_least" not in utility_names
+
+
+def test_stage_high_range_shortcut_runs_before_cardinality_search() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
+    checks: list[SATCheck] = []
+
+    witness = find_stage_extension(framework, trace_sink=checks.append)
+
+    assert witness in set(stage_extensions(framework))
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names[:2] == [
+        "stage_full_range_shortcut",
+        "stage_high_range_shortcut",
+    ]
+    assert "stage_max_range_at_least" not in utility_names
+
+
+def test_high_range_shortcut_respects_global_max_for_query_witnesses() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+
+    assert find_stage_extension(
+        framework,
+        require_in="b",
+        trace_sink=checks.append,
+    ) is None
+
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names == ["stage_full_range_shortcut", "stage_max_range_exact"]
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:

@@ -131,10 +131,11 @@ def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
 
 
 def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> None:
-    instance_path = tmp_path / "extracted" / "instances" / "cycle.apx"
+    instance_path = tmp_path / "extracted" / "instances" / "self_attacks.apx"
     instance_path.parent.mkdir(parents=True)
     instance_path.write_text(
-        "arg(a).\narg(b).\narg(c).\natt(a,b).\natt(b,c).\natt(c,a).\n",
+        "arg(a).\narg(b).\narg(c).\narg(d).\n"
+        "att(a,a).\natt(b,b).\natt(c,c).\natt(d,d).\n",
         encoding="utf-8",
     )
     job = {
@@ -144,8 +145,8 @@ def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> Non
         "solver_timeout_seconds": 5.0,
         "instance": {
             "kind": "apx",
-            "relative_path": "cycle.apx",
-            "arguments_or_atoms": 3,
+            "relative_path": "self_attacks.apx",
+            "arguments_or_atoms": 4,
         },
         "task": {
             "track": "legacy",

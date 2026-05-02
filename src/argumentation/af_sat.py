@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections import deque
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from time import perf_counter
 from typing import Any
 
-from argumentation.dung import ArgumentationFramework, _attackers_index, range_of
+from argumentation.dung import ArgumentationFramework, _attackers_index
 
 
 @dataclass(frozen=True)
@@ -514,6 +515,9 @@ def _complete_extension(
             required_range_size=required_range_size,
             required_range_size_at_least=required_range_size_at_least,
         )
+        if range_bound is None and required_range:
+            range_bound = len(required_range)
+            range_constraint = "contains"
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
         for blocked_range in excluded_range_subsets or []:
@@ -712,6 +716,9 @@ def _range_maximal_extension(
 class RangeMaximalTaskSolver:
     """Exact range-maximal search for stage and semi-stable tasks."""
 
+    shortcut_depth = 2
+    shortcut_probe_limit = 24
+
     def __init__(
         self,
         *,
@@ -723,6 +730,7 @@ class RangeMaximalTaskSolver:
         self.base = base
         self.seed_utility_name = seed_utility_name
         self._max_range_size: int | None = None
+        self._max_range_witness: frozenset[str] | None = None
 
     def find_extension(
         self,
@@ -730,20 +738,11 @@ class RangeMaximalTaskSolver:
         required_in: frozenset[str],
         required_out: frozenset[str],
     ) -> frozenset[str] | None:
-        full_range = _base_extension(
-            self.problem,
-            base=self.base,
-            required_in=required_in,
-            required_out=required_out,
-            required_range=frozenset(self.problem.arguments),
-            utility_name=_range_shortcut_utility(self.seed_utility_name, "full"),
-        )
-        if full_range is not None:
-            return full_range
-
         max_range_size = self.max_range_size()
         if max_range_size is None:
             return None
+        if not required_in and not required_out and self._max_range_witness is not None:
+            return self._max_range_witness
         return _base_extension(
             self.problem,
             base=self.base,
@@ -755,12 +754,39 @@ class RangeMaximalTaskSolver:
 
     def max_range_size(self) -> int | None:
         if self._max_range_size is None:
-            self._max_range_size = _max_range_size(
+            shortcut = self._high_range_shortcut()
+            if shortcut is not None:
+                self._max_range_size, self._max_range_witness = shortcut
+                return self._max_range_size
+            self._max_range_size, _ = _max_range_size(
                 self.problem,
                 base=self.base,
                 utility_name=_max_range_utility(self.seed_utility_name, "at_least"),
             )
         return self._max_range_size
+
+    def _high_range_shortcut(self) -> tuple[int, frozenset[str]] | None:
+        arguments = tuple(self.problem.arguments)
+        probes = 0
+        for missing in _bounded_missing_sets(
+            arguments,
+            depth=self.shortcut_depth,
+            limit=self.shortcut_probe_limit,
+        ):
+            required_range = frozenset(arguments) - missing
+            kind = "full" if not missing else "high"
+            witness = _base_extension(
+                self.problem,
+                base=self.base,
+                required_range=required_range,
+                utility_name=_range_shortcut_utility(self.seed_utility_name, kind),
+            )
+            probes += 1
+            if witness is not None:
+                return len(required_range), witness
+            if probes >= self.shortcut_probe_limit:
+                return None
+        return None
 
 
 def _max_range_size(
@@ -768,10 +794,11 @@ def _max_range_size(
     *,
     base: str,
     utility_name: str,
-) -> int | None:
+) -> tuple[int | None, frozenset[str] | None]:
     low = 0
     high = len(problem.arguments)
     best: int | None = None
+    best_witness: frozenset[str] | None = None
     while low <= high:
         midpoint = (low + high) // 2
         candidate = _base_extension(
@@ -784,8 +811,28 @@ def _max_range_size(
             high = midpoint - 1
         else:
             best = midpoint
+            best_witness = candidate
             low = midpoint + 1
-    return best
+    return best, best_witness
+
+
+def _bounded_missing_sets(
+    arguments: tuple[str, ...],
+    *,
+    depth: int,
+    limit: int,
+) -> Iterable[frozenset[str]]:
+    pending: deque[tuple[int, tuple[str, ...], int]] = deque([(0, (), 0)])
+    yielded = 0
+    while pending and yielded < limit:
+        start, selected, selected_size = pending.popleft()
+        if selected_size <= depth:
+            yielded += 1
+            yield frozenset(selected)
+        if selected_size == depth:
+            continue
+        for index in range(start, len(arguments)):
+            pending.append((index + 1, (*selected, arguments[index]), selected_size + 1))
 
 
 def _max_range_utility(seed_utility_name: str, kind: str) -> str:
@@ -867,6 +914,9 @@ def _conflict_free_extension(
             required_range_size=required_range_size,
             required_range_size_at_least=required_range_size_at_least,
         )
+        if range_bound is None and required_range:
+            range_bound = len(required_range)
+            range_constraint = "contains"
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
         for blocked_range in excluded_range_subsets or []:
