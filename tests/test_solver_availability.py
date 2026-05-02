@@ -337,6 +337,55 @@ def test_default_single_extension_uses_auto_stage_sat_backend(monkeypatch) -> No
     assert result.extension == frozenset({"a"})
 
 
+def test_default_single_extension_uses_auto_ideal_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default ideal witness should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+    monkeypatch.setattr(
+        solver_module,
+        "preferred_extensions",
+        forbidden_native_extensions,
+    )
+
+    result = solve_dung_single_extension(framework, semantics="ideal")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({"a"})
+
+
+def test_default_acceptance_uses_auto_ideal_sat_backend(monkeypatch) -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+    )
+
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default ideal acceptance should not call native enumeration")
+
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
+    monkeypatch.setattr(
+        solver_module,
+        "preferred_extensions",
+        forbidden_native_extensions,
+    )
+
+    result = solve_dung_acceptance(
+        framework,
+        semantics="ideal",
+        task="skeptical",
+        query="a",
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is True
+
+
 @given(
     argumentation_frameworks(max_args=4),
     st.sampled_from(sorted(NATIVE_EXTENSION_ORACLES)),

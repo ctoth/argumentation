@@ -15,6 +15,7 @@ from argumentation.aba_sat import (
 )
 from argumentation.af_sat import (
     find_complete_extension,
+    find_ideal_extension,
     find_preferred_extension,
     find_semi_stable_extension,
     find_stable_extension,
@@ -310,6 +311,13 @@ def solve_dung_single_extension(
                 )
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "ideal":
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=find_ideal_extension(framework),
+                )
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         extensions = sat_extensions(framework, semantics)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
@@ -364,6 +372,11 @@ def solve_dung_acceptance(
                 return _solve_sat_preferred_skeptical_acceptance(framework, query)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "ideal":
+            try:
+                return _solve_sat_ideal_acceptance(framework, task, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
             sat_extensions(framework, semantics),
             task,
@@ -394,7 +407,7 @@ def _auto_dung_single_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
         return (
             "sat"
-            if semantics in {"complete", "preferred", "semi-stable", "stable", "stage"}
+            if semantics in {"complete", "ideal", "preferred", "semi-stable", "stable", "stage"}
             else "native"
         )
     return backend
@@ -402,7 +415,7 @@ def _auto_dung_single_backend(backend: str, semantics: str) -> str:
 
 def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> str:
     if backend == "auto":
-        if semantics in {"complete", "stable"}:
+        if semantics in {"complete", "ideal", "stable"}:
             return "sat"
         if semantics == "preferred" and task in {"credulous", "skeptical"}:
             return "sat"
@@ -594,6 +607,25 @@ def _solve_sat_preferred_skeptical_acceptance(
         answer=counterexample is None,
         counterexample=counterexample,
     )
+
+
+def _solve_sat_ideal_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    extension = find_ideal_extension(framework)
+    if task == "credulous":
+        return AcceptanceSolverSuccess(
+            answer=query in extension,
+            witness=extension if query in extension else None,
+        )
+    if task == "skeptical":
+        return AcceptanceSolverSuccess(
+            answer=query in extension,
+            counterexample=None if query in extension else extension,
+        )
+    raise ValueError(f"unsupported Dung acceptance task: {task}")
 
 
 def _solve_dung_acceptance_from_extensions(

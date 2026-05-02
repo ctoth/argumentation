@@ -366,6 +366,51 @@ def find_semi_stable_extension(
         current = larger_range
 
 
+def find_ideal_extension(
+    framework: ArgumentationFramework,
+    *,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> frozenset[str]:
+    preferred_super_core = frozenset(
+        argument
+        for argument in sorted(framework.arguments)
+        if find_preferred_extension(
+            framework,
+            require_out=argument,
+            trace_sink=trace_sink,
+            metadata=metadata,
+        )
+        is None
+    )
+    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem.add_admissible_labelling()
+    current = _admissible_extension(
+        problem,
+        required_out=framework.arguments - preferred_super_core,
+        utility_name="ideal_seed",
+    )
+    if current is None:
+        return frozenset()
+
+    while True:
+        outside = preferred_super_core - current
+        if not outside:
+            return current
+        larger = _admissible_extension(
+            problem,
+            required_in=current,
+            required_out=framework.arguments - preferred_super_core,
+            require_any_in=outside,
+            utility_name="ideal_grow_admissible",
+        )
+        if larger is None:
+            return current
+        if not current < larger:
+            raise RuntimeError("SAT ideal growth did not produce a strict superset")
+        current = larger
+
+
 def find_stage_extension(
     framework: ArgumentationFramework,
     *,
@@ -414,6 +459,26 @@ def _complete_extension(
         problem.require_any_in(require_any_in)
         problem.require_range(required_range)
         problem.require_any_range(require_any_range)
+        if problem.check(utility_name) != "sat":
+            return None
+        return problem.model_extension()
+    finally:
+        problem.solver.pop()
+
+
+def _admissible_extension(
+    problem: AFSatProblem,
+    *,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
+    require_any_in: frozenset[str] = frozenset(),
+    utility_name: str,
+) -> frozenset[str] | None:
+    problem.solver.push()
+    try:
+        problem.require_in(required_in)
+        problem.require_out(required_out)
+        problem.require_any_in(require_any_in)
         if problem.check(utility_name) != "sat":
             return None
         return problem.model_extension()
@@ -486,6 +551,7 @@ __all__ = [
     "SATCheck",
     "SATTraceSink",
     "find_complete_extension",
+    "find_ideal_extension",
     "find_preferred_extension",
     "find_semi_stable_extension",
     "find_stable_extension",

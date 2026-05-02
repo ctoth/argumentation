@@ -18,6 +18,7 @@ from argumentation.dung import (
 from argumentation.af_sat import (
     AFSatProblem,
     find_complete_extension,
+    find_ideal_extension,
     find_preferred_extension,
     find_semi_stable_extension,
     find_stable_extension,
@@ -157,6 +158,15 @@ def test_kernel_required_in_and_out_constraints_shape_witnesses() -> None:
     assert find_stable_extension(framework, require_out="a") == frozenset({"b"})
 
 
+def test_kernel_ideal_extension_handles_mutual_defense_example() -> None:
+    framework = af(
+        {"a", "b", "c"},
+        {("a", "c"), ("b", "a"), ("c", "b")},
+    )
+
+    assert find_ideal_extension(framework) == ideal_extension(framework)
+
+
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:
@@ -271,6 +281,14 @@ def test_kernel_preferred_extension_required_out_matches_native_oracle(
             assert required_out in native_without_query
         else:
             assert required_out is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_ideal_extension_matches_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    assert find_ideal_extension(framework) == ideal_extension(framework)
 
 
 @given(argumentation_frameworks(max_args=4))
