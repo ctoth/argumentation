@@ -16,7 +16,7 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.af_sat import (
-    AFSatProblem,
+    AfSatKernel,
     find_complete_extension,
     find_ideal_extension,
     find_preferred_extension,
@@ -116,7 +116,7 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
     framework = af({"a", "b"}, {("a", "b")})
-    problem = AFSatProblem(framework)
+    problem = AfSatKernel(framework)
 
     problem.add_conflict_free()
     problem.require_in(frozenset({"a", "b"}))
@@ -126,7 +126,7 @@ def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
 
 def test_kernel_admissible_constraints_require_defense() -> None:
     framework = af({"a", "b"}, {("a", "b")})
-    problem = AFSatProblem(framework)
+    problem = AfSatKernel(framework)
 
     problem.add_admissible_labelling()
     problem.require_in(frozenset({"b"}))
@@ -136,7 +136,7 @@ def test_kernel_admissible_constraints_require_defense() -> None:
 
 def test_kernel_complete_labelling_fixes_defended_arguments() -> None:
     framework = af({"a", "b"}, {("a", "b")})
-    problem = AFSatProblem(framework)
+    problem = AfSatKernel(framework)
 
     problem.add_complete_labelling()
 
@@ -146,7 +146,7 @@ def test_kernel_complete_labelling_fixes_defended_arguments() -> None:
 
 def test_kernel_stable_coverage_rejects_uncovered_outsider() -> None:
     framework = af({"a", "b"}, {("a", "b")})
-    problem = AFSatProblem(framework)
+    problem = AfSatKernel(framework)
 
     problem.add_stable_coverage()
     problem.require_out(frozenset({"a"}))

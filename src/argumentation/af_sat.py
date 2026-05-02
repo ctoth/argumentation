@@ -27,7 +27,7 @@ class SATCheck:
 SATTraceSink = Callable[[SATCheck], None]
 
 
-class AFSatProblem:
+class AfSatKernel:
     """Reusable SAT state for one Dung AF."""
 
     def __init__(
@@ -265,7 +265,7 @@ def find_stable_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_stable_coverage()
     problem.require_in(_optional_argument(framework, require_in))
     problem.require_out(_optional_argument(framework, require_out))
@@ -282,7 +282,7 @@ def find_complete_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     return _complete_extension(
         problem,
@@ -300,7 +300,7 @@ def find_preferred_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     required_in = _optional_argument(framework, require_in)
     required_out = _optional_argument(framework, require_out)
@@ -343,7 +343,7 @@ def find_semi_stable_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     problem.add_range_definition()
     return _range_maximal_extension(
@@ -374,7 +374,7 @@ def find_ideal_extension(
         )
         is None
     )
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_admissible_labelling()
     current = _admissible_extension(
         problem,
@@ -410,7 +410,7 @@ def find_stage_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
-    problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_conflict_free()
     problem.add_range_definition()
     return _range_maximal_extension(
@@ -425,7 +425,7 @@ def find_stage_extension(
 
 
 def _complete_extension(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     *,
     required_in: frozenset[str] = frozenset(),
     required_out: frozenset[str] = frozenset(),
@@ -452,7 +452,7 @@ def _complete_extension(
 
 
 def _admissible_extension(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     *,
     required_in: frozenset[str] = frozenset(),
     required_out: frozenset[str] = frozenset(),
@@ -472,7 +472,7 @@ def _admissible_extension(
 
 
 def _grow_preferred(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     framework: ArgumentationFramework,
     seed: frozenset[str],
 ) -> frozenset[str] | None:
@@ -495,7 +495,7 @@ def _grow_preferred(
 
 
 def _range_maximal_extension(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     framework: ArgumentationFramework,
     *,
     base: str,
@@ -533,7 +533,7 @@ def _range_maximal_extension(
 
 
 def _base_extension(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     *,
     base: str,
     required_in: frozenset[str] = frozenset(),
@@ -567,7 +567,7 @@ def _base_extension(
 
 
 def _conflict_free_extension(
-    problem: AFSatProblem,
+    problem: AfSatKernel,
     *,
     required_in: frozenset[str] = frozenset(),
     required_out: frozenset[str] = frozenset(),
@@ -611,7 +611,7 @@ def _load_z3():
 
 
 __all__ = [
-    "AFSatProblem",
+    "AfSatKernel",
     "SATCheck",
     "SATTraceSink",
     "find_complete_extension",
