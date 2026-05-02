@@ -21,6 +21,7 @@ from argumentation.af_sat import (
     find_complete_extension,
     find_ideal_extension,
     find_preferred_extension,
+    is_preferred_skeptically_accepted,
     find_semi_stable_extension,
     find_stable_extension,
     find_stage_extension,
@@ -103,6 +104,13 @@ def test_kernel_preferred_extension_handles_required_labels() -> None:
     assert find_preferred_extension(framework, require_in="b") == frozenset({"b"})
     assert find_preferred_extension(framework, require_in="c") is None
     assert find_preferred_extension(framework, require_out="a") == frozenset({"b"})
+
+
+def test_kernel_direct_skeptical_preferred_handles_basic_counterexample() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+
+    assert is_preferred_skeptically_accepted(framework, "a") is True
+    assert is_preferred_skeptically_accepted(framework, "b") is False
 
 
 def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
@@ -303,6 +311,19 @@ def test_kernel_preferred_extension_required_out_matches_native_oracle(
             assert required_out in native_without_query
         else:
             assert required_out is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_direct_skeptical_preferred_matches_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(preferred_extensions(framework))
+
+    for query in framework.arguments:
+        assert is_preferred_skeptically_accepted(framework, query) is all(
+            query in extension for extension in native_extensions
+        )
 
 
 @given(argumentation_frameworks(max_args=4))

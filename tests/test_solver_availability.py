@@ -298,7 +298,7 @@ def test_default_skeptical_preferred_acceptance_uses_auto_sat_backend(
 
     assert isinstance(result, AcceptanceSolverSuccess)
     assert result.answer is False
-    assert result.counterexample == frozenset({"a"})
+    assert result.counterexample is None
 
 
 def test_default_single_extension_uses_auto_semi_stable_sat_backend(

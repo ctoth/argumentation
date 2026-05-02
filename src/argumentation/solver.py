@@ -22,6 +22,7 @@ from argumentation.af_sat import (
     find_semi_stable_extension,
     find_stable_extension,
     find_stage_extension,
+    is_preferred_skeptically_accepted,
 )
 from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
@@ -725,15 +726,14 @@ def _solve_sat_preferred_skeptical_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> AcceptanceSolverSuccess:
-    counterexample = find_preferred_extension(
+    answer = is_preferred_skeptically_accepted(
         framework,
-        require_out=query,
+        query,
         trace_sink=trace_sink,
         metadata=metadata,
     )
     return AcceptanceSolverSuccess(
-        answer=counterexample is None,
-        counterexample=counterexample,
+        answer=answer,
     )
 
 
