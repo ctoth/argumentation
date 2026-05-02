@@ -276,20 +276,18 @@ def test_default_credulous_acceptance_uses_auto_preferred_sat_backend(
     assert result.witness == frozenset({"a"})
 
 
-def test_default_skeptical_preferred_acceptance_stays_native_for_direct_algorithm_gap(
+def test_default_skeptical_preferred_acceptance_uses_auto_sat_backend(
     monkeypatch,
 ) -> None:
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b")}),
     )
-    calls = []
 
-    def fake_native_extensions(framework, semantics):
-        calls.append((framework, semantics))
-        return [frozenset({"a"})]
+    def forbidden_native_extensions(*args, **kwargs):
+        raise AssertionError("default skeptical preferred acceptance should not call native enumeration")
 
-    monkeypatch.setattr(solver_module, "_dung_extensions", fake_native_extensions)
+    monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
     result = solve_dung_acceptance(
         framework,
@@ -301,7 +299,6 @@ def test_default_skeptical_preferred_acceptance_stays_native_for_direct_algorith
     assert isinstance(result, AcceptanceSolverSuccess)
     assert result.answer is False
     assert result.counterexample == frozenset({"a"})
-    assert calls == [(framework, "preferred")]
 
 
 def test_default_single_extension_uses_auto_semi_stable_sat_backend(

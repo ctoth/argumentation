@@ -100,6 +100,7 @@ def test_kernel_preferred_extension_handles_required_labels() -> None:
     assert find_preferred_extension(framework, require_in="a") == frozenset({"a"})
     assert find_preferred_extension(framework, require_in="b") == frozenset({"b"})
     assert find_preferred_extension(framework, require_in="c") is None
+    assert find_preferred_extension(framework, require_out="a") == frozenset({"b"})
 
 
 def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
@@ -252,6 +253,24 @@ def test_kernel_preferred_extension_required_in_matches_native_oracle(
             assert required_in in native_with_query
         else:
             assert required_in is None
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_preferred_extension_required_out_matches_native_oracle(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(preferred_extensions(framework))
+
+    for query in framework.arguments:
+        required_out = find_preferred_extension(framework, require_out=query)
+        native_without_query = {
+            extension for extension in native_extensions if query not in extension
+        }
+        if native_without_query:
+            assert required_out in native_without_query
+        else:
+            assert required_out is None
 
 
 @given(argumentation_frameworks(max_args=4))

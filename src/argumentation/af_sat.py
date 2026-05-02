@@ -192,6 +192,19 @@ class AFSatProblem:
             self.z3.Or(*(self.z3.Not(self.in_vars[argument]) for argument in sorted(extension)))
         )
 
+    def exclude_exact_extension(self, extension: frozenset[str]) -> None:
+        self._validate(extension)
+        literals = [
+            self.z3.Not(self.in_vars[argument])
+            for argument in sorted(extension)
+        ]
+        literals.extend(
+            self.in_vars[argument]
+            for argument in self.arguments
+            if argument not in extension
+        )
+        self.solver.add(self.z3.Or(*literals))
+
     def exclude_range_subset(self, range_set: frozenset[str]) -> None:
         self._validate(range_set)
         self.add_range_definition()
@@ -283,34 +296,43 @@ def find_preferred_extension(
     framework: ArgumentationFramework,
     *,
     require_in: str | None = None,
+    require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> frozenset[str] | None:
     problem = AFSatProblem(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
+    required_in = _optional_argument(framework, require_in)
+    required_out = _optional_argument(framework, require_out)
     current = _complete_extension(
         problem,
-        required_in=_optional_argument(framework, require_in),
+        required_in=required_in,
+        required_out=required_out,
         utility_name="preferred_seed",
     )
     if current is None:
         return None
+    if not required_out:
+        return _grow_preferred(problem, framework, current)
 
+    blocked_seeds: list[frozenset[str]] = []
     while True:
-        outside = framework.arguments - current
-        if not outside:
-            return current
-        larger = _complete_extension(
-            problem,
-            required_in=current,
-            require_any_in=outside,
-            utility_name="preferred_grow",
-        )
-        if larger is None:
-            return current
-        if not current < larger:
-            raise RuntimeError("SAT preferred growth did not produce a strict superset")
-        current = larger
+        preferred = _grow_preferred(problem, framework, current)
+        if preferred is not None and required_out.isdisjoint(preferred):
+            return preferred
+
+        blocked_seeds.append(current)
+        problem.solver.push()
+        try:
+            problem.require_in(required_in)
+            problem.require_out(required_out)
+            for blocked_seed in blocked_seeds:
+                problem.exclude_exact_extension(blocked_seed)
+            if problem.check("preferred_next_constrained_seed") != "sat":
+                return None
+            current = problem.model_extension()
+        finally:
+            problem.solver.pop()
 
 
 def find_semi_stable_extension(
@@ -397,6 +419,29 @@ def _complete_extension(
         return problem.model_extension()
     finally:
         problem.solver.pop()
+
+
+def _grow_preferred(
+    problem: AFSatProblem,
+    framework: ArgumentationFramework,
+    seed: frozenset[str],
+) -> frozenset[str] | None:
+    current = seed
+    while True:
+        outside = framework.arguments - current
+        if not outside:
+            return current
+        larger = _complete_extension(
+            problem,
+            required_in=current,
+            require_any_in=outside,
+            utility_name="preferred_grow",
+        )
+        if larger is None:
+            return current
+        if not current < larger:
+            raise RuntimeError("SAT preferred growth did not produce a strict superset")
+        current = larger
 
 
 def _conflict_free_extension(

@@ -359,6 +359,11 @@ def solve_dung_acceptance(
                 return _solve_sat_preferred_credulous_acceptance(framework, query)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
+        if semantics == "preferred" and task == "skeptical":
+            try:
+                return _solve_sat_preferred_skeptical_acceptance(framework, query)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
             sat_extensions(framework, semantics),
             task,
@@ -399,7 +404,7 @@ def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> st
     if backend == "auto":
         if semantics in {"complete", "stable"}:
             return "sat"
-        if semantics == "preferred" and task == "credulous":
+        if semantics == "preferred" and task in {"credulous", "skeptical"}:
             return "sat"
         return "native"
     return backend
@@ -577,6 +582,17 @@ def _solve_sat_preferred_credulous_acceptance(
     return AcceptanceSolverSuccess(
         answer=witness is not None,
         witness=witness,
+    )
+
+
+def _solve_sat_preferred_skeptical_acceptance(
+    framework: ArgumentationFramework,
+    query: str,
+) -> AcceptanceSolverSuccess:
+    counterexample = find_preferred_extension(framework, require_out=query)
+    return AcceptanceSolverSuccess(
+        answer=counterexample is None,
+        counterexample=counterexample,
     )
 
 
