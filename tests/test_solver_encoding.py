@@ -17,6 +17,7 @@ from argumentation.dung import (
 )
 from argumentation.af_sat import (
     AfSatKernel,
+    SATCheck,
     find_complete_extension,
     find_ideal_extension,
     find_preferred_extension,
@@ -112,6 +113,24 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
     assert find_semi_stable_extension(framework, require_in="a") == frozenset({"a"})
     assert find_stage_extension(framework, require_out="b") == frozenset({"a"})
     assert find_semi_stable_extension(framework, require_in="b") is None
+
+
+def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+
+    assert find_complete_extension(
+        framework,
+        trace_sink=checks.append,
+        metadata={"subtrack": "SE-CO"},
+    ) == frozenset({"a"})
+
+    assert [check.utility_name for check in checks] == ["complete_extension"]
+    assert checks[0].result == "sat"
+    assert checks[0].argument_count == 2
+    assert checks[0].attack_count == 1
+    assert checks[0].model_extension_size == 1
+    assert checks[0].metadata == {"subtrack": "SE-CO"}
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
