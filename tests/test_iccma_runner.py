@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import lzma
+from pathlib import Path
 
 from tools.iccma2025_run_native import (
     find_query_path,
     infer_task_matrix,
     read_instance_text,
     resolve_instance_path,
+    run_child,
 )
 
 
@@ -47,3 +49,34 @@ def test_compressed_query_companion_lookup_and_read(tmp_path) -> None:
 
     assert find_query_path(instance_path) == query_path
     assert read_instance_text(query_path) == "a\n"
+
+
+def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "case.apx"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("arg(a).\narg(b).\natt(a,b).\n", encoding="utf-8")
+    Path(str(instance_path) + ".arg").write_text("b\n", encoding="utf-8")
+    job = {
+        "root": str(tmp_path),
+        "backend": "auto",
+        "iccma_binary": None,
+        "solver_timeout_seconds": 5.0,
+        "instance": {
+            "kind": "apx",
+            "relative_path": "case.apx",
+            "arguments_or_atoms": 2,
+        },
+        "task": {
+            "track": "legacy",
+            "subtrack": "DS-PR",
+            "instance_kind": "af",
+        },
+    }
+
+    result = run_child(job, timeout_seconds=15.0)
+
+    assert result["status"] == "solved"
+    assert result["answer"] == "false"
+    stderr = capsys.readouterr().err
+    assert '"event": "sat_check"' in stderr
+    assert '"subtrack": "DS-PR"' in stderr

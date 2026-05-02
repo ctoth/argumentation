@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from typing import Any
 
@@ -281,13 +282,42 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
         json.dump(job, handle)
         job_path = Path(handle.name)
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             [sys.executable, __file__, "_worker", str(job_path)],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout_seconds,
-            check=False,
         )
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
+
+        def collect_stdout() -> None:
+            assert process.stdout is not None
+            stdout_lines.extend(process.stdout.readlines())
+
+        def forward_stderr() -> None:
+            assert process.stderr is not None
+            for line in process.stderr:
+                stderr_lines.append(line)
+                print(line, end="", file=sys.stderr, flush=True)
+
+        stdout_thread = threading.Thread(target=collect_stdout, daemon=True)
+        stderr_thread = threading.Thread(target=forward_stderr, daemon=True)
+        stdout_thread.start()
+        stderr_thread.start()
+        try:
+            returncode = process.wait(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout_thread.join(timeout=1.0)
+            stderr_thread.join(timeout=1.0)
+            return {
+                "status": "timeout",
+                "reason": f"timeout>{timeout_seconds}",
+                "error": None,
+            }
+        stdout_thread.join()
+        stderr_thread.join()
     except subprocess.TimeoutExpired:
         return {
             "status": "timeout",
@@ -296,19 +326,21 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
         }
     finally:
         job_path.unlink(missing_ok=True)
-    if completed.returncode != 0:
+    stdout = "".join(stdout_lines)
+    stderr = "".join(stderr_lines)
+    if returncode != 0:
         return {
             "status": "error",
             "reason": "worker_nonzero_exit",
-            "error": (completed.stderr or completed.stdout).strip(),
+            "error": (stderr or stdout).strip(),
         }
     try:
-        return json.loads(completed.stdout)
+        return json.loads(stdout)
     except json.JSONDecodeError as exc:
         return {
             "status": "error",
             "reason": "worker_bad_json",
-            "error": f"{exc}: {completed.stdout!r}",
+            "error": f"{exc}: {stdout!r}",
         }
 
 
@@ -394,6 +426,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     from argumentation.solver import (
         AcceptanceSolverSuccess,
         ICCMAConfig,
+        SATConfig,
         SingleExtensionSolverSuccess,
         SolverBackendError,
         SolverBackendUnavailable,
@@ -429,12 +462,21 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
             binary=binary,
             timeout_seconds=float(job["solver_timeout_seconds"]),
         )
+    sat_config = SATConfig(
+        trace_sink=sat_trace_sink(
+            instance=instance,
+            task=task,
+            framework=framework,
+        ),
+        metadata=sat_trace_metadata(instance=instance, task=task),
+    )
     if problem == "SE":
         result = solve_dung_single_extension(
             framework,
             semantics=semantics,
             backend=backend,
             iccma=iccma_config,
+            sat=sat_config,
         )
         if isinstance(result, SingleExtensionSolverSuccess):
             return solved_single_extension(result.extension)
@@ -455,6 +497,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
         query=query,
         backend=backend,
         iccma=iccma_config,
+        sat=sat_config,
     )
     if isinstance(result, AcceptanceSolverSuccess):
         return solved_acceptance(result)
@@ -465,6 +508,65 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     if isinstance(result, SolverProtocolError):
         return protocol_error_result(result.reason, result.details)
     raise TypeError(f"unknown solver result: {result!r}")
+
+
+def sat_trace_metadata(
+    *,
+    instance: dict[str, Any],
+    task: dict[str, Any],
+) -> dict[str, object]:
+    problem, semantics = split_subtrack(task["subtrack"])
+    return {
+        "instance": instance["relative_path"],
+        "track": task["track"],
+        "subtrack": task["subtrack"],
+        "problem": problem,
+        "semantics": semantics,
+        "task": "single-extension" if problem == "SE" else acceptance_task(problem),
+        "year": infer_year(instance, task),
+    }
+
+
+def sat_trace_sink(
+    *,
+    instance: dict[str, Any],
+    task: dict[str, Any],
+    framework: Any,
+):
+    metadata = sat_trace_metadata(instance=instance, task=task)
+
+    def emit(check: Any) -> None:
+        event = {
+            "event": "sat_check",
+            "instance": metadata["instance"],
+            "track": metadata["track"],
+            "subtrack": metadata["subtrack"],
+            "problem": metadata["problem"],
+            "semantics": metadata["semantics"],
+            "task": metadata["task"],
+            "year": metadata["year"],
+            "arguments": check.argument_count,
+            "attacks": check.attack_count,
+            "utility_name": check.utility_name,
+            "assumptions_count": check.assumptions_count,
+            "result": check.result,
+            "elapsed_ms": f"{check.elapsed_ms:.6f}",
+            "model_extension_size": check.model_extension_size,
+        }
+        print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+
+    return emit
+
+
+def infer_year(instance: dict[str, Any], task: dict[str, Any]) -> str | None:
+    for value in (instance.get("contest"), task.get("contest"), instance.get("year")):
+        if value is None:
+            continue
+        text = str(value)
+        for token in text.replace("-", " ").split():
+            if token.isdigit() and len(token) == 4:
+                return token
+    return None
 
 
 def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
