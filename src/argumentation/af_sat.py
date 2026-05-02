@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any
 
-from argumentation.dung import ArgumentationFramework, _attackers_index
+from argumentation.dung import ArgumentationFramework, _attackers_index, range_of
 
 
 @dataclass(frozen=True)
@@ -235,7 +235,10 @@ class AfSatKernel:
         self._validate(range_set)
         self.add_range_definition()
         outside = self.framework.arguments - range_set
-        self.require_any_range(outside)
+        if outside:
+            self.require_any_range(outside)
+        else:
+            self.solver.add(self.z3.BoolVal(False))
 
     def check(
         self,
@@ -702,11 +705,12 @@ def _range_maximal_extension(
     seed_utility_name: str,
     test_utility_name: str,
 ) -> frozenset[str] | None:
-    del framework, test_utility_name
+    del framework
     return RangeMaximalTaskSolver(
         problem=problem,
         base=base,
         seed_utility_name=seed_utility_name,
+        test_utility_name=test_utility_name,
     ).find_extension(
         required_in=required_in,
         required_out=required_out,
@@ -725,12 +729,12 @@ class RangeMaximalTaskSolver:
         problem: AfSatKernel,
         base: str,
         seed_utility_name: str,
+        test_utility_name: str,
     ) -> None:
         self.problem = problem
         self.base = base
         self.seed_utility_name = seed_utility_name
-        self._max_range_size: int | None = None
-        self._max_range_witness: frozenset[str] | None = None
+        self.test_utility_name = test_utility_name
 
     def find_extension(
         self,
@@ -738,34 +742,62 @@ class RangeMaximalTaskSolver:
         required_in: frozenset[str],
         required_out: frozenset[str],
     ) -> frozenset[str] | None:
-        max_range_size = self.max_range_size()
+        blocked_ranges: list[frozenset[str]] = []
+        while True:
+            seed = self._seed_extension(
+                required_in=required_in,
+                required_out=required_out,
+                excluded_range_subsets=blocked_ranges,
+            )
+            if seed is None:
+                return None
+            seed_range = range_of(seed, self.problem.framework.defeats)
+            if self._is_range_maximal(seed_range):
+                return seed
+            blocked_ranges.append(seed_range)
+
+    def _seed_extension(
+        self,
+        *,
+        required_in: frozenset[str],
+        required_out: frozenset[str],
+        excluded_range_subsets: list[frozenset[str]],
+    ) -> frozenset[str] | None:
+        shortcut = self._high_range_shortcut(
+            required_in=required_in,
+            required_out=required_out,
+            excluded_range_subsets=excluded_range_subsets,
+        )
+        if shortcut is not None:
+            return shortcut
+
+        max_range_size, _ = _max_range_size(
+            self.problem,
+            base=self.base,
+            required_in=required_in,
+            required_out=required_out,
+            excluded_range_subsets=excluded_range_subsets,
+            utility_name=_max_range_utility(self.seed_utility_name, "at_least"),
+        )
         if max_range_size is None:
             return None
-        if not required_in and not required_out and self._max_range_witness is not None:
-            return self._max_range_witness
         return _base_extension(
             self.problem,
             base=self.base,
             required_in=required_in,
             required_out=required_out,
             required_range_size=max_range_size,
+            excluded_range_subsets=excluded_range_subsets,
             utility_name=_max_range_utility(self.seed_utility_name, "exact"),
         )
 
-    def max_range_size(self) -> int | None:
-        if self._max_range_size is None:
-            shortcut = self._high_range_shortcut()
-            if shortcut is not None:
-                self._max_range_size, self._max_range_witness = shortcut
-                return self._max_range_size
-            self._max_range_size, _ = _max_range_size(
-                self.problem,
-                base=self.base,
-                utility_name=_max_range_utility(self.seed_utility_name, "at_least"),
-            )
-        return self._max_range_size
-
-    def _high_range_shortcut(self) -> tuple[int, frozenset[str]] | None:
+    def _high_range_shortcut(
+        self,
+        *,
+        required_in: frozenset[str],
+        required_out: frozenset[str],
+        excluded_range_subsets: list[frozenset[str]],
+    ) -> frozenset[str] | None:
         arguments = tuple(self.problem.arguments)
         probes = 0
         for missing in _bounded_missing_sets(
@@ -778,21 +810,40 @@ class RangeMaximalTaskSolver:
             witness = _base_extension(
                 self.problem,
                 base=self.base,
+                required_in=required_in,
+                required_out=required_out,
                 required_range=required_range,
+                excluded_range_subsets=excluded_range_subsets,
                 utility_name=_range_shortcut_utility(self.seed_utility_name, kind),
             )
             probes += 1
             if witness is not None:
-                return len(required_range), witness
+                return witness
             if probes >= self.shortcut_probe_limit:
                 return None
         return None
+
+    def _is_range_maximal(self, range_set: frozenset[str]) -> bool:
+        outside = self.problem.framework.arguments - range_set
+        if not outside:
+            return True
+        larger = _base_extension(
+            self.problem,
+            base=self.base,
+            required_range=range_set,
+            require_any_range=outside,
+            utility_name=self.test_utility_name,
+        )
+        return larger is None
 
 
 def _max_range_size(
     problem: AfSatKernel,
     *,
     base: str,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
+    excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> tuple[int | None, frozenset[str] | None]:
     low = 0
@@ -804,7 +855,10 @@ def _max_range_size(
         candidate = _base_extension(
             problem,
             base=base,
+            required_in=required_in,
+            required_out=required_out,
             required_range_size_at_least=midpoint,
+            excluded_range_subsets=excluded_range_subsets,
             utility_name=utility_name,
         )
         if candidate is None:

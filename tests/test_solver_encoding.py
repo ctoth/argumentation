@@ -302,7 +302,9 @@ def test_high_range_shortcut_respects_global_max_for_query_witnesses() -> None:
     ) is None
 
     utility_names = [check.utility_name for check in checks]
-    assert utility_names == ["stage_full_range_shortcut", "stage_max_range_exact"]
+    assert "stage_high_range_shortcut" in utility_names
+    assert "stage_range_maximality" in utility_names
+    assert utility_names[-1] == "stage_max_range_at_least"
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
