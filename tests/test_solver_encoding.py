@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from hypothesis import given, settings
 
@@ -11,6 +13,7 @@ from argumentation.dung import (
     grounded_extension,
     ideal_extension,
     preferred_extensions,
+    range_of,
     semi_stable_extensions,
     stable_extensions,
     stage_extensions,
@@ -26,6 +29,7 @@ from argumentation.af_sat import (
     find_stable_extension,
     find_stage_extension,
 )
+from argumentation.iccma import parse_apx
 from argumentation.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,
@@ -131,8 +135,9 @@ def test_kernel_range_maximal_search_traces_range_checks() -> None:
 
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
-    assert "stage_seed" in utility_names
-    assert "stage_range_maximality" in utility_names
+    assert "stage_max_range_at_least" in utility_names
+    assert "stage_max_range_exact" in utility_names
+    assert "stage_seed" not in utility_names
 
 
 def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
@@ -151,6 +156,77 @@ def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
     assert checks[0].attack_count == 1
     assert checks[0].model_extension_size == 1
     assert checks[0].metadata == {"subtrack": "SE-CO"}
+
+
+def test_kernel_range_cardinality_constraints_match_model_range() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c")})
+    problem = AfSatKernel(framework)
+
+    problem.add_conflict_free()
+    problem.add_range_definition()
+    problem.require_range_size_exactly(2)
+
+    assert problem.check(
+        "test_range_exact",
+        range_bound=2,
+        range_constraint="exact",
+    ) == "sat"
+    assert problem.model_range_size() == 2
+    assert len(range_of(problem.model_extension(), framework.defeats)) == 2
+
+
+def test_kernel_range_cardinality_push_pop_does_not_leak() -> None:
+    framework = af({"a", "b"}, set())
+    problem = AfSatKernel(framework)
+
+    problem.add_conflict_free()
+    problem.add_range_definition()
+
+    problem.solver.push()
+    try:
+        problem.require_range_size_exactly(2)
+        assert problem.check("test_range_exact_two") == "sat"
+    finally:
+        problem.solver.pop()
+
+    problem.require_range_size_exactly(0)
+    assert problem.check("test_range_exact_zero") == "sat"
+    assert problem.model_range_size() == 0
+
+
+def test_kernel_range_bound_trace_fields_are_recorded() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+    problem = AfSatKernel(framework, trace_sink=checks.append)
+
+    problem.add_conflict_free()
+    problem.add_range_definition()
+    problem.require_range_size_at_least(2)
+
+    assert problem.check(
+        "test_range_at_least",
+        range_bound=2,
+        range_constraint="at_least",
+    ) == "sat"
+    assert checks[0].range_bound == 2
+    assert checks[0].range_constraint == "at_least"
+
+
+def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
+    path = Path("data/iccma/2017/instances/C/1/BA_80_20_4.apx")
+    if not path.exists():
+        pytest.skip("ICCMA 2017 data not available")
+    framework = parse_apx(path.read_text())
+    checks: list[SATCheck] = []
+
+    witness = find_stage_extension(framework, trace_sink=checks.append)
+
+    assert witness is not None
+    assert witness in set(stage_extensions(framework))
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names.count("stage_seed") == 0
+    assert "stage_max_range_at_least" in utility_names
+    assert "stage_max_range_exact" in utility_names
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
