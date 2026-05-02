@@ -63,6 +63,18 @@ ClingoResult = (
     | ClingoProcessError
     | ClingoProtocolError
 )
+ClingoExtensionEnumerationResult = (
+    ClingoExtensionEnumerationSuccess
+    | ClingoUnavailable
+    | ClingoProcessError
+    | ClingoProtocolError
+)
+ClingoAnswerSetResult = (
+    ClingoAnswerSetSuccess
+    | ClingoUnavailable
+    | ClingoProcessError
+    | ClingoProtocolError
+)
 
 
 def run_extension_enumeration_protocol(
@@ -74,7 +86,7 @@ def run_extension_enumeration_protocol(
     binary: str,
     timeout_seconds: float = 30.0,
     problem: str = "ASP-EXT",
-) -> ClingoResult:
+) -> ClingoExtensionEnumerationResult:
     """Run clingo over facts plus packaged modules and parse all extensions."""
     command_prefix = _resolve_command(binary)
     if command_prefix is None:
@@ -145,7 +157,7 @@ def run_aspic_grounded_protocol(
     known_literal_ids: frozenset[str],
     binary: str,
     timeout_seconds: float = 30.0,
-) -> ClingoResult:
+) -> ClingoAnswerSetResult:
     """Run clingo and parse ASPIC grounded accepted-atom protocol output."""
     command_prefix = _resolve_command(binary)
     if command_prefix is None:

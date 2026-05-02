@@ -21,6 +21,7 @@ from argumentation.aspic import (
     Literal,
     PreferenceConfig,
     Rule,
+    Scalar,
 )
 from argumentation.preference import strict_partial_order_closure
 
@@ -318,7 +319,7 @@ def _contrariness_from_language(
     }
     contraries: set[tuple[Literal, Literal]] = set()
 
-    by_shape: dict[tuple[str, tuple[object, ...]], set[Literal]] = {}
+    by_shape: dict[tuple[str, tuple[Scalar, ...]], set[Literal]] = {}
     for literal in language:
         key = (literal.atom.predicate, tuple(literal.atom.arguments))
         by_shape.setdefault(key, set()).add(literal)
@@ -342,7 +343,7 @@ def _contrariness_from_language(
 def _conflict_literals(
     left_predicate: str,
     right_predicate: str,
-    by_shape: Mapping[tuple[str, tuple[object, ...]], set[Literal]],
+    by_shape: Mapping[tuple[str, tuple[Scalar, ...]], set[Literal]],
 ) -> tuple[tuple[Literal, Literal], ...]:
     left_name, left_negated = _decode_predicate_polarity(left_predicate)
     right_name, right_negated = _decode_predicate_polarity(right_predicate)
