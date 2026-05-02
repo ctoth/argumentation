@@ -11,8 +11,8 @@ from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
     sat_stable_extension as sat_aba_stable_extension,
+    sat_support_acceptance as sat_aba_support_acceptance,
     sat_support_extension as sat_aba_support_extension,
-    support_acceptance as sat_aba_support_acceptance,
     support_extensions as sat_aba_support_extensions,
 )
 from argumentation.af_sat import (

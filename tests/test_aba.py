@@ -164,6 +164,33 @@ def test_solve_aba_single_extension_auto_uses_support_sat_without_enumeration(
     assert result.extension is not None
 
 
+@pytest.mark.parametrize("semantics", ["complete", "preferred"])
+@pytest.mark.parametrize("task", ["credulous", "skeptical"])
+def test_solve_aba_acceptance_auto_uses_support_sat_without_enumeration(
+    monkeypatch,
+    semantics: str,
+    task: str,
+) -> None:
+    framework = _flat_aba(70, frozenset((1, target) for target in range(2, 71)))
+
+    def fail_support_enumeration(*args, **kwargs):
+        raise AssertionError("ABA support acceptance enumeration should not run")
+
+    monkeypatch.setattr(
+        "argumentation.solver.sat_aba_support_extensions",
+        fail_support_enumeration,
+    )
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics=semantics,
+        task=task,
+        query=literal("a1"),
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+
+
 @given(flat_aba_frameworks())
 @settings(deadline=10000, max_examples=40)
 def test_solve_aba_single_extension_stable_sat_matches_native_oracle(

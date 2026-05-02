@@ -74,12 +74,43 @@ def support_acceptance(
     raise ValueError(f"unsupported ABA acceptance task: {task}")
 
 
+def sat_support_acceptance(
+    framework: ABAFramework,
+    *,
+    semantics: str,
+    task: str,
+    query: Literal,
+) -> tuple[bool, AssumptionSet | None]:
+    """Return an ABA acceptance decision using support-aware SAT witnesses."""
+    if semantics not in {"complete", "preferred"}:
+        raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
+    if task == "credulous":
+        witness = sat_support_extension(
+            framework,
+            semantics,
+            require_derived=query,
+        )
+        return witness is not None, witness
+    if task == "skeptical":
+        if semantics == "preferred":
+            counterexample = _sat_preferred_counterexample_not_deriving(framework, query)
+            return counterexample is None, counterexample
+        counterexample = sat_support_extension(
+            framework,
+            semantics,
+            require_not_derived=query,
+        )
+        return counterexample is None, counterexample
+    raise ValueError(f"unsupported ABA acceptance task: {task}")
+
+
 def sat_support_extension(
     framework: ABAFramework,
     semantics: str,
     *,
     require_derived: Literal | None = None,
     require_not_derived: Literal | None = None,
+    require_assumptions: AssumptionSet = frozenset(),
 ) -> AssumptionSet | None:
     """Return one complete/preferred ABA extension using support-aware SAT."""
     if semantics not in {"complete", "preferred"}:
@@ -109,6 +140,8 @@ def sat_support_extension(
         require_derived=require_derived,
         require_not_derived=require_not_derived,
     )
+    for assumption in sorted(require_assumptions, key=repr):
+        solver.add(variables[assumption])
 
     if semantics == "complete":
         if solver.check() != z3.sat:
@@ -368,6 +401,46 @@ def _support_selected(z3, variables, support: AssumptionSet):
     return z3.And(*(variables[assumption] for assumption in sorted(support, key=repr)))
 
 
+def _sat_preferred_counterexample_not_deriving(
+    framework: ABAFramework,
+    query: Literal,
+) -> AssumptionSet | None:
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    supports = _minimal_supports(framework)
+    solver = z3.Solver()
+    _add_admissible_constraints(z3, solver, framework, variables, supports)
+    _add_derived_constraints(
+        z3,
+        solver,
+        variables,
+        supports,
+        require_derived=None,
+        require_not_derived=query,
+    )
+
+    while solver.check() == z3.sat:
+        seed = _model_extension(z3, solver, variables)
+        preferred = sat_support_extension(
+            framework,
+            "preferred",
+            require_assumptions=seed,
+        )
+        if preferred is None:
+            return None
+        if not _extension_derives(preferred, query, supports):
+            return preferred
+        outside = framework.assumptions - preferred
+        if outside:
+            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+        else:
+            solver.add(z3.BoolVal(False))
+    return None
+
+
 def _add_admissible_constraints(z3, solver, framework, variables, supports) -> None:
     for assumption in sorted(framework.assumptions, key=repr):
         attack_supports = supports.get(framework.contrary[assumption], frozenset())
@@ -451,6 +524,14 @@ def _model_extension(z3, solver, variables) -> AssumptionSet:
     )
 
 
+def _extension_derives(
+    extension: AssumptionSet,
+    literal: Literal,
+    supports: dict[Literal, frozenset[AssumptionSet]],
+) -> bool:
+    return any(support <= extension for support in supports.get(literal, frozenset()))
+
+
 def _literal_key(literal: Literal) -> str:
     text = repr(literal)
     return "".join(character if character.isalnum() else "_" for character in text)
@@ -466,6 +547,7 @@ def _load_z3():
 
 __all__ = [
     "sat_stable_extension",
+    "sat_support_acceptance",
     "sat_support_extension",
     "support_acceptance",
     "support_extensions",
