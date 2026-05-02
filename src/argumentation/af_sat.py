@@ -78,12 +78,9 @@ class AFSatProblem:
         if "admissible" in self._added:
             return
         self.add_conflict_free()
-        defenders_index = _attackers_index(
-            frozenset((target, attacker) for attacker, target in self.framework.defeats)
-        )
         for argument in self.arguments:
             for attacker in sorted(self.attackers_index.get(argument, frozenset())):
-                defenders = tuple(sorted(defenders_index.get(attacker, frozenset())))
+                defenders = tuple(sorted(self.attackers_index.get(attacker, frozenset())))
                 if defenders:
                     self.solver.add(
                         self.z3.Implies(

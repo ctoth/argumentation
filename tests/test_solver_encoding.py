@@ -16,9 +16,11 @@ from argumentation.dung import (
     stage_extensions,
 )
 from argumentation.af_sat import (
+    AFSatProblem,
     find_complete_extension,
     find_preferred_extension,
     find_semi_stable_extension,
+    find_stable_extension,
     find_stage_extension,
 )
 from argumentation.sat_encoding import (
@@ -107,6 +109,53 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
     assert find_stage_extension(framework) == frozenset({"a"})
 
 
+def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    problem = AFSatProblem(framework)
+
+    problem.add_conflict_free()
+    problem.require_in(frozenset({"a", "b"}))
+
+    assert problem.check("test_conflict_free") == "unsat"
+
+
+def test_kernel_admissible_constraints_require_defense() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    problem = AFSatProblem(framework)
+
+    problem.add_admissible_labelling()
+    problem.require_in(frozenset({"b"}))
+
+    assert problem.check("test_admissible") == "unsat"
+
+
+def test_kernel_complete_labelling_fixes_defended_arguments() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    problem = AFSatProblem(framework)
+
+    problem.add_complete_labelling()
+
+    assert problem.check("test_complete") == "sat"
+    assert problem.model_extension() == frozenset({"a"})
+
+
+def test_kernel_stable_coverage_rejects_uncovered_outsider() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    problem = AFSatProblem(framework)
+
+    problem.add_stable_coverage()
+    problem.require_out(frozenset({"a"}))
+
+    assert problem.check("test_stable") == "unsat"
+
+
+def test_kernel_required_in_and_out_constraints_shape_witnesses() -> None:
+    framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
+
+    assert find_stable_extension(framework, require_in="a") == frozenset({"a"})
+    assert find_stable_extension(framework, require_out="a") == frozenset({"b"})
+
+
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:
@@ -115,6 +164,20 @@ def test_stable_encoding_matches_brute_force_reference(framework) -> None:
     assert set(stable_extensions_from_encoding(encoding)) == set(
         stable_extensions(framework)
     )
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_stable_extension_returns_native_stable_witness(
+    framework: ArgumentationFramework,
+) -> None:
+    native_extensions = set(stable_extensions(framework))
+    witness = find_stable_extension(framework)
+
+    if native_extensions:
+        assert witness in native_extensions
+    else:
+        assert witness is None
 
 
 @given(argumentation_frameworks(max_args=4))
