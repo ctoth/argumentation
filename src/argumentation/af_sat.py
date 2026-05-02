@@ -9,7 +9,12 @@ from hashlib import sha1
 from time import perf_counter
 from typing import Any
 
-from argumentation.dung import ArgumentationFramework, _attackers_index, range_of
+from argumentation.dung import (
+    ArgumentationFramework,
+    _attackers_index,
+    grounded_extension,
+    range_of,
+)
 
 
 @dataclass(frozen=True)
@@ -423,6 +428,10 @@ class PreferredSkepticalTaskSolver:
 
     def decide(self, query: str) -> bool:
         required_query = _optional_argument(self.framework, query)
+        shortcut = self._shortcut(query)
+        if shortcut is not None:
+            return shortcut
+
         super_core = PreferredSuperCoreSolver(
             self.framework,
             trace_sink=self.trace_sink,
@@ -467,6 +476,42 @@ class PreferredSkepticalTaskSolver:
                 return False
             attacker_problem.learn_witness_region(extended, loop_index=loop_index)
             loop_index += 1
+
+    def _shortcut(self, query: str) -> bool | None:
+        if (query, query) in self.framework.defeats:
+            self._emit_shortcut("preferred_skeptical_shortcut_self_attacking_query", False)
+            return False
+        attackers = self._attackers_of(query)
+        if not attackers:
+            self._emit_shortcut("preferred_skeptical_shortcut_unattacked_query", True)
+            return True
+        if _is_acyclic(self.framework):
+            accepted = query in grounded_extension(self.framework)
+            self._emit_shortcut("preferred_skeptical_shortcut_acyclic_grounded", accepted)
+            return accepted
+        return None
+
+    def _attackers_of(self, query: str) -> frozenset[str]:
+        return frozenset(
+            attacker
+            for attacker, target in self.framework.defeats
+            if target == query
+        )
+
+    def _emit_shortcut(self, utility_name: str, accepted: bool) -> None:
+        if self.trace_sink is None:
+            return
+        self.trace_sink(
+            SATCheck(
+                utility_name=utility_name,
+                result="accepted" if accepted else "rejected",
+                elapsed_ms=0.0,
+                assumptions_count=0,
+                argument_count=len(self.framework.arguments),
+                attack_count=len(self.framework.defeats),
+                metadata=self.metadata,
+            )
+        )
 
 
 class PreferredSuperCoreSolver:
@@ -1149,6 +1194,30 @@ def _extension_fingerprint(extension: frozenset[str]) -> str:
         digest.update(argument.encode("utf-8"))
         digest.update(b"\0")
     return digest.hexdigest()[:16]
+
+
+def _is_acyclic(framework: ArgumentationFramework) -> bool:
+    outgoing: dict[str, list[str]] = {argument: [] for argument in framework.arguments}
+    for attacker, target in framework.defeats:
+        outgoing[attacker].append(target)
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(argument: str) -> bool:
+        if argument in visiting:
+            return False
+        if argument in visited:
+            return True
+        visiting.add(argument)
+        for target in outgoing.get(argument, []):
+            if not visit(target):
+                return False
+        visiting.remove(argument)
+        visited.add(argument)
+        return True
+
+    return all(visit(argument) for argument in framework.arguments)
 
 
 def _load_z3():

@@ -142,12 +142,32 @@ def test_preferred_super_core_fast_path_accepts_without_attacker_churn() -> None
     ).decide("q") is True
 
     utility_names = [check.utility_name for check in checks]
-    assert utility_names == ["preferred_super_core_admissible_attacker"]
+    assert utility_names == ["preferred_skeptical_shortcut_unattacked_query"]
     assert "preferred_skeptical_adm_ext_att" not in utility_names
 
 
+def test_preferred_skeptical_shortcuts_are_traceable_and_exact() -> None:
+    self_attacking = af({"q"}, {("q", "q")})
+    self_checks: list[SATCheck] = []
+    assert PreferredSkepticalTaskSolver(
+        self_attacking,
+        trace_sink=self_checks.append,
+    ).decide("q") is False
+    assert self_checks[0].utility_name == "preferred_skeptical_shortcut_self_attacking_query"
+    assert self_checks[0].result == "rejected"
+
+    acyclic = af({"a", "q"}, {("a", "q")})
+    acyclic_checks: list[SATCheck] = []
+    assert PreferredSkepticalTaskSolver(
+        acyclic,
+        trace_sink=acyclic_checks.append,
+    ).decide("q") is False
+    assert acyclic_checks[0].utility_name == "preferred_skeptical_shortcut_acyclic_grounded"
+    assert acyclic_checks[0].result == "rejected"
+
+
 def test_preferred_super_core_outside_argument_routes_to_cdas() -> None:
-    framework = af({"q"}, {("q", "q")})
+    framework = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("a", "b")})
     checks: list[SATCheck] = []
 
     assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is False
