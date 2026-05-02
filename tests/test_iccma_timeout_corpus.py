@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 import csv
+import json
+from pathlib import Path
 
 from tools.iccma_timeout_corpus import collect_timeout_rows, summarize_timeout_rows
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 FIELDS = [
@@ -131,3 +136,28 @@ def test_summarize_timeout_rows_groups_by_year_track_subtrack_and_kind() -> None
         ],
         "total_timeouts": 3,
     }
+
+
+def test_checked_in_range_max_inclusion_timeout_fixture_summary() -> None:
+    summary_path = ROOT / "data" / "iccma" / "timeouts" / "range-max-inclusion-cap100-summary.json"
+    timeouts_path = ROOT / "data" / "iccma" / "timeouts" / "range-max-inclusion-cap100-timeouts.json"
+
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    timeouts = json.loads(timeouts_path.read_text(encoding="utf-8"))
+
+    assert summary["total_timeouts"] == 160
+    assert len(timeouts) == 160
+    assert {
+        "count": 8,
+        "instance_kind": "apx",
+        "subtrack": "DS-PR",
+        "track": "legacy",
+        "year": 2017,
+    } in summary["by_group"]
+    assert {
+        "count": 41,
+        "instance_kind": "aba",
+        "subtrack": "SE-ST",
+        "track": "aba",
+        "year": 2023,
+    } in summary["by_group"]

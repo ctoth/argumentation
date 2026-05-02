@@ -1,0 +1,82 @@
+{
+  "by_group": [
+    {
+      "count": 42,
+      "instance_kind": "aba",
+      "subtrack": "SE-PR",
+      "track": "aba",
+      "year": 2023
+    },
+    {
+      "count": 41,
+      "instance_kind": "aba",
+      "subtrack": "SE-ST",
+      "track": "aba",
+      "year": 2023
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "DC-CO",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "DC-ST",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "DS-PR",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "DS-ST",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "SE-PR",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 9,
+      "instance_kind": "aba",
+      "subtrack": "SE-ST",
+      "track": "aba",
+      "year": 2025
+    },
+    {
+      "count": 8,
+      "instance_kind": "apx",
+      "subtrack": "DS-PR",
+      "track": "legacy",
+      "year": 2017
+    },
+    {
+      "count": 8,
+      "instance_kind": "tgf",
+      "subtrack": "DS-PR",
+      "track": "legacy",
+      "year": 2017
+    },
+    {
+      "count": 7,
+      "instance_kind": "apx",
+      "subtrack": "DS-PR",
+      "track": "legacy",
+      "year": 2019
+    }
+  ],
+  "total_timeouts": 160
+}
