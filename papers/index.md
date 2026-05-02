@@ -11,3 +11,6 @@ Describes ArgSemSAT, a C++/Glucose solver built around SAT encodings of complete
 
 ## [argmat-sat: Applying SAT Solvers for Argumentation Problems based on Boolean Matrix Algebra](Pu_2017_ArgmatSatApplyingSATSolver/notes.md)  (abstract-argumentation, sat-solving, semi-stable-semantics, stage-semantics)
 Describes argmat-sat, a Boolean-matrix/SAT solver for ICCMA tasks. Its key project value is the range-vector encoding and assumption-space procedure for semi-stable and stage semantics. It supports the next workstream step of replacing range-maximal native acceptance with task-directed SAT loops.
+
+## [Computing Preferred Extensions in Abstract Argumentation: a SAT-based Approach](Cerutti_2013_ComputingPreferredExtensionsAbstract/notes.md)  (abstract-argumentation, sat-solving, preferred-semantics, solver-architecture)
+Presents PrefSat, a SAT-based algorithm for enumerating preferred extensions of finite abstract argumentation frameworks by searching over complete labellings. The paper classifies complete-labelling SAT encodings, proves the enumeration algorithm correct, and reports that a Glucose-backed implementation substantially outperforms ASPARTIX/dlv, ASPARTIX-META, and NOF on 2,816 random AFs. It is directly useful for designing and testing SAT-backed preferred-extension enumeration in this project's argumentation solver work.
