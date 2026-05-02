@@ -3,12 +3,15 @@ from __future__ import annotations
 import lzma
 from pathlib import Path
 
+from tools.iccma_data import classify_file
 from tools.iccma2025_run_native import (
     find_query_path,
     infer_task_matrix,
     read_instance_text,
     resolve_instance_path,
+    RunConfig,
     run_child,
+    run_or_skip,
 )
 
 
@@ -49,6 +52,51 @@ def test_compressed_query_companion_lookup_and_read(tmp_path) -> None:
 
     assert find_query_path(instance_path) == query_path
     assert read_instance_text(query_path) == "a\n"
+
+
+def test_manifest_counts_compressed_apx_instances(tmp_path) -> None:
+    instance_path = tmp_path / "case.apx.lzma"
+    instance_path.write_bytes(lzma.compress(b"arg(a).\narg(b).\natt(a,b).\n"))
+
+    row = classify_file("instances", "case.apx.lzma", instance_path)
+
+    assert row.kind == "compressed_apx"
+    assert row.parse_status == "ok"
+    assert row.arguments_or_atoms == 2
+    assert row.attacks == 1
+
+
+def test_run_or_skip_applies_cap_to_uncounted_compressed_apx(tmp_path, monkeypatch) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "case.apx.lzma"
+    instance_path.parent.mkdir(parents=True)
+    payload = "".join(f"arg(a{i}).\n" for i in range(21))
+    instance_path.write_bytes(lzma.compress(payload.encode("utf-8")))
+
+    def fail_run_child(*args, **kwargs):
+        raise AssertionError("oversized compressed AF should be skipped before worker launch")
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_child", fail_run_child)
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=20,
+        max_aba_assumptions=10,
+        timeout_seconds=5.0,
+        progress=False,
+    )
+    instance = {
+        "kind": "compressed_apx",
+        "relative_path": "case.apx.lzma",
+        "arguments_or_atoms": None,
+    }
+    task = {"track": "legacy", "subtrack": "SE-PR", "instance_kind": "af"}
+
+    row = run_or_skip(config, instance, task)
+
+    assert row["status"] == "skipped"
+    assert row["reason"] == "af_argument_cap>20"
+    assert row["arguments_or_atoms"] == 21
 
 
 def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
