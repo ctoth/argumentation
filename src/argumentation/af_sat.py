@@ -459,6 +459,7 @@ def _complete_extension(
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
     excluded_exact: list[frozenset[str]] | None = None,
+    excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
     problem.solver.push()
@@ -470,6 +471,8 @@ def _complete_extension(
         problem.require_any_range(require_any_range)
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
+        for blocked_range in excluded_range_subsets or []:
+            problem.exclude_range_subset(blocked_range)
         if problem.check(utility_name) != "sat":
             return None
         return problem.model_extension()
@@ -646,14 +649,14 @@ def _range_maximal_extension(
     seed_utility_name: str,
     test_utility_name: str,
 ) -> frozenset[str] | None:
-    blocked_candidates: list[frozenset[str]] = []
+    blocked_range_subsets: list[frozenset[str]] = []
     while True:
         candidate = _base_extension(
             problem,
             base=base,
             required_in=required_in,
             required_out=required_out,
-            excluded_exact=blocked_candidates,
+            excluded_range_subsets=blocked_range_subsets,
             utility_name=seed_utility_name,
         )
         if candidate is None:
@@ -671,7 +674,7 @@ def _range_maximal_extension(
         )
         if larger_range is None:
             return candidate
-        blocked_candidates.append(candidate)
+        blocked_range_subsets.append(candidate_range)
 
 
 def _base_extension(
@@ -683,6 +686,7 @@ def _base_extension(
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
     excluded_exact: list[frozenset[str]] | None = None,
+    excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
     if base == "complete":
@@ -693,6 +697,7 @@ def _base_extension(
             required_range=required_range,
             require_any_range=require_any_range,
             excluded_exact=excluded_exact,
+            excluded_range_subsets=excluded_range_subsets,
             utility_name=utility_name,
         )
     if base == "conflict_free":
@@ -703,6 +708,7 @@ def _base_extension(
             required_range=required_range,
             require_any_range=require_any_range,
             excluded_exact=excluded_exact,
+            excluded_range_subsets=excluded_range_subsets,
             utility_name=utility_name,
         )
     raise ValueError(f"unknown SAT base semantics: {base!r}")
@@ -716,6 +722,7 @@ def _conflict_free_extension(
     required_range: frozenset[str] = frozenset(),
     require_any_range: frozenset[str] = frozenset(),
     excluded_exact: list[frozenset[str]] | None = None,
+    excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
     problem.solver.push()
@@ -726,6 +733,8 @@ def _conflict_free_extension(
         problem.require_any_range(require_any_range)
         for blocked in excluded_exact or []:
             problem.exclude_exact_extension(blocked)
+        for blocked_range in excluded_range_subsets or []:
+            problem.exclude_range_subset(blocked_range)
         if problem.check(utility_name) != "sat":
             return None
         return problem.model_extension()

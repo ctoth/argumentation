@@ -123,6 +123,18 @@ def test_kernel_range_maximal_extensions_handle_basic_witnesses() -> None:
     assert find_semi_stable_extension(framework, require_in="b") is None
 
 
+def test_kernel_range_maximal_search_traces_range_checks() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("b", "c")})
+    checks: list[SATCheck] = []
+
+    witness = find_stage_extension(framework, trace_sink=checks.append)
+
+    assert witness in set(stage_extensions(framework))
+    utility_names = [check.utility_name for check in checks]
+    assert "stage_seed" in utility_names
+    assert "stage_range_maximality" in utility_names
+
+
 def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
     framework = af({"a", "b"}, {("a", "b")})
     checks: list[SATCheck] = []
