@@ -364,11 +364,13 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
         or name.endswith(("_arg.lzma", "_query.lzma"))
     ):
         return ManifestRow(archive_name, relative, "query_or_updates", "skipped", size)
-    if name.endswith(".apx.lzma"):
-        return ManifestRow(archive_name, relative, "compressed_apx", "skipped", size)
-    if name.endswith(".tgf.lzma"):
-        return ManifestRow(archive_name, relative, "compressed_tgf", "skipped", size)
     try:
+        if name.endswith(".apx.lzma"):
+            arguments, attacks = scan_apx_file(path)
+            return ManifestRow(archive_name, relative, "compressed_apx", "ok", size, arguments, attacks)
+        if name.endswith(".tgf.lzma"):
+            arguments, attacks = scan_tgf_file(path)
+            return ManifestRow(archive_name, relative, "compressed_tgf", "ok", size, arguments, attacks)
         header = first_payload_line(path)
         if header.startswith("p af "):
             arguments, attacks = scan_numeric_af_file(path)
