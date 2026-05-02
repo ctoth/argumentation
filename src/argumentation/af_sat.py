@@ -465,7 +465,7 @@ class PreferredSkepticalTaskSolver:
             )
             if extended is None:
                 return False
-            attacker_problem.exclude_subset(extended)
+            attacker_problem.learn_witness_region(extended, loop_index=loop_index)
             loop_index += 1
 
 
@@ -742,7 +742,7 @@ class _PreferredSkepticalAttackerSolver:
             if self.z3.is_true(model.evaluate(variable, model_completion=True))
         )
 
-    def exclude_subset(self, extension: frozenset[str]) -> None:
+    def learn_witness_region(self, extension: frozenset[str], *, loop_index: int) -> None:
         outside = self.framework.arguments - extension
         if outside:
             self.solver.add(
@@ -751,6 +751,22 @@ class _PreferredSkepticalAttackerSolver:
         else:
             self.solver.add(self.z3.BoolVal(False))
         self.learned_count += 1
+        if self.trace_sink is not None:
+            self.trace_sink(
+                SATCheck(
+                    utility_name="preferred_skeptical_learn_witness_region",
+                    result="learned",
+                    elapsed_ms=0.0,
+                    assumptions_count=0,
+                    argument_count=len(self.framework.arguments),
+                    attack_count=len(self.framework.defeats),
+                    model_extension_size=len(extension),
+                    model_extension_fingerprint=_extension_fingerprint(extension),
+                    loop_index=loop_index,
+                    learned_count=self.learned_count,
+                    metadata=self.metadata,
+                )
+            )
 
 
 def _attacked_by(

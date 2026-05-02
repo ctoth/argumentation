@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 
+import argumentation.af_sat as af_sat
 from argumentation.dung import (
     ArgumentationFramework,
     _attackers_index,
@@ -154,6 +155,39 @@ def test_preferred_super_core_outside_argument_routes_to_cdas() -> None:
     utility_names = [check.utility_name for check in checks]
     assert "preferred_super_core_admissible_attacker" in utility_names
     assert "preferred_skeptical_seed" in utility_names
+
+
+def test_preferred_skeptical_learning_store_traces_witness_regions() -> None:
+    framework = af(
+        {"q", "c", "a", "d"},
+        {("a", "c"), ("d", "a"), ("a", "d")},
+    )
+    checks: list[SATCheck] = []
+    attacker_problem = af_sat._PreferredSkepticalAttackerSolver(
+        framework,
+        required_in=frozenset({"q"}),
+        trace_sink=checks.append,
+        metadata={"subtrack": "DS-PR"},
+    )
+
+    assert attacker_problem.find_attacker(loop_index=0) is not None
+    attacker_problem.learn_witness_region(frozenset({"q", "a"}), loop_index=0)
+
+    learned = [
+        check
+        for check in checks
+        if check.utility_name == "preferred_skeptical_learn_witness_region"
+    ]
+    assert learned
+    assert learned[0].result == "learned"
+    assert learned[0].loop_index == 0
+    assert learned[0].learned_count == 1
+    assert learned[0].model_extension_fingerprint is not None
+    assert attacker_problem.learned_count == 1
+
+    attacker_problem.find_attacker(loop_index=1)
+    assert checks[-1].utility_name == "preferred_skeptical_adm_ext_att"
+    assert checks[-1].learned_count == 1
 
 
 def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
