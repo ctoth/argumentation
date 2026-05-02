@@ -438,7 +438,7 @@ class PreferredSkepticalTaskSolver:
             )
             if extended is None:
                 return False
-            attack_oracle.exclude_attacker_subset(extended)
+            attack_oracle.exclude_candidate_subset(extended)
 
 
 def find_semi_stable_extension(
@@ -656,11 +656,11 @@ class _PreferredSkepticalAttackOracle:
             )
         return extension
 
-    def exclude_attacker_subset(self, extension: frozenset[str]) -> None:
+    def exclude_candidate_subset(self, extension: frozenset[str]) -> None:
         outside = self.framework.arguments - extension
         if outside:
             self.solver.add(
-                self.z3.Or(*(self.attacker_vars[argument] for argument in sorted(outside)))
+                self.z3.Or(*(self.candidate_vars[argument] for argument in sorted(outside)))
             )
         else:
             self.solver.add(self.z3.BoolVal(False))
