@@ -699,32 +699,68 @@ def _range_maximal_extension(
     test_utility_name: str,
 ) -> frozenset[str] | None:
     del framework, test_utility_name
-    full_range = _base_extension(
-        problem,
+    return RangeMaximalTaskSolver(
+        problem=problem,
         base=base,
+        seed_utility_name=seed_utility_name,
+    ).find_extension(
         required_in=required_in,
         required_out=required_out,
-        required_range=frozenset(problem.arguments),
-        utility_name=_range_shortcut_utility(seed_utility_name, "full"),
     )
-    if full_range is not None:
-        return full_range
 
-    max_range_size = _max_range_size(
-        problem,
-        base=base,
-        utility_name=_max_range_utility(seed_utility_name, "at_least"),
-    )
-    if max_range_size is None:
-        return None
-    return _base_extension(
-        problem,
-        base=base,
-        required_in=required_in,
-        required_out=required_out,
-        required_range_size=max_range_size,
-        utility_name=_max_range_utility(seed_utility_name, "exact"),
-    )
+
+class RangeMaximalTaskSolver:
+    """Exact range-maximal search for stage and semi-stable tasks."""
+
+    def __init__(
+        self,
+        *,
+        problem: AfSatKernel,
+        base: str,
+        seed_utility_name: str,
+    ) -> None:
+        self.problem = problem
+        self.base = base
+        self.seed_utility_name = seed_utility_name
+        self._max_range_size: int | None = None
+
+    def find_extension(
+        self,
+        *,
+        required_in: frozenset[str],
+        required_out: frozenset[str],
+    ) -> frozenset[str] | None:
+        full_range = _base_extension(
+            self.problem,
+            base=self.base,
+            required_in=required_in,
+            required_out=required_out,
+            required_range=frozenset(self.problem.arguments),
+            utility_name=_range_shortcut_utility(self.seed_utility_name, "full"),
+        )
+        if full_range is not None:
+            return full_range
+
+        max_range_size = self.max_range_size()
+        if max_range_size is None:
+            return None
+        return _base_extension(
+            self.problem,
+            base=self.base,
+            required_in=required_in,
+            required_out=required_out,
+            required_range_size=max_range_size,
+            utility_name=_max_range_utility(self.seed_utility_name, "exact"),
+        )
+
+    def max_range_size(self) -> int | None:
+        if self._max_range_size is None:
+            self._max_range_size = _max_range_size(
+                self.problem,
+                base=self.base,
+                utility_name=_max_range_utility(self.seed_utility_name, "at_least"),
+            )
+        return self._max_range_size
 
 
 def _max_range_size(
