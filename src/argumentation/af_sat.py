@@ -388,36 +388,57 @@ def is_preferred_skeptically_accepted(
     metadata: Mapping[str, object] | None = None,
 ) -> bool:
     """Decide preferred skeptical acceptance using CDAS admissibility checks."""
-    required_query = _optional_argument(framework, query)
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
-    problem.add_admissible_labelling()
-    seed = _admissible_extension(
-        problem,
-        required_in=required_query,
-        utility_name="preferred_skeptical_seed",
-    )
-    if seed is None:
-        return False
+    return PreferredSkepticalTaskSolver(
+        framework,
+        trace_sink=trace_sink,
+        metadata=metadata,
+    ).decide(query)
 
-    covered: list[frozenset[str]] = []
-    while True:
-        attacker = _admissible_attacker_against_compatible_candidate(
-            framework,
+
+class PreferredSkepticalTaskSolver:
+    """CDAS-style skeptical preferred acceptance solver."""
+
+    def __init__(
+        self,
+        framework: ArgumentationFramework,
+        *,
+        trace_sink: SATTraceSink | None = None,
+        metadata: Mapping[str, object] | None = None,
+    ) -> None:
+        self.framework = framework
+        self.trace_sink = trace_sink
+        self.metadata = metadata
+        self.problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+        self.problem.add_admissible_labelling()
+
+    def decide(self, query: str) -> bool:
+        required_query = _optional_argument(self.framework, query)
+        seed = _admissible_extension(
+            self.problem,
             required_in=required_query,
-            excluded_subsets=covered,
-            trace_sink=trace_sink,
-            metadata=metadata,
+            utility_name="preferred_skeptical_seed",
         )
-        if attacker is None:
-            return True
-        extended = _admissible_extension(
-            problem,
-            required_in=attacker | required_query,
-            utility_name="preferred_skeptical_extend_attacker",
-        )
-        if extended is None:
+        if seed is None:
             return False
-        covered.append(extended)
+
+        attack_oracle = _PreferredSkepticalAttackOracle(
+            self.framework,
+            required_in=required_query,
+            trace_sink=self.trace_sink,
+            metadata=self.metadata,
+        )
+        while True:
+            attacker = attack_oracle.find_attacker()
+            if attacker is None:
+                return True
+            extended = _admissible_extension(
+                self.problem,
+                required_in=attacker | required_query,
+                utility_name="preferred_skeptical_extend_attacker",
+            )
+            if extended is None:
+                return False
+            attack_oracle.exclude_attacker_subset(extended)
 
 
 def find_semi_stable_extension(
@@ -574,70 +595,75 @@ def _admissible_attacker_of_set(
         problem.solver.pop()
 
 
-def _admissible_attacker_against_compatible_candidate(
-    framework: ArgumentationFramework,
-    *,
-    required_in: frozenset[str],
-    excluded_subsets: list[frozenset[str]],
-    trace_sink: SATTraceSink | None,
-    metadata: Mapping[str, object] | None,
-) -> frozenset[str] | None:
-    z3 = _load_z3()
-    solver = z3.Solver()
-    arguments = tuple(sorted(framework.arguments))
-    attacker_vars = {
-        argument: z3.Bool(f"af_cdas_attacker_{index}")
-        for index, argument in enumerate(arguments)
-    }
-    candidate_vars = {
-        argument: z3.Bool(f"af_cdas_candidate_{index}")
-        for index, argument in enumerate(arguments)
-    }
+class _PreferredSkepticalAttackOracle:
+    def __init__(
+        self,
+        framework: ArgumentationFramework,
+        *,
+        required_in: frozenset[str],
+        trace_sink: SATTraceSink | None,
+        metadata: Mapping[str, object] | None,
+    ) -> None:
+        self.framework = framework
+        self.trace_sink = trace_sink
+        self.metadata = metadata
+        self.z3 = _load_z3()
+        self.solver = self.z3.Solver()
+        self.arguments = tuple(sorted(framework.arguments))
+        self.attacker_vars = {
+            argument: self.z3.Bool(f"af_cdas_attacker_{index}")
+            for index, argument in enumerate(self.arguments)
+        }
+        self.candidate_vars = {
+            argument: self.z3.Bool(f"af_cdas_candidate_{index}")
+            for index, argument in enumerate(self.arguments)
+        }
+        _add_admissible_constraints(self.z3, self.solver, framework, self.attacker_vars)
+        _add_admissible_constraints(self.z3, self.solver, framework, self.candidate_vars)
+        for argument in sorted(required_in):
+            self.solver.add(self.candidate_vars[argument])
+        attack_pairs = [
+            self.z3.And(self.attacker_vars[attacker], self.candidate_vars[target])
+            for attacker, target in sorted(framework.defeats)
+        ]
+        self.solver.add(self.z3.Or(*attack_pairs) if attack_pairs else self.z3.BoolVal(False))
 
-    _add_admissible_constraints(z3, solver, framework, attacker_vars)
-    _add_admissible_constraints(z3, solver, framework, candidate_vars)
-    for argument in sorted(required_in):
-        solver.add(candidate_vars[argument])
-
-    attack_pairs = [
-        z3.And(attacker_vars[attacker], candidate_vars[target])
-        for attacker, target in sorted(framework.defeats)
-    ]
-    solver.add(z3.Or(*attack_pairs) if attack_pairs else z3.BoolVal(False))
-
-    for excluded in excluded_subsets:
-        outside = framework.arguments - excluded
-        if outside:
-            solver.add(z3.Or(*(attacker_vars[argument] for argument in sorted(outside))))
-        else:
-            solver.add(z3.BoolVal(False))
-
-    started = perf_counter()
-    result_ref = solver.check()
-    elapsed_ms = (perf_counter() - started) * 1000
-    result = str(result_ref)
-    extension = None
-    if result == "sat":
-        model = solver.model()
-        extension = frozenset(
-            argument
-            for argument, variable in attacker_vars.items()
-            if z3.is_true(model.evaluate(variable, model_completion=True))
-        )
-    if trace_sink is not None:
-        trace_sink(
-            SATCheck(
-                utility_name="preferred_skeptical_adm_ext_att",
-                result=result,
-                elapsed_ms=elapsed_ms,
-                assumptions_count=0,
-                argument_count=len(framework.arguments),
-                attack_count=len(framework.defeats),
-                model_extension_size=None if extension is None else len(extension),
-                metadata=metadata,
+    def find_attacker(self) -> frozenset[str] | None:
+        started = perf_counter()
+        result_ref = self.solver.check()
+        elapsed_ms = (perf_counter() - started) * 1000
+        result = str(result_ref)
+        extension = None
+        if result == "sat":
+            model = self.solver.model()
+            extension = frozenset(
+                argument
+                for argument, variable in self.attacker_vars.items()
+                if self.z3.is_true(model.evaluate(variable, model_completion=True))
             )
-        )
-    return extension
+        if self.trace_sink is not None:
+            self.trace_sink(
+                SATCheck(
+                    utility_name="preferred_skeptical_adm_ext_att",
+                    result=result,
+                    elapsed_ms=elapsed_ms,
+                    assumptions_count=0,
+                    argument_count=len(self.framework.arguments),
+                    attack_count=len(self.framework.defeats),
+                    model_extension_size=None if extension is None else len(extension),
+                    metadata=self.metadata,
+                )
+            )
+        return extension
+
+    def exclude_attacker_subset(self, extension: frozenset[str]) -> None:
+        outside = self.framework.arguments - extension
+        if outside:
+            self.solver.add(
+                self.z3.Or(*(self.attacker_vars[argument] for argument in sorted(outside)))
+            )
+        else:
+            self.solver.add(self.z3.BoolVal(False))
 
 
 def _attacked_by(
@@ -1024,6 +1050,7 @@ def _load_z3():
 
 __all__ = [
     "AfSatKernel",
+    "PreferredSkepticalTaskSolver",
     "SATCheck",
     "SATTraceSink",
     "find_complete_extension",
