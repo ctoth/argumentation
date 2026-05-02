@@ -146,8 +146,8 @@ def test_preferred_skeptical_task_solver_streams_cdas_utilities() -> None:
     assert solver.decide("q") is False
     assert [check.utility_name for check in checks] == [
         "preferred_skeptical_seed",
-        "preferred_skeptical_adm_ext_att",
-        "preferred_skeptical_extend_attacker",
+        "preferred_skeptical_blocker_search",
+        "preferred_skeptical_blocker_extends",
     ]
     assert all(check.metadata == {"subtrack": "DS-PR"} for check in checks)
 
