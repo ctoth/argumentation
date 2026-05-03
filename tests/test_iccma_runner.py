@@ -84,6 +84,7 @@ def test_run_or_skip_applies_cap_to_uncounted_compressed_apx(tmp_path, monkeypat
         max_aba_assumptions=10,
         timeout_seconds=5.0,
         progress=False,
+        event_log_path=None,
     )
     instance = {
         "kind": "compressed_apx",
@@ -119,6 +120,7 @@ def test_run_or_skip_skips_missing_acceptance_query_before_worker(
         max_aba_assumptions=10,
         timeout_seconds=5.0,
         progress=False,
+        event_log_path=None,
     )
     instance = {
         "kind": "apx",
@@ -162,6 +164,39 @@ def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
     stderr = capsys.readouterr().err
     assert '"event": "sat_check"' in stderr
     assert '"subtrack": "DS-PR"' in stderr
+
+
+def test_run_child_writes_sat_check_events_to_event_log(tmp_path, capsys) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "case.apx"
+    event_log_path = tmp_path / "events.jsonl"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("arg(a).\narg(b).\natt(a,b).\n", encoding="utf-8")
+    Path(str(instance_path) + ".arg").write_text("b\n", encoding="utf-8")
+    job = {
+        "root": str(tmp_path),
+        "backend": "auto",
+        "iccma_binary": None,
+        "solver_timeout_seconds": 5.0,
+        "event_log_path": str(event_log_path),
+        "instance": {
+            "kind": "apx",
+            "relative_path": "case.apx",
+            "arguments_or_atoms": 2,
+        },
+        "task": {
+            "track": "legacy",
+            "subtrack": "DS-PR",
+            "instance_kind": "af",
+        },
+    }
+
+    result = run_child(job, timeout_seconds=15.0)
+
+    assert result["status"] == "solved"
+    assert capsys.readouterr().err == ""
+    event_log = event_log_path.read_text(encoding="utf-8")
+    assert '"event": "sat_check"' in event_log
+    assert '"subtrack": "DS-PR"' in event_log
 
 
 def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> None:

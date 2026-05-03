@@ -81,6 +81,7 @@ class RunConfig:
     max_aba_assumptions: int
     timeout_seconds: float
     progress: bool
+    event_log_path: Path | None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -105,7 +106,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable per-row JSON progress logs on stderr.",
     )
+    parser.add_argument(
+        "--event-log-path",
+        type=Path,
+        default=None,
+        help="Write runner and solver JSONL events directly to this file.",
+    )
     args = parser.parse_args(argv)
+    if args.event_log_path is not None:
+        args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
+        args.event_log_path.write_text("", encoding="utf-8")
 
     config = RunConfig(
         root=args.root,
@@ -115,6 +125,7 @@ def main(argv: list[str] | None = None) -> int:
         max_aba_assumptions=args.max_aba_assumptions,
         timeout_seconds=args.timeout_seconds,
         progress=not args.no_progress,
+        event_log_path=args.event_log_path,
     )
     rows = run_native(config)
     output_dir = config.root / "runs"
@@ -136,6 +147,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def run_native(config: RunConfig) -> list[dict[str, Any]]:
     log_run_event(
+        config,
         "iccma_run_start",
         root=str(config.root),
         backend=config.backend,
@@ -147,6 +159,7 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
     manifest_path, task_matrix_path = discover_manifest_paths(config.root)
     manifest = load_json(manifest_path)
     log_run_event(
+        config,
         "iccma_manifest_loaded",
         manifest_path=str(manifest_path),
         task_matrix_path=str(task_matrix_path) if task_matrix_path is not None else None,
@@ -157,7 +170,7 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         if task_matrix_path is not None
         else infer_task_matrix(config.root, manifest)
     )
-    log_run_event("iccma_task_matrix_loaded", tasks=len(task_matrix))
+    log_run_event(config, "iccma_task_matrix_loaded", tasks=len(task_matrix))
     jobs = [
         (instance, task)
         for instance in manifest
@@ -165,16 +178,16 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         for task in task_matrix
         if task["instance_kind"] == normalized_instance_kind(instance)
     ]
-    log_run_event("iccma_jobs_built", jobs=len(jobs))
+    log_run_event(config, "iccma_jobs_built", jobs=len(jobs))
     rows: list[dict[str, Any]] = []
     for index, (instance, task) in enumerate(jobs, start=1):
         if config.progress:
-            log_row_start(instance, task, index=index, total=len(jobs))
+            log_row_start(config, instance, task, index=index, total=len(jobs))
         row = run_or_skip(config, instance, task)
         rows.append(row)
         if config.progress:
-            log_progress(row, index=index, total=len(jobs))
-    log_run_event("iccma_run_rows_complete", rows=len(rows))
+            log_progress(config, row, index=index, total=len(jobs))
+    log_run_event(config, "iccma_run_rows_complete", rows=len(rows))
     return rows
 
 
@@ -233,7 +246,13 @@ def supported_runner_subtrack(subtrack: str) -> bool:
     return len(parts) == 2 and parts[0] in {"DC", "DS", "SE"} and parts[1] in TASK_TO_SEMANTICS
 
 
-def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
+def log_progress(
+    config: RunConfig,
+    row: dict[str, Any],
+    *,
+    index: int,
+    total: int,
+) -> None:
     event = {
         "event": "iccma_row",
         "index": index,
@@ -248,10 +267,11 @@ def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
         "elapsed_seconds": row["elapsed_seconds"],
         "answer": row["answer"],
     }
-    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+    emit_json_event(config.event_log_path, event)
 
 
 def log_row_start(
+    config: RunConfig,
     instance: dict[str, Any],
     task: dict[str, Any],
     *,
@@ -270,12 +290,21 @@ def log_row_start(
         "attacks": instance.get("attacks"),
         "assumptions": instance.get("assumptions"),
     }
-    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+    emit_json_event(config.event_log_path, event)
 
 
-def log_run_event(event_name: str, **fields: Any) -> None:
+def log_run_event(config: RunConfig, event_name: str, **fields: Any) -> None:
     event = {"event": event_name, **fields}
-    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+    emit_json_event(config.event_log_path, event)
+
+
+def emit_json_event(path: Path | str | None, event: dict[str, Any]) -> None:
+    line = json.dumps(event, sort_keys=True)
+    if path is None:
+        print(line, file=sys.stderr, flush=True)
+        return
+    with Path(path).open("a", encoding="utf-8") as handle:
+        handle.write(line + "\n")
 
 
 def run_or_skip(
@@ -317,6 +346,7 @@ def run_or_skip(
         "backend": config.backend,
         "iccma_binary": config.iccma_binary,
         "solver_timeout_seconds": config.timeout_seconds,
+        "event_log_path": str(config.event_log_path) if config.event_log_path is not None else None,
         "instance": instance,
         "task": task,
     }
@@ -616,6 +646,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
             instance=instance,
             task=task,
             framework=framework,
+            event_log_path=job.get("event_log_path"),
         ),
         metadata=sat_trace_metadata(instance=instance, task=task),
     )
@@ -681,6 +712,7 @@ def sat_trace_sink(
     instance: dict[str, Any],
     task: dict[str, Any],
     framework: Any,
+    event_log_path: str | None = None,
 ):
     metadata = sat_trace_metadata(instance=instance, task=task)
 
@@ -707,7 +739,7 @@ def sat_trace_sink(
             "range_bound": check.range_bound,
             "range_constraint": check.range_constraint,
         }
-        print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+        emit_json_event(event_log_path, event)
 
     return emit
 
