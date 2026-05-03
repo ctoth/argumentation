@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from tools.iccma_run_selected import run_selected
 
@@ -44,3 +45,24 @@ def test_run_selected_executes_single_aba_row(tmp_path) -> None:
     assert row["status"] == "solved"
     assert row["witness_size"] == 1
     assert json.loads(json.dumps(row)) == row
+
+
+def test_run_selected_solves_remaining_2019_dspr_row_after_maximal_learning() -> None:
+    path = Path("data/iccma/2019/extracted/instances/Small-result-b76.apx")
+    if not path.exists():
+        return
+
+    row = run_selected(
+        root=Path("data/iccma/2019"),
+        relative_path="instances\\Small-result-b76.apx",
+        kind="apx",
+        subtrack="DS-PR",
+        backend="auto",
+        timeout_seconds=10.0,
+        arguments_or_atoms=48,
+        track="legacy",
+        instance_kind="apx",
+    )
+
+    assert row["status"] == "solved"
+    assert row["answer"] == "false"

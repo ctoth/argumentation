@@ -240,6 +240,18 @@ def test_preferred_skeptical_learning_store_traces_witness_regions() -> None:
     assert checks[-1].learned_count == 1
 
 
+def test_preferred_skeptical_seed_unsat_skips_maximal_growth() -> None:
+    framework = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("b", "b")})
+    checks: list[SATCheck] = []
+
+    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is False
+
+    utility_names = [check.utility_name for check in checks]
+    assert "preferred_skeptical_seed" in utility_names
+    assert "preferred_skeptical_extend_attacker_maximal" not in utility_names
+    assert "preferred_skeptical_adm_ext_att" not in utility_names
+
+
 def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
     framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
     checks: list[SATCheck] = []

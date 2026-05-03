@@ -445,8 +445,8 @@ class PreferredSkepticalTaskSolver:
             trace_sink=self.trace_sink,
             metadata=self.metadata,
         )
-        extension_problem.add_admissible_labelling()
-        seed = _admissible_extension(
+        extension_problem.add_complete_labelling()
+        seed = _complete_extension(
             extension_problem,
             required_in=required_query,
             utility_name="preferred_skeptical_seed",
@@ -465,10 +465,20 @@ class PreferredSkepticalTaskSolver:
             attacker = attacker_problem.find_attacker(loop_index=loop_index)
             if attacker is None:
                 return True
-            extended = _admissible_extension(
+            extended = _complete_extension(
                 extension_problem,
                 required_in=attacker | required_query,
                 utility_name="preferred_skeptical_extend_attacker",
+                loop_index=loop_index,
+                learned_count=attacker_problem.learned_count,
+            )
+            if extended is None:
+                return False
+            extended = _grow_preferred(
+                extension_problem,
+                self.framework,
+                extended,
+                utility_name="preferred_skeptical_extend_attacker_maximal",
                 loop_index=loop_index,
                 learned_count=attacker_problem.learned_count,
             )
@@ -647,6 +657,8 @@ def _complete_extension(
     excluded_exact: list[frozenset[str]] | None = None,
     excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
+    loop_index: int | None = None,
+    learned_count: int | None = None,
 ) -> frozenset[str] | None:
     problem.solver.push()
     try:
@@ -671,6 +683,8 @@ def _complete_extension(
             utility_name,
             range_bound=range_bound,
             range_constraint=range_constraint,
+            loop_index=loop_index,
+            learned_count=learned_count,
         ) != "sat":
             return None
         return problem.model_extension()
@@ -857,6 +871,10 @@ def _grow_preferred(
     problem: AfSatKernel,
     framework: ArgumentationFramework,
     seed: frozenset[str],
+    *,
+    utility_name: str = "preferred_grow",
+    loop_index: int | None = None,
+    learned_count: int | None = None,
 ) -> frozenset[str] | None:
     current = seed
     while True:
@@ -867,7 +885,9 @@ def _grow_preferred(
             problem,
             required_in=current,
             require_any_in=outside,
-            utility_name="preferred_grow",
+            utility_name=utility_name,
+            loop_index=loop_index,
+            learned_count=learned_count,
         )
         if larger is None:
             return current
