@@ -14,13 +14,14 @@ from tools.iccma_run_selected import run_selected
 def selected_timeout_rows(
     rows: list[dict[str, Any]],
     *,
-    years: set[int],
-    subtrack: str,
+    years: set[int] | None,
+    subtrack: str | None,
 ) -> list[dict[str, Any]]:
     return [
         row
         for row in rows
-        if row.get("year") in years and row.get("subtrack") == subtrack
+        if (years is None or row.get("year") in years)
+        and (subtrack is None or row.get("subtrack") == subtrack)
     ]
 
 
@@ -88,8 +89,8 @@ def summarize_results(results: list[dict[str, Any]]) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run selected rows from an ICCMA timeout fixture.")
     parser.add_argument("--timeouts", type=Path, required=True)
-    parser.add_argument("--year", type=int, action="append", required=True)
-    parser.add_argument("--subtrack", required=True)
+    parser.add_argument("--year", type=int, action="append")
+    parser.add_argument("--subtrack")
     parser.add_argument("--timeout-seconds", type=float, default=20.0)
     parser.add_argument("--backend", default="auto")
     parser.add_argument("--data-root", type=Path, default=Path("data") / "iccma")
@@ -97,7 +98,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     rows = json.loads(args.timeouts.read_text(encoding="utf-8"))
-    selected = selected_timeout_rows(rows, years=set(args.year), subtrack=args.subtrack)
+    selected = selected_timeout_rows(
+        rows,
+        years=None if args.year is None else set(args.year),
+        subtrack=args.subtrack,
+    )
     results = run_timeout_rows(
         selected,
         timeout_seconds=args.timeout_seconds,

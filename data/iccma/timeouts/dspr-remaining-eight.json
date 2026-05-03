@@ -1,0 +1,66 @@
+[
+  {
+    "arguments_or_atoms": 81,
+    "instance": "B/4/irvine-shuttle_20091229_1547.gml.80.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2017
+  },
+  {
+    "arguments_or_atoms": 81,
+    "instance": "B/4/irvine-shuttle_20091229_1547.gml.80.tgf",
+    "instance_kind": "tgf",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2017
+  },
+  {
+    "arguments_or_atoms": 61,
+    "instance": "D/2/BA_60_60_3.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2017
+  },
+  {
+    "arguments_or_atoms": 61,
+    "instance": "D/2/BA_60_60_3.tgf",
+    "instance_kind": "tgf",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2017
+  },
+  {
+    "arguments_or_atoms": 48,
+    "instance": "instances/Small-result-b76.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2019
+  },
+  {
+    "arguments_or_atoms": 60,
+    "instance": "instances/Small-result-b88.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2019
+  },
+  {
+    "arguments_or_atoms": 54,
+    "instance": "instances/Small-result-b90.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2019
+  },
+  {
+    "arguments_or_atoms": 54,
+    "instance": "instances/Small-result-b97.apx",
+    "instance_kind": "apx",
+    "subtrack": "DS-PR",
+    "track": "legacy",
+    "year": 2019
+  }
+]
