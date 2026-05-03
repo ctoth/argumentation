@@ -99,6 +99,40 @@ def test_run_or_skip_applies_cap_to_uncounted_compressed_apx(tmp_path, monkeypat
     assert row["arguments_or_atoms"] == 21
 
 
+def test_run_or_skip_skips_missing_acceptance_query_before_worker(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "case.apx"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("arg(a).\n", encoding="utf-8")
+
+    def fail_run_child(*args, **kwargs):
+        raise AssertionError("queryless acceptance row should be skipped before worker launch")
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_child", fail_run_child)
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=20,
+        max_aba_assumptions=10,
+        timeout_seconds=5.0,
+        progress=False,
+    )
+    instance = {
+        "kind": "apx",
+        "relative_path": "case.apx",
+        "arguments_or_atoms": 1,
+    }
+    task = {"track": "legacy", "subtrack": "DS-PR", "instance_kind": "af"}
+
+    row = run_or_skip(config, instance, task)
+
+    assert row["status"] == "skipped"
+    assert row["reason"] == "missing_query"
+
+
 def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
     instance_path = tmp_path / "extracted" / "instances" / "case.apx"
     instance_path.parent.mkdir(parents=True)

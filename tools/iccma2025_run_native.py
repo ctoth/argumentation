@@ -307,6 +307,11 @@ def run_or_skip(
             "status": "skipped",
             "reason": f"aba_assumption_cap>{config.max_aba_assumptions}",
         }
+    problem, _semantics = split_subtrack(task["subtrack"])
+    if problem in {"DC", "DS"}:
+        path = resolve_instance_path(config.root, instance)
+        if find_query_path(path) is None:
+            return {**base, "status": "skipped", "reason": "missing_query"}
     job = {
         "root": str(config.root),
         "backend": config.backend,
