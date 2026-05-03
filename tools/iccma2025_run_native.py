@@ -459,8 +459,14 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
                 "reason": f"timeout>{timeout_seconds}",
                 "error": None,
             }
-        stdout_thread.join()
-        stderr_thread.join()
+        stdout_thread.join(timeout=1.0)
+        stderr_thread.join(timeout=1.0)
+        if stdout_thread.is_alive():
+            return {
+                "status": "error",
+                "reason": "worker_pipe_drain_timeout",
+                "error": "worker stdout pipe did not close after process exit",
+            }
     except subprocess.TimeoutExpired:
         return {
             "status": "timeout",
