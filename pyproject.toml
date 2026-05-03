@@ -65,6 +65,9 @@ Homepage = "https://github.com/ctoth/argumentation"
 Repository = "https://github.com/ctoth/argumentation"
 Issues = "https://github.com/ctoth/argumentation/issues"
 
+[project.scripts]
+iccma-cli = "argumentation.iccma_cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
