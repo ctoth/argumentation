@@ -1,0 +1,7 @@
+# Abstract
+
+**Argument Attribution Explanations in Quantitative Bipolar Argumentation Frameworks (Technical Report)**
+
+Xiang Yin, Nico Potyka, Francesca Toni — arXiv:2307.13582 (2023)
+
+Argumentative explainable AI has been advocated by several in recent years, with an increasing interest on explaining the reasoning outcomes of Argumentation Frameworks (AFs). While there is a considerable body of research on qualitatively explaining the reasoning outcomes of AFs with debates/disputes/dialogues in the spirit of extension-based semantics, explaining the quantitative reasoning outcomes of AFs under gradual semantics has not received much attention, despite widespread use in applications. In this paper, we contribute to filling this gap by proposing a novel theory of Argument Attribution Explanations (AAEs) by incorporating the spirit of feature attribution from machine learning in the context of Quantitative Bipolar Argumentation Frameworks (QBAFs): whereas feature attribution is used to determine the influence of features towards outputs of machine learning models, AAEs are used to determine the influence of arguments towards topic arguments of interest. We study desirable properties of AAEs, including some new ones and some partially adapted from the literature to our setting. To demonstrate the applicability of our AAEs in practice, we conclude by carrying out two case studies in the scenarios of fake news detection and movie recommender systems.

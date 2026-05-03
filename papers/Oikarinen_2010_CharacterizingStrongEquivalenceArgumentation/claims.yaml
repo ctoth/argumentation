@@ -1,0 +1,161 @@
+source:
+  paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+  extraction_model: "claude-opus-4-6[1m]"
+  extraction_date: "2026-03-30"
+
+claims:
+  - id: claim1
+    type: observation
+    statement: "Two argumentation frameworks F and G are strongly equivalent w.r.t. a semantics sigma (F equiv_sigma^S G) if for each AF H, sigma(F union H) = sigma(G union H). This is strictly stronger than standard equivalence (sigma(F) = sigma(G))."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 5
+      section: "3. Strong equivalence"
+      quote_fragment: "Two AFs F and G are strongly equivalent to each other w.r.t. a semantics sigma, in symbols F equiv_sigma^S G, iff for each AF H, sigma(F union H) = sigma(G union H)"
+
+  - id: claim2
+    type: observation
+    statement: "The a-kernel of an AF F = (A, R) is F^a = (A, R^a) where R^a = R \\ {(a,b) | a != b and (a,a) in R}. It removes all outgoing attacks from self-attacking arguments except self-attacks themselves."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 5
+      section: "3.1. Strong equivalence w.r.t. stable semantics"
+      quote_fragment: "For an AF F = (A, R), we define the a-kernel of F as F^a = (A, R^a) where R^a = R \\ {(a,b) | a != b, (a,a) in R}"
+
+  - id: claim3
+    type: observation
+    statement: "For any AFs F and G: F equiv_stb^S G if and only if F^a = G^a. The a-kernel syntactically characterizes strong equivalence for stable semantics."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 7
+      section: "3.1. Strong equivalence w.r.t. stable semantics"
+      quote_fragment: "For any AFs F and G: F equiv_stb^S G iff F^a = G^a"
+
+  - id: claim4
+    type: observation
+    statement: "The a-kernel captures strong equivalence for stable, semi-stable, preferred, ideal, and eager semantics simultaneously. That is, F equiv_sigma^S G iff F^a = G^a for sigma in {stb, ss, prf, ideal, eager}."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 8
+      section: "3.2. Strong equivalence w.r.t. admissible, preferred, ideal, semi-stable, and eager semantics"
+      quote_fragment: "The following characterization theorems using the notion of a-kernel captures strong equivalence w.r.t. admissible semantics. Moreover, the a-kernel captures strong equivalence w.r.t. semi-stable, preferred, ideal, and eager semantics, as well"
+
+  - id: claim5
+    type: observation
+    statement: "The a*-kernel of an AF F = (A, R) is F^{a*} = (A, R^{a*}) where R^{a*} = R \\ {(a,b) | a != b, (a,a) in R, and ((b,b) in R or (b,a) in R)}. It removes attacks from self-attackers only when the target also self-attacks or counter-attacks."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 7
+      section: "3.2. Strong equivalence w.r.t. admissible, preferred, ideal, semi-stable, and eager semantics"
+      quote_fragment: "R^{a*} = R \\ {(a,b) | a != b, (a,a) in R and (b,b) in R or (b,a) in R}"
+
+  - id: claim6
+    type: observation
+    statement: "For any AFs F and G: F equiv_adm^S G if and only if F^{a*} = G^{a*}. The a*-kernel characterizes strong equivalence for admissible and complete semantics."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 11
+      section: "3.4. Strong equivalence w.r.t. complete semantics"
+      quote_fragment: "For any AFs F and G: F^{a*} = G^{a*} iff F equiv_com^S G"
+
+  - id: claim7
+    type: observation
+    statement: "Strong equivalence relations collapse into three groups: (1) stable/semi-stable/preferred/ideal/eager share the a-kernel characterization, (2) admissible/complete share the a*-kernel characterization, (3) grounded semantics stands alone. For finite AFs, a*-kernel equality implies a-kernel equality but not vice versa."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 12
+      section: "3.5. Summary of results for strong equivalence"
+      quote_fragment: "The following relations hold for all AFs F, G, and sigma in {a, p, i, ss, e}: (1) F equiv_sigma^S G iff F^a = G^a; (2) F equiv_com^S G implies F equiv_sigma^S G; (3) F equiv_grd^S G and F equiv_sigma^S G"
+
+  - id: claim8
+    type: observation
+    statement: "For any self-loop free AF F: F^a = F^{a*} = F^c = F. Thus for self-loop free AFs, strong equivalence collapses to syntactic equivalence for all considered semantics."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 12
+      section: "3.5. Summary of results for strong equivalence"
+      quote_fragment: "For any self-loop free AF F, F^a = F^{a*} = F^c = F"
+
+  - id: claim9
+    type: observation
+    statement: "p-equivalence restricts the added context H to AFs that do not introduce attacks between existing arguments. For p-equivalence, the a*-kernel characterizes equivalence for all admissibility-based semantics including stable: F equiv_sigma^p G iff F^{a*} = G^{a*}."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 13
+      section: "4. Strong equivalence in terms of consequences"
+      quote_fragment: "For any AFs F, G, and sigma in {a, p, c, g, i, ss, e}, the following propositions are equivalent"
+
+  - id: claim10
+    type: observation
+    statement: "Local equivalence restricts the context H to share the same argument set as F and G (no new arguments). The same collapse pattern holds as for strong equivalence: stable/semi-stable/preferred/ideal/eager share one characterization, admissible/complete share another, grounded is separate."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 21
+      section: "5.3. Summary of results for local equivalence"
+      quote_fragment: "The following relations hold for all AFs F, G, and sigma in {a, p, i, ss, e}"
+
+  - id: claim11
+    type: observation
+    statement: "The c-local kernel of an AF F = (A, R) is F^c = (A, R^c) where R^c = R \\ {(a,b) | a != b, (b,b) in R, (a,c) in R for all c in R^{-1}(a) union {a,b}}. It characterizes local equivalence for complete semantics."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 18
+      section: "5.2. Local equivalence w.r.t. complete semantics"
+      quote_fragment: "we define the c-local kernel of F as F^c = (A, R^c) where R^c = R \\ {(a,b) | a != b, (b,b) in R, (a,c) in R for all c"
+
+  - id: claim12
+    type: mechanism
+    statement: "Self-attacking arguments are the sole source of non-trivial strong equivalence phenomena. Attacks originating from self-attacking arguments can be removed (under kernel-specific conditions) without affecting the semantics in any expansion context, because self-attacking arguments can never appear in any conflict-free (hence admissible, stable, etc.) extension."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 5
+      section: "3.1. Strong equivalence w.r.t. stable semantics"
+      quote_fragment: "Our goal first is to identify attacks which do not contribute when computing stable extensions of an AF. Indeed, we need to find attacks which do not contribute to the evaluation of F, no matter how F is extended"
+
+  - id: claim13
+    type: comparison
+    statement: "The approach to strong equivalence in argumentation is inspired by strong equivalence in logic programming (Lifschitz et al. 2001), but requires fundamentally different techniques because AF semantics are defined over attack graphs rather than logical models."
+    concepts:
+      - dung_framework
+    context: ctx_abstract_argumentation
+    provenance:
+      paper: Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation
+      page: 23
+      section: "6. Related work"
+      quote_fragment: "The concept of strong equivalence was initially proposed for logic programs by Lifschitz, Pearce, and Valverde"

@@ -1,0 +1,20 @@
+{
+  "title": "AGM Meets Abstract Argumentation: Contraction for Dung Frameworks",
+  "authors": ["Ringo Baumann", "Felix Linker"],
+  "year": "2019",
+  "arxiv_id": null,
+  "doi": "10.1007/978-3-030-19570-0_3",
+  "abstract": "The aim of the paper is to combine two of the most important areas of knowledge representation, namely belief revision and argumentation. We present a first study of AGM-style contraction for abstract argumentation frameworks (AFs). Contraction deals with removing former beliefs from a given knowledge base. Our presented approach is based on a reformulation of the original AGM postulates. In contrast to the AGM setup, where propositional logic is used, we build upon the recently developed Dung-logics. These logics have been introduced to tackle the somehow inverse problem, namely adding new beliefs. Importantly, they satisfy the characterization property that ordinary equivalence in Dung logics coincides with strong equivalence for the respective argumentation semantics. Although using the same setup we prove a negative result regarding the unrestricted existence of contraction operators. This means, an analog to the Harper Identity, which allows to construct a contraction operator from a given revision operator, is not available. However, dropping the somewhat controversial recovery postulate leads to the existence of reasonable operators.",
+  "url": "https://link.springer.com/chapter/10.1007/978-3-030-19570-0_3",
+  "pdf_url": "",
+  "venue": "European Conference on Logics in Artificial Intelligence (JELIA 2019)",
+  "venue_type": "conference",
+  "pages": "41-57",
+  "series": "Lecture Notes in Computer Science (LNAI)",
+  "volume": "11468",
+  "publisher": "Springer, Cham",
+  "isbn_print": "978-3-030-19569-4",
+  "isbn_online": "978-3-030-19570-0",
+  "pdf_status": "paywalled",
+  "tags": ["abstract-argumentation", "belief-revision", "AGM", "contraction", "Dung-frameworks"]
+}

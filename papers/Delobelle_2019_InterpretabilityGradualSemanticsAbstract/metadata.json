@@ -1,0 +1,17 @@
+{
+  "title": "Interpretability of Gradual Semantics in Abstract Argumentation",
+  "authors": [
+    "Jérôme Delobelle",
+    "Serena Villata"
+  ],
+  "year": "2019",
+  "arxiv_id": null,
+  "doi": "10.1007/978-3-030-29765-7_3",
+  "abstract": "Argumentation, in the field of Artificial Intelligence, is a formalism allowing to reason with contradictory information as well as to model an exchange of arguments between one or several agents. For this purpose, many semantics have been defined with, amongst them, gradual semantics aiming to assign an acceptability degree to each argument. Although the number of these semantics continues to increase, there is currently no method allowing to explain the results returned by these semantics. In this paper, we study the interpretability of these semantics by measuring, for each argument, the impact of the other arguments on its acceptability degree. We define a new property and show that the score of an argument returned by a gradual semantics which satisfies this property can also be computed by aggregating the impact of the other arguments on it. This result allows to provide, for each argument in an argumentation framework, a ranking between arguments from the most to the least impacting ones w.r.t. a given gradual semantics.",
+  "url": "https://hal.science/hal-02277678",
+  "pdf_url": "https://hal.science/hal-02277678v1/file/DVecsqaru2019.pdf",
+  "bibtex": "@inproceedings{Delobelle2019InterpretabilityOG,\n  author = {Jérôme Delobelle and Serena Villata},\n  booktitle = {European Conference on Symbolic and Quantitative Approaches to Reasoning and Uncertainty (ECSQARU 2019)},\n  pages = {27-38},\n  title = {Interpretability of Gradual Semantics in Abstract Argumentation},\n  year = {2019},\n  doi = {10.1007/978-3-030-29765-7_3}\n}\n",
+  "venue": "European Conference on Symbolic and Quantitative Approaches to Reasoning and Uncertainty",
+  "venue_type": "conference",
+  "pages": "27-38"
+}

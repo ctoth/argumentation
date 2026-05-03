@@ -1,0 +1,13 @@
+{
+  "title": "Characterizing Strong Equivalence for Argumentation Frameworks",
+  "authors": ["Emilia Oikarinen", "Stefan Woltran"],
+  "year": 2011,
+  "doi": "10.1016/j.artint.2011.06.003",
+  "venue": "Artificial Intelligence",
+  "volume": "175",
+  "pages": "1985-2009",
+  "bibtex": "@article{Oikarinen2011CharacterizingSE,\n  author = {Emilia Oikarinen and Stefan Woltran},\n  title = {Characterizing Strong Equivalence for Argumentation Frameworks},\n  journal = {Artificial Intelligence},\n  volume = {175},\n  pages = {1985--2009},\n  year = {2011},\n  doi = {10.1016/j.artint.2011.06.003}\n}\n",
+  "pdf_url": "https://sci-hub.st/storage/2024/1310/ad2856f18d034ce8db952184f465c486/oikarinen2011.pdf",
+  "semantic_scholar_url": "https://www.semanticscholar.org/paper/15a44d6360026528da5167e552d587881cf6370e",
+  "abstract": "Since argumentation is an inherently dynamic process, it is of great importance to understand the effect of incorporating new information into given argumentation frameworks. In this work, we address this issue by analyzing equivalence between argumentation frameworks under the assumption that the frameworks in question are incomplete, i.e. further information might be added later to both frameworks simultaneously. In other words, instead of the standard notion of equivalence (which holds between two frameworks, if they possess the same extensions), we require that two frameworks possess the same extensions for any expansion. We thus call our new notion strong equivalence and study how strong equivalence can be decided with respect to the most important semantics for abstract argumentation frameworks. We also consider variants of strong equivalence in which we define equivalence with respect to the sets of arguments credulously or skeptically accepted, and restrict strong equivalence to argumentations in which no new arguments are raised."
+}

@@ -1,0 +1,19 @@
+{
+  "title": "Answer-set programming encodings for argumentation frameworks",
+  "authors": [
+    "Uwe Egly",
+    "Sarah Alice Gaggl",
+    "Stefan Woltran"
+  ],
+  "year": "2010",
+  "arxiv_id": null,
+  "doi": "10.1080/19462166.2010.486479",
+  "abstract": "Answer-set programming (ASP) has emerged as a declarative programming paradigm where problems are encoded as logic programs, such that the so-called answer sets of theses programs represent the solutions of the encoded problem. The efficiency of the latest ASP solvers reached a state that makes them applicable for problems of practical importance. Consequently, problems from many different areas, including diagnosis, data integration, and graph theory, have been successfully tackled via ASP. In this work, we present such ASP-encodings for problems associated to abstract argumentation frameworks (AFs) and generalisations thereof. Our encodings are formulated as fixed queries, such that the input is the only part depending on the actual AF to process. We illustrate the functioning of this approach, which is underlying a new argumentation system called ASPARTIX in detail and show its adequacy in terms of computational complexity.",
+  "url": "https://doi.org/10.1080/19462166.2010.486479",
+  "pdf_url": null,
+  "venue": "Argument & Computation",
+  "volume": "1",
+  "issue": "2",
+  "pages": "147-177",
+  "bibtex": "@Article{Egly2010AnswersetPE,\n author = {Uwe Egly and Sarah Alice Gaggl and Stefan Woltran},\n journal = {Argument & Computation},\n pages = {147--177},\n title = {Answer-set programming encodings for argumentation frameworks},\n volume = {1},\n number = {2},\n year = {2010},\n doi = {10.1080/19462166.2010.486479}\n}"
+}

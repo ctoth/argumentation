@@ -1,0 +1,6 @@
+---
+tags: [quantitative-argumentation, bipolar, explainability, contribution-functions, principle-based-analysis]
+---
+Defines four contribution functions (Removal, Removal-without-indirection, Shapley value, Gradient) that quantify how one argument influences another's final strength in an acyclic Quantitative Bipolar Argumentation Graph (QBAG), introduces five principles (Contribution Existence, Quantitative Contribution Existence, Directionality, (Quantitative) Local Faithfulness, (Quantitative) Counterfactuality) and proves which functions satisfy which principles under five gradual semantics (QE, DFQuAD, SD-DFQuAD, EB, EBT).
+The headline result is that no contribution function satisfies all principles — Counterfactuality and Local Faithfulness are inherently in tension — but each "main" function is the unique satisfier of one principle (Removal ↔ Counterfactuality, Shapley ↔ Quantitative Contribution Existence, Gradient ↔ Local Faithfulness), so the choice should be use-case driven.
+Relevant to this project as a rigorous explainability framework that could inform attribution-style explanations atop our extension-based and ASP/Datalog-encoded argumentation reasoners, and as a methodological template for principle-based analysis of any reduction or encoding.

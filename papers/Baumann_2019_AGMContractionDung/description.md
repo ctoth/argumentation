@@ -1,0 +1,9 @@
+This paper extends Baumann & Brewka (2015), which defined AGM-style expansion and revision for Dung argumentation frameworks using "Dung logics," by tackling the remaining AGM operation: contraction. While expansion adds beliefs and revision incorporates potentially contradictory beliefs, contraction removes beliefs from a knowledge base.
+
+The central technical vehicle is the same family of Dung logics from the 2015 paper — monotonic logics whose models are AFs and whose consequence relation captures strong equivalence for standard argumentation semantics. The paper reformulates the classical AGM contraction postulates (closure, inclusion, vacuity, success, extensionality, and recovery) for this AF setting.
+
+The main negative result is that the Harper Identity — which in classical AGM allows constructing a contraction operator from any revision operator — does not hold for Dung logics. This means contraction operators satisfying all AGM postulates (including recovery) cannot be guaranteed to exist in the AF setting. The paper traces this failure to structural properties of how AF models behave under intersection and complement operations that differ from propositional logic.
+
+The positive result is that dropping the recovery postulate — which is independently controversial in AGM theory (Hansson 1989, 1999) — restores the existence of well-behaved contraction operators for AFs. The paper constructs concrete operators satisfying all remaining postulates.
+
+This work is significant for propstore because it completes the AGM trilogy (expansion, revision, contraction) for abstract argumentation, establishing what is and is not possible when applying classical belief change theory to AF dynamics. The impossibility of recovery-satisfying contraction has direct implications for any system implementing AF change operations.

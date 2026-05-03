@@ -1,0 +1,101 @@
+---
+paper_id: Baumann_2019_AGMContractionDung
+title: "AGM Meets Abstract Argumentation: Contraction for Dung Frameworks"
+authors: ["Ringo Baumann", "Felix Linker"]
+year: 2019
+extraction_source: "SpringerLink abstract + reference list (PDF paywalled)"
+extraction_confidence: medium
+produced_by:
+  agent: "claude-opus-4-6"
+  skill: "paper-process (worker)"
+  timestamp: "2026-03-30"
+claims:
+
+  - id: baumann2019-contraction-formulation
+    type: formal_definition
+    confidence: high
+    text: >
+      AGM contraction postulates can be reformulated for Dung argumentation frameworks
+      using Dung logics, analogously to how Baumann & Brewka (2015) reformulated
+      expansion and revision postulates.
+    context: "Extends Baumann & Brewka 2015 Dung logic framework to contraction"
+    cites: ["Baumann & Brewka 2015", "Alchourron et al. 1985"]
+    tags: ["AGM", "contraction", "Dung-logic", "belief-revision"]
+
+  - id: baumann2019-harper-identity-fails
+    type: impossibility_result
+    confidence: high
+    text: >
+      The Harper Identity — which in classical AGM allows constructing a contraction
+      operator from a given revision operator (K - A = K * ~A intersect K) — does not
+      hold for Dung logics. There is no analog that allows deriving contraction from
+      revision in the AF setting.
+    context: "Main negative result of the paper"
+    significance: >
+      Contraction and revision are more independent for AFs than in classical AGM.
+      Systems implementing AF dynamics cannot simply derive contraction from revision.
+    tags: ["Harper-Identity", "impossibility", "contraction", "revision"]
+
+  - id: baumann2019-no-unrestricted-contraction
+    type: impossibility_result
+    confidence: high
+    text: >
+      There is no unrestricted existence of contraction operators satisfying all six
+      AGM contraction postulates (closure, inclusion, vacuity, success, extensionality,
+      recovery) for Dung argumentation frameworks.
+    context: "Consequence of Harper Identity failure"
+    significance: >
+      Full AGM contraction is impossible for AFs. Any implementation must weaken
+      at least one postulate.
+    tags: ["AGM", "contraction", "impossibility", "recovery"]
+
+  - id: baumann2019-recovery-free-contraction-exists
+    type: existence_result
+    confidence: high
+    text: >
+      Dropping the recovery postulate (which requires that K subset (K - A) + A)
+      restores the existence of well-behaved contraction operators for Dung AFs
+      satisfying all remaining AGM postulates.
+    context: "Main positive result"
+    significance: >
+      Recovery-free contraction is the feasible form of AF contraction.
+      The recovery postulate is independently controversial in AGM theory
+      (Hansson 1989).
+    cites: ["Hansson 1989"]
+    tags: ["contraction", "recovery-postulate", "existence"]
+
+  - id: baumann2019-dung-logics-reuse
+    type: methodological
+    confidence: high
+    text: >
+      The Dung logics framework from Baumann & Brewka (2015) — where ordinary
+      equivalence coincides with strong equivalence for argumentation semantics —
+      is the correct logical foundation for studying all three AGM operations
+      (expansion, revision, contraction) on AFs.
+    context: "Methodological contribution: same framework for all AGM operations"
+    cites: ["Baumann & Brewka 2015"]
+    tags: ["Dung-logic", "strong-equivalence", "methodology"]
+
+  - id: baumann2019-agm-trilogy-complete
+    type: meta_result
+    confidence: high
+    text: >
+      Together with Baumann & Brewka (2015), this paper completes the AGM
+      trilogy for abstract argumentation: expansion works (2015), revision
+      works (2015), contraction works only without recovery (2019).
+    context: "Combined contribution of the two papers"
+    significance: >
+      Establishes the complete landscape of AGM belief change for Dung AFs.
+      Expansion and revision transfer cleanly; contraction requires dropping recovery.
+    cites: ["Baumann & Brewka 2015", "Alchourron et al. 1985"]
+    tags: ["AGM", "expansion", "revision", "contraction", "completeness"]
+
+  - id: baumann2019-recovery-controversial
+    type: observation
+    confidence: high
+    text: >
+      The recovery postulate is described as "somewhat controversial" in
+      AGM theory, citing Hansson's work on alternative operators for theory change.
+    context: "Motivates why dropping recovery is acceptable"
+    cites: ["Hansson 1989"]
+    tags: ["recovery-postulate", "AGM", "controversy"]

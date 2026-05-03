@@ -1,0 +1,15 @@
+{
+  "title": "Approximating operators and semantics for abstract dialectical frameworks",
+  "authors": [
+    "Hannes Strass"
+  ],
+  "year": "2013",
+  "doi": "10.1016/j.artint.2013.09.004",
+  "url": "https://www.semanticscholar.org/paper/33a30bc54ddd198a3e7180f28da9d5dea1f46e31",
+  "pdf_url": "https://doi.org/10.1016/j.artint.2013.09.004",
+  "bibtex": "@Article{Strass2013ApproximatingOA,\n author = {Hannes Strass},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {39-70},\n title = {Approximating operators and semantics for abstract dialectical frameworks},\n volume = {205},\n year = {2013}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "205",
+  "pages": "39-70"
+}

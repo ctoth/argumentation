@@ -1,0 +1,16 @@
+{
+  "title": "Contribution Functions for Quantitative Bipolar Argumentation Graphs: A Principle-based Analysis",
+  "authors": [
+    "Timotheus Kampik",
+    "Nico Potyka",
+    "Xiang Yin",
+    "Kristijonas Čyras",
+    "Francesca Toni"
+  ],
+  "year": "2024",
+  "arxiv_id": "2401.08879",
+  "doi": "10.48550/arXiv.2401.08879",
+  "abstract": "We present a principle-based analysis of contribution functions for quantitative bipolar argumentation graphs that quantify the contribution of one argument to another. The introduced principles formalise the intuitions underlying different contribution functions as well as expectations one would have regarding the behaviour of contribution functions in general. As none of the covered contribution functions satisfies all principles, our analysis can serve as a tool that enables the selection of the most suitable function based on the requirements of a given use case.",
+  "url": "http://arxiv.org/abs/2401.08879v2",
+  "pdf_url": "https://arxiv.org/pdf/2401.08879v2"
+}
