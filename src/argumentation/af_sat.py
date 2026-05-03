@@ -485,6 +485,13 @@ class PreferredSkepticalTaskSolver:
         if not attackers:
             self._emit_shortcut("preferred_skeptical_shortcut_unattacked_query", True)
             return True
+        grounded = grounded_extension(self.framework)
+        if query in grounded:
+            self._emit_shortcut("preferred_skeptical_shortcut_grounded_in", True)
+            return True
+        if query in _attacked_by(grounded, self.framework.defeats):
+            self._emit_shortcut("preferred_skeptical_shortcut_grounded_attacked", False)
+            return False
         if _is_acyclic(self.framework):
             accepted = query in grounded_extension(self.framework)
             self._emit_shortcut("preferred_skeptical_shortcut_acyclic_grounded", accepted)

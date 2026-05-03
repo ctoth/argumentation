@@ -162,8 +162,38 @@ def test_preferred_skeptical_shortcuts_are_traceable_and_exact() -> None:
         acyclic,
         trace_sink=acyclic_checks.append,
     ).decide("q") is False
-    assert acyclic_checks[0].utility_name == "preferred_skeptical_shortcut_acyclic_grounded"
+    assert acyclic_checks[0].utility_name == "preferred_skeptical_shortcut_grounded_attacked"
     assert acyclic_checks[0].result == "rejected"
+
+
+def test_preferred_skeptical_grounded_shortcuts_are_traceable_and_ordered() -> None:
+    grounded_in = af({"q", "a", "g"}, {("a", "q"), ("g", "a")})
+    grounded_in_checks: list[SATCheck] = []
+    assert PreferredSkepticalTaskSolver(
+        grounded_in,
+        trace_sink=grounded_in_checks.append,
+    ).decide("q") is True
+    assert grounded_in_checks[0].utility_name == "preferred_skeptical_shortcut_grounded_in"
+    assert grounded_in_checks[0].result == "accepted"
+
+    grounded_attacked = af({"g", "q", "a"}, {("g", "q"), ("q", "a")})
+    grounded_attacked_checks: list[SATCheck] = []
+    assert PreferredSkepticalTaskSolver(
+        grounded_attacked,
+        trace_sink=grounded_attacked_checks.append,
+    ).decide("q") is False
+    assert grounded_attacked_checks[0].utility_name == (
+        "preferred_skeptical_shortcut_grounded_attacked"
+    )
+    assert grounded_attacked_checks[0].result == "rejected"
+
+    undecided = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("a", "b")})
+    undecided_checks: list[SATCheck] = []
+    PreferredSkepticalTaskSolver(undecided, trace_sink=undecided_checks.append).decide("q")
+    utility_names = [check.utility_name for check in undecided_checks]
+    assert "preferred_skeptical_shortcut_grounded_in" not in utility_names
+    assert "preferred_skeptical_shortcut_grounded_attacked" not in utility_names
+    assert "preferred_super_core_admissible_attacker" in utility_names
 
 
 def test_preferred_super_core_outside_argument_routes_to_cdas() -> None:
