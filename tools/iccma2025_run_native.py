@@ -135,13 +135,29 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def run_native(config: RunConfig) -> list[dict[str, Any]]:
+    log_run_event(
+        "iccma_run_start",
+        root=str(config.root),
+        backend=config.backend,
+        max_af_arguments=config.max_af_arguments,
+        max_aba_assumptions=config.max_aba_assumptions,
+        timeout_seconds=config.timeout_seconds,
+        progress=config.progress,
+    )
     manifest_path, task_matrix_path = discover_manifest_paths(config.root)
     manifest = load_json(manifest_path)
+    log_run_event(
+        "iccma_manifest_loaded",
+        manifest_path=str(manifest_path),
+        task_matrix_path=str(task_matrix_path) if task_matrix_path is not None else None,
+        instances=len(manifest),
+    )
     task_matrix = (
         load_json(task_matrix_path)
         if task_matrix_path is not None
         else infer_task_matrix(config.root, manifest)
     )
+    log_run_event("iccma_task_matrix_loaded", tasks=len(task_matrix))
     jobs = [
         (instance, task)
         for instance in manifest
@@ -149,12 +165,16 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         for task in task_matrix
         if task["instance_kind"] == normalized_instance_kind(instance)
     ]
+    log_run_event("iccma_jobs_built", jobs=len(jobs))
     rows: list[dict[str, Any]] = []
     for index, (instance, task) in enumerate(jobs, start=1):
+        if config.progress:
+            log_row_start(instance, task, index=index, total=len(jobs))
         row = run_or_skip(config, instance, task)
         rows.append(row)
         if config.progress:
             log_progress(row, index=index, total=len(jobs))
+    log_run_event("iccma_run_rows_complete", rows=len(rows))
     return rows
 
 
@@ -228,6 +248,33 @@ def log_progress(row: dict[str, Any], *, index: int, total: int) -> None:
         "elapsed_seconds": row["elapsed_seconds"],
         "answer": row["answer"],
     }
+    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+
+
+def log_row_start(
+    instance: dict[str, Any],
+    task: dict[str, Any],
+    *,
+    index: int,
+    total: int,
+) -> None:
+    event = {
+        "event": "iccma_row_start",
+        "index": index,
+        "total": total,
+        "track": task["track"],
+        "subtrack": task["subtrack"],
+        "instance_kind": instance["kind"],
+        "instance": instance["relative_path"],
+        "arguments_or_atoms": instance.get("arguments_or_atoms"),
+        "attacks": instance.get("attacks"),
+        "assumptions": instance.get("assumptions"),
+    }
+    print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
+
+
+def log_run_event(event_name: str, **fields: Any) -> None:
+    event = {"event": event_name, **fields}
     print(json.dumps(event, sort_keys=True), file=sys.stderr, flush=True)
 
 
