@@ -39,6 +39,7 @@ from argumentation.sat_encoding import (
     sat_extensions,
     stable_extensions_from_encoding,
 )
+from argumentation.solver import solve_dung_acceptance
 from tests.test_dung import af, argumentation_frameworks
 
 
@@ -688,6 +689,66 @@ def test_kernel_ideal_extension_matches_native_oracle(
     framework: ArgumentationFramework,
 ) -> None:
     assert find_ideal_extension(framework) == ideal_extension(framework)
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_ideal_extension_is_admissible(
+    framework: ArgumentationFramework,
+) -> None:
+    ideal = find_ideal_extension(framework)
+
+    assert admissible(ideal, framework.arguments, framework.defeats)
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_ideal_extension_is_below_every_native_preferred_extension(
+    framework: ArgumentationFramework,
+) -> None:
+    ideal = find_ideal_extension(framework)
+
+    assert all(ideal <= extension for extension in preferred_extensions(framework))
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_ideal_extension_has_no_larger_admissible_common_subset(
+    framework: ArgumentationFramework,
+) -> None:
+    ideal = find_ideal_extension(framework)
+    preferred = preferred_extensions(framework)
+
+    for candidate in _admissible_sets(framework):
+        if ideal < candidate:
+            assert not all(candidate <= extension for extension in preferred)
+
+
+@given(argumentation_frameworks(max_args=4))
+@settings(deadline=10000, max_examples=40)
+def test_kernel_ideal_acceptance_matches_unique_ideal_membership(
+    framework: ArgumentationFramework,
+) -> None:
+    ideal = find_ideal_extension(framework)
+
+    for query in sorted(framework.arguments):
+        credulous = solve_dung_acceptance(
+            framework,
+            semantics="ideal",
+            task="credulous",
+            query=query,
+            backend="sat",
+        )
+        skeptical = solve_dung_acceptance(
+            framework,
+            semantics="ideal",
+            task="skeptical",
+            query=query,
+            backend="sat",
+        )
+
+        assert credulous.answer is (query in ideal)
+        assert skeptical.answer is (query in ideal)
 
 
 @given(argumentation_frameworks(max_args=4))
