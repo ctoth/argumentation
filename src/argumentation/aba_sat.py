@@ -11,10 +11,7 @@ def support_extensions(
     semantics: str,
 ) -> tuple[AssumptionSet, ...]:
     """Enumerate ABA extensions using precomputed derivation support masks."""
-    state = _SupportState.from_framework(
-        framework,
-        target_literals=_defense_target_literals(framework),
-    )
+    state = _SupportState.from_framework(framework)
     if semantics == "stable":
         masks = [
             mask
@@ -56,10 +53,7 @@ def support_acceptance(
     query: Literal,
 ) -> tuple[bool, AssumptionSet | None]:
     """Return a decision and witness/counterexample for exact ABA support solving."""
-    state = _SupportState.from_framework(
-        framework,
-        target_literals=_defense_target_literals(framework) | frozenset({query}),
-    )
+    state = _SupportState.from_framework(framework)
     extensions = support_extensions(framework, semantics)
     if task == "credulous":
         witness = next(
@@ -142,12 +136,7 @@ def sat_support_extension(
         assumption: z3.Bool(f"in_{_literal_key(assumption)}")
         for assumption in sorted(framework.assumptions, key=repr)
     }
-    target_literals = _defense_target_literals(framework)
-    if require_derived is not None:
-        target_literals |= frozenset({require_derived})
-    if require_not_derived is not None:
-        target_literals |= frozenset({require_not_derived})
-    supports = _minimal_supports(framework, target_literals=target_literals)
+    supports = _minimal_supports(framework)
     solver = z3.Solver()
     _add_admissible_constraints(z3, solver, framework, variables, supports)
     if semantics == "complete":
@@ -326,12 +315,7 @@ class _SupportState:
         }
 
     @classmethod
-    def from_framework(
-        cls,
-        framework: ABAFramework,
-        *,
-        target_literals: frozenset[Literal] | None = None,
-    ) -> _SupportState:
+    def from_framework(cls, framework: ABAFramework) -> _SupportState:
         assumptions = tuple(sorted(framework.assumptions, key=repr))
         index = {assumption: offset for offset, assumption in enumerate(assumptions)}
         supports = {
@@ -339,10 +323,7 @@ class _SupportState:
                 _support_mask(support, index)
                 for support in values
             )
-            for literal, values in _minimal_supports(
-                framework,
-                target_literals=target_literals,
-            ).items()
+            for literal, values in _minimal_supports(framework).items()
         }
         return cls(framework, assumptions, supports)
 
@@ -411,24 +392,17 @@ def _support_mask(
     return mask
 
 
-def _minimal_supports(
-    framework: ABAFramework,
-    *,
-    target_literals: frozenset[Literal] | None = None,
-) -> dict[Literal, frozenset[AssumptionSet]]:
-    relevant_literals = _support_relevant_literals(framework, target_literals)
+def _minimal_supports(framework: ABAFramework) -> dict[Literal, frozenset[AssumptionSet]]:
     supports: dict[Literal, set[AssumptionSet]] = {
-        literal: set() for literal in relevant_literals
+        literal: set() for literal in framework.language
     }
-    for assumption in framework.assumptions & relevant_literals:
+    for assumption in framework.assumptions:
         supports[assumption].add(frozenset({assumption}))
 
     changed = True
     while changed:
         changed = False
         for rule in sorted(framework.rules, key=repr):
-            if rule.consequent not in relevant_literals:
-                continue
             consequent_supports = _combine_supports(
                 tuple(supports[antecedent] for antecedent in rule.antecedents)
             )
@@ -440,30 +414,6 @@ def _minimal_supports(
         literal: frozenset(values)
         for literal, values in supports.items()
     }
-
-
-def _support_relevant_literals(
-    framework: ABAFramework,
-    target_literals: frozenset[Literal] | None,
-) -> frozenset[Literal]:
-    if target_literals is None:
-        return framework.language
-    relevant = set(target_literals & framework.language)
-    changed = True
-    while changed:
-        changed = False
-        for rule in framework.rules:
-            if rule.consequent not in relevant:
-                continue
-            for antecedent in rule.antecedents:
-                if antecedent not in relevant:
-                    relevant.add(antecedent)
-                    changed = True
-    return frozenset(relevant)
-
-
-def _defense_target_literals(framework: ABAFramework) -> frozenset[Literal]:
-    return frozenset(framework.contrary.values())
 
 
 def _combine_supports(
@@ -528,10 +478,7 @@ def _sat_preferred_counterexample_not_deriving(
         assumption: z3.Bool(f"in_{_literal_key(assumption)}")
         for assumption in sorted(framework.assumptions, key=repr)
     }
-    supports = _minimal_supports(
-        framework,
-        target_literals=_defense_target_literals(framework) | frozenset({query}),
-    )
+    supports = _minimal_supports(framework)
     solver = z3.Solver()
     _add_admissible_constraints(z3, solver, framework, variables, supports)
     _add_derived_constraints(
