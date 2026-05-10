@@ -223,8 +223,8 @@ checklist is `workstreams\cap200-solver-frontier.md`.
 
 Before declaring this checklist complete:
 
-- [ ] every checklist item is completed or explicitly deferred with rationale
-- [ ] `uv run pytest -q` passes
-- [ ] final cap-150 benchmark summary is recorded
-- [ ] final timeout manifest is current
-- [ ] no source files touched by the checklist are dirty
+- [x] every checklist item is completed or explicitly deferred with rationale
+- [x] `uv run pytest -q` passes: 801 passed, 2 skipped
+- [x] final cap-150 benchmark summary is recorded
+- [x] final timeout manifest is current
+- [x] no source files touched by the checklist are dirty
