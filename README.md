@@ -45,7 +45,7 @@ Optional extras unlock specific surfaces:
 
 | Extra | What it unlocks | Pulls |
 |---|---|---|
-| `[z3]` | `argumentation.epistemic` linear atomic constraint satisfiability and entailment | `z3-solver>=4.12` |
+| `[z3]` | `argumentation.epistemic` linear atomic constraint satisfiability / entailment and the `argumentation.af_sat` SAT backend | `z3-solver>=4.12` |
 | `[asp]` | Clingo-backed ABA solving (`argumentation.aba_asp`) and ASP backends in `argumentation.aspic_encoding` | `clingo>=5.7` |
 | `[grounding]` | Datalog-style grounding of defeasible theories into ASPIC+ (`argumentation.datalog_grounding`) | [`gunray`](https://github.com/ctoth/gunray) (sourced from git, not PyPI) |
 
@@ -326,9 +326,8 @@ marginals as a diagnostic.
 
 `argumentation.epistemic` represents epistemic graphs with positive and
 negative influences over belief levels, finite model enumeration, evidence
-updates, and projection to constellation PrAFs. It is the only Z3-backed
-surface in the package; install `[z3]` to use linear atomic constraint
-satisfiability and entailment helpers.
+updates, and projection to constellation PrAFs. Install `[z3]` to use its
+linear atomic constraint satisfiability and entailment helpers.
 
 > Li, H., Oren, N., & Norman, T. J. (2012). Probabilistic argumentation
 > frameworks. In *TAFA 2011*.
@@ -425,8 +424,9 @@ text = write_af(af)
 
 `argumentation.sat_encoding` provides a pure-Python CNF encoding of stable
 extension semantics over one Boolean variable per argument; the encoding is
-solver-independent. `argumentation.af_sat` provides an incremental SAT kernel
-for Dung AFs with telemetry (`SATCheck`, `SATTraceSink`, `AfSatKernel`).
+solver-independent. `argumentation.af_sat` provides a Z3-backed incremental
+SAT kernel for Dung AFs with telemetry (`SATCheck`, `SATTraceSink`,
+`AfSatKernel`).
 `argumentation.aba_sat` provides task-directed SAT enumeration for ABA.
 
 `argumentation.datalog_grounding` (requires the `[grounding]` extra) grounds
