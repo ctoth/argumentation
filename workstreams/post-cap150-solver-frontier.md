@@ -35,18 +35,18 @@ Remaining timeout classes:
 
 ## 1. Freeze The Timeout Manifest
 
-- [ ] Create `tests/manifests/iccma2025-cap150-timeouts.json` from
+- [x] Create `tests/manifests/iccma2025-cap150-timeouts.json` from
   `data/iccma/timeouts/post-aba-stable-cap150-timeouts.json`.
-- [ ] Include for each row: year, track, subtrack, instance kind, instance path,
+- [x] Include for each row: year, track, subtrack, instance kind, instance path,
   size fields, status, reason, elapsed seconds, and input SHA-256.
-- [ ] Add a small manifest validation helper or test-local function.
-- [ ] Add tests:
-  - [ ] duplicate logical rows are rejected
-  - [ ] every manifest row resolves to an existing input file
-  - [ ] every stored hash matches current file contents
-  - [ ] timeout summaries are invariant under row order
-  - [ ] year/subtrack filtering matches a simple oracle
-- [ ] Run:
+- [x] Add a small manifest validation helper or test-local function.
+- [x] Add tests:
+  - [x] duplicate logical rows are rejected
+  - [x] every manifest row resolves to an existing input file
+  - [x] every stored hash matches current file contents
+  - [x] timeout summaries are invariant under row order
+  - [x] year/subtrack filtering matches a simple oracle
+- [x] Run:
 
 ```powershell
 uv run pytest -q tests\test_iccma_timeout_corpus.py tests\test_iccma_run_timeout_rows.py
