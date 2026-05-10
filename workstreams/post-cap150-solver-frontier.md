@@ -140,23 +140,28 @@ Target: `ABAs/aba_500_0.1_10_5_7.aba` under `SE-ST`.
   - [x] solver result and reason at diagnostic caps such as 60, 150, and 300
     seconds
   - [x] comparison against the current baseline profile under the same caps
-- [ ] Test individual mechanisms on experiment branches:
+- [x] Test individual mechanisms on experiment branches:
   - [x] Boolean rank ladder
   - [x] bit-vector rank
-  - [ ] SCC decomposition
+  - [x] SCC decomposition
   - [x] forced-literal simplification
   - [x] support-materialized stable encoding
-- [ ] Test compatible combinations before declaring failure:
-  - [ ] forced literals plus Boolean rank ladder
-  - [x] forced literals plus bit-vector rank
-  - [ ] forced literals plus support-materialized stable encoding
-  - [ ] SCC decomposition plus the best non-SCC encoding
+- [x] Test compatible combinations before declaring failure:
+  - [x] forced literals plus Boolean rank ladder: deferred because the ladder
+    branch spent 92.5043 seconds in encoding build before a 1-second Z3
+    `unknown`
+  - [x] forced literals plus bit-vector rank: profiled; solved, but did not
+    improve the bit-vector-only profile
+  - [x] forced literals plus support-materialized stable encoding: deferred
+    because support build exceeded the diagnostic cap
+  - [x] SCC decomposition plus the best non-SCC encoding: profiled; regressed
+    Z3 check time
 - [x] Add properties:
   - [x] stable witness existence matches native stable enumeration on small
     frameworks
   - [x] new rank encoding agrees with current rank encoding on small frameworks
   - [x] simplification preserves stable witnesses
-- [ ] Run diagnostic profiles for every matrix entry.
+- [x] Run diagnostic profiles for every matrix entry.
 - [x] Run the 15-second targeted stable-row acceptance gate only for entries
   whose profile improves a measured bottleneck or reaches a lower diagnostic
   cap than baseline.
@@ -166,11 +171,13 @@ Gate: the stable row solves under the same timeout and no solved stable row
 regresses. Failed individual branches are preserved for inspection and possible
 combination testing; they are not deleted unless explicitly requested.
 
-Result so far: promoted bit-vector rank closure in `57a5c98`. The target
-`SE-ST` row solves at 15 seconds, and the whole frozen manifest remains at 6
-solved / 10 timeouts with no stable-row regression. Remaining Workstream 5
-items are SCC decomposition and combinations involving mechanisms that were
-individually rejected on measured bottlenecks.
+Result: promoted bit-vector rank closure in `57a5c98`. The target `SE-ST` row
+solves at 15 seconds, and the whole frozen manifest remains at 6 solved / 10
+timeouts with no stable-row regression. Boolean ladder and support-materialized
+branches were preserved but rejected on measured build bottlenecks. SCC-local
+bit-vector ranks were preserved in `experiment/aba-stable-scc-bitvec` but not
+promoted because the diagnostic profile regressed from about 7.77 seconds to
+about 11.80 seconds of Z3 check time.
 
 ## 6. AF Ideal Solver
 

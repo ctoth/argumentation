@@ -63,16 +63,24 @@ Experiments:
 | `experiment/aba-stable-boolean-rank-ladder` | Boolean closure ladder instead of integer ranks | forced literals, SCC decomposition | passed closure and stable oracle tests | build 92.5043s, 251100 assertions, Z3 `unknown` after 1-second cap | timeout at 15 seconds | branch preserved; rejected on build bottleneck |
 | `experiment/aba-stable-support-sat` | Materialize minimal supports for stable constraints | forced literals, SCC decomposition | passed support-stable and stable oracle tests | support build exceeded 10-second cap; unbounded run reached about 25GB working set | timeout at 15 seconds | branch preserved; rejected on support-build bottleneck |
 | `experiment/aba-stable-bitvec-profiled` | Bit-vector ranks for stable closure | forced literals, SCC decomposition | passed bit-vector closure property and ABA regression tests | build 2.4885s, 3649 assertions, Z3 `sat` after 7.7699s under 15-second cap | solved target row at 15 seconds; whole manifest solved 6/16 | promoted in `57a5c98` |
+| `experiment/aba-stable-scc-bitvec` | SCC-local bit-vector ranks for stable closure | bit-vector rank | passed SCC bit-vector closure property and ABA regression tests | build 2.5475s, 3649 assertions, Z3 `sat` after 11.7994s under 15-second cap | not run; profile was worse than promoted bit-vector rank | branch preserved; rejected on SAT-check regression |
 
 Pending matrix entries:
 
-- SCC decomposition as an experiment branch
 - forced literals plus Boolean rank ladder
 - forced literals plus support-materialized stable encoding
-- SCC decomposition plus best non-SCC encoding
 
 Deferred combination entries:
 
 - forced literals plus bit-vector rank: profiled on the promoted bit-vector
   encoding; the combination solved, but did not improve the bit-vector-only
   profile enough to justify extra production constraints
+- forced literals plus Boolean rank ladder: not run after the ladder alone
+  produced 251100 assertions and spent 92.5043s in encoding build before a
+  1-second Z3 `unknown`
+- forced literals plus support-materialized stable encoding: not run after
+  support materialization exceeded the 10-second support-build cap and the
+  earlier unbounded run reached about 25GB working set
+- SCC decomposition plus best non-SCC encoding: executed as
+  `experiment/aba-stable-scc-bitvec`; rejected because the profile regressed
+  from 7.7699s to 11.7994s in Z3 check time
