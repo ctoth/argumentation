@@ -183,17 +183,24 @@ about 11.80 seconds of Z3 check time.
 
 Goal: reduce AF `DC-ID` and `SE-ID` timeouts.
 
-- [ ] Add Hypothesis properties:
-  - [ ] ideal extension equals `dung.ideal_extension` on small generated AFs
-  - [ ] returned ideal set is admissible
-  - [ ] returned ideal set is contained in every preferred extension
-  - [ ] no admissible strict superset stays below all preferred extensions
-  - [ ] `DC-ID` and `DS-ID` answers match membership in the unique ideal
+- [x] Add Hypothesis properties:
+  - [x] ideal extension equals `dung.ideal_extension` on small generated AFs
+  - [x] returned ideal set is admissible
+  - [x] returned ideal set is contained in every preferred extension
+  - [x] no admissible strict superset stays below all preferred extensions
+  - [x] `DC-ID` and `DS-ID` answers match membership in the unique ideal
     extension
-- [ ] Try a direct ideal formulation or preferred-core CEGAR path.
-- [ ] Run only AF ideal manifest rows first, then the whole manifest.
+- [x] Try a direct ideal formulation or preferred-core CEGAR path.
+- [x] Run only AF ideal manifest rows first, then the whole manifest.
 
 Gate: AF ideal timeout count decreases, or the slice is reverted.
+
+Result: kept shared admissible attack definitions in `aaaa6d5`. The first
+maximized-attacker slice failed to reduce `SE-ID` or `DC-ID` timeouts and was
+reverted in `576540c`. The kept slice reduced AF ideal frozen timeouts from 4
+to 0 at 15 seconds. The whole frozen manifest improved from 6 solved / 10
+timeouts after Workstream 5 to 8 solved / 8 timeouts; remaining timeouts are
+all ABA `SE-PR`.
 
 ## 7. Cap-200 Expansion
 
