@@ -248,7 +248,7 @@ enumeration. The Z3-backed package surfaces are:
 - `argumentation.af_sat` — incremental SAT kernel for Dung AF acceptance.
 
 Without `z3-solver`, those entry points raise a runtime error naming the
-missing dependency (`epistemic.py:585`).
+missing dependency (`epistemic.py`, `af_sat.py`).
 
 ## Probabilistic backend routing
 
