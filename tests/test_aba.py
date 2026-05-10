@@ -4,6 +4,7 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from argumentation import aba as native_aba
+from argumentation import aba_sat
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
 from argumentation.solver import (
@@ -252,6 +253,95 @@ def test_solve_aba_single_extension_support_sat_matches_native_oracle(
         assert native_extensions == ()
     else:
         assert result.extension in native_extensions
+
+
+@given(flat_aba_frameworks(), st.data())
+@settings(deadline=10000, max_examples=40)
+def test_ranked_closure_matches_native_closure(
+    framework: ABAFramework,
+    data: st.DataObject,
+) -> None:
+    assumptions = tuple(sorted(framework.assumptions, key=repr))
+    selected = data.draw(st.frozensets(st.sampled_from(assumptions)))
+    z3 = aba_sat._load_z3()
+    variables = {
+        assumption: z3.Bool(f"test_in_{index}")
+        for index, assumption in enumerate(assumptions)
+    }
+    solver = z3.Solver()
+    derived = aba_sat._add_ranked_closure_constraints(z3, solver, framework, variables)
+    for assumption, variable in variables.items():
+        solver.add(variable == (assumption in selected))
+
+    assert solver.check() == z3.sat
+    model = solver.model()
+    ranked_closure = frozenset(
+        literal
+        for literal, variable in derived.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+
+    assert ranked_closure == native_aba._closure(framework, selected)
+
+
+@given(flat_aba_frameworks(), st.data())
+@settings(deadline=10000, max_examples=40)
+def test_preferred_support_sat_preserves_required_assumptions(
+    framework: ABAFramework,
+    data: st.DataObject,
+) -> None:
+    assumptions = tuple(sorted(framework.assumptions, key=repr))
+    required = data.draw(st.frozensets(st.sampled_from(assumptions), max_size=2))
+
+    witness = aba_sat.sat_support_extension(
+        framework,
+        "preferred",
+        require_assumptions=required,
+    )
+
+    if witness is None:
+        assert not any(required <= extension for extension in native_aba.preferred_extensions(framework))
+    else:
+        assert required <= witness
+        assert witness in native_aba.preferred_extensions(framework)
+
+
+@given(flat_aba_frameworks(), st.sampled_from(["require_derived", "require_not_derived"]))
+@settings(deadline=10000, max_examples=40)
+def test_preferred_support_sat_query_constraints_match_derivability(
+    framework: ABAFramework,
+    constraint: str,
+) -> None:
+    query = sorted(framework.language, key=repr)[0]
+
+    witness = aba_sat.sat_support_extension(
+        framework,
+        "preferred",
+        require_derived=query if constraint == "require_derived" else None,
+        require_not_derived=query if constraint == "require_not_derived" else None,
+    )
+
+    if witness is None:
+        native_witnesses = native_aba.preferred_extensions(framework)
+        if constraint == "require_derived":
+            assert not any(native_aba.derives(framework, extension, query) for extension in native_witnesses)
+        else:
+            assert not any(not native_aba.derives(framework, extension, query) for extension in native_witnesses)
+    elif constraint == "require_derived":
+        assert native_aba.derives(framework, witness, query)
+        assert witness in native_aba.preferred_extensions(framework)
+    else:
+        assert not native_aba.derives(framework, witness, query)
+        assert witness in native_aba.preferred_extensions(framework)
+
+
+@given(flat_aba_frameworks())
+@settings(deadline=10000, max_examples=40)
+def test_stable_shortcut_witness_is_preferred_member(framework: ABAFramework) -> None:
+    witness = aba_sat.sat_stable_extension(framework)
+
+    if witness is not None:
+        assert witness in native_aba.preferred_extensions(framework)
 
 
 @given(
