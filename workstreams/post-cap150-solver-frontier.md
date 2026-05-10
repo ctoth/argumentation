@@ -207,11 +207,17 @@ all ABA `SE-PR`.
 Do this only after the cap-150 timeout manifest is reduced or every remaining
 timeout class is explicitly deferred with rationale.
 
-- [ ] Run a fresh cap-150 benchmark and confirm the current default result.
-- [ ] Run cap-200 under a new label.
-- [ ] Extract timeout corpus.
-- [ ] Create the next checked manifest.
-- [ ] Start a new checklist for the cap-200 frontier.
+- [x] Run a fresh cap-150 benchmark and confirm the current default result.
+- [x] Run cap-200 under a new label.
+- [x] Extract timeout corpus.
+- [x] Create the next checked manifest.
+- [x] Start a new checklist for the cap-200 frontier.
+
+Result: fresh cap-150 `post-workstreams-cap150` solved 833 rows, timed out 12,
+and skipped 6549. Fresh cap-200 `post-workstreams-cap200` solved 1319 rows,
+timed out 49, and skipped 6026. The cap-200 checked manifest is
+`tests\manifests\iccma2025-cap200-timeouts.json`; its executable follow-up
+checklist is `workstreams\cap200-solver-frontier.md`.
 
 ## Final Verification
 
