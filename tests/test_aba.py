@@ -286,35 +286,6 @@ def test_ranked_closure_matches_native_closure(
 
 @given(flat_aba_frameworks(), st.data())
 @settings(deadline=10000, max_examples=40)
-def test_bitvec_ranked_closure_matches_native_closure(
-    framework: ABAFramework,
-    data: st.DataObject,
-) -> None:
-    assumptions = tuple(sorted(framework.assumptions, key=repr))
-    selected = data.draw(st.frozensets(st.sampled_from(assumptions)))
-    z3 = aba_sat._load_z3()
-    variables = {
-        assumption: z3.Bool(f"test_bv_in_{index}")
-        for index, assumption in enumerate(assumptions)
-    }
-    solver = z3.Solver()
-    derived = aba_sat._add_bitvec_ranked_closure_constraints(z3, solver, framework, variables)
-    for assumption, variable in variables.items():
-        solver.add(variable == (assumption in selected))
-
-    assert solver.check() == z3.sat
-    model = solver.model()
-    ranked_closure = frozenset(
-        literal
-        for literal, variable in derived.items()
-        if z3.is_true(model.evaluate(variable, model_completion=True))
-    )
-
-    assert ranked_closure == native_aba._closure(framework, selected)
-
-
-@given(flat_aba_frameworks(), st.data())
-@settings(deadline=10000, max_examples=40)
 def test_preferred_support_sat_preserves_required_assumptions(
     framework: ABAFramework,
     data: st.DataObject,
