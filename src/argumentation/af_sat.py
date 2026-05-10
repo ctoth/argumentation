@@ -726,12 +726,6 @@ def _admissible_attacker_of_set(
 ) -> frozenset[str] | None:
     if not targets:
         return None
-    if len(targets) >= 32:
-        return _max_target_admissible_attacker_of_set(
-            problem,
-            targets,
-            utility_name=utility_name,
-        )
     problem.solver.push()
     try:
         problem.require_attacks_any(targets)
@@ -740,73 +734,6 @@ def _admissible_attacker_of_set(
         return problem.model_extension()
     finally:
         problem.solver.pop()
-
-
-def _max_target_admissible_attacker_of_set(
-    problem: AfSatKernel,
-    targets: frozenset[str],
-    *,
-    utility_name: str,
-) -> frozenset[str] | None:
-    attackable_targets = frozenset(
-        target
-        for target in targets
-        if problem.attackers_index.get(target, frozenset())
-    )
-    if not attackable_targets:
-        return None
-    low = 1
-    high = len(attackable_targets)
-    best: frozenset[str] | None = None
-    while low <= high:
-        midpoint = (low + high) // 2
-        problem.solver.push()
-        try:
-            _require_attacks_at_least(problem, attackable_targets, midpoint)
-            candidate = (
-                problem.model_extension()
-                if problem.check(
-                    utility_name,
-                    range_bound=midpoint,
-                    range_constraint="attacks_at_least",
-                )
-                == "sat"
-                else None
-            )
-        finally:
-            problem.solver.pop()
-        if candidate is None:
-            high = midpoint - 1
-        else:
-            best = candidate
-            low = midpoint + 1
-    return best
-
-
-def _require_attacks_at_least(
-    problem: AfSatKernel,
-    targets: frozenset[str],
-    count: int,
-) -> None:
-    if count <= 0:
-        return
-    attack_exprs = []
-    for target in sorted(targets):
-        attackers = tuple(sorted(problem.attackers_index.get(target, frozenset())))
-        if not attackers:
-            continue
-        attack_exprs.append(
-            problem.z3.Or(*(problem.in_vars[attacker] for attacker in attackers))
-        )
-    if len(attack_exprs) < count:
-        problem.solver.add(problem.z3.BoolVal(False))
-        return
-    problem.solver.add(
-        problem.z3.Sum(
-            *(problem.z3.If(expr, 1, 0) for expr in attack_exprs)
-        )
-        >= count
-    )
 
 
 class _PreferredSkepticalAttackerSolver:
