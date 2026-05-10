@@ -131,7 +131,15 @@ Target: `ABAs/aba_500_0.1_10_5_7.aba` under `SE-ST`.
 - [ ] Add diagnostics for variable count, constraint count, rule dependency
   SCCs, and SAT check time.
 - [ ] Maintain an experiment matrix with branch name, mechanism, compatibility,
-  targeted test result, stable-row gate result, and promotion decision.
+  targeted test result, diagnostic profile result, 15-second acceptance gate
+  result, and promotion decision.
+- [ ] For known timeout rows, profile before acceptance gating:
+  - [ ] phase timings: parse, preprocessing/support build, encoding build, SAT
+    check
+  - [ ] encoding shape: variables by kind, assertions/constraints, SCC sizes
+  - [ ] solver result and reason at diagnostic caps such as 60, 150, and 300
+    seconds
+  - [ ] comparison against the current baseline profile under the same caps
 - [ ] Test individual mechanisms on experiment branches:
   - [ ] Boolean rank ladder
   - [ ] bit-vector rank
@@ -148,7 +156,10 @@ Target: `ABAs/aba_500_0.1_10_5_7.aba` under `SE-ST`.
     frameworks
   - [ ] new rank encoding agrees with current rank encoding on small frameworks
   - [ ] simplification preserves stable witnesses
-- [ ] Run the targeted stable row for every matrix entry.
+- [ ] Run diagnostic profiles for every matrix entry.
+- [ ] Run the 15-second targeted stable-row acceptance gate only for entries
+  whose profile improves a measured bottleneck or reaches a lower diagnostic
+  cap than baseline.
 - [ ] Run the whole timeout manifest only for a matrix winner.
 
 Gate: the stable row solves under the same timeout and no solved stable row

@@ -6,7 +6,20 @@ Target row:
 
 - subtrack: `SE-ST`
 - instance: `ABAs/aba_500_0.1_10_5_7.aba`
-- gate command shape: `uv run tools\iccma_run_timeout_rows.py --timeouts tests\manifests\iccma2025-cap150-timeouts.json --subtrack SE-ST --timeout-seconds 15 --backend auto ...`
+- acceptance gate command shape: `uv run tools\iccma_run_timeout_rows.py --timeouts tests\manifests\iccma2025-cap150-timeouts.json --subtrack SE-ST --timeout-seconds 15 --backend auto ...`
+
+Method:
+
+- A known timeout row is first a profiling target, not a binary 15-second gate.
+- Every experiment must record phase timings for parse, preprocessing/support
+  build, encoding build, and SAT check where applicable.
+- Every experiment must record encoding shape: variables by kind,
+  assertions/constraints, dependency SCC sizes, and solver result/reason.
+- Diagnostic caps are 60, 150, and 300 seconds unless a smaller cap already
+  proves the branch is worse than baseline on the measured bottleneck.
+- The 15-second acceptance gate is run only after a branch improves a measured
+  bottleneck or reaches a lower diagnostic cap than baseline.
+- A timeout at 15 seconds is not by itself a research conclusion.
 
 Diagnostics:
 
@@ -27,10 +40,10 @@ Diagnostics:
 
 Experiments:
 
-| Branch | Mechanism | Compatible With | Targeted Tests | Stable-Row Gate | Decision |
-| --- | --- | --- | --- | --- | --- |
-| `experiment/aba-stable-boolean-rank-ladder` | Boolean closure ladder instead of integer ranks | forced literals, SCC decomposition | passed closure and stable oracle tests | timeout at 15 seconds | failed; branch preserved |
-| `experiment/aba-stable-support-sat` | Materialize minimal supports for stable constraints | forced literals, SCC decomposition | passed support-stable and stable oracle tests | timeout at 15 seconds | failed; branch preserved |
+| Branch | Mechanism | Compatible With | Targeted Tests | Diagnostic Profile | 15s Acceptance Gate | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| `experiment/aba-stable-boolean-rank-ladder` | Boolean closure ladder instead of integer ranks | forced literals, SCC decomposition | passed closure and stable oracle tests | pending | timeout at 15 seconds, not decisive | branch preserved; profile before conclusion |
+| `experiment/aba-stable-support-sat` | Materialize minimal supports for stable constraints | forced literals, SCC decomposition | passed support-stable and stable oracle tests | pending | timeout at 15 seconds, not decisive | branch preserved; profile before conclusion |
 
 Pending matrix entries:
 
