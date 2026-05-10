@@ -90,18 +90,19 @@ remaining `SE-PR` timeouts decreased from 11 to 9.
 
 Goal: find out whether ASPforABA/clingo solves rows the package Z3 path misses.
 
-- [ ] Reread ASPforABA local README/source for supported tasks and CLI contract.
-- [ ] Add comparison-only adapter or tool wiring.
-- [ ] Add tests:
-  - [ ] missing binary returns typed unavailable
-  - [ ] timeout/nonzero/malformed output are distinguishable
-  - [ ] generated flat ABA frameworks round-trip through ICCMA ABA I/O
-  - [ ] generated accepted external witnesses pass local task validation
-- [ ] Run the timeout manifest through the ASP path.
+- [x] Reread ASPforABA local README/source for supported tasks and CLI contract.
+- [x] Add comparison-only adapter or tool wiring.
+- [x] Add tests:
+  - [x] missing binary returns typed unavailable
+  - [x] timeout/nonzero/malformed output are distinguishable
+  - [x] generated flat ABA frameworks round-trip through ICCMA ABA I/O
+  - [x] generated accepted external witnesses pass local task validation
+- [x] Run the timeout manifest through the ASP path.
 
 Gate: produce a report identifying which current ABA timeouts the ASP path
 solves. Do not make it default unless the correctness tests pass and the
-manifest result improves.
+manifest result improves. Result: `reports/cap150-aspforaba-comparison.md`
+records that ASPforABA solved all 11 frozen `SE-PR` timeout rows at 15 seconds.
 
 ## 4. ABA Grounded Preprocessing
 
