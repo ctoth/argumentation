@@ -130,11 +130,6 @@ def sat_support_extension(
         stable = sat_stable_extension(framework)
         if stable is not None:
             return stable
-    if semantics == "preferred":
-        require_assumptions = _preferred_required_with_grounded(
-            framework,
-            require_assumptions,
-        )
     if semantics == "preferred" and (
         require_derived is not None or require_not_derived is not None
     ):
@@ -246,52 +241,6 @@ def _sat_preferred_extension_satisfying(
         else:
             solver.add(z3.BoolVal(False))
     return None
-
-
-def _preferred_required_with_grounded(
-    framework: ABAFramework,
-    require_assumptions: AssumptionSet,
-) -> AssumptionSet:
-    return frozenset(require_assumptions | _sat_grounded_extension(framework))
-
-
-def _sat_grounded_extension(framework: ABAFramework) -> AssumptionSet:
-    current: AssumptionSet = frozenset()
-    while True:
-        closure = _closure_literals(framework, current)
-        counterattacked = frozenset(
-            assumption
-            for assumption in framework.assumptions
-            if framework.contrary[assumption] in closure
-        )
-        defended = frozenset(
-            assumption
-            for assumption in framework.assumptions
-            if _attacker_support_not_counterattacked(
-                framework,
-                assumption,
-                counterattacked=counterattacked,
-            )
-            is None
-        )
-        if defended == current:
-            return current
-        current = defended
-
-
-def _closure_literals(
-    framework: ABAFramework,
-    assumptions: AssumptionSet,
-) -> frozenset[Literal]:
-    closure = set(assumptions)
-    changed = True
-    while changed:
-        changed = False
-        for rule in sorted(framework.rules, key=repr):
-            if set(rule.antecedents) <= closure and rule.consequent not in closure:
-                closure.add(rule.consequent)
-                changed = True
-    return frozenset(closure)
 
 
 def _sat_preferred_cegar_extension(
