@@ -410,6 +410,10 @@ def sat_stable_extension(
     derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
 
     for assumption in sorted(framework.assumptions, key=repr):
+        if derives(framework, frozenset(), framework.contrary[assumption]):
+            solver.add(z3.Not(variables[assumption]))
+        elif not derives(framework, framework.assumptions, framework.contrary[assumption]):
+            solver.add(variables[assumption])
         solver.add(
             z3.Implies(
                 variables[assumption],
