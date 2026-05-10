@@ -128,43 +128,49 @@ commits: `3db2924` and `6873dfa`.
 
 Target: `ABAs/aba_500_0.1_10_5_7.aba` under `SE-ST`.
 
-- [ ] Add diagnostics for variable count, constraint count, rule dependency
+- [x] Add diagnostics for variable count, constraint count, rule dependency
   SCCs, and SAT check time.
-- [ ] Maintain an experiment matrix with branch name, mechanism, compatibility,
+- [x] Maintain an experiment matrix with branch name, mechanism, compatibility,
   targeted test result, diagnostic profile result, 15-second acceptance gate
   result, and promotion decision.
-- [ ] For known timeout rows, profile before acceptance gating:
-  - [ ] phase timings: parse, preprocessing/support build, encoding build, SAT
+- [x] For known timeout rows, profile before acceptance gating:
+  - [x] phase timings: parse, preprocessing/support build, encoding build, SAT
     check
-  - [ ] encoding shape: variables by kind, assertions/constraints, SCC sizes
-  - [ ] solver result and reason at diagnostic caps such as 60, 150, and 300
+  - [x] encoding shape: variables by kind, assertions/constraints, SCC sizes
+  - [x] solver result and reason at diagnostic caps such as 60, 150, and 300
     seconds
-  - [ ] comparison against the current baseline profile under the same caps
+  - [x] comparison against the current baseline profile under the same caps
 - [ ] Test individual mechanisms on experiment branches:
-  - [ ] Boolean rank ladder
-  - [ ] bit-vector rank
+  - [x] Boolean rank ladder
+  - [x] bit-vector rank
   - [ ] SCC decomposition
-  - [ ] forced-literal simplification
-  - [ ] support-materialized stable encoding
+  - [x] forced-literal simplification
+  - [x] support-materialized stable encoding
 - [ ] Test compatible combinations before declaring failure:
   - [ ] forced literals plus Boolean rank ladder
-  - [ ] forced literals plus bit-vector rank
+  - [x] forced literals plus bit-vector rank
   - [ ] forced literals plus support-materialized stable encoding
   - [ ] SCC decomposition plus the best non-SCC encoding
-- [ ] Add properties:
-  - [ ] stable witness existence matches native stable enumeration on small
+- [x] Add properties:
+  - [x] stable witness existence matches native stable enumeration on small
     frameworks
-  - [ ] new rank encoding agrees with current rank encoding on small frameworks
-  - [ ] simplification preserves stable witnesses
+  - [x] new rank encoding agrees with current rank encoding on small frameworks
+  - [x] simplification preserves stable witnesses
 - [ ] Run diagnostic profiles for every matrix entry.
-- [ ] Run the 15-second targeted stable-row acceptance gate only for entries
+- [x] Run the 15-second targeted stable-row acceptance gate only for entries
   whose profile improves a measured bottleneck or reaches a lower diagnostic
   cap than baseline.
-- [ ] Run the whole timeout manifest only for a matrix winner.
+- [x] Run the whole timeout manifest only for a matrix winner.
 
 Gate: the stable row solves under the same timeout and no solved stable row
 regresses. Failed individual branches are preserved for inspection and possible
 combination testing; they are not deleted unless explicitly requested.
+
+Result so far: promoted bit-vector rank closure in `57a5c98`. The target
+`SE-ST` row solves at 15 seconds, and the whole frozen manifest remains at 6
+solved / 10 timeouts with no stable-row regression. Remaining Workstream 5
+items are SCC decomposition and combinations involving mechanisms that were
+individually rejected on measured bottlenecks.
 
 ## 6. AF Ideal Solver
 
