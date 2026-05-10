@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from argumentation.aba import ABAFramework, AssumptionSet
+from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aspic import Literal
 
 
@@ -139,6 +139,11 @@ def sat_support_extension(
             require_not_derived=require_not_derived,
             require_assumptions=require_assumptions,
         )
+    if semantics == "preferred":
+        return _sat_preferred_cegar_extension(
+            framework,
+            require_assumptions=require_assumptions,
+        )
 
     z3 = _load_z3()
     variables = {
@@ -236,6 +241,150 @@ def _sat_preferred_extension_satisfying(
         else:
             solver.add(z3.BoolVal(False))
     return None
+
+
+def _sat_preferred_cegar_extension(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet = frozenset(),
+) -> AssumptionSet | None:
+    current = _sat_admissible_cegar_extension(
+        framework,
+        require_assumptions=require_assumptions,
+    )
+    if current is None:
+        return None
+    while True:
+        outside = framework.assumptions - current
+        if not outside:
+            return current
+        larger = _sat_admissible_cegar_extension(
+            framework,
+            require_assumptions=current,
+            require_any_assumption=outside,
+        )
+        if larger is None:
+            return current
+        if not current < larger:
+            raise RuntimeError("ABA preferred CEGAR growth did not produce a strict superset")
+        current = larger
+
+
+def _sat_admissible_cegar_extension(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet = frozenset(),
+    require_any_assumption: AssumptionSet = frozenset(),
+) -> AssumptionSet | None:
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    solver = z3.Solver()
+    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
+    for assumption in sorted(framework.assumptions, key=repr):
+        solver.add(
+            z3.Implies(
+                variables[assumption],
+                z3.Not(derived[framework.contrary[assumption]]),
+            )
+        )
+    for assumption in sorted(require_assumptions, key=repr):
+        solver.add(variables[assumption])
+    if require_any_assumption:
+        solver.add(z3.Or(*(variables[assumption] for assumption in sorted(require_any_assumption, key=repr))))
+
+    while solver.check() == z3.sat:
+        model = solver.model()
+        candidate = frozenset(
+            assumption
+            for assumption, variable in variables.items()
+            if z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+        closure = frozenset(
+            literal
+            for literal, variable in derived.items()
+            if z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+        counterexample = _defense_counterexample(framework, candidate, closure)
+        if counterexample is None:
+            return candidate
+        target, attack_support = counterexample
+        if not attack_support:
+            solver.add(z3.Not(variables[target]))
+            continue
+        solver.add(
+            z3.Or(
+                z3.Not(variables[target]),
+                *(
+                    derived[framework.contrary[assumption]]
+                    for assumption in sorted(attack_support, key=repr)
+                ),
+            )
+        )
+    return None
+
+
+def _defense_counterexample(
+    framework: ABAFramework,
+    candidate: AssumptionSet,
+    closure: frozenset[Literal],
+) -> tuple[Literal, AssumptionSet] | None:
+    counterattacked = frozenset(
+        assumption
+        for assumption in framework.assumptions
+        if framework.contrary[assumption] in closure
+    )
+    for target in sorted(candidate, key=repr):
+        attack_support = _attacker_support_not_counterattacked(
+            framework,
+            target,
+            counterattacked=counterattacked,
+        )
+        if attack_support is not None:
+            return target, attack_support
+    return None
+
+
+def _attacker_support_not_counterattacked(
+    framework: ABAFramework,
+    target: Literal,
+    *,
+    counterattacked: AssumptionSet,
+) -> AssumptionSet | None:
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"attacker_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    solver = z3.Solver()
+    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
+    for assumption in sorted(counterattacked, key=repr):
+        solver.add(z3.Not(variables[assumption]))
+    solver.add(derived[framework.contrary[target]])
+    if solver.check() != z3.sat:
+        return None
+    model = solver.model()
+    support = frozenset(
+        assumption
+        for assumption, variable in variables.items()
+        if z3.is_true(model.evaluate(variable, model_completion=True))
+    )
+    return _shrink_attack_support(framework, support, framework.contrary[target])
+
+
+def _shrink_attack_support(
+    framework: ABAFramework,
+    support: AssumptionSet,
+    conclusion: Literal,
+) -> AssumptionSet:
+    current = set(support)
+    for assumption in sorted(support, key=repr):
+        reduced = frozenset(current - {assumption})
+        if derives(framework, reduced, conclusion):
+            current.remove(assumption)
+    return frozenset(current)
 
 
 def sat_stable_extension(
