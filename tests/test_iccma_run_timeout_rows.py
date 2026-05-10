@@ -240,7 +240,7 @@ def _cap150_instance_path(row: dict[str, object]) -> Path:
 
 
 def _iccma2025_instance_path(row: dict[str, object]) -> Path:
-    relative = Path(str(row["instance"]).replace("/", "\\"))
+    relative = Path(*str(row["instance"]).split("/"))
     return ROOT / "data" / "iccma" / "2025" / "extracted" / "instances" / relative
 
 
