@@ -130,20 +130,30 @@ Target: `ABAs/aba_500_0.1_10_5_7.aba` under `SE-ST`.
 
 - [ ] Add diagnostics for variable count, constraint count, rule dependency
   SCCs, and SAT check time.
-- [ ] Try one encoding change at a time:
+- [ ] Maintain an experiment matrix with branch name, mechanism, compatibility,
+  targeted test result, stable-row gate result, and promotion decision.
+- [ ] Test individual mechanisms on experiment branches:
   - [ ] Boolean rank ladder
   - [ ] bit-vector rank
   - [ ] SCC decomposition
   - [ ] forced-literal simplification
+  - [ ] support-materialized stable encoding
+- [ ] Test compatible combinations before declaring failure:
+  - [ ] forced literals plus Boolean rank ladder
+  - [ ] forced literals plus bit-vector rank
+  - [ ] forced literals plus support-materialized stable encoding
+  - [ ] SCC decomposition plus the best non-SCC encoding
 - [ ] Add properties:
   - [ ] stable witness existence matches native stable enumeration on small
     frameworks
   - [ ] new rank encoding agrees with current rank encoding on small frameworks
   - [ ] simplification preserves stable witnesses
-- [ ] Run the targeted stable row and the whole timeout manifest.
+- [ ] Run the targeted stable row for every matrix entry.
+- [ ] Run the whole timeout manifest only for a matrix winner.
 
 Gate: the stable row solves under the same timeout and no solved stable row
-regresses.
+regresses. Failed individual branches are preserved for inspection and possible
+combination testing; they are not deleted unless explicitly requested.
 
 ## 6. AF Ideal Solver
 
