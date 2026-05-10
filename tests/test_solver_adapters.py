@@ -12,6 +12,7 @@ from hypothesis import given, settings, strategies as st
 import argumentation.solver as solver_module
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.aba_sat import support_extensions
 from argumentation.dung import ArgumentationFramework
 from argumentation.dung import stable_extensions as native_stable_extensions
 from argumentation.iccma import parse_aba
@@ -866,6 +867,35 @@ def test_iccma_aba_se_witness_must_be_protocol_valid_assumptions(size: int) -> N
 
     assert isinstance(result, ICCMAABASolverSuccess)
     assert result.extensions == (frozenset({literal("a1")}),)
+
+
+@given(st.integers(min_value=1, max_value=5))
+@settings(deadline=10000, max_examples=20)
+def test_iccma_aba_generated_external_witnesses_validate_locally(size: int) -> None:
+    framework = aba_framework(size)
+    witness = " ".join(str(index) for index in range(1, size + 1))
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_aba.shutil.which",
+            lambda binary: binary,
+        )
+        monkeypatch.setattr(
+            "argumentation.solver_adapters.iccma_aba.subprocess.run",
+            lambda *args, **kwargs: SimpleNamespace(
+                returncode=0,
+                stdout=f"w {witness}\n",
+                stderr="",
+            ),
+        )
+
+        result = solve_iccma_aba_extensions(
+            framework,
+            semantics="stable",
+            binary="fake-aspforaba",
+        )
+
+    assert isinstance(result, ICCMAABASolverSuccess)
+    assert result.extensions[0] in support_extensions(framework, "stable")
 
 
 @given(st.from_regex(r"[A-Za-z_]{1,12}", fullmatch=True))
