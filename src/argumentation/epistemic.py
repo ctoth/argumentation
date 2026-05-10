@@ -161,11 +161,12 @@ def term_satisfied(term: Term, world: frozenset[str]) -> bool:
 
 def term_probability(term: Term, distribution: ProbabilityFunction) -> float:
     """Return the sum of probabilities of worlds satisfying ``term``."""
-    return sum(
+    probability = sum(
         probability
         for world, probability in distribution.probabilities.items()
         if term_satisfied(term, world)
     )
+    return min(1.0, max(0.0, probability))
 
 
 def operational_value(
