@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
 from tools.iccma_run_timeout_rows import selected_timeout_rows, summarize_results
+from tools.iccma_timeout_corpus import summarize_timeout_rows
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CAP150_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-cap150-timeouts.json"
 
 
 def test_selected_timeout_rows_filters_year_and_subtrack() -> None:
@@ -40,6 +43,68 @@ def test_remaining_eight_manifest_is_source_of_truth() -> None:
     }
 
 
+def test_cap150_timeout_manifest_resolves_unique_rows_and_hashes() -> None:
+    rows = json.loads(CAP150_MANIFEST.read_text(encoding="utf-8"))
+
+    assert len(rows) == 16
+    assert len({_logical_key(row) for row in rows}) == len(rows)
+    for row in rows:
+        path = _cap150_instance_path(row)
+        assert path.exists()
+        assert _sha256(path) == row["input_sha256"]
+
+
+def test_cap150_timeout_summary_is_order_invariant() -> None:
+    rows = json.loads(CAP150_MANIFEST.read_text(encoding="utf-8"))
+
+    assert summarize_timeout_rows(rows) == summarize_timeout_rows(list(reversed(rows)))
+    assert summarize_timeout_rows(rows) == {
+        "by_group": [
+            {
+                "count": 11,
+                "instance_kind": "aba",
+                "subtrack": "SE-PR",
+                "track": "aba",
+                "year": 2025,
+            },
+            {
+                "count": 1,
+                "instance_kind": "aba",
+                "subtrack": "SE-ST",
+                "track": "aba",
+                "year": 2025,
+            },
+            {
+                "count": 2,
+                "instance_kind": "af",
+                "subtrack": "DC-ID",
+                "track": "heuristics",
+                "year": 2025,
+            },
+            {
+                "count": 2,
+                "instance_kind": "af",
+                "subtrack": "SE-ID",
+                "track": "main",
+                "year": 2025,
+            },
+        ],
+        "total_timeouts": 16,
+    }
+
+
+def test_cap150_timeout_manifest_filtering_matches_simple_oracle() -> None:
+    rows = json.loads(CAP150_MANIFEST.read_text(encoding="utf-8"))
+
+    selected = selected_timeout_rows(rows, years={2025}, subtrack="SE-PR")
+
+    assert selected == [
+        row
+        for row in rows
+        if row["year"] == 2025 and row["subtrack"] == "SE-PR"
+    ]
+
+
 def test_summarize_results_groups_statuses_and_timeouts() -> None:
     results = [
         {"source": {"instance": "a.apx"}, "result": {"status": "solved"}},
@@ -52,3 +117,26 @@ def test_summarize_results_groups_statuses_and_timeouts() -> None:
         "by_status": {"solved": 2, "timeout": 1},
         "timeouts": ["b.apx"],
     }
+
+
+def _logical_key(row: dict[str, object]) -> tuple[object, ...]:
+    return (
+        row["year"],
+        row["track"],
+        row["subtrack"],
+        row["instance_kind"],
+        row["instance"],
+    )
+
+
+def _cap150_instance_path(row: dict[str, object]) -> Path:
+    relative = Path(str(row["instance"]).replace("/", "\\"))
+    return ROOT / "data" / "iccma" / "2025" / "extracted" / "instances" / relative
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
