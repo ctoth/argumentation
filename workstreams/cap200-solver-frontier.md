@@ -66,7 +66,7 @@ Cap-200 timeout classes:
   - [x] every stored hash matches current file contents
   - [x] timeout summaries are invariant under row order
   - [x] cap-200 timeout group shape matches the measured corpus
-- [ ] Run:
+- [x] Run:
 
 ```powershell
 uv run pytest -q tests\test_iccma_run_timeout_rows.py tests\test_iccma_timeout_corpus.py
