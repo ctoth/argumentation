@@ -108,19 +108,21 @@ records that ASPforABA solved all 11 frozen `SE-PR` timeout rows at 15 seconds.
 
 Goal: shrink preferred search before CEGAR.
 
-- [ ] Reread ABA sources before deleting or reducing any assumptions.
-- [ ] If source support is not clear, only force grounded assumptions; do not
+- [x] Reread ABA sources before deleting or reducing any assumptions.
+- [x] If source support is not clear, only force grounded assumptions; do not
   delete anything.
-- [ ] Add Hypothesis properties:
-  - [ ] grounded extension is a subset of every native preferred extension
-  - [ ] preprocessing is idempotent
-  - [ ] lifted witnesses are native preferred extensions
-  - [ ] query derivability is preserved after lift
-- [ ] Compose preprocessing with the preferred CEGAR path.
-- [ ] Run the ABA `SE-PR` manifest again.
+- [x] Add Hypothesis properties:
+  - [x] grounded extension is a subset of every native preferred extension
+  - [x] preprocessing is idempotent
+  - [x] lifted witnesses are native preferred extensions
+  - [x] query derivability is preserved after lift
+- [x] Compose preprocessing with the preferred CEGAR path.
+- [x] Run the ABA `SE-PR` manifest again.
 
 Gate: timeout count or elapsed time improves. Otherwise keep it default-off or
-revert.
+revert. Result: reverted. The forced-grounded slice timed out all 11 frozen
+`SE-PR` rows at 15 seconds, regressing the CEGAR result of 9 timeouts. Revert
+commits: `3db2924` and `6873dfa`.
 
 ## 5. Stubborn ABA Stable Row
 
