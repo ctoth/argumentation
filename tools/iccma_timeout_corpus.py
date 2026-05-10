@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import re
 from collections import Counter
@@ -89,6 +90,32 @@ def summarize_timeout_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     return {"by_group": by_group, "total_timeouts": len(materialized)}
 
 
+def add_input_hashes(rows: Iterable[dict[str, Any]], input_root: Path) -> list[dict[str, Any]]:
+    checked_rows: list[dict[str, Any]] = []
+    for row in rows:
+        checked = dict(row)
+        source_csv = checked.pop("source_csv", None)
+        if source_csv is None:
+            source_csv = row.get("source_csv")
+        instance = checked["instance"]
+        if not isinstance(instance, str):
+            raise TypeError(f"manifest row instance must be a string: {instance!r}")
+        input_path = input_root / Path(instance)
+        if not input_path.exists():
+            raise FileNotFoundError(f"manifest input does not exist: {input_path}")
+        checked["input_sha256"] = _sha256(input_path)
+        checked_rows.append(checked)
+    return checked_rows
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -99,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--csv", action="append", dest="csv_paths", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--label", default="cap100-timeouts")
+    parser.add_argument("--checked-manifest", type=Path)
+    parser.add_argument("--input-root", type=Path)
     args = parser.parse_args(argv)
 
     rows = collect_timeout_rows(args.csv_paths)
@@ -107,7 +136,14 @@ def main(argv: list[str] | None = None) -> int:
     summary_path = args.output_dir / f"{args.label}-summary.json"
     _write_json(rows_path, rows)
     _write_json(summary_path, summary)
-    print(json.dumps({"summary": summary, "timeouts": str(rows_path), "summary_path": str(summary_path)}, indent=2))
+    result = {"summary": summary, "timeouts": str(rows_path), "summary_path": str(summary_path)}
+    if args.checked_manifest is not None:
+        if args.input_root is None:
+            parser.error("--input-root is required with --checked-manifest")
+        checked_rows = add_input_hashes(rows, args.input_root)
+        _write_json(args.checked_manifest, checked_rows)
+        result["checked_manifest"] = str(args.checked_manifest)
+    print(json.dumps(result, indent=2))
     return 0
 
 
