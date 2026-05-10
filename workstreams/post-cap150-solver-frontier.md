@@ -60,22 +60,22 @@ time variance.
 
 Goal: reduce ABA `SE-PR` timeouts without materializing all minimal supports.
 
-- [ ] Add Hypothesis properties:
-  - [ ] ranked closure equals deterministic ABA closure for small frameworks
-  - [ ] preferred witness returned by the new path is native-preferred on small
+- [x] Add Hypothesis properties:
+  - [x] ranked closure equals deterministic ABA closure for small frameworks
+  - [x] preferred witness returned by the new path is native-preferred on small
     frameworks
-  - [ ] returned witness preserves required assumptions
-  - [ ] `require_derived` and `require_not_derived` agree with deterministic
+  - [x] returned witness preserves required assumptions
+  - [x] `require_derived` and `require_not_derived` agree with deterministic
     derivability
-  - [ ] stable shortcut witness is a native preferred extension
-- [ ] Implement a private CEGAR preferred witness path:
-  - [ ] candidate assumption set through ranked Horn closure
-  - [ ] conflict-free constraint
-  - [ ] defense counterexample query
-  - [ ] learned clause blocking the counterexample
-  - [ ] growth loop to a maximal admissible set
-- [ ] Route `SE-PR` through the new path only after properties pass.
-- [ ] Run:
+  - [x] stable shortcut witness is a native preferred extension
+- [x] Implement a private CEGAR preferred witness path:
+  - [x] candidate assumption set through ranked Horn closure
+  - [x] conflict-free constraint
+  - [x] defense counterexample query
+  - [x] learned clause blocking the counterexample
+  - [x] growth loop to a maximal admissible set
+- [x] Route `SE-PR` through the new path only after properties pass.
+- [x] Run:
 
 ```powershell
 uv run pytest -q tests\test_aba.py
@@ -83,7 +83,8 @@ uv run tools\iccma_run_timeout_rows.py --timeouts tests\manifests\iccma2025-cap1
 ```
 
 Gate: ABA `SE-PR` timeout count strictly decreases, or the implementation is
-reverted.
+reverted. Result: 2 of 11 frozen `SE-PR` timeout rows solved at 15 seconds;
+remaining `SE-PR` timeouts decreased from 11 to 9.
 
 ## 3. ABA External ASP Comparison
 
