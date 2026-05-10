@@ -4,7 +4,12 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.iccma_run_timeout_rows import selected_timeout_rows, summarize_results
+from tools import iccma_run_timeout_rows
+from tools.iccma_run_timeout_rows import (
+    run_timeout_rows,
+    selected_timeout_rows,
+    summarize_results,
+)
 from tools.iccma_timeout_corpus import summarize_timeout_rows
 
 
@@ -117,6 +122,35 @@ def test_summarize_results_groups_statuses_and_timeouts() -> None:
         "by_status": {"solved": 2, "timeout": 1},
         "timeouts": ["b.apx"],
     }
+
+
+def test_run_timeout_rows_passes_iccma_binary_to_selected_runner(monkeypatch) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_run_selected(**kwargs):
+        calls.append(kwargs)
+        return {"status": "solved", "answer": None}
+
+    monkeypatch.setattr(iccma_run_timeout_rows, "run_selected", fake_run_selected)
+
+    results = run_timeout_rows(
+        [
+            {
+                "year": 2025,
+                "track": "aba",
+                "subtrack": "SE-PR",
+                "instance_kind": "aba",
+                "instance": "ABAs/example.aba",
+            }
+        ],
+        timeout_seconds=15.0,
+        backend="iccma",
+        data_root=ROOT / "data" / "iccma",
+        iccma_binary="uv run scratch/sources/aspforaba/aspforaba/aspforaba.py",
+    )
+
+    assert results[0]["result"]["status"] == "solved"
+    assert calls[0]["iccma_binary"] == "uv run scratch/sources/aspforaba/aspforaba/aspforaba.py"
 
 
 def _logical_key(row: dict[str, object]) -> tuple[object, ...]:

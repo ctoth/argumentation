@@ -31,6 +31,7 @@ def run_timeout_rows(
     timeout_seconds: float,
     backend: str,
     data_root: Path,
+    iccma_binary: str | None = None,
 ) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     total = len(rows)
@@ -46,6 +47,7 @@ def run_timeout_rows(
             arguments_or_atoms=row.get("arguments_or_atoms"),
             track=str(row["track"]),
             instance_kind=str(row["instance_kind"]),
+            iccma_binary=iccma_binary,
         )
         materialized = {"source": row, "result": result}
         results.append(materialized)
@@ -94,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout-seconds", type=float, default=20.0)
     parser.add_argument("--backend", default="auto")
     parser.add_argument("--data-root", type=Path, default=Path("data") / "iccma")
+    parser.add_argument("--iccma-binary")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
 
@@ -108,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout_seconds,
         backend=args.backend,
         data_root=args.data_root,
+        iccma_binary=args.iccma_binary,
     )
     payload = {
         "summary": summarize_results(results),
