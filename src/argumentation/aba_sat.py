@@ -121,6 +121,15 @@ def sat_support_extension(
         raise ValueError(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
+    if (
+        semantics == "preferred"
+        and require_derived is None
+        and require_not_derived is None
+        and not require_assumptions
+    ):
+        stable = sat_stable_extension(framework)
+        if stable is not None:
+            return stable
 
     z3 = _load_z3()
     variables = {
@@ -190,35 +199,26 @@ def sat_stable_extension(
         for assumption in sorted(framework.assumptions, key=repr)
     }
     solver = z3.Solver()
-    supports = _minimal_supports(framework)
+    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
 
     for assumption in sorted(framework.assumptions, key=repr):
-        attack_supports = supports.get(framework.contrary[assumption], frozenset())
         solver.add(
             z3.Implies(
                 variables[assumption],
-                z3.Not(_any_support_selected(z3, variables, attack_supports)),
+                z3.Not(derived[framework.contrary[assumption]]),
             )
         )
         solver.add(
             z3.Or(
                 variables[assumption],
-                _any_support_selected(z3, variables, attack_supports),
+                derived[framework.contrary[assumption]],
             )
         )
 
     if require_derived is not None:
-        solver.add(_any_support_selected(z3, variables, supports.get(require_derived, frozenset())))
+        solver.add(derived[require_derived])
     if require_not_derived is not None:
-        solver.add(
-            z3.Not(
-                _any_support_selected(
-                    z3,
-                    variables,
-                    supports.get(require_not_derived, frozenset()),
-                )
-            )
-        )
+        solver.add(z3.Not(derived[require_not_derived]))
 
     if solver.check() != z3.sat:
         return None
@@ -228,6 +228,74 @@ def sat_stable_extension(
         for assumption, variable in variables.items()
         if z3.is_true(model.evaluate(variable, model_completion=True))
     )
+
+
+def _add_ranked_closure_constraints(z3, solver, framework, variables):
+    literals = tuple(sorted(framework.language, key=repr))
+    rank_bound = len(literals)
+    derived = {
+        literal: z3.Bool(f"der_{_literal_key(literal)}")
+        for literal in literals
+    }
+    ranks = {
+        literal: z3.Int(f"rank_{_literal_key(literal)}")
+        for literal in literals
+    }
+    rules_by_consequent = {
+        literal: [
+            rule
+            for rule in sorted(framework.rules, key=repr)
+            if rule.consequent == literal
+        ]
+        for literal in literals
+    }
+
+    for literal in literals:
+        solver.add(ranks[literal] >= 0, ranks[literal] <= rank_bound)
+
+    for assumption in sorted(framework.assumptions, key=repr):
+        solver.add(derived[assumption] == variables[assumption])
+        solver.add(z3.Implies(variables[assumption], ranks[assumption] == 0))
+
+    for rule in sorted(framework.rules, key=repr):
+        antecedents = tuple(rule.antecedents)
+        if not antecedents:
+            solver.add(derived[rule.consequent])
+        else:
+            solver.add(
+                z3.Implies(
+                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
+                    derived[rule.consequent],
+                )
+            )
+
+    for literal in literals:
+        if literal in framework.assumptions:
+            continue
+        support_terms = []
+        for rule in rules_by_consequent[literal]:
+            antecedents = tuple(rule.antecedents)
+            if not antecedents:
+                support_terms.append(z3.BoolVal(True))
+                continue
+            support_terms.append(
+                z3.And(
+                    *(
+                        z3.And(
+                            derived[antecedent],
+                            ranks[antecedent] < ranks[literal],
+                        )
+                        for antecedent in antecedents
+                    )
+                )
+            )
+        solver.add(
+            z3.Implies(
+                derived[literal],
+                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
+            )
+        )
+    return derived
 
 
 class _SupportState:
