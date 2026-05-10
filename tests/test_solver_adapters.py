@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import shutil
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +19,7 @@ from argumentation.solver_adapters import iccma_af, iccma_aba
 from argumentation.solver_adapters.iccma_aba import (
     ICCMAABAOutputKind,
     ICCMAABAOutputParseError,
+    ICCMAABASolverError,
     ICCMAABASolverProtocolError,
     ICCMAABASolverSuccess,
     parse_iccma_aba_output,
@@ -689,6 +691,78 @@ def test_iccma_aba_adapter_invokes_official_2023_cli_and_writes_numeric_aba(
     assert isinstance(result, ICCMAABASolverSuccess)
     assert result.extensions == (frozenset({literal("a1"), literal("a2")}),)
     assert calls and calls[0][1:4] == ["-p", "SE-ST", "-f"]
+
+
+def test_iccma_aba_adapter_missing_binary_is_typed_unavailable(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: None,
+    )
+
+    result = solve_iccma_aba_extensions(
+        aba_framework(1),
+        semantics="stable",
+        binary="definitely-missing-aspforaba",
+    )
+
+    assert isinstance(result, SolverUnavailable)
+    assert result.backend == "definitely-missing-aspforaba"
+    assert "not found" in result.reason
+
+
+def test_iccma_aba_adapter_timeout_is_distinct_from_nonzero_and_protocol(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.subprocess.run",
+        fake_run,
+    )
+
+    result = solve_iccma_aba_extensions(
+        aba_framework(1),
+        semantics="stable",
+        binary="fake-aspforaba",
+        timeout_seconds=0.01,
+    )
+
+    assert isinstance(result, ICCMAABASolverError)
+    assert result.returncode == -1
+    assert result.reason == "solver exited with code -1"
+    assert result.stdout == "partial out"
+    assert result.stderr == "partial err"
+
+
+def test_iccma_aba_adapter_nonzero_exit_is_process_error(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_aba.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=2,
+            stdout="",
+            stderr="bad flags",
+        ),
+    )
+
+    result = solve_iccma_aba_extensions(
+        aba_framework(1),
+        semantics="stable",
+        binary="fake-aspforaba",
+    )
+
+    assert isinstance(result, ICCMAABASolverError)
+    assert result.returncode == 2
+    assert result.stderr == "bad flags"
 
 
 def test_iccma_aba_adapter_invokes_acceptance_with_query_atom(monkeypatch) -> None:
