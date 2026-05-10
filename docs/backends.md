@@ -15,7 +15,8 @@ has_z3()       # True if `z3-solver` is installed (the [z3] extra)
 ```
 
 When `clingo` is available only as a Python package, the subprocess adapter
-invokes it as `python -m clingo` (`solver_adapters/clingo.py:_resolve_command`).
+invokes the current Python executable with `-m clingo`
+(`solver_adapters/clingo.py:_resolve_command`).
 
 ## Default backend rule
 
