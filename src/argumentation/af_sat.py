@@ -726,14 +726,58 @@ def _admissible_attacker_of_set(
 ) -> frozenset[str] | None:
     if not targets:
         return None
+    attacked_terms = _attacked_target_terms(problem, targets)
     problem.solver.push()
     try:
-        problem.require_attacks_any(targets)
-        if problem.check(utility_name) != "sat":
+        problem.solver.add(
+            problem.z3.Or(*attacked_terms) if attacked_terms else problem.z3.BoolVal(False)
+        )
+        if problem.check(
+            utility_name,
+            range_bound=1,
+            range_constraint="attacked_at_least",
+        ) != "sat":
             return None
-        return problem.model_extension()
+        best = problem.model_extension()
+        low = 2
+        high = len(attacked_terms)
+        while low <= high:
+            midpoint = (low + high) // 2
+            problem.solver.push()
+            try:
+                problem.solver.add(
+                    problem.z3.PbGe([(term, 1) for term in attacked_terms], midpoint)
+                )
+                if problem.check(
+                    utility_name,
+                    range_bound=midpoint,
+                    range_constraint="attacked_at_least",
+                ) == "sat":
+                    best = problem.model_extension()
+                    low = midpoint + 1
+                else:
+                    high = midpoint - 1
+            finally:
+                problem.solver.pop()
+        return best
     finally:
         problem.solver.pop()
+
+
+def _attacked_target_terms(
+    problem: AfSatKernel,
+    targets: frozenset[str],
+) -> list[Any]:
+    return [
+        problem.z3.Or(
+            *(
+                problem.in_vars[attacker]
+                for attacker, attacked in sorted(problem.framework.defeats)
+                if attacked == target
+            )
+        )
+        for target in sorted(targets)
+    ]
 
 
 class _PreferredSkepticalAttackerSolver:
