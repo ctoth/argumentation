@@ -91,17 +91,20 @@ class AfSatKernel:
             return
         self.add_conflict_free()
         for argument in self.arguments:
+            attackers = tuple(sorted(self.attackers_index.get(argument, frozenset())))
+            self.solver.add(
+                self.out_vars[argument]
+                == (
+                    self.z3.Or(*(self.in_vars[attacker] for attacker in attackers))
+                    if attackers
+                    else self.z3.BoolVal(False)
+                )
+            )
+        for argument in self.arguments:
             for attacker in sorted(self.attackers_index.get(argument, frozenset())):
-                defenders = tuple(sorted(self.attackers_index.get(attacker, frozenset())))
-                if defenders:
-                    self.solver.add(
-                        self.z3.Implies(
-                            self.in_vars[argument],
-                            self.z3.Or(*(self.in_vars[defender] for defender in defenders)),
-                        )
-                    )
-                else:
-                    self.solver.add(self.z3.Not(self.in_vars[argument]))
+                self.solver.add(
+                    self.z3.Implies(self.in_vars[argument], self.out_vars[attacker])
+                )
         self._added.add("admissible")
 
     def add_complete_labelling(self) -> None:
