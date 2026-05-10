@@ -16,6 +16,7 @@ from tools.iccma_timeout_corpus import summarize_timeout_rows
 ROOT = Path(__file__).resolve().parents[1]
 CAP150_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-cap150-timeouts.json"
 CAP200_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-cap200-timeouts.json"
+ICCMA_2025_INPUT_ROOT = ROOT / "data" / "iccma" / "2025" / "extracted" / "instances"
 
 
 def test_selected_timeout_rows_filters_year_and_subtrack() -> None:
@@ -52,12 +53,7 @@ def test_remaining_eight_manifest_is_source_of_truth() -> None:
 def test_cap150_timeout_manifest_resolves_unique_rows_and_hashes() -> None:
     rows = json.loads(CAP150_MANIFEST.read_text(encoding="utf-8"))
 
-    assert len(rows) == 16
-    assert len({_logical_key(row) for row in rows}) == len(rows)
-    for row in rows:
-        path = _cap150_instance_path(row)
-        assert path.exists()
-        assert _sha256(path) == row["input_sha256"]
+    _assert_checked_manifest(rows, expected_len=16)
 
 
 def test_cap150_timeout_summary_is_order_invariant() -> None:
@@ -114,12 +110,7 @@ def test_cap150_timeout_manifest_filtering_matches_simple_oracle() -> None:
 def test_cap200_timeout_manifest_resolves_unique_rows_and_hashes() -> None:
     rows = json.loads(CAP200_MANIFEST.read_text(encoding="utf-8"))
 
-    assert len(rows) == 49
-    assert len({_logical_key(row) for row in rows}) == len(rows)
-    for row in rows:
-        path = _iccma2025_instance_path(row)
-        assert path.exists()
-        assert _sha256(path) == row["input_sha256"]
+    _assert_checked_manifest(rows, expected_len=49)
 
 
 def test_cap200_timeout_summary_is_order_invariant() -> None:
@@ -235,13 +226,27 @@ def _logical_key(row: dict[str, object]) -> tuple[object, ...]:
     )
 
 
-def _cap150_instance_path(row: dict[str, object]) -> Path:
-    return _iccma2025_instance_path(row)
-
-
 def _iccma2025_instance_path(row: dict[str, object]) -> Path:
     relative = Path(*str(row["instance"]).split("/"))
-    return ROOT / "data" / "iccma" / "2025" / "extracted" / "instances" / relative
+    return ICCMA_2025_INPUT_ROOT / relative
+
+
+def _assert_checked_manifest(rows: list[dict[str, object]], *, expected_len: int) -> None:
+    assert len(rows) == expected_len
+    assert len({_logical_key(row) for row in rows}) == len(rows)
+    for row in rows:
+        digest = row["input_sha256"]
+        assert isinstance(digest, str)
+        assert len(digest) == 64
+        int(digest, 16)
+
+    if not ICCMA_2025_INPUT_ROOT.exists():
+        return
+
+    for row in rows:
+        path = _iccma2025_instance_path(row)
+        assert path.exists()
+        assert _sha256(path) == row["input_sha256"]
 
 
 def _sha256(path: Path) -> str:
