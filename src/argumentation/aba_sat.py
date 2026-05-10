@@ -130,6 +130,15 @@ def sat_support_extension(
         stable = sat_stable_extension(framework)
         if stable is not None:
             return stable
+    if semantics == "preferred" and (
+        require_derived is not None or require_not_derived is not None
+    ):
+        return _sat_preferred_extension_satisfying(
+            framework,
+            require_derived=require_derived,
+            require_not_derived=require_not_derived,
+            require_assumptions=require_assumptions,
+        )
 
     z3 = _load_z3()
     variables = {
@@ -177,6 +186,56 @@ def sat_support_extension(
         if not current < larger:
             raise RuntimeError("ABA preferred SAT growth did not produce a strict superset")
         current = larger
+
+
+def _sat_preferred_extension_satisfying(
+    framework: ABAFramework,
+    *,
+    require_derived: Literal | None,
+    require_not_derived: Literal | None,
+    require_assumptions: AssumptionSet,
+) -> AssumptionSet | None:
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    supports = _minimal_supports(framework)
+    solver = z3.Solver()
+    _add_admissible_constraints(z3, solver, framework, variables, supports)
+    _add_derived_constraints(
+        z3,
+        solver,
+        variables,
+        supports,
+        require_derived=require_derived,
+        require_not_derived=require_not_derived,
+    )
+    for assumption in sorted(require_assumptions, key=repr):
+        solver.add(variables[assumption])
+
+    while solver.check() == z3.sat:
+        seed = _model_extension(z3, solver, variables)
+        preferred = sat_support_extension(
+            framework,
+            "preferred",
+            require_assumptions=seed,
+        )
+        if preferred is None:
+            return None
+        if _extension_satisfies_constraints(
+            preferred,
+            supports,
+            require_derived=require_derived,
+            require_not_derived=require_not_derived,
+        ):
+            return preferred
+        outside = framework.assumptions - preferred
+        if outside:
+            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+        else:
+            solver.add(z3.BoolVal(False))
+    return None
 
 
 def sat_stable_extension(
@@ -598,6 +657,20 @@ def _extension_derives(
     supports: dict[Literal, frozenset[AssumptionSet]],
 ) -> bool:
     return any(support <= extension for support in supports.get(literal, frozenset()))
+
+
+def _extension_satisfies_constraints(
+    extension: AssumptionSet,
+    supports: dict[Literal, frozenset[AssumptionSet]],
+    *,
+    require_derived: Literal | None,
+    require_not_derived: Literal | None,
+) -> bool:
+    if require_derived is not None and not _extension_derives(extension, require_derived, supports):
+        return False
+    if require_not_derived is not None and _extension_derives(extension, require_not_derived, supports):
+        return False
+    return True
 
 
 def _literal_key(literal: Literal) -> str:
