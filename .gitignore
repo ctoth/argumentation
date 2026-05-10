@@ -5,6 +5,10 @@ __pycache__/
 .coverage
 htmlcov/
 data/
+.claude/
+out
+pyghidra_mcp_projects/
+scratch/
 **/pngs/
 **/*.png
 **/*.pdf
