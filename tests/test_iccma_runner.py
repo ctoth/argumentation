@@ -202,9 +202,13 @@ def test_run_child_writes_sat_check_events_to_event_log(tmp_path, capsys) -> Non
 def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> None:
     instance_path = tmp_path / "extracted" / "instances" / "self_attacks.apx"
     instance_path.parent.mkdir(parents=True)
+    # Self-attackers chained so none is a pure self-loop sink (which the AF
+    # preprocessing layer would otherwise eliminate): the only conflict-free set
+    # is still empty, so the range search exercises the max_range_at_least path.
     instance_path.write_text(
         "arg(a).\narg(b).\narg(c).\narg(d).\n"
-        "att(a,a).\natt(b,b).\natt(c,c).\natt(d,d).\n",
+        "att(a,a).\natt(b,b).\natt(c,c).\natt(d,d).\n"
+        "att(b,a).\natt(c,b).\natt(d,c).\n",
         encoding="utf-8",
     )
     job = {

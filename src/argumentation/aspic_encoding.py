@@ -266,16 +266,41 @@ def solve_aspic_with_backend(
         projection = build_abstract_framework(system, kb, pref)
         module_semantics = "complete" if semantics == "grounded" else semantics
         module_semantics = "admissible" if module_semantics == "preferred" else module_semantics
+        # AF preprocessing (Wave A): shrink the projected Dung framework with the
+        # grounded reduct + self-loop-sink removal before handing it to clingo,
+        # then lift every returned extension back to the full argument set.
+        from argumentation.preprocessing import simplify_af
+
+        simplification = simplify_af(projection.framework, semantics=semantics)
+        residual_framework = simplification.residual
+        if not residual_framework.arguments:
+            # Residual is the empty AF: its unique grounded / complete / stable /
+            # preferred / admissible extension is the empty set, so the only
+            # extension of the original is the fixed-in (grounded) part.
+            return _aspic_task_result(
+                projection=projection,
+                encoding=encoding,
+                semantics=semantics,
+                backend=backend,
+                task=task,
+                query=query,
+                extensions=(simplification.fixed_in,),
+                metadata={
+                    "encoding": encoding.metadata["encoding"],
+                    "projection": "aspic_abstract_framework",
+                    "solver": "preprocessing",
+                },
+            )
         result = clingo.run_extension_enumeration_protocol(
-            facts=_projection_facts(projection),
+            facts=_projection_facts_for(residual_framework),
             encoding_modules=(f"dung_{module_semantics}.lp",),
-            known_argument_ids=projection.framework.arguments,
+            known_argument_ids=residual_framework.arguments,
             binary=binary,
             timeout_seconds=timeout_seconds,
             problem=f"ASPIC-{semantics.upper()}",
         )
         if isinstance(result, clingo.ClingoExtensionEnumerationSuccess):
-            extensions = result.extensions
+            extensions = tuple(simplification.lift(extension) for extension in result.extensions)
             if semantics == "preferred":
                 extensions = _maximal_extensions(extensions)
             elif semantics == "grounded":
@@ -487,13 +512,17 @@ def _add_minimal_source_support(
 
 
 def _projection_facts(projection) -> tuple[str, ...]:
+    return _projection_facts_for(projection.framework)
+
+
+def _projection_facts_for(framework) -> tuple[str, ...]:
     facts: set[str] = set()
-    for argument_id in projection.framework.arguments:
+    for argument_id in framework.arguments:
         facts.add(f"arg({argument_id}).")
-    relation = projection.framework.attacks or projection.framework.defeats
+    relation = framework.attacks or framework.defeats
     for attacker, target in relation:
         facts.add(f"attack({attacker},{target}).")
-    for attacker, target in projection.framework.defeats:
+    for attacker, target in framework.defeats:
         facts.add(f"defeat({attacker},{target}).")
     return tuple(sorted(facts))
 
