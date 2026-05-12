@@ -23,6 +23,7 @@ from argumentation.af_sat import (
     AfSatKernel,
     PreferredSkepticalTaskSolver,
     PreferredSuperCoreSolver,
+    RangeMaximalTaskSolver,
     SATCheck,
     find_complete_extension,
     find_ideal_extension,
@@ -472,6 +473,25 @@ def test_high_range_shortcut_respects_global_max_for_query_witnesses() -> None:
     assert "stage_high_range_shortcut" in utility_names
     assert "stage_range_maximality" in utility_names
     assert utility_names[-1] == "stage_max_range_at_least"
+
+
+def test_large_dense_range_tasks_use_bounded_high_range_probe_budget() -> None:
+    arguments = frozenset(str(index) for index in range(160))
+    defeats = frozenset(
+        (str(source), str(target))
+        for source in range(160)
+        for target in range(160)
+        if source != target and (source * 17 + target * 31) % 19 == 0
+    )
+    problem = AfSatKernel(ArgumentationFramework(arguments, defeats))
+    solver = RangeMaximalTaskSolver(
+        problem=problem,
+        base="complete",
+        seed_utility_name="semi_stable_seed",
+        test_utility_name="semi_stable_range_maximality",
+    )
+
+    assert solver._shortcut_probe_limit() < solver.shortcut_probe_limit
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
