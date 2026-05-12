@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aspic import Literal
 
@@ -43,6 +45,131 @@ def support_extensions(
             key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
         )
     )
+
+
+@dataclass(frozen=True)
+class AssumptionKernel:
+    """Reusable assumption-level solver state for flat ABA single-extension tasks."""
+
+    framework: ABAFramework
+    assumptions: tuple[Literal, ...]
+    literals: tuple[Literal, ...]
+    assumption_ids: dict[Literal, str]
+    literal_ids: dict[Literal, str]
+
+    @classmethod
+    def from_framework(cls, framework: ABAFramework) -> AssumptionKernel:
+        assumptions = tuple(sorted(framework.assumptions, key=repr))
+        literals = tuple(sorted(framework.language, key=repr))
+        return cls(
+            framework=framework,
+            assumptions=assumptions,
+            literals=literals,
+            assumption_ids={
+                assumption: f"a{index}"
+                for index, assumption in enumerate(assumptions)
+            },
+            literal_ids={
+                literal: f"l{index}"
+                for index, literal in enumerate(literals)
+            },
+        )
+
+    def stable_extension(
+        self,
+        *,
+        require_derived: Literal | None = None,
+        require_not_derived: Literal | None = None,
+    ) -> AssumptionSet | None:
+        if require_derived is not None and require_derived not in self.framework.language:
+            raise ValueError(f"required literal is not in framework language: {require_derived!r}")
+        if require_not_derived is not None and require_not_derived not in self.framework.language:
+            raise ValueError(
+                f"excluded literal is not in framework language: {require_not_derived!r}"
+            )
+        try:
+            import clingo  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise RuntimeError("ABA assumption kernel requires clingo") from exc
+
+        selected: list[str] = []
+
+        def collect_model(model) -> None:
+            selected.clear()
+            selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
+
+        program = [*self._asp_facts(), *self._stable_program()]
+        if require_derived is not None:
+            program.append(f":- not derived({self.literal_ids[require_derived]}).")
+        if require_not_derived is not None:
+            program.append(f":- derived({self.literal_ids[require_not_derived]}).")
+
+        control = clingo.Control(["--models=1"])
+        control.add("base", [], "\n".join(program))
+        control.ground([("base", [])])
+        result = control.solve(on_model=collect_model)
+        if not result.satisfiable:
+            return None
+        selected_ids = frozenset(selected)
+        return frozenset(
+            assumption
+            for assumption, assumption_id in self.assumption_ids.items()
+            if assumption_id in selected_ids
+        )
+
+    def preferred_extension(self) -> AssumptionSet | None:
+        stable = self.stable_extension()
+        if stable is not None:
+            return stable
+        return _sat_preferred_cegar_extension(self.framework)
+
+    def attacks(self, extension: AssumptionSet, assumption: Literal) -> bool:
+        if assumption not in self.framework.assumptions:
+            raise ValueError(f"unknown assumption: {assumption!r}")
+        return self.framework.contrary[assumption] in self.closure(extension)
+
+    def closure(self, extension: AssumptionSet) -> frozenset[Literal]:
+        derived = set(extension)
+        changed = True
+        while changed:
+            changed = False
+            for rule in sorted(self.framework.rules, key=repr):
+                if rule.consequent in derived:
+                    continue
+                if all(antecedent in derived for antecedent in rule.antecedents):
+                    derived.add(rule.consequent)
+                    changed = True
+        return frozenset(derived)
+
+    def _asp_facts(self) -> tuple[str, ...]:
+        facts: list[str] = []
+        for assumption in self.assumptions:
+            assumption_id = self.assumption_ids[assumption]
+            facts.append(f"assumption({assumption_id}).")
+            facts.append(
+                f"assumption_literal({assumption_id},{self.literal_ids[assumption]})."
+            )
+            facts.append(
+                f"contrary({assumption_id},{self.literal_ids[self.framework.contrary[assumption]]})."
+            )
+        for index, rule in enumerate(sorted(self.framework.rules, key=repr)):
+            rule_id = f"r{index}"
+            facts.append(f"rule({rule_id}).")
+            facts.append(f"head({rule_id},{self.literal_ids[rule.consequent]}).")
+            facts.append(f"body_count({rule_id},{len(rule.antecedents)}).")
+            for antecedent in rule.antecedents:
+                facts.append(f"body({rule_id},{self.literal_ids[antecedent]}).")
+        return tuple(facts)
+
+    def _stable_program(self) -> tuple[str, ...]:
+        constraints = [
+            "{ selected(A) } :- assumption(A).",
+            "derived(L) :- selected(A), assumption_literal(A,L).",
+            "derived(H) :- rule(R), head(R,H), body_count(R,N), N = #count { B : body(R,B), derived(B) }.",
+            ":- selected(A), contrary(A,C), derived(C).",
+            ":- assumption(A), not selected(A), contrary(A,C), not derived(C).",
+        ]
+        return tuple((*constraints, "#show selected/1."))
 
 
 def support_acceptance(
@@ -127,7 +254,7 @@ def sat_support_extension(
         and require_not_derived is None
         and not require_assumptions
     ):
-        stable = sat_stable_extension(framework)
+        stable = AssumptionKernel.from_framework(framework).stable_extension()
         if stable is not None:
             return stable
     if semantics == "preferred" and (
@@ -394,48 +521,9 @@ def sat_stable_extension(
     require_not_derived: Literal | None = None,
 ) -> AssumptionSet | None:
     """Return one stable assumption set satisfying optional query constraints."""
-    if require_derived is not None and require_derived not in framework.language:
-        raise ValueError(f"required literal is not in framework language: {require_derived!r}")
-    if require_not_derived is not None and require_not_derived not in framework.language:
-        raise ValueError(
-            f"excluded literal is not in framework language: {require_not_derived!r}"
-        )
-
-    z3 = _load_z3()
-    variables = {
-        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
-        for assumption in sorted(framework.assumptions, key=repr)
-    }
-    solver = z3.Solver()
-    solver.set(timeout=15_000)
-    derived = _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables)
-
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(
-            z3.Implies(
-                variables[assumption],
-                z3.Not(derived[framework.contrary[assumption]]),
-            )
-        )
-        solver.add(
-            z3.Or(
-                variables[assumption],
-                derived[framework.contrary[assumption]],
-            )
-        )
-
-    if require_derived is not None:
-        solver.add(derived[require_derived])
-    if require_not_derived is not None:
-        solver.add(z3.Not(derived[require_not_derived]))
-
-    if solver.check() != z3.sat:
-        return None
-    model = solver.model()
-    return frozenset(
-        assumption
-        for assumption, variable in variables.items()
-        if z3.is_true(model.evaluate(variable, model_completion=True))
+    return AssumptionKernel.from_framework(framework).stable_extension(
+        require_derived=require_derived,
+        require_not_derived=require_not_derived,
     )
 
 
@@ -903,6 +991,7 @@ def _load_z3():
 
 
 __all__ = [
+    "AssumptionKernel",
     "sat_stable_extension",
     "sat_support_acceptance",
     "sat_support_extension",
