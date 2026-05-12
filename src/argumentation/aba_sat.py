@@ -92,36 +92,79 @@ class AssumptionKernel:
         except ImportError as exc:
             raise RuntimeError("ABA assumption kernel requires clingo") from exc
 
-        selected: list[str] = []
-
-        def collect_model(model) -> None:
-            selected.clear()
-            selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
-
         program = [*self._asp_facts(), *self._stable_program()]
         if require_derived is not None:
             program.append(f":- not derived({self.literal_ids[require_derived]}).")
         if require_not_derived is not None:
             program.append(f":- derived({self.literal_ids[require_not_derived]}).")
 
-        control = clingo.Control(["--models=1"])
-        control.add("base", [], "\n".join(program))
-        control.ground([("base", [])])
-        result = control.solve(on_model=collect_model)
-        if not result.satisfiable:
-            return None
-        selected_ids = frozenset(selected)
-        return frozenset(
-            assumption
-            for assumption, assumption_id in self.assumption_ids.items()
-            if assumption_id in selected_ids
-        )
+        return self._solve_selected(program)
 
-    def preferred_extension(self) -> AssumptionSet | None:
-        stable = self.stable_extension()
-        if stable is not None:
-            return stable
-        return _sat_preferred_cegar_extension(self.framework)
+    def admissible_extension(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+        require_any_assumption: AssumptionSet = frozenset(),
+        prefer_large: bool = False,
+    ) -> AssumptionSet | None:
+        self._validate_assumptions(require_assumptions)
+        self._validate_assumptions(require_any_assumption)
+        learned: list[tuple[Literal, AssumptionSet]] = []
+        while True:
+            candidate = self._solve_selected(
+                (
+                    *self._asp_facts(),
+                    *self._admissible_program(
+                        require_assumptions=require_assumptions,
+                        require_any_assumption=require_any_assumption,
+                        learned_defenses=tuple(learned),
+                        prefer_large=prefer_large,
+                    ),
+                ),
+            )
+            if candidate is None:
+                return None
+            counterexamples = _defense_counterexamples(
+                self.framework,
+                candidate,
+                self.closure(candidate),
+            )
+            if not counterexamples:
+                return candidate
+            learned.extend(counterexamples)
+
+    def preferred_extension(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+    ) -> AssumptionSet | None:
+        self._validate_assumptions(require_assumptions)
+        if not require_assumptions:
+            stable = self.stable_extension()
+            if stable is not None:
+                return stable
+        current = self._greedy_admissible_seed(require_assumptions)
+        if current is None:
+            current = self.admissible_extension(
+                require_assumptions=require_assumptions,
+                prefer_large=True,
+            )
+        if current is None:
+            return None
+        while True:
+            outside = self.framework.assumptions - current
+            if not outside:
+                return current
+            larger = self.admissible_extension(
+                require_assumptions=current,
+                require_any_assumption=outside,
+                prefer_large=True,
+            )
+            if larger is None:
+                return current
+            if not current < larger:
+                raise RuntimeError("ABA preferred ASP growth did not produce a strict superset")
+            current = larger
 
     def attacks(self, extension: AssumptionSet, assumption: Literal) -> bool:
         if assumption not in self.framework.assumptions:
@@ -172,6 +215,122 @@ class AssumptionKernel:
             ":- assumption(A), not selected(A), contrary(A,C), not derived(C).",
         ]
         return tuple((*constraints, "#show selected/1."))
+
+    def _admissible_program(
+        self,
+        *,
+        require_assumptions: AssumptionSet,
+        require_any_assumption: AssumptionSet,
+        learned_defenses: tuple[tuple[Literal, AssumptionSet], ...],
+        prefer_large: bool,
+    ) -> tuple[str, ...]:
+        constraints = [
+            "{ selected(A) } :- assumption(A).",
+            "derived(L) :- selected(A), assumption_literal(A,L).",
+            ":- selected(A), contrary(A,C), derived(C).",
+        ]
+        constraints.extend(
+            f"selected({self.assumption_ids[assumption]})."
+            for assumption in sorted(require_assumptions, key=repr)
+        )
+        if require_any_assumption:
+            constraints.append(
+                ":- "
+                + ", ".join(
+                    f"not selected({self.assumption_ids[assumption]})"
+                    for assumption in sorted(require_any_assumption, key=repr)
+                )
+                + "."
+            )
+        for target, attack_support in learned_defenses:
+            target_id = self.assumption_ids[target]
+            if not attack_support:
+                constraints.append(f":- selected({target_id}).")
+                continue
+            constraints.append(
+                f":- selected({target_id}), "
+                + ", ".join(
+                    f"not derived({self.literal_ids[self.framework.contrary[assumption]]})"
+                    for assumption in sorted(attack_support, key=repr)
+                )
+                + "."
+            )
+        if prefer_large:
+            constraints.append("#heuristic selected(A) : assumption(A). [1@1,true]")
+        return tuple((*constraints, "#show selected/1."))
+
+    def _solve_selected(
+        self,
+        program: tuple[str, ...] | list[str],
+    ) -> AssumptionSet | None:
+        try:
+            import clingo  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise RuntimeError("ABA assumption kernel requires clingo") from exc
+
+        selected: list[str] = []
+
+        def collect_model(model) -> None:
+            selected.clear()
+            selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
+
+        control = clingo.Control(["--models=1"])
+        control.add("base", [], "\n".join(program))
+        control.ground([("base", [])])
+        result = control.solve(on_model=collect_model)
+        if not result.satisfiable:
+            return None
+        selected_ids = frozenset(selected)
+        return frozenset(
+            assumption
+            for assumption, assumption_id in self.assumption_ids.items()
+            if assumption_id in selected_ids
+        )
+
+    def _validate_assumptions(self, assumptions: AssumptionSet) -> None:
+        unknown = assumptions - self.framework.assumptions
+        if unknown:
+            raise ValueError(f"unknown assumptions: {sorted(unknown, key=repr)!r}")
+
+    def _greedy_admissible_seed(
+        self,
+        require_assumptions: AssumptionSet,
+    ) -> AssumptionSet | None:
+        current = set(self.framework.assumptions)
+        while True:
+            removed = self._inadmissible_assumptions(frozenset(current))
+            if not removed:
+                break
+            if removed & require_assumptions:
+                return None
+            current.difference_update(removed)
+
+        changed = True
+        while changed:
+            changed = False
+            for assumption in sorted(self.framework.assumptions - frozenset(current), key=repr):
+                candidate = frozenset((*current, assumption))
+                if not self._inadmissible_assumptions(candidate):
+                    current.add(assumption)
+                    changed = True
+        return frozenset(current)
+
+    def _inadmissible_assumptions(self, candidate: AssumptionSet) -> frozenset[Literal]:
+        closure = self.closure(candidate)
+        rejected = {
+            assumption
+            for assumption in candidate
+            if self.framework.contrary[assumption] in closure
+        }
+        rejected.update(
+            target
+            for target, _support in _defense_counterexamples(
+                self.framework,
+                candidate,
+                closure,
+            )
+        )
+        return frozenset(rejected)
 
 
 def support_acceptance(
@@ -250,15 +409,10 @@ def sat_support_extension(
         raise ValueError(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
-    if (
-        semantics == "preferred"
-        and require_derived is None
-        and require_not_derived is None
-        and not require_assumptions
-    ):
-        stable = AssumptionKernel.from_framework(framework).stable_extension()
-        if stable is not None:
-            return stable
+    if semantics == "preferred" and require_derived is None and require_not_derived is None:
+        return AssumptionKernel.from_framework(framework).preferred_extension(
+            require_assumptions=require_assumptions,
+        )
     if semantics == "preferred" and (
         require_derived is not None or require_not_derived is not None
     ):
@@ -460,11 +614,21 @@ def _defense_counterexample(
     candidate: AssumptionSet,
     closure: frozenset[Literal],
 ) -> tuple[Literal, AssumptionSet] | None:
+    counterexamples = _defense_counterexamples(framework, candidate, closure)
+    return counterexamples[0] if counterexamples else None
+
+
+def _defense_counterexamples(
+    framework: ABAFramework,
+    candidate: AssumptionSet,
+    closure: frozenset[Literal],
+) -> tuple[tuple[Literal, AssumptionSet], ...]:
     counterattacked = frozenset(
         assumption
         for assumption in framework.assumptions
         if framework.contrary[assumption] in closure
     )
+    counterexamples: list[tuple[Literal, AssumptionSet]] = []
     for target in sorted(candidate, key=repr):
         attack_support = _attacker_support_not_counterattacked(
             framework,
@@ -472,8 +636,8 @@ def _defense_counterexample(
             counterattacked=counterattacked,
         )
         if attack_support is not None:
-            return target, attack_support
-    return None
+            counterexamples.append((target, attack_support))
+    return tuple(counterexamples)
 
 
 def _attacker_support_not_counterattacked(
