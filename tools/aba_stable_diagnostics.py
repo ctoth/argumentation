@@ -434,6 +434,7 @@ def _rule_dependency_sccs(framework: ABAFramework) -> list[frozenset[Literal]]:
 
 
 def _tarjan_sccs(graph: dict[Literal, set[Literal]]) -> list[frozenset[Literal]]:
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), len(graph) * 2 + 100))
     index = 0
     stack: list[Literal] = []
     on_stack: set[Literal] = set()
