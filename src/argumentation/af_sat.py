@@ -926,7 +926,7 @@ class RangeMaximalTaskSolver:
 
     shortcut_depth = 2
     shortcut_probe_limit = 24
-    dense_shortcut_probe_limit = 8
+    dense_shortcut_probe_limit = 0
 
     def __init__(
         self,
