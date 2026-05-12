@@ -494,6 +494,21 @@ def test_large_dense_range_tasks_use_bounded_high_range_probe_budget() -> None:
     assert solver._shortcut_probe_limit() < solver.shortcut_probe_limit
 
 
+def test_constrained_range_task_checks_base_feasibility_before_range_search() -> None:
+    framework = af({"a", "b"}, {("a", "b")})
+    checks: list[SATCheck] = []
+
+    assert find_semi_stable_extension(
+        framework,
+        require_in="b",
+        trace_sink=checks.append,
+    ) is None
+
+    utility_names = [check.utility_name for check in checks]
+    assert utility_names[0] == "semi_stable_base_feasibility"
+    assert "semi_stable_max_range_at_least" not in utility_names
+
+
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
     framework = af({"a", "b"}, {("a", "b")})
     problem = AfSatKernel(framework)
