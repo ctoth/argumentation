@@ -152,20 +152,22 @@ class AssumptionKernel:
             facts.append(
                 f"contrary({assumption_id},{self.literal_ids[self.framework.contrary[assumption]]})."
             )
-        for index, rule in enumerate(sorted(self.framework.rules, key=repr)):
-            rule_id = f"r{index}"
-            facts.append(f"rule({rule_id}).")
-            facts.append(f"head({rule_id},{self.literal_ids[rule.consequent]}).")
-            facts.append(f"body_count({rule_id},{len(rule.antecedents)}).")
-            for antecedent in rule.antecedents:
-                facts.append(f"body({rule_id},{self.literal_ids[antecedent]}).")
+        for rule in sorted(self.framework.rules, key=repr):
+            head = self.literal_ids[rule.consequent]
+            body = ", ".join(
+                f"derived({self.literal_ids[antecedent]})"
+                for antecedent in sorted(rule.antecedents, key=repr)
+            )
+            if body:
+                facts.append(f"derived({head}) :- {body}.")
+            else:
+                facts.append(f"derived({head}).")
         return tuple(facts)
 
     def _stable_program(self) -> tuple[str, ...]:
         constraints = [
             "{ selected(A) } :- assumption(A).",
             "derived(L) :- selected(A), assumption_literal(A,L).",
-            "derived(H) :- rule(R), head(R,H), body_count(R,N), N = #count { B : body(R,B), derived(B) }.",
             ":- selected(A), contrary(A,C), derived(C).",
             ":- assumption(A), not selected(A), contrary(A,C), not derived(C).",
         ]
