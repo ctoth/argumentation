@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import importlib
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aspic import Literal
@@ -88,11 +89,6 @@ class AssumptionKernel:
             raise ValueError(
                 f"excluded literal is not in framework language: {require_not_derived!r}"
             )
-        try:
-            import clingo  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise RuntimeError("ABA assumption kernel requires clingo") from exc
-
         program = [*self._asp_facts(), *self._stable_program()]
         if require_derived is not None:
             program.append(f":- not derived({self.literal_ids[require_derived]}).")
@@ -262,10 +258,7 @@ class AssumptionKernel:
         *,
         optimize: bool = False,
     ) -> AssumptionSet | None:
-        try:
-            import clingo  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise RuntimeError("ABA assumption kernel requires clingo") from exc
+        clingo = _load_clingo()
 
         selected: list[str] = []
 
@@ -1099,6 +1092,13 @@ def _load_z3():
     except ImportError as exc:
         raise RuntimeError("ABA stable SAT solving requires z3-solver") from exc
     return z3
+
+
+def _load_clingo():
+    try:
+        return importlib.import_module("clingo")
+    except ImportError as exc:
+        raise RuntimeError("ABA assumption kernel requires clingo") from exc
 
 
 __all__ = [
