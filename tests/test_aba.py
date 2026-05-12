@@ -336,6 +336,73 @@ def test_rules_by_consequent_groups_rules_deterministically() -> None:
     assert grouped[z] == ()
 
 
+def test_assumption_kernel_stable_witness_attacks_every_outsider() -> None:
+    framework = _flat_aba(4, frozenset({(1, 2), (1, 3), (1, 4)}))
+    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+
+    witness = kernel.stable_extension()
+
+    assert witness == frozenset({literal("a1")})
+    assert all(
+        kernel.attacks(witness, assumption)
+        for assumption in framework.assumptions - witness
+    )
+
+
+def test_assumption_kernel_stable_returns_none_when_no_stable_extension_exists() -> None:
+    a = literal("a")
+    ca = literal("ca")
+    framework = ABAFramework(
+        language=frozenset({a, ca}),
+        rules=frozenset({Rule((a,), ca, "strict")}),
+        assumptions=frozenset({a}),
+        contrary={a: ca},
+    )
+    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+
+    assert kernel.stable_extension() is None
+
+
+def test_assumption_kernel_preferred_grows_nonstable_admissible_witness() -> None:
+    framework = _flat_aba(2, frozenset({(1, 1)}))
+    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+
+    witness = kernel.preferred_extension()
+
+    assert witness == frozenset({literal("a2")})
+    assert native_aba.admissible(framework, witness)
+    assert not any(
+        witness < candidate and native_aba.admissible(framework, candidate)
+        for candidate in native_aba._all_subsets(framework.assumptions)
+    )
+
+
+@given(flat_aba_frameworks())
+@settings(deadline=10000, max_examples=40)
+def test_assumption_kernel_stable_matches_native_oracle(
+    framework: ABAFramework,
+) -> None:
+    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    witness = kernel.stable_extension()
+    native_extensions = native_aba.stable_extensions(framework)
+
+    if witness is None:
+        assert native_extensions == ()
+    else:
+        assert witness in native_extensions
+
+
+@given(flat_aba_frameworks())
+@settings(deadline=10000, max_examples=40)
+def test_assumption_kernel_preferred_matches_native_oracle(
+    framework: ABAFramework,
+) -> None:
+    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    witness = kernel.preferred_extension()
+
+    assert witness in native_aba.preferred_extensions(framework)
+
+
 @given(flat_aba_frameworks(), st.data())
 @settings(deadline=10000, max_examples=40)
 def test_preferred_support_sat_preserves_required_assumptions(
