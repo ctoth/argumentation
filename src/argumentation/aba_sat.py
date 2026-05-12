@@ -107,32 +107,22 @@ class AssumptionKernel:
         require_assumptions: AssumptionSet = frozenset(),
         require_any_assumption: AssumptionSet = frozenset(),
         prefer_large: bool = False,
+        maximize: bool = False,
     ) -> AssumptionSet | None:
         self._validate_assumptions(require_assumptions)
         self._validate_assumptions(require_any_assumption)
-        learned: list[tuple[Literal, AssumptionSet]] = []
-        while True:
-            candidate = self._solve_selected(
-                (
-                    *self._asp_facts(),
-                    *self._admissible_program(
-                        require_assumptions=require_assumptions,
-                        require_any_assumption=require_any_assumption,
-                        learned_defenses=tuple(learned),
-                        prefer_large=prefer_large,
-                    ),
+        return self._solve_selected(
+            (
+                *self._asp_facts(),
+                *self._admissible_program(
+                    require_assumptions=require_assumptions,
+                    require_any_assumption=require_any_assumption,
+                    prefer_large=prefer_large,
+                    maximize=maximize,
                 ),
-            )
-            if candidate is None:
-                return None
-            counterexamples = _defense_counterexamples(
-                self.framework,
-                candidate,
-                self.closure(candidate),
-            )
-            if not counterexamples:
-                return candidate
-            learned.extend(counterexamples)
+            ),
+            optimize=maximize,
+        )
 
     def preferred_extension(
         self,
@@ -144,28 +134,10 @@ class AssumptionKernel:
             stable = self.stable_extension()
             if stable is not None:
                 return stable
-        current = self._greedy_admissible_seed(require_assumptions)
-        if current is None:
-            current = self.admissible_extension(
-                require_assumptions=require_assumptions,
-                prefer_large=True,
-            )
-        if current is None:
-            return None
-        while True:
-            outside = self.framework.assumptions - current
-            if not outside:
-                return current
-            larger = self.admissible_extension(
-                require_assumptions=current,
-                require_any_assumption=outside,
-                prefer_large=True,
-            )
-            if larger is None:
-                return current
-            if not current < larger:
-                raise RuntimeError("ABA preferred ASP growth did not produce a strict superset")
-            current = larger
+        return self.admissible_extension(
+            require_assumptions=require_assumptions,
+            maximize=True,
+        )
 
     def attacks(self, extension: AssumptionSet, assumption: Literal) -> bool:
         if assumption not in self.framework.assumptions:
@@ -239,14 +211,18 @@ class AssumptionKernel:
         *,
         require_assumptions: AssumptionSet,
         require_any_assumption: AssumptionSet,
-        learned_defenses: tuple[tuple[Literal, AssumptionSet], ...],
         prefer_large: bool,
+        maximize: bool,
     ) -> tuple[str, ...]:
         constraints = [
             "{ selected(A) } :- assumption(A).",
             "derived(L) :- selected(A), assumption_literal(A,L).",
+            "available(A) :- assumption(A), contrary(A,C), not derived(C).",
+            "attacker_derived(L) :- available(A), assumption_literal(A,L).",
             ":- selected(A), contrary(A,C), derived(C).",
+            ":- selected(A), contrary(A,C), attacker_derived(C).",
         ]
+        constraints.extend(self._attacker_closure_rules())
         constraints.extend(
             f"selected({self.assumption_ids[assumption]})."
             for assumption in sorted(require_assumptions, key=repr)
@@ -260,26 +236,31 @@ class AssumptionKernel:
                 )
                 + "."
             )
-        for target, attack_support in learned_defenses:
-            target_id = self.assumption_ids[target]
-            if not attack_support:
-                constraints.append(f":- selected({target_id}).")
-                continue
-            constraints.append(
-                f":- selected({target_id}), "
-                + ", ".join(
-                    f"not derived({self.literal_ids[self.framework.contrary[assumption]]})"
-                    for assumption in sorted(attack_support, key=repr)
-                )
-                + "."
-            )
         if prefer_large:
             constraints.append("#heuristic selected(A) : assumption(A). [1@1,true]")
+        if maximize:
+            constraints.append("#maximize { 1,A : selected(A) }.")
         return tuple((*constraints, "#show selected/1."))
+
+    def _attacker_closure_rules(self) -> tuple[str, ...]:
+        rules: list[str] = []
+        for rule in sorted(self.framework.rules, key=repr):
+            head = self.literal_ids[rule.consequent]
+            body = ", ".join(
+                f"attacker_derived({self.literal_ids[antecedent]})"
+                for antecedent in sorted(rule.antecedents, key=repr)
+            )
+            if body:
+                rules.append(f"attacker_derived({head}) :- {body}.")
+            else:
+                rules.append(f"attacker_derived({head}).")
+        return tuple(rules)
 
     def _solve_selected(
         self,
         program: tuple[str, ...] | list[str],
+        *,
+        optimize: bool = False,
     ) -> AssumptionSet | None:
         try:
             import clingo  # type: ignore[import-not-found]
@@ -292,7 +273,7 @@ class AssumptionKernel:
             selected.clear()
             selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
 
-        control = clingo.Control(["--models=1"])
+        control = clingo.Control(["--models=0"] if optimize else ["--models=1"])
         control.add("base", [], "\n".join(program))
         control.ground([("base", [])])
         result = control.solve(on_model=collect_model)
@@ -309,46 +290,6 @@ class AssumptionKernel:
         unknown = assumptions - self.framework.assumptions
         if unknown:
             raise ValueError(f"unknown assumptions: {sorted(unknown, key=repr)!r}")
-
-    def _greedy_admissible_seed(
-        self,
-        require_assumptions: AssumptionSet,
-    ) -> AssumptionSet | None:
-        current = set(self.framework.assumptions)
-        while True:
-            removed = self._inadmissible_assumptions(frozenset(current))
-            if not removed:
-                break
-            if removed & require_assumptions:
-                return None
-            current.difference_update(removed)
-
-        changed = True
-        while changed:
-            changed = False
-            for assumption in sorted(self.framework.assumptions - frozenset(current), key=repr):
-                candidate = frozenset((*current, assumption))
-                if not self._inadmissible_assumptions(candidate):
-                    current.add(assumption)
-                    changed = True
-        return frozenset(current)
-
-    def _inadmissible_assumptions(self, candidate: AssumptionSet) -> frozenset[Literal]:
-        closure = self.closure(candidate)
-        rejected = {
-            assumption
-            for assumption in candidate
-            if self.framework.contrary[assumption] in closure
-        }
-        rejected.update(
-            target
-            for target, _support in _defense_counterexamples(
-                self.framework,
-                candidate,
-                closure,
-            )
-        )
-        return frozenset(rejected)
 
 
 def support_acceptance(
