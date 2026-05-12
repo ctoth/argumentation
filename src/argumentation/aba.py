@@ -12,6 +12,7 @@ construction time rather than deferred to a partial runtime path.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain, combinations
 from typing import Mapping, TypeAlias
@@ -252,13 +253,32 @@ def _attacks(framework: ABAInput, attacker: AssumptionSet, target: AssumptionSet
 
 def _closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Literal]:
     closure = set(premises)
-    changed = True
-    while changed:
-        changed = False
-        for rule in framework.rules:
-            if set(rule.antecedents) <= closure and rule.consequent not in closure:
-                closure.add(rule.consequent)
-                changed = True
+    queue = list(closure)
+    waiting: defaultdict[Literal, list[int]] = defaultdict(list)
+    remaining: list[int] = []
+    consequents: list[Literal] = []
+
+    for index, rule in enumerate(framework.rules):
+        missing = 0
+        for antecedent in frozenset(rule.antecedents):
+            if antecedent not in closure:
+                missing += 1
+                waiting[antecedent].append(index)
+        remaining.append(missing)
+        consequents.append(rule.consequent)
+        if missing == 0 and rule.consequent not in closure:
+            closure.add(rule.consequent)
+            queue.append(rule.consequent)
+
+    while queue:
+        literal = queue.pop()
+        for rule_index in waiting.get(literal, ()):
+            remaining[rule_index] -= 1
+            if remaining[rule_index] == 0:
+                consequent = consequents[rule_index]
+                if consequent not in closure:
+                    closure.add(consequent)
+                    queue.append(consequent)
     return frozenset(closure)
 
 
