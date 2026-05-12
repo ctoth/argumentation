@@ -482,25 +482,11 @@ def _attacker_support_not_counterattacked(
     *,
     counterattacked: AssumptionSet,
 ) -> AssumptionSet | None:
-    z3 = _load_z3()
-    variables = {
-        assumption: z3.Bool(f"attacker_{_literal_key(assumption)}")
-        for assumption in sorted(framework.assumptions, key=repr)
-    }
-    solver = z3.Solver()
-    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
-    for assumption in sorted(counterattacked, key=repr):
-        solver.add(z3.Not(variables[assumption]))
-    solver.add(derived[framework.contrary[target]])
-    if solver.check() != z3.sat:
+    available = framework.assumptions - counterattacked
+    conclusion = framework.contrary[target]
+    if not derives(framework, available, conclusion):
         return None
-    model = solver.model()
-    support = frozenset(
-        assumption
-        for assumption, variable in variables.items()
-        if z3.is_true(model.evaluate(variable, model_completion=True))
-    )
-    return _shrink_attack_support(framework, support, framework.contrary[target])
+    return _shrink_attack_support(framework, available, conclusion)
 
 
 def _shrink_attack_support(
