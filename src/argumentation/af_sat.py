@@ -926,6 +926,7 @@ class RangeMaximalTaskSolver:
 
     shortcut_depth = 2
     shortcut_probe_limit = 24
+    dense_shortcut_probe_limit = 8
 
     def __init__(
         self,
@@ -1004,10 +1005,11 @@ class RangeMaximalTaskSolver:
     ) -> frozenset[str] | None:
         arguments = tuple(self.problem.arguments)
         probes = 0
+        probe_limit = self._shortcut_probe_limit()
         for missing in _bounded_missing_sets(
             arguments,
             depth=self.shortcut_depth,
-            limit=self.shortcut_probe_limit,
+            limit=probe_limit,
         ):
             required_range = frozenset(arguments) - missing
             kind = "full" if not missing else "high"
@@ -1023,9 +1025,17 @@ class RangeMaximalTaskSolver:
             probes += 1
             if witness is not None:
                 return witness
-            if probes >= self.shortcut_probe_limit:
+            if probes >= probe_limit:
                 return None
         return None
+
+    def _shortcut_probe_limit(self) -> int:
+        if (
+            len(self.problem.arguments) >= 160
+            and len(self.problem.framework.defeats) >= len(self.problem.arguments) * 8
+        ):
+            return self.dense_shortcut_probe_limit
+        return self.shortcut_probe_limit
 
     def _is_range_maximal(self, range_set: frozenset[str]) -> bool:
         outside = self.problem.framework.arguments - range_set
