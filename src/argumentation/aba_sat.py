@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
@@ -173,15 +174,32 @@ class AssumptionKernel:
 
     def closure(self, extension: AssumptionSet) -> frozenset[Literal]:
         derived = set(extension)
-        changed = True
-        while changed:
-            changed = False
-            for rule in sorted(self.framework.rules, key=repr):
-                if rule.consequent in derived:
-                    continue
-                if all(antecedent in derived for antecedent in rule.antecedents):
-                    derived.add(rule.consequent)
-                    changed = True
+        queue = list(derived)
+        waiting: defaultdict[Literal, list[int]] = defaultdict(list)
+        remaining: list[int] = []
+        consequents: list[Literal] = []
+
+        for index, rule in enumerate(sorted(self.framework.rules, key=repr)):
+            missing = 0
+            for antecedent in frozenset(rule.antecedents):
+                if antecedent not in derived:
+                    missing += 1
+                    waiting[antecedent].append(index)
+            remaining.append(missing)
+            consequents.append(rule.consequent)
+            if missing == 0 and rule.consequent not in derived:
+                derived.add(rule.consequent)
+                queue.append(rule.consequent)
+
+        while queue:
+            literal = queue.pop()
+            for rule_index in waiting.get(literal, ()):
+                remaining[rule_index] -= 1
+                if remaining[rule_index] == 0:
+                    consequent = consequents[rule_index]
+                    if consequent not in derived:
+                        derived.add(consequent)
+                        queue.append(consequent)
         return frozenset(derived)
 
     def _asp_facts(self) -> tuple[str, ...]:
