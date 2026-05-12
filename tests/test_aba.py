@@ -313,6 +313,29 @@ def test_bitvec_ranked_closure_matches_native_closure(
     assert ranked_closure == native_aba._closure(framework, selected)
 
 
+def test_rules_by_consequent_groups_rules_deterministically() -> None:
+    a1 = literal("a1")
+    a2 = literal("a2")
+    x = literal("x")
+    y = literal("y")
+    z = literal("z")
+    first = Rule((a2,), x, "strict")
+    second = Rule((a1,), x, "strict")
+    third = Rule((x,), y, "strict")
+    framework = ABAFramework(
+        language=frozenset({a1, a2, x, y, z}),
+        rules=frozenset({third, first, second}),
+        assumptions=frozenset({a1, a2}),
+        contrary={a1: y, a2: z},
+    )
+
+    grouped = aba_sat._rules_by_consequent(framework, tuple(sorted(framework.language, key=repr)))
+
+    assert grouped[x] == tuple(sorted((first, second), key=repr))
+    assert grouped[y] == (third,)
+    assert grouped[z] == ()
+
+
 @given(flat_aba_frameworks(), st.data())
 @settings(deadline=10000, max_examples=40)
 def test_preferred_support_sat_preserves_required_assumptions(
