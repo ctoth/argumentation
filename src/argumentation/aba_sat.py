@@ -450,14 +450,7 @@ def _add_ranked_closure_constraints(z3, solver, framework, variables):
         literal: z3.Int(f"rank_{_literal_key(literal)}")
         for literal in literals
     }
-    rules_by_consequent = {
-        literal: [
-            rule
-            for rule in sorted(framework.rules, key=repr)
-            if rule.consequent == literal
-        ]
-        for literal in literals
-    }
+    rules_by_consequent = _rules_by_consequent(framework, literals)
 
     for literal in literals:
         solver.add(ranks[literal] >= 0, ranks[literal] <= rank_bound)
@@ -520,14 +513,7 @@ def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
         literal: z3.BitVec(f"rank_bv_{_literal_key(literal)}", rank_bits)
         for literal in literals
     }
-    rules_by_consequent = {
-        literal: [
-            rule
-            for rule in sorted(framework.rules, key=repr)
-            if rule.consequent == literal
-        ]
-        for literal in literals
-    }
+    rules_by_consequent = _rules_by_consequent(framework, literals)
 
     for literal in literals:
         solver.add(z3.ULE(ranks[literal], rank_bound_value))
@@ -575,6 +561,16 @@ def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
             )
         )
     return derived
+
+
+def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...]):
+    grouped: dict[Literal, list[Rule]] = {literal: [] for literal in literals}
+    for rule in sorted(framework.rules, key=repr):
+        grouped[rule.consequent].append(rule)
+    return {
+        literal: tuple(rules)
+        for literal, rules in grouped.items()
+    }
 
 
 class _SupportState:
