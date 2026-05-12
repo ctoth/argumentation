@@ -8,10 +8,9 @@ module avoids adding a second document schema in ``argumentation``.
 
 from __future__ import annotations
 
-import json
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal as TypingLiteral
 
 from argumentation.aspic import (
     ArgumentationSystem,
@@ -30,6 +29,16 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True)
+class GroundRuleOrigin:
+    """Structured origin for a generated grounded ASPIC+ rule."""
+
+    source_rule_id: str
+    substitution: tuple[tuple[str, Scalar], ...]
+    role: TypingLiteral["ground", "undercut"]
+    target_rule: Rule | None = None
+
+
+@dataclass(frozen=True)
 class GroundedDatalogTheory:
     """ASPIC+ projection of a grounded Gunray defeasible theory."""
 
@@ -38,6 +47,7 @@ class GroundedDatalogTheory:
     pref: PreferenceConfig
     inspection: "GroundingInspection"
     source_to_ground_rules: Mapping[str, frozenset[Rule]]
+    rule_origins: Mapping[Rule, GroundRuleOrigin]
     non_approximated_predicates: frozenset[str]
 
 
@@ -101,22 +111,35 @@ def grounding_inspection_to_aspic(
         non_approximated = frozenset()
 
     axioms = frozenset(_literal_from_ground_atom(atom) for atom in fact_atoms)
+    rule_origins: dict[Rule, GroundRuleOrigin] = {}
     strict_rules = tuple(
-        _rule_from_instance(instance, kind="strict")
+        _rule_from_instance(
+            instance,
+            kind="strict",
+            name=None,
+            origins=rule_origins,
+        )
         for instance in strict_instances
     )
-    defeasible_rules = [
-        _rule_from_instance(instance, kind="defeasible")
-        for instance in defeasible_instances
-    ]
+    defeasible_rules = []
+    for index, instance in enumerate(defeasible_instances):
+        defeasible_rules.append(
+            _rule_from_instance(
+                instance,
+                kind="defeasible",
+                name=f"gr{index}",
+                origins=rule_origins,
+            )
+        )
     defeasible_rules.extend(
-        _undercut_rules_from_defeaters(defeater_instances, defeasible_rules)
+        _undercut_rules_from_defeaters(
+            defeater_instances,
+            defeasible_rules,
+            rule_origins,
+        )
     )
 
-    source_to_ground = _source_to_ground_rules(
-        strict_rules,
-        tuple(defeasible_rules),
-    )
+    source_to_ground = _source_to_ground_rules(rule_origins)
     pref = PreferenceConfig(
         rule_order=_project_rule_order(superiority, source_to_ground),
         premise_order=frozenset(),
@@ -139,6 +162,7 @@ def grounding_inspection_to_aspic(
         pref=pref,
         inspection=inspection,
         source_to_ground_rules=source_to_ground,
+        rule_origins=rule_origins,
         non_approximated_predicates=non_approximated,
     )
 
@@ -165,51 +189,38 @@ def _literal_from_ground_atom(atom: Any) -> Literal:
     )
 
 
-def _rule_from_instance(instance: "GroundRuleInstance", *, kind: str) -> Rule:
+def _rule_from_instance(
+    instance: "GroundRuleInstance",
+    *,
+    kind: str,
+    name: str | None,
+    origins: dict[Rule, GroundRuleOrigin],
+) -> Rule:
     if getattr(instance, "default_negated_body", ()):
         raise ValueError(
             "ASPIC+ grounding does not accept default-negated rule bodies"
         )
-    return Rule(
+    rule = Rule(
         antecedents=tuple(_literal_from_ground_atom(atom) for atom in instance.body),
         consequent=_literal_from_ground_atom(instance.head),
         kind=kind,
-        name=None if kind == "strict" else _ground_rule_name(instance),
+        name=name,
     )
-
-
-def _ground_rule_name(instance: "GroundRuleInstance") -> str:
-    return f"{instance.rule_id}#{_substitution_key(instance.substitution)}"
-
-
-def _substitution_key(substitution: tuple[tuple[str, object], ...]) -> str:
-    return json.dumps(
-        {
-            name: _typed_scalar_key(value)
-            for name, value in sorted(substitution, key=lambda item: item[0])
-        },
-        sort_keys=True,
-        separators=(",", ":"),
+    origins[rule] = GroundRuleOrigin(
+        source_rule_id=instance.rule_id,
+        substitution=tuple(
+            (name, value)
+            for name, value in instance.substitution
+        ),
+        role="ground",
     )
-
-
-def _typed_scalar_key(value: object) -> dict[str, object]:
-    if isinstance(value, bool):
-        return {"type": "bool", "value": value}
-    if isinstance(value, int):
-        return {"type": "int", "value": value}
-    if isinstance(value, float):
-        return {"type": "float", "value": value}
-    return {"type": "str", "value": str(value)}
-
-
-def _source_rule_id(rule_name: str) -> str:
-    return rule_name.split("#", 1)[0]
+    return rule
 
 
 def _undercut_rules_from_defeaters(
     defeater_instances: tuple["GroundRuleInstance", ...],
     target_rules: list[Rule],
+    origins: dict[Rule, GroundRuleOrigin],
 ) -> tuple[Rule, ...]:
     undercut_rules: list[Rule] = []
     for instance in defeater_instances:
@@ -218,33 +229,44 @@ def _undercut_rules_from_defeaters(
                 "ASPIC+ grounding does not accept default-negated defeater bodies"
             )
         defeater_head = _literal_from_ground_atom(instance.head)
-        targets = _defeater_targets(defeater_head, target_rules)
         antecedents = tuple(
             _literal_from_ground_atom(atom)
             for atom in instance.body
         )
-        defeater_name = _ground_rule_name(instance)
-        for target_rule in targets:
+        defeater_targets = _defeater_targets(defeater_head, target_rules, origins)
+        for target_rule in defeater_targets:
             if target_rule.name is None:
                 continue
-            undercut_rules.append(
-                Rule(
-                    antecedents=antecedents,
-                    consequent=Literal(GroundAtom(target_rule.name), negated=True),
-                    kind="defeasible",
-                    name=f"{defeater_name}->{target_rule.name}",
-                )
+            rule = Rule(
+                antecedents=antecedents,
+                consequent=Literal(GroundAtom(target_rule.name), negated=True),
+                kind="defeasible",
+                name=f"uc{len(undercut_rules)}",
             )
+            origins[rule] = GroundRuleOrigin(
+                source_rule_id=instance.rule_id,
+                substitution=tuple(
+                    (name, value)
+                    for name, value in instance.substitution
+                ),
+                role="undercut",
+                target_rule=target_rule,
+            )
+            undercut_rules.append(rule)
     return tuple(undercut_rules)
 
 
-def _defeater_targets(defeater_head: Literal, rules: list[Rule]) -> tuple[Rule, ...]:
+def _defeater_targets(
+    defeater_head: Literal,
+    rules: list[Rule],
+    origins: Mapping[Rule, GroundRuleOrigin],
+) -> tuple[Rule, ...]:
     if defeater_head.negated:
         source_id_targets = tuple(
             rule
             for rule in rules
             if rule.name is not None
-            and _source_rule_id(rule.name) == defeater_head.atom.predicate
+            and origins[rule].source_rule_id == defeater_head.atom.predicate
         )
         if source_id_targets:
             return source_id_targets
@@ -256,18 +278,13 @@ def _defeater_targets(defeater_head: Literal, rules: list[Rule]) -> tuple[Rule, 
 
 
 def _source_to_ground_rules(
-    strict_rules: tuple[Rule, ...],
-    defeasible_rules: tuple[Rule, ...],
+    origins: Mapping[Rule, GroundRuleOrigin],
 ) -> Mapping[str, frozenset[Rule]]:
     grouped: dict[str, set[Rule]] = {}
-    for rule in strict_rules:
-        # Strict rules have no ASPIC rule name, so source-level preference cannot
-        # target them. They are still grouped by structural repr for diagnostics.
-        grouped.setdefault(repr(rule), set()).add(rule)
-    for rule in defeasible_rules:
-        if rule.name is None:
+    for rule, origin in origins.items():
+        if origin.role != "ground":
             continue
-        grouped.setdefault(_source_rule_id(rule.name), set()).add(rule)
+        grouped.setdefault(origin.source_rule_id, set()).add(rule)
     return {
         source_id: frozenset(rules)
         for source_id, rules in grouped.items()
@@ -369,6 +386,7 @@ def _decode_predicate_polarity(predicate: str) -> tuple[str, bool]:
 
 __all__ = [
     "GroundedDatalogTheory",
+    "GroundRuleOrigin",
     "ground_defeasible_theory",
     "grounding_inspection_to_aspic",
 ]

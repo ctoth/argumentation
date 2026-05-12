@@ -176,7 +176,7 @@ def test_defeater_projection_records_structured_undercut_origin() -> None:
     target_rule = ground_rules["birds_fly"]
     assert target_rule.name is not None
 
-    (undercut_rule, undercut_origin) = tuple(undercut_rules.items())
+    ((undercut_rule, undercut_origin),) = tuple(undercut_rules.items())
     assert undercut_rule.name == "uc0"
     assert "#" not in undercut_rule.name
     assert undercut_rule.consequent == Literal(
