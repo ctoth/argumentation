@@ -11,6 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import combinations
 
+from argumentation.dung import (
+    ArgumentationFramework as DungArgumentationFramework,
+    grounded_extension as dung_grounded_extension,
+)
+
 
 @dataclass(frozen=True)
 class BipolarArgumentationFramework:
@@ -64,6 +69,24 @@ def _support_predecessors(supports: frozenset[tuple[str, str]]) -> dict[str, fro
     for source, target in supports:
         predecessors.setdefault(target, set()).add(source)
     return {target: frozenset(sources) for target, sources in predecessors.items()}
+
+
+def _attackers_index(
+    defeats: frozenset[tuple[str, str]],
+) -> dict[str, frozenset[str]]:
+    attackers: dict[str, set[str]] = {}
+    for source, target in defeats:
+        attackers.setdefault(target, set()).add(source)
+    return {target: frozenset(sources) for target, sources in attackers.items()}
+
+
+def _closure_or_compute(
+    framework: BipolarArgumentationFramework,
+    defeat_closure: frozenset[tuple[str, str]] | None,
+) -> frozenset[tuple[str, str]]:
+    if defeat_closure is not None:
+        return defeat_closure
+    return _defeat_closure(framework.defeats, framework.supports)
 
 
 def support_closure(
@@ -172,17 +195,52 @@ def _defeat_closure(
     return frozenset(set(defeats) | set(cayrol_derived_defeats(defeats, supports)))
 
 
+def _set_defeats(
+    args: frozenset[str],
+    target: str,
+    defeat_closure: frozenset[tuple[str, str]],
+) -> bool:
+    return target in {
+        defeated
+        for source, defeated in defeat_closure
+        if source in args
+    }
+
+
+def _conflict_free(
+    args: frozenset[str],
+    defeat_closure: frozenset[tuple[str, str]],
+) -> bool:
+    return not any(
+        _set_defeats(args, target, defeat_closure)
+        for target in args
+    )
+
+
+def _safe(
+    args: frozenset[str],
+    framework: BipolarArgumentationFramework,
+    defeat_closure: frozenset[tuple[str, str]],
+) -> bool:
+    for arg in framework.arguments:
+        if _set_defeats(args, arg, defeat_closure) and (
+            set_supports(args, arg, framework) or arg in args
+        ):
+            return False
+    return True
+
+
 def set_defeats(
     args: frozenset[str],
     target: str,
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Return whether ``args`` set-defeats ``target``."""
-    return target in {
-        defeated
-        for source, defeated in _defeat_closure(framework.defeats, framework.supports)
-        if source in args
-    }
+    return _set_defeats(
+        args,
+        target,
+        _defeat_closure(framework.defeats, framework.supports),
+    )
 
 
 def set_supports(
@@ -207,7 +265,10 @@ def conflict_free(
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Cayrol 2005, Definition 6: no set-defeat within the set."""
-    return not any(set_defeats(args, target, framework) for target in args)
+    return _conflict_free(
+        args,
+        _defeat_closure(framework.defeats, framework.supports),
+    )
 
 
 def safe(
@@ -215,25 +276,26 @@ def safe(
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Cayrol 2005, Definition 7: no set-defeated argument is set-supported."""
-    for arg in framework.arguments:
-        if set_defeats(args, arg, framework) and (
-            set_supports(args, arg, framework) or arg in args
-        ):
-            return False
-    return True
+    return _safe(
+        args,
+        framework,
+        _defeat_closure(framework.defeats, framework.supports),
+    )
 
 
 def defends(
     args: frozenset[str],
     arg: str,
     framework: BipolarArgumentationFramework,
+    *,
+    defeat_closure: frozenset[tuple[str, str]] | None = None,
+    attackers_index: dict[str, frozenset[str]] | None = None,
 ) -> bool:
     """Cayrol 2005, Definition 5: collective defence via set-defeat."""
-    closure = _defeat_closure(framework.defeats, framework.supports)
-    attackers_index: dict[str, set[str]] = {}
-    for source, target in closure:
-        attackers_index.setdefault(target, set()).add(source)
-    attackers = attackers_index.get(arg, set())
+    closure = _closure_or_compute(framework, defeat_closure)
+    if attackers_index is None:
+        attackers_index = _attackers_index(closure)
+    attackers = attackers_index.get(arg, frozenset())
     for attacker in attackers:
         if not any((defender, attacker) in closure for defender in args):
             return False
@@ -245,8 +307,30 @@ def d_admissible(
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Cayrol 2005, Definition 9."""
-    return conflict_free(args, framework) and all(
-        defends(args, arg, framework) for arg in args
+    defeat_closure = _defeat_closure(framework.defeats, framework.supports)
+    return _d_admissible(
+        args,
+        framework,
+        defeat_closure,
+        _attackers_index(defeat_closure),
+    )
+
+
+def _d_admissible(
+    args: frozenset[str],
+    framework: BipolarArgumentationFramework,
+    defeat_closure: frozenset[tuple[str, str]],
+    attackers_index: dict[str, frozenset[str]],
+) -> bool:
+    return _conflict_free(args, defeat_closure) and all(
+        defends(
+            args,
+            arg,
+            framework,
+            defeat_closure=defeat_closure,
+            attackers_index=attackers_index,
+        )
+        for arg in args
     )
 
 
@@ -255,8 +339,30 @@ def s_admissible(
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Cayrol 2005, Definition 10."""
-    return safe(args, framework) and all(
-        defends(args, arg, framework) for arg in args
+    defeat_closure = _defeat_closure(framework.defeats, framework.supports)
+    return _s_admissible(
+        args,
+        framework,
+        defeat_closure,
+        _attackers_index(defeat_closure),
+    )
+
+
+def _s_admissible(
+    args: frozenset[str],
+    framework: BipolarArgumentationFramework,
+    defeat_closure: frozenset[tuple[str, str]],
+    attackers_index: dict[str, frozenset[str]],
+) -> bool:
+    return _safe(args, framework, defeat_closure) and all(
+        defends(
+            args,
+            arg,
+            framework,
+            defeat_closure=defeat_closure,
+            attackers_index=attackers_index,
+        )
+        for arg in args
     )
 
 
@@ -265,10 +371,34 @@ def c_admissible(
     framework: BipolarArgumentationFramework,
 ) -> bool:
     """Cayrol 2005, Definition 11."""
+    defeat_closure = _defeat_closure(framework.defeats, framework.supports)
+    return _c_admissible(
+        args,
+        framework,
+        defeat_closure,
+        _attackers_index(defeat_closure),
+    )
+
+
+def _c_admissible(
+    args: frozenset[str],
+    framework: BipolarArgumentationFramework,
+    defeat_closure: frozenset[tuple[str, str]],
+    attackers_index: dict[str, frozenset[str]],
+) -> bool:
     return (
-        conflict_free(args, framework)
+        _conflict_free(args, defeat_closure)
         and support_closed(args, framework)
-        and all(defends(args, arg, framework) for arg in args)
+        and all(
+            defends(
+                args,
+                arg,
+                framework,
+                defeat_closure=defeat_closure,
+                attackers_index=attackers_index,
+            )
+            for arg in args
+        )
     )
 
 
@@ -285,10 +415,27 @@ def _maximal_sets(
     framework: BipolarArgumentationFramework,
     predicate,
 ) -> list[frozenset[str]]:
+    defeat_closure = derived_set_defeats(framework)
+    attackers_index = _attackers_index(defeat_closure)
+    closure_predicates = {
+        d_admissible: _d_admissible,
+        s_admissible: _s_admissible,
+        c_admissible: _c_admissible,
+    }
+    closure_predicate = closure_predicates.get(predicate)
     admissible_sets = [
         candidate
         for candidate in _all_subsets(framework.arguments)
-        if predicate(candidate, framework)
+        if (
+            closure_predicate(
+                candidate,
+                framework,
+                defeat_closure,
+                attackers_index,
+            )
+            if closure_predicate is not None
+            else predicate(candidate, framework)
+        )
     ]
     maximal = [
         candidate
@@ -323,12 +470,20 @@ def stable_extensions(
     framework: BipolarArgumentationFramework,
 ) -> list[frozenset[str]]:
     """Cayrol 2005, Definition 8: conflict-free and defeats every outsider."""
+    defeat_closure = derived_set_defeats(framework)
     stable: list[frozenset[str]] = []
     for candidate in _all_subsets(framework.arguments):
-        if not conflict_free(candidate, framework):
+        if not _conflict_free(candidate, defeat_closure):
             continue
         outsiders = framework.arguments - candidate
-        if all(set_defeats(candidate, target, framework) for target in outsiders):
+        if all(
+            _set_defeats(
+                candidate,
+                target,
+                defeat_closure,
+            )
+            for target in outsiders
+        ):
             stable.append(candidate)
     return sorted(stable, key=lambda s: (len(s), tuple(sorted(s))))
 
@@ -336,12 +491,24 @@ def stable_extensions(
 def characteristic_fn(
     args: frozenset[str],
     framework: BipolarArgumentationFramework,
+    *,
+    defeat_closure: frozenset[tuple[str, str]] | None = None,
+    attackers_index: dict[str, frozenset[str]] | None = None,
 ) -> frozenset[str]:
     """Return the Cayrol/Dung characteristic function over set-defeats."""
+    closure = _closure_or_compute(framework, defeat_closure)
+    if attackers_index is None:
+        attackers_index = _attackers_index(closure)
     return frozenset(
         argument
         for argument in framework.arguments
-        if defends(args, argument, framework)
+        if defends(
+            args,
+            argument,
+            framework,
+            defeat_closure=closure,
+            attackers_index=attackers_index,
+        )
     )
 
 
@@ -354,22 +521,35 @@ def bipolar_grounded_extension(
     with set-defeats; Dung grounded is the least fixed point of the resulting
     characteristic function.
     """
-    current: frozenset[str] = frozenset()
-    while True:
-        next_current = characteristic_fn(current, framework)
-        if next_current == current:
-            return current
-        current = next_current
+    defeat_closure = derived_set_defeats(framework)
+    return dung_grounded_extension(
+        DungArgumentationFramework(
+            arguments=framework.arguments,
+            defeats=defeat_closure,
+        )
+    )
 
 
 def bipolar_complete_extensions(
     framework: BipolarArgumentationFramework,
 ) -> list[frozenset[str]]:
     """Return fixed points of the Cayrol characteristic function."""
+    defeat_closure = derived_set_defeats(framework)
+    attackers_index = _attackers_index(defeat_closure)
     completes = [
         candidate
         for candidate in _all_subsets(framework.arguments)
-        if d_admissible(candidate, framework)
-        and characteristic_fn(candidate, framework) == candidate
+        if _d_admissible(
+            candidate,
+            framework,
+            defeat_closure,
+            attackers_index,
+        )
+        and characteristic_fn(
+            candidate,
+            framework,
+            defeat_closure=defeat_closure,
+            attackers_index=attackers_index,
+        ) == candidate
     ]
     return sorted(completes, key=lambda s: (len(s), tuple(sorted(s))))

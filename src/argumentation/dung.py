@@ -11,6 +11,7 @@ References:
 
 from __future__ import annotations
 
+from collections import deque
 from dataclasses import dataclass
 from itertools import combinations
 
@@ -78,6 +79,19 @@ def _attackers_index(
     return {
         target: frozenset(sources)
         for target, sources in attackers.items()
+    }
+
+
+def _targets_index(
+    defeats: frozenset[tuple[str, str]],
+) -> dict[str, frozenset[str]]:
+    """Build source -> targets adjacency for a defeat relation."""
+    targets: dict[str, set[str]] = {}
+    for attacker, target in defeats:
+        targets.setdefault(attacker, set()).add(target)
+    return {
+        source: frozenset(destinations)
+        for source, destinations in targets.items()
     }
 
 
@@ -200,18 +214,40 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
     References:
         Dung 1995, Definition 20 + Theorem 25 (least fixed point).
     """
-    current: frozenset[str] = frozenset()
     attackers_index = _attackers_index(framework.defeats)
-    while True:
-        next_current = characteristic_fn(
-            current,
-            framework.arguments,
-            framework.defeats,
-            attackers_index=attackers_index,
-        )
-        if next_current == current:
-            return current
-        current = next_current
+    targets_index = _targets_index(framework.defeats)
+    live_attackers = {
+        argument: len(attackers_index.get(argument, frozenset()))
+        for argument in framework.arguments
+    }
+    queue = deque(
+        argument
+        for argument in framework.arguments
+        if live_attackers[argument] == 0
+    )
+    in_arguments: set[str] = set()
+    out_arguments: set[str] = set()
+
+    while queue:
+        argument = queue.popleft()
+        if argument in in_arguments or argument in out_arguments:
+            continue
+
+        in_arguments.add(argument)
+        for defeated in targets_index.get(argument, frozenset()):
+            if defeated in out_arguments:
+                continue
+            out_arguments.add(defeated)
+            for defended in targets_index.get(defeated, frozenset()):
+                live_attackers[defended] -= 1
+                if (
+                    live_attackers[defended] == 0
+                    and defended not in in_arguments
+                    and defended not in out_arguments
+                ):
+                    queue.append(defended)
+
+    return frozenset(in_arguments)
 
 
 def complete_extensions(
