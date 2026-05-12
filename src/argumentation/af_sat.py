@@ -947,6 +947,16 @@ class RangeMaximalTaskSolver:
         required_in: frozenset[str],
         required_out: frozenset[str],
     ) -> frozenset[str] | None:
+        if required_in or required_out:
+            feasible = _base_extension(
+                self.problem,
+                base=self.base,
+                required_in=required_in,
+                required_out=required_out,
+                utility_name=self._base_feasibility_utility_name(),
+            )
+            if feasible is None:
+                return None
         blocked_ranges: list[frozenset[str]] = []
         while True:
             seed = self._seed_extension(
@@ -1036,6 +1046,11 @@ class RangeMaximalTaskSolver:
         ):
             return self.dense_shortcut_probe_limit
         return self.shortcut_probe_limit
+
+    def _base_feasibility_utility_name(self) -> str:
+        if self.seed_utility_name.endswith("_seed"):
+            return f"{self.seed_utility_name.removesuffix('_seed')}_base_feasibility"
+        return f"{self.seed_utility_name}_base_feasibility"
 
     def _is_range_maximal(self, range_set: frozenset[str]) -> bool:
         outside = self.problem.framework.arguments - range_set
