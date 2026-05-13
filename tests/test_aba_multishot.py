@@ -24,7 +24,7 @@ import pytest
 
 from argumentation import aba as native_aba
 from argumentation import aba_sat
-from argumentation.aba import ABAFramework, derives
+from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aba_asp import solve_aba_with_backend
 from argumentation.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
 from argumentation.aspic import GroundAtom, Literal, Rule
@@ -408,3 +408,75 @@ def test_com_module_resource_is_listing_one() -> None:
         ":- out(X), not attacked_by_undefeated(X).",
     ):
         assert needle in text
+
+
+# ---------------------------------------------------------------------------
+# Wave C4 regression: fact-contrary frameworks (the empty-attacker-set bug)
+# ---------------------------------------------------------------------------
+
+def _fact_contrary_frameworks() -> list[ABAFramework]:
+    """Frameworks where some assumption's contrary is derivable from no premises.
+
+    These are the analyst's Wave C3 repro family: an assumption attacked by the
+    empty set must be out of every grounded/complete/admissible set.
+    """
+    a0, a1 = lit("a0"), lit("a1")
+    p0, p1 = lit("p0"), lit("p1")
+    out: list[ABAFramework] = []
+    # The exact analyst repro: a0, contrary a0->p0, rule  p0 :- .
+    out.append(_framework(assumptions={a0}, contrary={a0: p0}, rules=[Rule((), p0, "strict")]))
+    # Two assumptions, one with a fact contrary, one free.
+    out.append(
+        _framework(
+            assumptions={a0, a1},
+            contrary={a0: p0, a1: p1},
+            rules=[Rule((), p0, "strict")],
+        )
+    )
+    # Fact contrary reached through a derived sentence.
+    s0 = lit("s0")
+    out.append(
+        _framework(
+            assumptions={a0},
+            contrary={a0: p0},
+            rules=[Rule((), s0, "strict"), Rule((s0,), p0, "strict")],
+        )
+    )
+    return out
+
+
+def _grounded_reference(framework: ABAFramework) -> AssumptionSet:
+    """The grounded set = the unique least complete extension (flat ABA)."""
+    complete = aba_sat.support_extensions(framework, "complete")
+    assert complete, "flat ABA always has at least one complete extension"
+    least = min(complete, key=len)
+    # Sanity: it is contained in every complete extension.
+    for ext in complete:
+        assert least <= ext, (least, ext)
+    return least
+
+
+@pytest.mark.parametrize("framework", _fact_contrary_frameworks())
+def test_grounded_fact_contrary_is_conflict_free(framework: ABAFramework) -> None:
+    reference = _grounded_reference(framework)
+    # Native primitive (aba._defends must consider the empty attacker set).
+    native = native_aba.grounded_extension(framework)
+    assert native_aba.conflict_free(framework, native), native
+    assert _show([native]) == _show([reference])
+    # Multi-shot solver path -- the C2b regression site.
+    inc = AbaIncrementalSolver(framework)
+    assert _show([inc.grounded_extension()]) == _show([reference])
+    assert native_aba.conflict_free(framework, inc.grounded_extension())
+
+
+@pytest.mark.parametrize("framework", _fact_contrary_frameworks())
+@pytest.mark.parametrize("backend", ["asp", "clingo"])
+def test_solve_aba_grounded_fact_contrary_via_backend(framework: ABAFramework, backend: str) -> None:
+    pytest.importorskip("clingo")
+    reference = _grounded_reference(framework)
+    result = solve_aba_with_backend(
+        framework, backend=backend, semantics="grounded", simplify=False
+    ).extensions
+    assert _show(result) == _show([reference])
+    for ext in result:
+        assert native_aba.conflict_free(framework, ext), ext

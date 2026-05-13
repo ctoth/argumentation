@@ -198,6 +198,16 @@ a long derivation chain (so the ranked-closure encoding is big and the preferred
 set is reached by `k` grow-steps). Wall-clock per task, min of 3–5 runs after
 warm-up.
 
+> **SUPERSEDED (Wave C2b, 2026-05-12):** the `preferred`/`stable` rows below
+> measure the *pre-C2b* routing — when `backend="asp"` preferred/stable went
+> through `AssumptionKernel`. C2b rerouted `backend ∈ {asp, clingo}` ×
+> `{complete, stable, preferred, grounded}` through the multi-shot
+> `AbaIncrementalSolver`; for the current routing's numbers see
+> `reports/graph-speedup-wave-c2b-aba-multishot.md`. The `complete` rows and the
+> regression *discussion* still apply to the `auto`/SAT path (`solve.py` →
+> `sat_support_extension` / `sat_stable_extension`), which still routes preferred
+> through `AssumptionKernel.preferred_extension` after `simplify_aba`.
+
 ### §1 — `simplify_aba` on the collapsing chain (Z3 `complete`; clingo `preferred`/`stable`)
 
 | task | instance | residual | preproc | simplify=False (ms) | simplify=True (ms) | speedup |
@@ -205,9 +215,9 @@ warm-up.
 | complete | chain40 + hard-cyc10 | 10 | 4.4 | 107.6 | 93.7 | 1.15× |
 | complete | chain120 + hard-cyc10 | 10 | 9.6 | 145.0 | 98.9 | 1.47× |
 | complete | chain250 + hard-cyc12 | 12 | 24.5 | 270.4 | 176.7 | 1.53× |
-| preferred | chain120 + hard-cyc10 | 10 | 9.6 | 7.8 | 12.4 | 0.63× |
-| stable | chain120 + hard-cyc10 | 10 | 9.6 | 7.9 | 12.5 | 0.63× |
-| preferred | chain250 + hard-cyc12 | 12 | 24.5 | 15.0 | 28.7 | 0.52× |
+| preferred *(SUPERSEDED — see C2b)* | chain120 + hard-cyc10 | 10 | 9.6 | 7.8 | 12.4 | 0.63× |
+| stable *(SUPERSEDED — see C2b)* | chain120 + hard-cyc10 | 10 | 9.6 | 7.9 | 12.5 | 0.63× |
+| preferred *(SUPERSEDED — see C2b)* | chain250 + hard-cyc12 | 12 | 24.5 | 15.0 | 28.7 | 0.52× |
 
 **Honest reading:** `complete` (the Z3 path that itself recomputes `_minimal_supports`
 and then solves a hard SAT instance over *all* assumptions) is a clean win — the

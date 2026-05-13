@@ -344,7 +344,12 @@ def _argument_label(argument: ABAArgument) -> str:
 def _defends(framework: ABAInput, defender: AssumptionSet, target: AssumptionSet) -> bool:
     base = _base(framework)
     for attacker in _all_subsets(base.assumptions):
-        if attacker and closed(framework, attacker) and _attacks(framework, attacker, target):
+        # NOTE: the empty attacker set must be considered -- an assumption whose
+        # contrary is derivable from no premises (e.g. a rule fact) is attacked
+        # by the empty set, and nothing can counter-attack the empty set, so such
+        # an assumption is not defended.  Skipping it (the historical bug) made
+        # `grounded_extension` return non-conflict-free sets on fact-contrary ABAs.
+        if closed(framework, attacker) and _attacks(framework, attacker, target):
             if not _attacks(framework, defender, attacker):
                 return False
     return True

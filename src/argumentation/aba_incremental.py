@@ -32,8 +32,8 @@ from importlib import resources
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba import grounded_extension as _native_grounded_extension
 from argumentation.aba_asp import encode_aba_theory
+from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
 from argumentation.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
@@ -161,7 +161,12 @@ class AbaIncrementalSolver:
         return self._enumerate(stable=True, telemetry=telemetry)
 
     def grounded_extension(self) -> AssumptionSet:
-        return _native_grounded_extension(self.framework)
+        # Use the polynomial support-mask fixpoint rather than ``aba.grounded_extension``
+        # -- the latter's ``_all_subsets`` blow-up is exponential, and it historically
+        # also dropped the empty attacker set (now fixed in ``aba._defends``).  The
+        # support-based primitive is the C2a reference of record and handles
+        # fact-contrary frameworks correctly (returns a conflict-free set).
+        return grounded_assumption_set_via_supports(self.framework)
 
     # -- preferred: Algorithm 1 / Algorithm 4 (CEGAR loop) -----------------
 
