@@ -5,7 +5,8 @@ Source review: `reports/graph-speedup-wave-c3-analyst.md`.
 
 ## Commit
 
-`559b24d` — "Fix empty-attacker ABA grounded bug + C4 cleanups" (on `experiment/graph-speedup-wave-a-preprocessing`).
+`598d505` — "Fix empty-attacker ABA grounded bug + C4 cleanups" (on `experiment/graph-speedup-wave-a-preprocessing`).
+(Hash before this report's self-reference fixup was `559b24d`; amended in place — `598d505` is final.)
 Files: `src/argumentation/aba.py`, `src/argumentation/aba_incremental.py`, `tests/test_aba_multishot.py`,
 `tests/test_aba_preprocessing.py`, `reports/graph-speedup-wave-c2a-aba-preprocessing.md`,
 `reports/graph-speedup-wave-c4-fixes.md`, deletion of `bench_scc_b2.py`.
