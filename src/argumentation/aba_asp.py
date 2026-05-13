@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from argumentation import aba as aba_semantics
 from argumentation.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
+from argumentation.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
 from argumentation.aba_sat import _minimal_supports, support_extensions
 from argumentation.aspic import Literal
 
@@ -92,8 +93,27 @@ def solve_aba_with_backend(
     query: Literal | None = None,
     binary: str = "clingo",
     timeout_seconds: float = 30.0,
+    simplify: bool = True,
 ) -> ABAQueryResult:
     """Dispatch a flat ABA query to the support-reference or ASP backend."""
+    if (
+        simplify
+        and isinstance(framework, ABAFramework)
+        and semantics in GROUNDED_REDUCT_ABA_SEMANTICS
+    ):
+        from argumentation.aba_preprocessing import simplify_aba
+
+        simplification = simplify_aba(framework, semantics=semantics)
+        if not simplification.is_trivial:
+            return _solve_simplified(
+                simplification,
+                backend=backend,
+                semantics=semantics,
+                task=task,
+                query=query,
+                binary=binary,
+                timeout_seconds=timeout_seconds,
+            )
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
         encoding = encode_aba_theory(base)
@@ -186,6 +206,60 @@ def solve_aba_with_backend(
         reason=result.reason,
         stdout=result.stdout,
         stderr=result.stderr,
+    )
+
+
+def _solve_simplified(
+    simplification,
+    *,
+    backend: str,
+    semantics: str,
+    task: str,
+    query: Literal | None,
+    binary: str,
+    timeout_seconds: float,
+) -> ABAQueryResult:
+    """Solve a gated ABA query on the preprocessed residual and lift the answer back."""
+    original = simplification.original
+    residual = simplification.residual
+    residual_result = solve_aba_with_backend(
+        residual,
+        backend=backend,
+        semantics=semantics,
+        task="enum",
+        query=None,
+        binary=binary,
+        timeout_seconds=timeout_seconds,
+        simplify=False,
+    )
+    encoding = encode_aba_theory(original)
+    if residual_result.status != "success":
+        return _failure_result(
+            status=residual_result.status,
+            semantics=semantics,
+            backend=backend,
+            encoding=encoding,
+            reason=residual_result.metadata.get("reason", "residual ABA solve failed"),
+            stdout=residual_result.metadata.get("stdout", ""),
+            stderr=residual_result.metadata.get("stderr", ""),
+        )
+    lifted = tuple(
+        sorted(
+            (simplification.lift(extension) for extension in residual_result.extensions),
+            key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
+        )
+    )
+    metadata = dict(residual_result.metadata)
+    metadata["preprocessing"] = "grounded_reduct_aba"
+    return _task_result(
+        original,
+        encoding=encoding,
+        semantics=semantics,
+        backend=backend,
+        task=task,
+        query=query,
+        extensions=lifted,
+        metadata=metadata,
     )
 
 

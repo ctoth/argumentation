@@ -10,6 +10,7 @@ from argumentation import adf as adf_semantics
 from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
+    sat_stable_acceptance as sat_aba_stable_acceptance,
     sat_stable_extension as sat_aba_stable_extension,
     sat_support_acceptance as sat_aba_support_acceptance,
     sat_support_extension as sat_aba_support_extension,
@@ -608,20 +609,12 @@ def _solve_sat_stable_aba_acceptance(
     task: str,
     query: Literal,
 ) -> AcceptanceSolverSuccess:
-    if task == "credulous":
-        witness = sat_aba_stable_extension(framework, require_derived=query)
+    if task in {"credulous", "skeptical"}:
+        answer, witness = sat_aba_stable_acceptance(framework, task=task, query=query)
         return AcceptanceSolverSuccess(
-            answer=witness is not None,
-            witness=witness,
-        )
-    if task == "skeptical":
-        counterexample = sat_aba_stable_extension(
-            framework,
-            require_not_derived=query,
-        )
-        return AcceptanceSolverSuccess(
-            answer=counterexample is None,
-            counterexample=counterexample,
+            answer=answer,
+            witness=witness if task == "credulous" and answer else None,
+            counterexample=witness if task == "skeptical" and not answer else None,
         )
     raise ValueError(f"unsupported ABA acceptance task: {task}")
 
