@@ -41,6 +41,10 @@ from argumentation.dung import (
 from argumentation.sat_encoding import (
     sat_extensions,
 )
+from argumentation.scc_recursive import (
+    SCC_RECURSIVE_SEMANTICS,
+    scc_extensions,
+)
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.solver_results import (
@@ -972,6 +976,12 @@ def _dung_extensions(
 ) -> list[frozenset[str]]:
     if semantics == "grounded":
         return [grounded_extension(framework)]
+    # complete / preferred / stable: route through the SCC-recursive layer
+    # (Wave B2), which composes the Wave A grounded-reduct preprocessing with
+    # Baroni-Giacomin-Guida SCC decomposition. Transparent: identical results,
+    # faster on layered/many-small-SCC AFs, ~1.0x on a single giant SCC.
+    if semantics in SCC_RECURSIVE_SEMANTICS:
+        return scc_extensions(framework, semantics)
     if semantics == "complete":
         return complete_extensions(framework)
     if semantics == "preferred":
