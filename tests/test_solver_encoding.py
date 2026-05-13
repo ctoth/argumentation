@@ -302,7 +302,7 @@ def test_kernel_range_maximal_search_traces_range_checks() -> None:
     )
     checks: list[SATCheck] = []
 
-    witness = find_stage_extension(framework, trace_sink=checks.append)
+    witness = find_stage_extension(framework, trace_sink=checks.append, simplify=False)
 
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
@@ -321,6 +321,7 @@ def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
         framework,
         trace_sink=checks.append,
         metadata={"subtrack": "SE-CO"},
+        simplify=False,
     ) == frozenset({"a"})
 
     assert [check.utility_name for check in checks] == ["complete_extension"]
@@ -502,6 +503,7 @@ def test_constrained_range_task_checks_base_feasibility_before_range_search() ->
         framework,
         require_in="b",
         trace_sink=checks.append,
+        simplify=False,
     ) is None
 
     utility_names = [check.utility_name for check in checks]
@@ -569,7 +571,7 @@ def test_kernel_ideal_extension_uses_direct_ideal_utilities() -> None:
     framework = af({"a", "b"}, {("a", "b")})
     checks: list[SATCheck] = []
 
-    assert find_ideal_extension(framework, trace_sink=checks.append) == frozenset({"a"})
+    assert find_ideal_extension(framework, trace_sink=checks.append, simplify=False) == frozenset({"a"})
 
     utility_names = [check.utility_name for check in checks]
     assert utility_names

@@ -10,6 +10,7 @@ from argumentation import adf as adf_semantics
 from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
+    sat_stable_acceptance as sat_aba_stable_acceptance,
     sat_stable_extension as sat_aba_stable_extension,
     sat_support_acceptance as sat_aba_support_acceptance,
     sat_support_extension as sat_aba_support_extension,
@@ -40,6 +41,10 @@ from argumentation.dung import (
 )
 from argumentation.sat_encoding import (
     sat_extensions,
+)
+from argumentation.scc_recursive import (
+    SCC_RECURSIVE_SEMANTICS,
+    scc_extensions,
 )
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
@@ -604,20 +609,12 @@ def _solve_sat_stable_aba_acceptance(
     task: str,
     query: Literal,
 ) -> AcceptanceSolverSuccess:
-    if task == "credulous":
-        witness = sat_aba_stable_extension(framework, require_derived=query)
+    if task in {"credulous", "skeptical"}:
+        answer, witness = sat_aba_stable_acceptance(framework, task=task, query=query)
         return AcceptanceSolverSuccess(
-            answer=witness is not None,
-            witness=witness,
-        )
-    if task == "skeptical":
-        counterexample = sat_aba_stable_extension(
-            framework,
-            require_not_derived=query,
-        )
-        return AcceptanceSolverSuccess(
-            answer=counterexample is None,
-            counterexample=counterexample,
+            answer=answer,
+            witness=witness if task == "credulous" and answer else None,
+            counterexample=witness if task == "skeptical" and not answer else None,
         )
     raise ValueError(f"unsupported ABA acceptance task: {task}")
 
@@ -972,6 +969,12 @@ def _dung_extensions(
 ) -> list[frozenset[str]]:
     if semantics == "grounded":
         return [grounded_extension(framework)]
+    # complete / preferred / stable: route through the SCC-recursive layer
+    # (Wave B2), which composes the Wave A grounded-reduct preprocessing with
+    # Baroni-Giacomin-Guida SCC decomposition. Transparent: identical results,
+    # faster on layered/many-small-SCC AFs, ~1.0x on a single giant SCC.
+    if semantics in SCC_RECURSIVE_SEMANTICS:
+        return scc_extensions(framework, semantics)
     if semantics == "complete":
         return complete_extensions(framework)
     if semantics == "preferred":

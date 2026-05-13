@@ -7,7 +7,14 @@ from dataclasses import dataclass
 import importlib
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
-from argumentation.aspic import Literal
+from argumentation.aspic import Literal, Rule
+
+
+def _aba_simplification(framework: ABAFramework, semantics: str):
+    """Lazily import to avoid a module import cycle (aba_preprocessing -> aba_sat)."""
+    from argumentation.aba_preprocessing import simplify_aba
+
+    return simplify_aba(framework, semantics=semantics)
 
 
 def support_extensions(
@@ -320,10 +327,17 @@ def sat_support_acceptance(
     semantics: str,
     task: str,
     query: Literal,
+    simplify: bool = True,
 ) -> tuple[bool, AssumptionSet | None]:
     """Return an ABA acceptance decision using support-aware SAT witnesses."""
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
+    if simplify:
+        simplification = _aba_simplification(framework, semantics)
+        if not simplification.is_trivial:
+            return _simplified_support_acceptance(
+                simplification, semantics=semantics, task=task, query=query
+            )
     if task == "credulous":
         witness = sat_support_extension(
             framework,
@@ -344,6 +358,41 @@ def sat_support_acceptance(
     raise ValueError(f"unsupported ABA acceptance task: {task}")
 
 
+def _simplified_support_acceptance(
+    simplification,
+    *,
+    semantics: str,
+    task: str,
+    query: Literal,
+) -> tuple[bool, AssumptionSet | None]:
+    if task not in {"credulous", "skeptical"}:
+        raise ValueError(f"unsupported ABA acceptance task: {task}")
+    residual = simplification.residual
+
+    def _residual_witness() -> AssumptionSet | None:
+        witness = sat_support_extension(residual, semantics, simplify=False)
+        return None if witness is None else simplification.lift(witness)
+
+    if query in simplification.fixed_in:
+        if task == "credulous":
+            return True, _residual_witness()
+        return True, None
+    if query in simplification.fixed_out or query not in residual.language:
+        if task == "credulous":
+            return False, None
+        return False, _residual_witness()
+    answer, witness = sat_support_acceptance(
+        residual,
+        semantics=semantics,
+        task=task,
+        query=query,
+        simplify=False,
+    )
+    if witness is None:
+        return answer, None
+    return answer, simplification.lift(witness)
+
+
 def sat_support_extension(
     framework: ABAFramework,
     semantics: str,
@@ -351,10 +400,25 @@ def sat_support_extension(
     require_derived: Literal | None = None,
     require_not_derived: Literal | None = None,
     require_assumptions: AssumptionSet = frozenset(),
+    simplify: bool = True,
 ) -> AssumptionSet | None:
     """Return one complete/preferred ABA extension using support-aware SAT."""
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
+    if (
+        simplify
+        and require_derived is None
+        and require_not_derived is None
+        and not require_assumptions
+    ):
+        simplification = _aba_simplification(framework, semantics)
+        if not simplification.is_trivial:
+            witness = sat_support_extension(
+                simplification.residual,
+                semantics,
+                simplify=False,
+            )
+            return None if witness is None else simplification.lift(witness)
     if require_derived is not None and require_derived not in framework.language:
         raise ValueError(f"required literal is not in framework language: {require_derived!r}")
     if require_not_derived is not None and require_not_derived not in framework.language:
@@ -478,23 +542,116 @@ def _sat_preferred_extension_satisfying(
     return None
 
 
+class _AdmissibleCegarSolver:
+    """Reusable Z3 CEGAR solver for flat ABA admissible sets.
+
+    The query-independent encoding -- the ranked-closure constraints plus the
+    per-assumption conflict-freeness implications -- is built once. Each
+    :meth:`solve` call pushes the transient ``require_assumptions`` /
+    ``require_any_assumption`` hypotheses, runs the abstraction-refinement loop,
+    and pops. The defense-counterexample refinement clauses found during a call
+    are globally valid (true of every admissible set, regardless of the transient
+    hypotheses) and so are re-asserted at base level on the next call -- they
+    accumulate forever, which is exactly the incremental CEGAR contract.
+
+    This brings the preferred growth loop (``_sat_preferred_cegar_extension``) up
+    to the standard of the admissible path: it no longer rebuilds the
+    ``O(|literals| + |rules|)`` ranked-closure encoding once per grow-step.
+    """
+
+    def __init__(self, framework: ABAFramework) -> None:
+        self.z3 = _load_z3()
+        self.framework = framework
+        self.variables = {
+            assumption: self.z3.Bool(f"in_{_literal_key(assumption)}")
+            for assumption in sorted(framework.assumptions, key=repr)
+        }
+        self.solver = self.z3.Solver()
+        self.derived = _add_ranked_closure_constraints(
+            self.z3, self.solver, framework, self.variables
+        )
+        for assumption in sorted(framework.assumptions, key=repr):
+            self.solver.add(
+                self.z3.Implies(
+                    self.variables[assumption],
+                    self.z3.Not(self.derived[framework.contrary[assumption]]),
+                )
+            )
+        self._pending_permanent: list = []
+
+    def _flush_permanent(self) -> None:
+        for clause in self._pending_permanent:
+            self.solver.add(clause)
+        self._pending_permanent.clear()
+
+    def solve(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+        require_any_assumption: AssumptionSet = frozenset(),
+    ) -> AssumptionSet | None:
+        z3 = self.z3
+        self._flush_permanent()
+        self.solver.push()
+        try:
+            for assumption in sorted(require_assumptions, key=repr):
+                self.solver.add(self.variables[assumption])
+            if require_any_assumption:
+                self.solver.add(
+                    z3.Or(
+                        *(
+                            self.variables[assumption]
+                            for assumption in sorted(require_any_assumption, key=repr)
+                        )
+                    )
+                )
+            while self.solver.check() == z3.sat:
+                model = self.solver.model()
+                candidate = frozenset(
+                    assumption
+                    for assumption, variable in self.variables.items()
+                    if z3.is_true(model.evaluate(variable, model_completion=True))
+                )
+                closure = frozenset(
+                    literal
+                    for literal, variable in self.derived.items()
+                    if z3.is_true(model.evaluate(variable, model_completion=True))
+                )
+                counterexample = _defense_counterexample(self.framework, candidate, closure)
+                if counterexample is None:
+                    return candidate
+                target, attack_support = counterexample
+                if not attack_support:
+                    clause = z3.Not(self.variables[target])
+                else:
+                    clause = z3.Or(
+                        z3.Not(self.variables[target]),
+                        *(
+                            self.derived[self.framework.contrary[assumption]]
+                            for assumption in sorted(attack_support, key=repr)
+                        ),
+                    )
+                self._pending_permanent.append(clause)
+                self.solver.add(clause)
+            return None
+        finally:
+            self.solver.pop()
+
+
 def _sat_preferred_cegar_extension(
     framework: ABAFramework,
     *,
     require_assumptions: AssumptionSet = frozenset(),
 ) -> AssumptionSet | None:
-    current = _sat_admissible_cegar_extension(
-        framework,
-        require_assumptions=require_assumptions,
-    )
+    solver = _AdmissibleCegarSolver(framework)
+    current = solver.solve(require_assumptions=require_assumptions)
     if current is None:
         return None
     while True:
         outside = framework.assumptions - current
         if not outside:
             return current
-        larger = _sat_admissible_cegar_extension(
-            framework,
+        larger = solver.solve(
             require_assumptions=current,
             require_any_assumption=outside,
         )
@@ -511,54 +668,10 @@ def _sat_admissible_cegar_extension(
     require_assumptions: AssumptionSet = frozenset(),
     require_any_assumption: AssumptionSet = frozenset(),
 ) -> AssumptionSet | None:
-    z3 = _load_z3()
-    variables = {
-        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
-        for assumption in sorted(framework.assumptions, key=repr)
-    }
-    solver = z3.Solver()
-    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(
-            z3.Implies(
-                variables[assumption],
-                z3.Not(derived[framework.contrary[assumption]]),
-            )
-        )
-    for assumption in sorted(require_assumptions, key=repr):
-        solver.add(variables[assumption])
-    if require_any_assumption:
-        solver.add(z3.Or(*(variables[assumption] for assumption in sorted(require_any_assumption, key=repr))))
-
-    while solver.check() == z3.sat:
-        model = solver.model()
-        candidate = frozenset(
-            assumption
-            for assumption, variable in variables.items()
-            if z3.is_true(model.evaluate(variable, model_completion=True))
-        )
-        closure = frozenset(
-            literal
-            for literal, variable in derived.items()
-            if z3.is_true(model.evaluate(variable, model_completion=True))
-        )
-        counterexample = _defense_counterexample(framework, candidate, closure)
-        if counterexample is None:
-            return candidate
-        target, attack_support = counterexample
-        if not attack_support:
-            solver.add(z3.Not(variables[target]))
-            continue
-        solver.add(
-            z3.Or(
-                z3.Not(variables[target]),
-                *(
-                    derived[framework.contrary[assumption]]
-                    for assumption in sorted(attack_support, key=repr)
-                ),
-            )
-        )
-    return None
+    return _AdmissibleCegarSolver(framework).solve(
+        require_assumptions=require_assumptions,
+        require_any_assumption=require_any_assumption,
+    )
 
 
 def _defense_counterexample(
@@ -623,12 +736,64 @@ def sat_stable_extension(
     *,
     require_derived: Literal | None = None,
     require_not_derived: Literal | None = None,
+    simplify: bool = True,
 ) -> AssumptionSet | None:
     """Return one stable assumption set satisfying optional query constraints."""
+    if simplify and require_derived is None and require_not_derived is None:
+        simplification = _aba_simplification(framework, "stable")
+        if not simplification.is_trivial:
+            witness = sat_stable_extension(simplification.residual, simplify=False)
+            return None if witness is None else simplification.lift(witness)
     return AssumptionKernel.from_framework(framework).stable_extension(
         require_derived=require_derived,
         require_not_derived=require_not_derived,
     )
+
+
+def sat_stable_acceptance(
+    framework: ABAFramework,
+    *,
+    task: str,
+    query: Literal,
+    simplify: bool = True,
+) -> tuple[bool, AssumptionSet | None]:
+    """Return an ABA stable acceptance decision (with optional preprocessing)."""
+    if task not in {"credulous", "skeptical"}:
+        raise ValueError(f"unsupported ABA acceptance task: {task}")
+    if simplify:
+        simplification = _aba_simplification(framework, "stable")
+        if not simplification.is_trivial:
+            residual = simplification.residual
+
+            def _residual_witness() -> AssumptionSet | None:
+                witness = sat_stable_extension(residual, simplify=False)
+                return None if witness is None else simplification.lift(witness)
+
+            if query in simplification.fixed_in:
+                if task == "credulous":
+                    witness = _residual_witness()
+                    return witness is not None, witness
+                # Skeptical: query is in every stable extension (vacuously true
+                # when there are none), so the answer is True regardless.
+                return True, None
+            if query in simplification.fixed_out or query not in residual.language:
+                if task == "credulous":
+                    return False, None
+                # Skeptical: a stable extension (if any) is a counterexample;
+                # if none exists, skeptical acceptance is vacuously true.
+                counterexample = _residual_witness()
+                return counterexample is None, counterexample
+            answer, witness = sat_stable_acceptance(
+                residual, task=task, query=query, simplify=False
+            )
+            if witness is None:
+                return answer, None
+            return answer, simplification.lift(witness)
+    if task == "credulous":
+        witness = sat_stable_extension(framework, require_derived=query, simplify=False)
+        return witness is not None, witness
+    counterexample = sat_stable_extension(framework, require_not_derived=query, simplify=False)
+    return counterexample is None, counterexample
 
 
 def _add_ranked_closure_constraints(z3, solver, framework, variables):

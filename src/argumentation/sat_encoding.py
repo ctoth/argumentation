@@ -8,12 +8,9 @@ from argumentation.dung import (
     ArgumentationFramework,
     _attackers_index,
     admissible,
-    complete_extensions,
     grounded_extension,
     ideal_extension,
-    preferred_extensions,
     semi_stable_extensions,
-    stable_extensions,
     stage_extensions,
 )
 
@@ -131,14 +128,14 @@ def sat_extensions(
     """
     if semantics == "admissible":
         return _sorted_extensions(_admissible_sets(framework))
-    if semantics == "complete":
-        return _sorted_extensions(complete_extensions(framework))
     if semantics == "grounded":
         return (grounded_extension(framework),)
-    if semantics == "preferred":
-        return _sorted_extensions(preferred_extensions(framework))
-    if semantics == "stable":
-        return _sorted_extensions(stable_extensions_from_encoding(encode_stable_extensions(framework)))
+    # complete / preferred / stable -> SCC-recursive layer (Wave B2): grounded-reduct
+    # preprocessing composed with Baroni-Giacomin-Guida SCC decomposition. Transparent.
+    if semantics in ("complete", "preferred", "stable"):
+        from argumentation.scc_recursive import scc_extensions
+
+        return _sorted_extensions(scc_extensions(framework, semantics))
     if semantics == "semi-stable":
         return _sorted_extensions(semi_stable_extensions(framework))
     if semantics == "stage":

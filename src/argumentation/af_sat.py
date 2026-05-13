@@ -15,6 +15,7 @@ from argumentation.dung import (
     grounded_extension,
     range_of,
 )
+from argumentation.preprocessing import AfSimplification, simplify_af
 
 
 @dataclass(frozen=True)
@@ -322,6 +323,39 @@ class AfSatKernel:
             raise ValueError(f"range size {size!r} outside 0..{len(self.arguments)}")
 
 
+def _prepare(
+    framework: ArgumentationFramework,
+    semantics: str,
+    *,
+    simplify: bool,
+    require_in: str | None,
+    require_out: str | None,
+) -> tuple[ArgumentationFramework, AfSimplification, str | None, str | None] | None:
+    """Apply the AF preprocessing layer to a single-extension finder.
+
+    Returns ``(residual, simplification, residual_require_in, residual_require_out)``
+    or ``None`` when the constraints are already unsatisfiable on the fixed part
+    (e.g. ``require_in`` is forced OUT, or ``require_out`` is forced IN).
+    """
+    # Validate before simplifying so unknown arguments still raise.
+    _optional_argument(framework, require_in)
+    _optional_argument(framework, require_out)
+    if not simplify:
+        return framework, AfSimplification(framework, framework, frozenset(), frozenset()), require_in, require_out
+    simplification = simplify_af(framework, semantics=semantics)
+    if require_in is not None:
+        if require_in in simplification.removed_out:
+            return None
+        if require_in in simplification.fixed_in:
+            require_in = None
+    if require_out is not None:
+        if require_out in simplification.fixed_in:
+            return None
+        if require_out in simplification.removed_out:
+            require_out = None
+    return simplification.residual, simplification, require_in, require_out
+
+
 def find_stable_extension(
     framework: ArgumentationFramework,
     *,
@@ -329,14 +363,21 @@ def find_stable_extension(
     require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str] | None:
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    prepared = _prepare(
+        framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return None
+    residual, simplification, residual_in, residual_out = prepared
+    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_stable_coverage()
-    problem.require_in(_optional_argument(framework, require_in))
-    problem.require_out(_optional_argument(framework, require_out))
+    problem.require_in(_optional_argument(residual, residual_in))
+    problem.require_out(_optional_argument(residual, residual_out))
     if problem.check("stable_extension") != "sat":
         return None
-    return problem.model_extension()
+    return simplification.lift(problem.model_extension())
 
 
 def find_complete_extension(
@@ -346,15 +387,23 @@ def find_complete_extension(
     require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str] | None:
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    prepared = _prepare(
+        framework, "complete", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return None
+    residual, simplification, residual_in, residual_out = prepared
+    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
-    return _complete_extension(
+    extension = _complete_extension(
         problem,
-        required_in=_optional_argument(framework, require_in),
-        required_out=_optional_argument(framework, require_out),
+        required_in=_optional_argument(residual, residual_in),
+        required_out=_optional_argument(residual, residual_out),
         utility_name="complete_extension",
     )
+    return None if extension is None else simplification.lift(extension)
 
 
 def find_preferred_extension(
@@ -364,11 +413,29 @@ def find_preferred_extension(
     require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str] | None:
+    prepared = _prepare(
+        framework, "preferred", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return None
+    residual, simplification, residual_in_arg, residual_out_arg = prepared
+    framework = residual
     problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
-    required_in = _optional_argument(framework, require_in)
-    required_out = _optional_argument(framework, require_out)
+    required_in = _optional_argument(framework, residual_in_arg)
+    required_out = _optional_argument(framework, residual_out_arg)
+    result = _find_preferred_extension_body(problem, framework, required_in, required_out)
+    return None if result is None else simplification.lift(result)
+
+
+def _find_preferred_extension_body(
+    problem: AfSatKernel,
+    framework: ArgumentationFramework,
+    required_in: frozenset[str],
+    required_out: frozenset[str],
+) -> frozenset[str] | None:
     current = _complete_extension(
         problem,
         required_in=required_in,
@@ -406,8 +473,23 @@ def is_preferred_skeptically_accepted(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> bool:
     """Decide preferred skeptical acceptance using CDAS admissibility checks."""
+    _optional_argument(framework, query)
+    if simplify:
+        simplification = simplify_af(framework, semantics="preferred")
+        if query in simplification.fixed_in:
+            _emit_preprocessing_shortcut(
+                framework, trace_sink, metadata, "preferred_skeptical_preprocessing_grounded_in", accepted=True
+            )
+            return True
+        if query in simplification.removed_out:
+            _emit_preprocessing_shortcut(
+                framework, trace_sink, metadata, "preferred_skeptical_preprocessing_forced_out", accepted=False
+            )
+            return False
+        framework = simplification.residual
     return PreferredSkepticalTaskSolver(
         framework,
         trace_sink=trace_sink,
@@ -582,19 +664,27 @@ def find_semi_stable_extension(
     require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str] | None:
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    prepared = _prepare(
+        framework, "semi_stable", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return None
+    residual, simplification, residual_in, residual_out = prepared
+    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     problem.add_range_definition()
-    return _range_maximal_extension(
+    extension = _range_maximal_extension(
         problem,
-        framework,
+        residual,
         base="complete",
-        required_in=_optional_argument(framework, require_in),
-        required_out=_optional_argument(framework, require_out),
+        required_in=_optional_argument(residual, residual_in),
+        required_out=_optional_argument(residual, residual_out),
         seed_utility_name="semi_stable_seed",
         test_utility_name="semi_stable_range_maximality",
     )
+    return None if extension is None else simplification.lift(extension)
 
 
 def find_ideal_extension(
@@ -602,7 +692,18 @@ def find_ideal_extension(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str]:
+    if simplify:
+        simplification = simplify_af(framework, semantics="ideal")
+        if not simplification.is_trivial:
+            residual_ideal = find_ideal_extension(
+                simplification.residual,
+                trace_sink=trace_sink,
+                metadata=metadata,
+                simplify=False,
+            )
+            return simplification.lift(residual_ideal)
     problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
     problem.add_admissible_labelling()
     current = framework.arguments
@@ -632,19 +733,27 @@ def find_stage_extension(
     require_out: str | None = None,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    simplify: bool = True,
 ) -> frozenset[str] | None:
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    prepared = _prepare(
+        framework, "stage", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return None
+    residual, simplification, residual_in, residual_out = prepared
+    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_conflict_free()
     problem.add_range_definition()
-    return _range_maximal_extension(
+    extension = _range_maximal_extension(
         problem,
-        framework,
+        residual,
         base="conflict_free",
-        required_in=_optional_argument(framework, require_in),
-        required_out=_optional_argument(framework, require_out),
+        required_in=_optional_argument(residual, residual_in),
+        required_out=_optional_argument(residual, residual_out),
         seed_utility_name="stage_seed",
         test_utility_name="stage_range_maximality",
     )
+    return None if extension is None else simplification.lift(extension)
 
 
 def _complete_extension(
@@ -836,6 +945,29 @@ class _PreferredSkepticalAttackerSolver:
                     metadata=self.metadata,
                 )
             )
+
+
+def _emit_preprocessing_shortcut(
+    framework: ArgumentationFramework,
+    trace_sink: SATTraceSink | None,
+    metadata: Mapping[str, object] | None,
+    utility_name: str,
+    *,
+    accepted: bool,
+) -> None:
+    if trace_sink is None:
+        return
+    trace_sink(
+        SATCheck(
+            utility_name=utility_name,
+            result="accepted" if accepted else "rejected",
+            elapsed_ms=0.0,
+            assumptions_count=0,
+            argument_count=len(framework.arguments),
+            attack_count=len(framework.defeats),
+            metadata=metadata,
+        )
+    )
 
 
 def _attacked_by(

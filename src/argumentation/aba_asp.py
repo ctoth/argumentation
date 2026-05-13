@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from argumentation import aba as aba_semantics
 from argumentation.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
+from argumentation.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
 from argumentation.aba_sat import _minimal_supports, support_extensions
 from argumentation.aspic import Literal
 
@@ -92,8 +93,27 @@ def solve_aba_with_backend(
     query: Literal | None = None,
     binary: str = "clingo",
     timeout_seconds: float = 30.0,
+    simplify: bool = True,
 ) -> ABAQueryResult:
     """Dispatch a flat ABA query to the support-reference or ASP backend."""
+    if (
+        simplify
+        and isinstance(framework, ABAFramework)
+        and semantics in GROUNDED_REDUCT_ABA_SEMANTICS
+    ):
+        from argumentation.aba_preprocessing import simplify_aba
+
+        simplification = simplify_aba(framework, semantics=semantics)
+        if not simplification.is_trivial:
+            return _solve_simplified(
+                simplification,
+                backend=backend,
+                semantics=semantics,
+                task=task,
+                query=query,
+                binary=binary,
+                timeout_seconds=timeout_seconds,
+            )
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
         encoding = encode_aba_theory(base)
@@ -128,7 +148,17 @@ def solve_aba_with_backend(
             metadata={"encoding": encoding.metadata["encoding"], "solver": "aba_support_reference"},
         )
 
-    if backend not in {"asp", "clingo"}:
+    if backend in {"asp", "clingo"} and semantics in {"complete", "stable", "preferred", "grounded"}:
+        return _solve_multishot(
+            framework,
+            encoding=encoding,
+            semantics=semantics,
+            backend=backend,
+            task=task,
+            query=query,
+        )
+
+    if backend not in {"asp", "clingo", "clingo_subprocess"}:
         return _failure_result(
             status="unavailable_backend",
             semantics=semantics,
@@ -187,6 +217,214 @@ def solve_aba_with_backend(
         stdout=result.stdout,
         stderr=result.stderr,
     )
+
+
+def _solve_multishot(
+    framework: ABAFramework,
+    *,
+    encoding: ABAEncoding,
+    semantics: str,
+    backend: str,
+    task: str,
+    query: Literal | None,
+) -> ABAQueryResult:
+    """Solve a flat ABA query with the incremental multi-shot clingo solver.
+
+    Implements Lehtonen-Wallner-Jaervisalo TPLP 2021 Algorithm 1 for DS-PR (the
+    timeout cluster); falls back to enumeration (Algorithm 4 for preferred, a
+    single grounded solve for complete/stable) plus the shared task projection for
+    the other ABA queries.
+    """
+    from argumentation import aba_incremental
+
+    metadata_base = {"encoding": encoding.metadata["encoding"], "solver": "clingo_multishot"}
+    try:
+        solver = aba_incremental.AbaIncrementalSolver(framework)
+    except RuntimeError as exc:
+        return _failure_result(
+            status="unavailable_backend",
+            semantics=semantics,
+            backend=backend,
+            encoding=encoding,
+            reason=str(exc),
+        )
+
+    # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
+    if semantics == "preferred" and task == "skeptical" and query is not None:
+        answer, counterexample = solver.is_skeptically_accepted_preferred(query)
+        return ABAQueryResult(
+            status="success",
+            semantics=semantics,
+            backend=backend,
+            extensions=tuple() if counterexample is None else (counterexample,),
+            accepted_assumptions=counterexample or frozenset(),
+            encoding=encoding,
+            metadata=metadata_base | {"task": task, "algorithm": "L21-TPLP-Alg1"},
+            answer=answer,
+            counterexample=counterexample,
+        )
+
+    if semantics == "grounded":
+        extensions = (solver.grounded_extension(),)
+    elif semantics == "complete":
+        extensions = solver.enumerate_complete()
+    elif semantics == "stable":
+        extensions = solver.enumerate_stable()
+    elif semantics == "preferred":
+        extensions = solver.enumerate_preferred()
+    else:  # pragma: no cover - dispatcher gates this
+        raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+
+    return _task_result(
+        framework,
+        encoding=encoding,
+        semantics=semantics,
+        backend=backend,
+        task=task,
+        query=query,
+        extensions=extensions,
+        metadata=metadata_base,
+    )
+
+
+def _solve_simplified(
+    simplification,
+    *,
+    backend: str,
+    semantics: str,
+    task: str,
+    query: Literal | None,
+    binary: str,
+    timeout_seconds: float,
+) -> ABAQueryResult:
+    """Solve a gated ABA query on the preprocessed residual and lift the answer back."""
+    original = simplification.original
+    residual = simplification.residual
+
+    # DS-PR fast path: route skeptical-preferred through Algorithm 1 on the
+    # residual (with the preprocessing lift rules in front), so the incremental
+    # CEGAR loop is the default for the DS-PR timeout cluster even with
+    # preprocessing enabled.
+    if (
+        semantics == "preferred"
+        and task == "skeptical"
+        and query is not None
+        and backend in {"asp", "clingo"}
+    ):
+        return _solve_simplified_ds_pr(simplification, backend=backend, query=query)
+
+    residual_result = solve_aba_with_backend(
+        residual,
+        backend=backend,
+        semantics=semantics,
+        task="enum",
+        query=None,
+        binary=binary,
+        timeout_seconds=timeout_seconds,
+        simplify=False,
+    )
+    encoding = encode_aba_theory(original)
+    if residual_result.status != "success":
+        return _failure_result(
+            status=residual_result.status,
+            semantics=semantics,
+            backend=backend,
+            encoding=encoding,
+            reason=residual_result.metadata.get("reason", "residual ABA solve failed"),
+            stdout=residual_result.metadata.get("stdout", ""),
+            stderr=residual_result.metadata.get("stderr", ""),
+        )
+    lifted = tuple(
+        sorted(
+            (simplification.lift(extension) for extension in residual_result.extensions),
+            key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
+        )
+    )
+    metadata = dict(residual_result.metadata)
+    metadata["preprocessing"] = "grounded_reduct_aba"
+    return _task_result(
+        original,
+        encoding=encoding,
+        semantics=semantics,
+        backend=backend,
+        task=task,
+        query=query,
+        extensions=lifted,
+        metadata=metadata,
+    )
+
+
+def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> ABAQueryResult:
+    """DS-PR on a non-trivial preprocessed framework: lift rules + Algorithm 1 on the residual.
+
+    Lift rules (mirror ``aba_sat._simplified_support_acceptance``):
+
+    * ``query`` is an assumption in ``fixed_in`` -> in every preferred set -> YES;
+    * ``query`` is an assumption in ``fixed_out`` -> in no gated extension -> NO,
+      with any preferred set of ``original`` (= lift of a residual preferred set)
+      as the counterexample;
+    * ``query`` is a sentence already in ``Th(fixed_in)`` -> derived by every
+      preferred set -> YES;
+    * ``query`` not in ``residual.language`` (and not in ``Th(fixed_in)``) -> not
+      forward-derivable from any extension of ``original`` -> NO, counterexample =
+      lift of a residual preferred set;
+    * otherwise: ``query`` is skeptically accepted under preferred in ``original``
+      iff it is in ``residual`` (the residual bakes in ``fixed_in``'s closure and
+      drops ``fixed_out``-using rules), so run Algorithm 1 on the residual and
+      lift the counterexample.
+    """
+    from argumentation import aba as _aba
+    from argumentation import aba_incremental
+
+    original = simplification.original
+    residual = simplification.residual
+    encoding = encode_aba_theory(original)
+    metadata = {"encoding": encoding.metadata["encoding"], "solver": "clingo_multishot",
+                "task": "skeptical", "algorithm": "L21-TPLP-Alg1", "preprocessing": "grounded_reduct_aba"}
+
+    def _result(answer: bool, counterexample: AssumptionSet | None) -> ABAQueryResult:
+        return ABAQueryResult(
+            status="success",
+            semantics="preferred",
+            backend=backend,
+            extensions=tuple() if counterexample is None else (counterexample,),
+            accepted_assumptions=counterexample or frozenset(),
+            encoding=encoding,
+            metadata=dict(metadata),
+            answer=answer,
+            counterexample=counterexample,
+        )
+
+    try:
+        residual_solver = aba_incremental.AbaIncrementalSolver(residual)
+    except RuntimeError as exc:
+        return _failure_result(
+            status="unavailable_backend",
+            semantics="preferred",
+            backend=backend,
+            encoding=encoding,
+            reason=str(exc),
+        )
+
+    def _some_preferred() -> AssumptionSet | None:
+        residual_pref = residual_solver.find_preferred_extension()
+        return None if residual_pref is None else simplification.lift(residual_pref)
+
+    if query in simplification.fixed_in:
+        return _result(True, None)
+    if query in simplification.fixed_out:
+        return _result(False, _some_preferred())
+    closure_of_fixed_in = _aba._closure(original, simplification.fixed_in)
+    if query in closure_of_fixed_in:
+        return _result(True, None)
+    if query not in residual.language:
+        return _result(False, _some_preferred())
+
+    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(query)
+    if answer:
+        return _result(True, None)
+    counterexample = None if residual_counterexample is None else simplification.lift(residual_counterexample)
+    return _result(False, counterexample)
 
 
 def _task_result(
