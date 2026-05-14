@@ -744,10 +744,43 @@ def sat_stable_extension(
         if not simplification.is_trivial:
             witness = sat_stable_extension(simplification.residual, simplify=False)
             return None if witness is None else simplification.lift(witness)
-    return AssumptionKernel.from_framework(framework).stable_extension(
+    return _sat_ranked_stable_extension(
+        framework,
         require_derived=require_derived,
         require_not_derived=require_not_derived,
     )
+
+
+def _sat_ranked_stable_extension(
+    framework: ABAFramework,
+    *,
+    require_derived: Literal | None = None,
+    require_not_derived: Literal | None = None,
+) -> AssumptionSet | None:
+    if require_derived is not None and require_derived not in framework.language:
+        raise ValueError(f"required literal is not in framework language: {require_derived!r}")
+    if require_not_derived is not None and require_not_derived not in framework.language:
+        raise ValueError(
+            f"excluded literal is not in framework language: {require_not_derived!r}"
+        )
+    z3 = _load_z3()
+    variables = {
+        assumption: z3.Bool(f"in_{_literal_key(assumption)}")
+        for assumption in sorted(framework.assumptions, key=repr)
+    }
+    solver = z3.Solver()
+    derived = _add_ranked_closure_constraints(z3, solver, framework, variables)
+    for assumption in sorted(framework.assumptions, key=repr):
+        contrary = derived[framework.contrary[assumption]]
+        solver.add(z3.Implies(variables[assumption], z3.Not(contrary)))
+        solver.add(z3.Or(variables[assumption], contrary))
+    if require_derived is not None:
+        solver.add(derived[require_derived])
+    if require_not_derived is not None:
+        solver.add(z3.Not(derived[require_not_derived]))
+    if solver.check() != z3.sat:
+        return None
+    return _model_extension(z3, solver, variables)
 
 
 def sat_stable_acceptance(
