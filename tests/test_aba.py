@@ -463,6 +463,20 @@ def test_stable_shortcut_witness_is_preferred_member(framework: ABAFramework) ->
         assert witness in native_aba.preferred_extensions(framework)
 
 
+def test_preferred_witness_uses_stable_shortcut_before_preprocessing(monkeypatch) -> None:
+    framework = _flat_aba(3, frozenset({(1, 2)}))
+
+    def forbidden_simplification(*args, **kwargs):
+        raise AssertionError("preferred stable shortcut should run before ABA preprocessing")
+
+    monkeypatch.setattr(aba_sat, "_aba_simplification", forbidden_simplification)
+
+    witness = aba_sat.sat_support_extension(framework, "preferred")
+
+    assert witness in native_aba.stable_extensions(framework)
+    assert witness in native_aba.preferred_extensions(framework)
+
+
 @given(
     flat_aba_frameworks(),
     st.sampled_from(["complete", "preferred"]),
