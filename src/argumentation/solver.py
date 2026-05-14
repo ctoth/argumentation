@@ -149,7 +149,7 @@ def solve_aba_single_extension(
     iccma: ICCMAConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
-    backend = _auto_aba_backend(backend, semantics)
+    backend = _auto_aba_backend(backend, semantics, task="single-extension")
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
@@ -199,7 +199,7 @@ def solve_aba_acceptance(
     """Solve flat ABA credulous or skeptical acceptance queries."""
     if query not in _aba_base(framework).language:
         raise ValueError(f"query literal is not in framework language: {query!r}")
-    backend = _auto_aba_backend(backend, semantics)
+    backend = _auto_aba_backend(backend, semantics, task=task)
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
@@ -516,9 +516,15 @@ def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> st
     return backend
 
 
-def _auto_aba_backend(backend: str, semantics: str) -> str:
+def _auto_aba_backend(backend: str, semantics: str, *, task: str) -> str:
     if backend == "auto":
-        if semantics in {"complete", "grounded", "preferred", "stable"} and _has_clingo():
+        if (
+            _has_clingo()
+            and (
+                semantics == "grounded"
+                or (semantics == "preferred" and task == "skeptical")
+            )
+        ):
             return "asp"
         return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
     return backend
