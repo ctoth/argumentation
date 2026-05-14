@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+import importlib.util
 
 from argumentation import aba as aba_semantics
 from argumentation import adf as adf_semantics
@@ -164,6 +165,10 @@ def solve_aba_single_extension(
                 extension=sat_aba_support_extension(framework, semantics),
             )
         return _aba_sat_unsupported_semantics(semantics)
+    if backend in {"asp", "clingo"}:
+        if not isinstance(framework, ABAFramework):
+            return _aba_asp_requires_flat_framework(backend)
+        return _solve_asp_aba_single_extension(framework, semantics, backend)
     if backend == "native":
         extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
         return SingleExtensionSolverSuccess(
@@ -216,6 +221,10 @@ def solve_aba_acceptance(
                 counterexample=witness if task == "skeptical" and not answer else None,
             )
         return _aba_sat_unsupported_semantics(semantics)
+    if backend in {"asp", "clingo"}:
+        if not isinstance(framework, ABAFramework):
+            return _aba_asp_requires_flat_framework(backend)
+        return _solve_asp_aba_acceptance(framework, semantics, task, query, backend)
     if backend == "native":
         return _solve_native_aba_acceptance(framework, semantics, task, query)
     if backend == "iccma":
@@ -509,8 +518,14 @@ def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> st
 
 def _auto_aba_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
+        if semantics in {"complete", "grounded", "preferred", "stable"} and _has_clingo():
+            return "asp"
         return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
     return backend
+
+
+def _has_clingo() -> bool:
+    return importlib.util.find_spec("clingo") is not None
 
 
 def _external_sat_unavailable() -> SolverBackendUnavailable:
@@ -551,11 +566,93 @@ def _aba_sat_requires_flat_framework() -> SolverBackendUnavailable:
     )
 
 
+def _aba_asp_requires_flat_framework(backend: str) -> SolverBackendUnavailable:
+    return SolverBackendUnavailable(
+        backend=backend,
+        reason="ABA ASP backend requires a flat ABAFramework",
+        install_hint="Use backend='native' for ABAPlusFramework inputs.",
+    )
+
+
 def _aba_sat_unsupported_semantics(semantics: str) -> SolverBackendUnavailable:
     return SolverBackendUnavailable(
         backend="sat",
         reason=f"ABA SAT backend does not support {semantics!r} semantics",
         install_hint="Use backend='native' or backend='iccma'.",
+    )
+
+
+def _solve_asp_aba_single_extension(
+    framework: ABAFramework,
+    semantics: str,
+    backend: str,
+) -> SingleExtensionSolverResult:
+    from argumentation.aba_asp import solve_aba_with_backend
+
+    result = solve_aba_with_backend(
+        framework,
+        backend=backend,
+        semantics=semantics,
+        task="enum",
+    )
+    if result.status == "success":
+        extension = result.extensions[0] if result.extensions else None
+        return SingleExtensionSolverSuccess(extension=extension)
+    return _aba_asp_failure(result)
+
+
+def _solve_asp_aba_acceptance(
+    framework: ABAFramework,
+    semantics: str,
+    task: str,
+    query: Literal,
+    backend: str,
+) -> AcceptanceSolverResult:
+    from argumentation.aba_asp import solve_aba_with_backend
+
+    result = solve_aba_with_backend(
+        framework,
+        backend=backend,
+        semantics=semantics,
+        task=task,
+        query=query,
+    )
+    if result.status == "success" and result.answer is not None:
+        return AcceptanceSolverSuccess(
+            answer=result.answer,
+            witness=result.witness if task == "credulous" and result.answer else None,
+            counterexample=(
+                result.counterexample if task == "skeptical" and not result.answer else None
+            ),
+        )
+    return _aba_asp_failure(result)
+
+
+def _aba_asp_failure(result) -> SolverBackendUnavailable | SolverBackendError | SolverProtocolError:
+    reason = result.metadata.get("reason", result.status)
+    stdout = result.metadata.get("stdout", "")
+    stderr = result.metadata.get("stderr", "")
+    problem = f"ABA-{result.semantics.upper()}"
+    if result.status == "unavailable_backend":
+        return SolverBackendUnavailable(
+            backend=result.backend,
+            reason=reason,
+            install_hint="Install the clingo Python package or use backend='sat'/'native'.",
+        )
+    if result.status == "backend_error":
+        return SolverBackendError(
+            backend=result.backend,
+            problem=problem,
+            returncode=1,
+            stdout=stdout,
+            stderr=stderr or reason,
+        )
+    return SolverProtocolError(
+        backend=result.backend,
+        problem=problem,
+        message=reason,
+        stdout=stdout,
+        stderr=stderr,
     )
 
 
