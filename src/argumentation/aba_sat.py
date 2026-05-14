@@ -739,11 +739,7 @@ def sat_stable_extension(
     simplify: bool = True,
 ) -> AssumptionSet | None:
     """Return one stable assumption set satisfying optional query constraints."""
-    if simplify and require_derived is None and require_not_derived is None:
-        simplification = _aba_simplification(framework, "stable")
-        if not simplification.is_trivial:
-            witness = sat_stable_extension(simplification.residual, simplify=False)
-            return None if witness is None else simplification.lift(witness)
+    del simplify
     return _sat_ranked_stable_extension(
         framework,
         require_derived=require_derived,
@@ -793,35 +789,7 @@ def sat_stable_acceptance(
     """Return an ABA stable acceptance decision (with optional preprocessing)."""
     if task not in {"credulous", "skeptical"}:
         raise ValueError(f"unsupported ABA acceptance task: {task}")
-    if simplify:
-        simplification = _aba_simplification(framework, "stable")
-        if not simplification.is_trivial:
-            residual = simplification.residual
-
-            def _residual_witness() -> AssumptionSet | None:
-                witness = sat_stable_extension(residual, simplify=False)
-                return None if witness is None else simplification.lift(witness)
-
-            if query in simplification.fixed_in:
-                if task == "credulous":
-                    witness = _residual_witness()
-                    return witness is not None, witness
-                # Skeptical: query is in every stable extension (vacuously true
-                # when there are none), so the answer is True regardless.
-                return True, None
-            if query in simplification.fixed_out or query not in residual.language:
-                if task == "credulous":
-                    return False, None
-                # Skeptical: a stable extension (if any) is a counterexample;
-                # if none exists, skeptical acceptance is vacuously true.
-                counterexample = _residual_witness()
-                return counterexample is None, counterexample
-            answer, witness = sat_stable_acceptance(
-                residual, task=task, query=query, simplify=False
-            )
-            if witness is None:
-                return answer, None
-            return answer, simplification.lift(witness)
+    del simplify
     if task == "credulous":
         witness = sat_stable_extension(framework, require_derived=query, simplify=False)
         return witness is not None, witness
