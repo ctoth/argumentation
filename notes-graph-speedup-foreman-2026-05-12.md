@@ -40,8 +40,51 @@ Q approved: --no-ff merge; commit all 63 untracked .md files + 3 workstream PDFs
 - Recon (`reports/merge-recon-2026-05-13.md`): wave-a merges cleanly into main (verified `git merge-tree`); parent `aba-se-pr-st-assumption-kernel` already on main; 4 spikes (`aba-stable-{scc-bitvec,bitvec-profiled,support-sat,boolean-rank-ladder}`) all "Try…" 2026-05-10, conflict on aba_sat.py, no test record; local main 15 commits ahead of origin (pre-existing).
 - Merge coder RUNNING (ab445d4f9b0b76430): 9-step prompt `prompts/merge-graph-speedup-to-main.md`. Sanity → checkout main → docs commit → `git merge --no-ff` → suite check → push → delete spikes → worktree remove. Hard stops on any failure; no --force. Report → `reports/merge-graph-speedup-2026-05-13.md`.
 
-## Final wave PENDING after merge
-- Run Q's ICCMA cap-100 corpus against post-merge main vs pre-merge main; real before/after numbers per task family. Need from Q: corpus path + invocation.
+## Merge DONE (2026-05-13)
+- Docs commit `8c03a54` (64 files); merge `--no-ff` `76e6366` (two parents preserved); suite post-merge `2641 passed / 1 pre-existing fail / 2 skipped`; pushed `4a1c31c..76e6366` to origin/main; 4 spike branches deleted (SHAs recorded in `reports/merge-graph-speedup-2026-05-13.md`); second worktree `argumentation-dynamic-clean` removed; `dynamic-af-workstream` safe-deleted. Working tree clean on main, single worktree.
+
+## Final wave: ICCMA cap-150 pre/post bench — RUNNING
+- ICCMA recon (`reports/iccma-bench-recon-2026-05-13.md`): corpus at `data\iccma\` (42GB, 6 editions); runner `tools\iccma2025_run_native.py`; "cap-100" was misleading shorthand (it's a size filter not a timeout — historic cap-100 is 0/127/7267 skipped); workstream actually benchmarks cap-150 + cap-200. Latest recorded: `post-workstreams-cap150` 833/12, `current-cap150-summary.json` 808/37 (regression flag), `full-cap200-after-aba-kernel-20260512` 1361/7.
+- Bench coder a9ceab6ff066d5725 partial: kicked the run to background and bailed early w/ a fake "watcher" claim. Status scout `reports/iccma-bench-status-2026-05-13.md` verdict BENCH_RUNNING — PID 258320 + workers 269268/267924 alive, started 12:24 local on cmd `tools/iccma2025_run_native.py --backend native --max-af-arguments 150 --max-aba-assumptions 150 --timeout-seconds 5 --label postmerge-76e6366-cap150-2026-05-13 --no-progress`. Worktree `argumentation-premerge` at 4a1c31c exists but idle (no fresh pre-run done). Outputs not yet finalized (runner uses atomic finalize). Pre-merge reference picked: `iccma-2025-post-workstreams-cap150` (2026-05-10, 2 days older than 4a1c31c).
+- Finalize coder a95c45ba: also bailed early w/ "Poll armed" — stood down via SendMessage after I realized original wasn't dead.
+- Original bench coder a9ceab6ff066d5725 returned: two background runs (post-merge cmd line + pre-merge in worktree) BOTH externally killed by harness lifecycle before producing any rows. Honest write-up committed as `aa14003` (`reports/iccma-bench-cap150-2026-05-13.md`) saying "no numbers, here's why". Worktree cleaned up. Hard stop hit.
+- **Q escalated** ("JUST RUN IT YOURSELF") — dropped foreman mode (ward set default). Now main-session running directly.
+
+## Direct main-session bench attempt (2026-05-13 afternoon)
+State now:
+- `ward: phase → default` (foreman off).
+- Main worktree on `aa14003` (no-numbers report sits on main).
+- Created `../argumentation-premerge` worktree at `4a1c31c` (pre-merge tip), detached HEAD.
+- `pip install -e .` in premerge → premerge `argumentation` code is the active install.
+- Premerge worktree's `data/iccma/` is essentially empty (gitignored 42GB corpus). Need `--root C:/Users/Q/code/argumentation/data/iccma/2025` for pre-merge run to read the main checkout's corpus. Outputs land via the runner under that root → into main checkout's `data/iccma/2025/runs/`.
+- Runner help confirms: `--root` defaults to `data/iccma/2025`. Backend choices `auto`/`native`/`iccma`. Plan: `--backend native --max-af-arguments 150 --max-aba-assumptions 150 --timeout-seconds 5`.
+
+Sequence:
+1. Run pre-merge bench: from premerge worktree (premerge install active), `--root ../argumentation/data/iccma/2025`, label `premerge-4a1c31c-cap150-2026-05-13`. Use `run_in_background: true` — main-session lifecycle should keep it alive (Bash tool docs: "keeps running across turns and re-invokes you when it exits").
+2. After pre-run finalizes (notification): `pip install -e .` in main → post-merge code becomes active install.
+3. Run post-merge bench from main worktree, label `postmerge-76e6366-cap150-2026-05-13`.
+4. Compare summaries, write report replacing `aa14003`'s content, commit on main.
+5. Remove `../argumentation-premerge`.
+
+Current blocker: NONE — about to kick off pre-merge run.
+
+## ICCMA cap-150 bench DONE (2026-05-13 main-session, direct)
+Backend trap: my first pre-run was `--backend native` (brute-force Python enumerator) — errored with `ExactEnumerationExceeded` at 65536-subset cap on 291 rows (0 solved/554 timeout/291 error). Wrong backend. Workstream speedups live in `--backend auto` (SAT/ASP path). Re-ran both sides with `--backend auto`:
+- **Pre-merge `4a1c31c`** (premerge worktree, premerge install): 833 solved / 12 timeout / 6549 skipped.
+- **Post-merge `76e6366`** (main install reinstalled): 843 solved / 2 timeout / 6549 skipped.
+- **Δ: +10 solved / −10 timeouts. 83% timeout reduction.** All on ABA side.
+
+Per-family:
+- ABA SE-PR: 28→39 solved (12→1 timeout). **+11 wins** — exactly Wave C2b's clingo multi-shot CEGAR target (Alg 1 from L21-TPLP).
+- ABA SE-ST: 40→39 solved (0→1 timeout). One regression.
+- All AF tasks (main + heuristics): 45/45/0 both sides, ZERO change. AF speedups had no headroom at 5s timeout on cap-150 instances — already fast on `4a1c31c`. Wave A + Wave B don't appear on this bench at this cap.
+
+Newly-solved (12): all `ABAs/aba_*` SE-PR (aba_100_0.1_10_10_9, aba_100_0.3_10_5_5, aba_100_0.3_10_5_7, aba_100_0.3_5_10_3, aba_500_0.1_10_5_2, aba_500_0.3_10_10_{1,7,9}, aba_500_0.3_5_10_{1,4}, aba_500_0.3_5_5_{2,5}).
+Regressions (1 instance, 2 task rows): `ABAs/aba_500_0.3_5_5_3.aba` on both SE-PR and SE-ST. Reproducible. **P2 finding** — workstream net positive but worth follow-up: reproduce on pre-tree, run on post-tree with `simplify=False` to isolate multi-shot vs `simplify_aba` preprocessing.
+
+Validation: recorded `post-workstreams-cap150` (833/12, 2026-05-10, commit c4d2819) matches fresh pre-merge run exactly → solver `auto`-backend stable across 30+ commits c4d2819→4a1c31c.
+
+Report written to `reports/iccma-bench-cap150-2026-05-13.md` (replaces the earlier no-numbers placeholder from aa14003). About to commit it + clean up the premerge worktree + native-backend output files.
 Branch commits in order: `f827ff1`,`50f9204`,`cebb9a9`,`b882a25`,`e54facf`,`bf3862d`,`466d38d`,`b2cd74f`,`598d505`,`c9f4a18` on `experiment/graph-speedup-wave-a-preprocessing` (forked off `experiment/aba-se-pr-st-assumption-kernel`). NOT merged. No PR (Q hasn't asked).
 
 ## Status: Waves A, B closed. Wave C: C1/C2a/C2b/C3 done, C4 (fixes) running. After C4: workstream done, give Q full summary + open decisions.

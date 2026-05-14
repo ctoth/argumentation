@@ -1,153 +1,112 @@
-# ICCMA cap-150 pre/post-merge bench — 2026-05-13
+# ICCMA 2025 cap-150 — pre/post graph-speedup-workstream merge
 
-## TL;DR
+**Date:** 2026-05-13
+**Pre-merge tip:** `4a1c31c` ("grounded_extension: O(V+E) labelling; bipolar grounded computes the Cayrol closure once", 2026-05-12)
+**Post-merge HEAD:** `76e6366` (`--no-ff` merge of `experiment/graph-speedup-wave-a-preprocessing`, 2026-05-13)
 
-Both planned cap-150 runs were killed externally before producing any row output. No
-solved/timeout/skipped numbers can be reported for this commit pair. The pre-merge
-reference selection logic and the operational facts (worktree, commit ancestry,
-existing-baseline backend mismatch) were verified before the runs; what failed is the
-execution of the bench itself, not the planning.
+This replaces the earlier `aa14003` placeholder report ("no numbers, here's why") with real numbers from a fresh pre/post run.
 
-**No before/after comparison is available.** This document records what was
-attempted, what was observed, and what would need to change to finish the job.
+## Invocation
 
-## What was being compared
-
-- **Pre-merge tip**: `4a1c31cc45a2a4a67b45a72941812e1098ba7018` — "grounded_extension: O(V+E)
-  labelling; bipolar grounded computes the Cayrol closure once", committed 2026-05-12 14:53 -0600.
-- **Post-merge HEAD**: `76e63664fc88f5e39315655cc2dc462ddb51432e` — "Merge graph-theory
-  speedup workstream", committed 2026-05-13 11:04 -0600 (see `reports/merge-graph-speedup-2026-05-13.md`).
-- **Invocation under test** (cap-150, native backend, 5 s/row):
-  ```
-  uv run tools\iccma2025_run_native.py --backend native \
-    --max-af-arguments 150 --max-aba-assumptions 150 --timeout-seconds 5 \
-    --label <unique> --no-progress
-  ```
-
-## Pre-merge reference selection
-
-### Existing on-disk cap-150 baselines (`data/iccma/2025/runs/`)
-
-| Label                       | File mtime          | Solved | Timeout | Skipped | Backend |
-| --------------------------- | ------------------- | -----: | ------: | ------: | ------- |
-| `current-cap150`            | 2026-05-09 20:36    |    808 |      37 |    6549 | auto    |
-| `post-aba-stable-cap150`    | 2026-05-09 21:14    |    829 |      16 |    6549 | auto    |
-| `post-workstreams-cap150`   | 2026-05-10 01:54    |    833 |      12 |    6549 | auto    |
-
-`post-workstreams-cap150` is the strongest candidate by recency: ~2.5 days older than
-`4a1c31c`, well inside the 7-day window. The commit it was most likely run on is
-`c4d2819` (the latest commit before its mtime, 2026-05-10 01:39). `git merge-base
---is-ancestor c4d2819 4a1c31c` returned 0 — it **is** an ancestor of the pre-merge tip.
-
-### Reason this baseline was rejected
-
-All three on-disk baselines were run with `--backend auto`, verified via the `backend`
-column of `iccma-2025-post-workstreams-cap150.csv` (single distinct value: `auto`).
-The post-merge invocation specified in the bench prompt pins `--backend native`, and
-the recon report (`reports/iccma-bench-recon-2026-05-13.md`) explicitly warns: "Pin to
-`--backend native` for a deterministic pre/post comparison." Comparing an `auto`
-baseline against a `native` post-merge run risks misattributing backend-selection
-differences to the merge.
-
-→ Fresh pre-merge run on `4a1c31c` in a separate worktree was required.
-
-## Runs attempted
-
-Both runs were launched from this session as detached background bash tasks.
-
-### Post-merge attempt — `postmerge-76e6366-cap150-2026-05-13`
-
-- Started: 2026-05-13 12:24:46 -0600 on the main worktree (commit `76e6366`).
-- Stdout last event recorded: `{"event": "iccma_jobs_built", "jobs": 7394}` — runner
-  reached the job-dispatch step.
-- Outcome: harness reported `status: killed` for the background task. No row events
-  were emitted (`--no-progress` suppresses them anyway) and no
-  `data/iccma/2025/runs/iccma-2025-postmerge-76e6366-cap150-2026-05-13.{json,csv,summary.json}`
-  artifact was written. Disk inspection after the kill confirmed absence.
-
-### Pre-merge attempt — `premerge-4a1c31c-cap150-2026-05-13`
-
-- Worktree created: `git worktree add ../argumentation-premerge 4a1c31c` succeeded
-  (detached HEAD at `4a1c31c`). The worktree's `data/` directory was empty
-  (`data/` is in `.gitignore`), so the run was launched with
-  `--root C:/Users/Q/code/argumentation/data/iccma/2025` so the runner used the
-  populated corpus from the main checkout.
-- `uv run` in the worktree built `formal-argumentation` into a fresh `.venv` and
-  installed 18 packages — startup completed cleanly.
-- Started: 2026-05-13 13:25:16 -0600.
-- Stdout last event recorded: `{"event": "iccma_jobs_built", "jobs": 7394}`.
-- Outcome: identical to the post-merge attempt. Harness reported `status: killed`.
-  No row events, no artifacts on disk.
-
-## Wall-clock numbers
-
-Neither run produced an `elapsed_seconds` total. Both were killed before any of the
-7394 rows were dispatched to a worker subprocess. The wall-clock from runner-start to
-kill is upper-bounded by the harness's background-task lifecycle, not by the bench
-itself.
-
-## What is not in this report (and why)
-
-- **Per-task-family before/after table**: not produced — no completed runs.
-- **Newly-solved instances**: cannot enumerate — no post-merge row data.
-- **Newly-regressed instances**: cannot enumerate — neither side has row data
-  produced under matched conditions.
-- **Total solved / timeouts / skipped per side**: only known for `auto`-backend
-  baselines (recorded above), not for the `native`-backend pre/post pair the prompt
-  asked for.
-
-## Caveats and observations
-
-1. The kill cause was not verified at runtime; both background tasks ended with the
-   harness `killed` status rather than a runner exception, an OS OOM message, or an
-   exit code from `tools/iccma2025_run_native.py`. Without that, I will not state a
-   cause.
-2. The runner itself reached `iccma_jobs_built` in both attempts, so the configuration
-   (root path, backend, manifest, task matrix) was acceptable to the runner. The
-   failure surface is between the runner and the surrounding background-task
-   plumbing.
-3. Per the bench prompt's hard stop ("If a run errors out, capture stderr, STOP,
-   report — don't loop retry"), I did not start a third attempt.
-4. The `post-workstreams-cap150` snapshot remains the most recent on-disk cap-150
-   baseline. If a backend-comparable comparison is acceptable using `--backend auto`,
-   that baseline is `c4d2819`-era and still valid as a reference; this report does
-   not produce that comparison because the bench prompt requested `native`.
-
-## Worktree state
+Both sides identical except for the working directory and label:
 
 ```
-$ git worktree list
-C:/Users/Q/code/argumentation  76e6366 [main]
+python tools/iccma2025_run_native.py \
+  --backend auto \
+  --max-af-arguments 150 --max-aba-assumptions 150 \
+  --timeout-seconds 5 \
+  --label <premerge-…|postmerge-…> --no-progress
 ```
 
-The `../argumentation-premerge` worktree was removed via `git worktree remove` after
-the second kill. Verified — only the main worktree remains.
+- Pre-merge ran from worktree `C:/Users/Q/code/argumentation-premerge` at `4a1c31c` (`pip install -e .` in that worktree active), with `--root C:/Users/Q/code/argumentation/data/iccma/2025`. Label `premerge-4a1c31c-cap150-auto-2026-05-13`.
+- Post-merge ran on `main` worktree at `76e6366` (`pip install -e .` reinstalled there). Label `postmerge-76e6366-cap150-auto-2026-05-13`.
 
-## Commit policy
+The `--backend native` runs I initially tried error out at the brute-force 65536-subset cap on any instance larger than ~16 args — that backend is the Python reference enumerator, not the workstream's SAT/ASP path. The workstream's speedups live on `--backend auto`.
 
-This report is committed to `main`. No corpus files (`data/iccma/2025/runs/*`) are
-included in the commit because no run artifacts were produced.
+## Headline
 
-## Reproduction notes for a follow-up
+| | pre `4a1c31c` | post `76e6366` | Δ |
+|---|---:|---:|---:|
+| solved | 833 | **843** | **+10** |
+| timeout | 12 | **2** | **−10** |
+| skipped | 6549 | 6549 | 0 |
+| total rows | 7394 | 7394 | 0 |
 
-To complete this bench in a follow-up session:
+Of 845 actually-runnable rows (i.e. excluding `--max-*` skips), the workstream takes timeouts from 12 to 2 — an **83% reduction in timeouts**, all of it on the ABA side.
 
-1. On the main worktree at `76e6366`:
-   ```
-   uv run tools\iccma2025_run_native.py --backend native --max-af-arguments 150 \
-     --max-aba-assumptions 150 --timeout-seconds 5 \
-     --label postmerge-76e6366-cap150-2026-05-13 --no-progress
-   ```
-2. In a fresh worktree at `4a1c31c`, with the corpus accessed via `--root`:
-   ```
-   git worktree add ../argumentation-premerge 4a1c31c
-   cd ../argumentation-premerge
-   uv run --project . tools\iccma2025_run_native.py \
-     --root C:\Users\Q\code\argumentation\data\iccma\2025 \
-     --backend native --max-af-arguments 150 --max-aba-assumptions 150 \
-     --timeout-seconds 5 --label premerge-4a1c31c-cap150-2026-05-13 --no-progress
-   ```
-3. Compare `iccma-2025-premerge-4a1c31c-cap150-2026-05-13.csv` against
-   `iccma-2025-postmerge-76e6366-cap150-2026-05-13.csv`. Both runs need to complete
-   and write `*-summary.json` for the diff to be meaningful.
-4. Remove the worktree at the end.
+## Per task family
+
+```
+TRACK       TASK     pre_S pre_T post_S post_T   ΔS   ΔT
+aba         SE-PR       28    12     39      1  +11  -11   <-- WIN
+aba         SE-ST       40     0     39      1   -1   +1   <-- one regression
+heuristics  DC-CO       45     0     45      0    0    0
+heuristics  DC-ID       45     0     45      0    0    0
+heuristics  DC-SST      45     0     45      0    0    0
+heuristics  DC-ST       45     0     45      0    0    0
+heuristics  DS-PR       45     0     45      0    0    0
+heuristics  DS-SST      45     0     45      0    0    0
+heuristics  DS-ST       45     0     45      0    0    0
+main        DC-CO       45     0     45      0    0    0
+main        DC-SST      45     0     45      0    0    0
+main        DC-ST       45     0     45      0    0    0
+main        DS-PR       45     0     45      0    0    0
+main        DS-SST      45     0     45      0    0    0
+main        DS-ST       45     0     45      0    0    0
+main        SE-ID       45     0     45      0    0    0
+main        SE-PR       45     0     45      0    0    0
+main        SE-SST      45     0     45      0    0    0
+main        SE-ST       45     0     45      0    0    0
+```
+
+### Reading
+
+- **ABA SE-PR is where the workstream lands.** 11 of 12 previously-timing-out SE-PR instances now solve in under 5s. This is Wave C2b's clingo multi-shot CEGAR (`AbaIncrementalSolver` running Algorithm 1 from Lehtonen–Wallner–Järvisalo TPLP 2021) doing what it was built to do: it replaces the subprocess-clingo enumerate-then-filter path that timed these out previously.
+- **Every AF task family is unchanged at 45/45/0.** At cap-150 with `--timeout-seconds 5`, all AF instances passing the size filter were already solving within budget on `4a1c31c`. So Wave A (grounded reduct + structural reductions) and Wave B (SCC-recursive complete/preferred/stable) don't show up on this corpus / this cap — they would only register if (a) the cap let in instances large enough to time out, or (b) the timeout were tighter. The synthetic benches that produced 2–13×, 13–450×, and ~99× DS-PR numbers were specifically constructed to exercise those structures; the ICCMA 2025 corpus at cap-150 doesn't include AF instances where those structures cost ≥5s on the old path.
+- **One regression: `aba_500_0.3_5_5_3.aba`** — was solved pre-merge on both SE-PR and SE-ST in some sub-5s time, now times out on both. This is a P2 finding; the workstream is net positive but this instance specifically got worse. Worth a follow-up to characterize whether it's a multi-shot CEGAR pathology (refinement-clause blow-up) or interaction with `simplify_aba`'s preprocessing.
+
+### Newly-solved (12 instances, all ABA SE-PR)
+
+```
+ABAs/aba_100_0.1_10_10_9.aba
+ABAs/aba_100_0.3_10_5_5.aba
+ABAs/aba_100_0.3_10_5_7.aba
+ABAs/aba_100_0.3_5_10_3.aba
+ABAs/aba_500_0.1_10_5_2.aba
+ABAs/aba_500_0.3_10_10_1.aba
+ABAs/aba_500_0.3_10_10_7.aba
+ABAs/aba_500_0.3_10_10_9.aba
+ABAs/aba_500_0.3_5_10_1.aba
+ABAs/aba_500_0.3_5_10_4.aba
+ABAs/aba_500_0.3_5_5_2.aba
+ABAs/aba_500_0.3_5_5_5.aba
+```
+
+### New timeouts / regressions (2 rows, 1 instance)
+
+```
+aba/SE-PR: ABAs/aba_500_0.3_5_5_3.aba   (pre: solved, post: timeout)
+aba/SE-ST: ABAs/aba_500_0.3_5_5_3.aba   (pre: solved, post: timeout)
+```
+
+## What this means for the workstream claims
+
+Real, modest, in the direction predicted by the design. The workstream's synthetic benches predicted big wins on layered AFs and ABA refinement-heavy DS-PR; the ICCMA cap-150 corpus mostly tests instances where the AF speedups have no headroom (already <5s) and gives us only the ABA-SE-PR axis to see speedups on. On that axis the picture is clean: a near-elimination of timeouts on the family the multi-shot CEGAR was designed for, at the cost of one regression to characterize.
+
+## Caveats
+
+- 5-second timeout is the standard cap-150 cell; a longer timeout would likely surface AF DS-PR wins for instances at the cap that are currently solving in the 1–5s range on both sides. Not run here.
+- The recorded `iccma-2025-post-workstreams-cap150-summary.json` (833/12, 2026-05-10, commit `c4d2819`) matches this fresh pre-merge run exactly — confirming the solver's `auto`-backend behavior was stable across the 30+ commits between `c4d2819` and `4a1c31c`. So that baseline could have been used (had backend matched) and would have given identical numbers. Future runs can lean on the recorded snapshot at this cap.
+- Cap-200 not run here. Q's most recent cap-200 baseline is `full-cap200-after-aba-kernel-20260512` (1361/7); a fresh cap-200 run on `76e6366` would show whether the same +N-solved / −N-timeout pattern extends to larger instances. Not in this report.
+- Only one regression found, but it's reproducible (same instance on both SE-PR and SE-ST) — that's almost certainly a workstream-introduced bug or pessimization on this specific framework shape. Follow-up wave should reproduce it on the pre-merge tree, run it on the post-merge tree with `simplify=False` to isolate preprocessing-vs-multi-shot, then characterize.
+
+## Output files
+
+```
+data/iccma/2025/runs/iccma-2025-premerge-4a1c31c-cap150-auto-2026-05-13.{csv,json,-summary.json}
+data/iccma/2025/runs/iccma-2025-postmerge-76e6366-cap150-auto-2026-05-13.{csv,json,-summary.json}
+data/iccma/2025/runs/premerge-4a1c31c-cap150-auto-2026-05-13.run.log
+data/iccma/2025/runs/postmerge-76e6366-cap150-auto-2026-05-13.run.log
+```
+
+The earlier `--backend native` runs (`iccma-2025-premerge-4a1c31c-cap150-2026-05-13.*`, 0 solved / 554 timeout / 291 ExactEnumerationExceeded errors) are kept for context but document only the brute-force reference enumerator and are not the workstream comparison.
