@@ -1,3 +1,8 @@
+import pytest
+
+from argumentation.aba import ABAFramework
+from argumentation.aspic import GroundAtom
+from argumentation.aspic import Literal
 from argumentation.dung import ArgumentationFramework
 from argumentation.dung import complete_extensions
 from argumentation.dung import grounded_extension
@@ -10,6 +15,8 @@ from argumentation.solver import (
     SingleExtensionSolverSuccess,
     SolverBackendError,
     SolverBackendUnavailable,
+    solve_aba_acceptance,
+    solve_aba_single_extension,
     solve_dung_acceptance,
     solve_dung_extensions,
     solve_dung_single_extension,
@@ -24,6 +31,23 @@ from argumentation.solver_adapters.iccma_af import (
     ICCMASolverSuccess,
     ICCMASolverUnavailable,
 )
+
+
+def _literal(name: str) -> Literal:
+    return Literal(GroundAtom(name))
+
+
+def _simple_aba_framework() -> ABAFramework:
+    a = _literal("a")
+    b = _literal("b")
+    ca = _literal("ca")
+    cb = _literal("cb")
+    return ABAFramework(
+        language=frozenset({a, b, ca, cb}),
+        rules=frozenset(),
+        assumptions=frozenset({a, b}),
+        contrary={a: ca, b: cb},
+    )
 
 
 NATIVE_EXTENSION_ORACLES = {
@@ -47,6 +71,47 @@ def test_solve_dung_extensions_defaults_to_auto_backend() -> None:
 
     assert isinstance(result, ExtensionSolverSuccess)
     assert result.extensions == (frozenset({"a"}),)
+
+
+def test_default_aba_single_extension_uses_multishot_when_clingo_available(
+    monkeypatch,
+) -> None:
+    pytest.importorskip("clingo")
+    framework = _simple_aba_framework()
+
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError("ABA auto should prefer clingo multishot over SAT")
+
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+    monkeypatch.setattr(solver_module, "sat_aba_support_extension", forbidden_sat)
+
+    result = solve_aba_single_extension(framework, semantics="preferred")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == frozenset({_literal("a"), _literal("b")})
+
+
+def test_default_aba_acceptance_uses_multishot_when_clingo_available(
+    monkeypatch,
+) -> None:
+    pytest.importorskip("clingo")
+    framework = _simple_aba_framework()
+
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError("ABA auto should prefer clingo multishot over SAT")
+
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+    monkeypatch.setattr(solver_module, "sat_aba_support_acceptance", forbidden_sat)
+
+    result = solve_aba_acceptance(
+        framework,
+        semantics="preferred",
+        task="skeptical",
+        query=_literal("a"),
+    )
+
+    assert isinstance(result, AcceptanceSolverSuccess)
+    assert result.answer is True
 
 
 def test_solve_dung_extensions_default_auto_uses_sat_for_stable(monkeypatch) -> None:
