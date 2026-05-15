@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tools.iccma_data import classify_file
 from tools.iccma2025_run_native import (
+    build_worker_command,
     find_query_path,
     infer_task_matrix,
     read_instance_text,
@@ -12,6 +13,7 @@ from tools.iccma2025_run_native import (
     RunConfig,
     run_child,
     run_or_skip,
+    worker_profile_path,
 )
 
 
@@ -235,3 +237,48 @@ def test_run_child_streams_range_bound_sat_check_events(tmp_path, capsys) -> Non
     assert '"utility_name": "stage_max_range_at_least"' in stderr
     assert '"range_bound":' in stderr
     assert '"range_constraint": "at_least"' in stderr
+
+
+def test_build_worker_command_wraps_profiled_worker_with_py_spy(tmp_path) -> None:
+    profile_path = tmp_path / "profiles" / "row.speedscope.json"
+    job_path = tmp_path / "job.json"
+    command = build_worker_command(
+        {
+            "profile_path": str(profile_path),
+            "profile_format": "speedscope",
+        },
+        job_path,
+    )
+
+    assert command[:6] == ["uv", "tool", "run", "py-spy", "record", "--subprocesses"]
+    assert "--output" in command
+    assert str(profile_path) in command
+    assert Path(command[-3]).name == "iccma2025_run_native.py"
+    assert command[-2:] == ["_worker", str(job_path)]
+
+
+def test_worker_profile_path_is_stable_and_filterable(tmp_path) -> None:
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=200,
+        max_aba_assumptions=10,
+        timeout_seconds=5.0,
+        progress=False,
+        event_log_path=None,
+        profile_workers_dir=tmp_path / "profiles",
+        profile_workers_format="raw",
+        profile_worker_subtracks=frozenset({"DS-PR"}),
+    )
+    instance = {
+        "kind": "apx",
+        "relative_path": "nested/path/Hard Case.apx",
+    }
+    task = {"track": "main", "subtrack": "DS-PR", "instance_kind": "af"}
+
+    path = worker_profile_path(config, instance, task)
+
+    assert path.parent == tmp_path / "profiles"
+    assert path.name.startswith("main-DS-PR-Hard_Case.apx-")
+    assert path.name.endswith(".raw.txt")
