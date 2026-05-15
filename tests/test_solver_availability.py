@@ -91,6 +91,24 @@ def test_default_aba_single_extension_uses_multishot_when_clingo_available(
     assert result.extension is not None
 
 
+def test_default_aba_stable_single_extension_uses_multishot_when_clingo_available(
+    monkeypatch,
+) -> None:
+    pytest.importorskip("clingo")
+    framework = _simple_aba_framework()
+
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError("ABA stable witness should use clingo multishot")
+
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", forbidden_sat)
+
+    result = solve_aba_single_extension(framework, semantics="stable")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension is not None
+
+
 def test_default_aba_acceptance_uses_multishot_when_clingo_available(
     monkeypatch,
 ) -> None:

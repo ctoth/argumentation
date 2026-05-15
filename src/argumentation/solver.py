@@ -526,6 +526,7 @@ def _auto_aba_backend(backend: str, semantics: str, *, task: str) -> str:
                     semantics == "preferred"
                     and task in {"single-extension", "skeptical"}
                 )
+                or (semantics == "stable" and task == "single-extension")
             )
         ):
             return "asp"
