@@ -988,18 +988,30 @@ def _add_admissible_constraints(
         solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
     attackers_index = _attackers_index(framework.defeats)
+    defense_by_attacker: dict[str, Any] = {}
+    undefended_attackers: set[str] = set()
     for argument in sorted(framework.arguments):
-        for attacker in sorted(attackers_index.get(argument, frozenset())):
-            defenders = tuple(sorted(attackers_index.get(attacker, frozenset())))
-            if defenders:
-                solver.add(
-                    z3.Implies(
-                        in_vars[argument],
-                        z3.Or(*(in_vars[defender] for defender in defenders)),
-                    )
-                )
-            else:
-                solver.add(z3.Not(in_vars[argument]))
+        defenders = tuple(sorted(attackers_index.get(argument, frozenset())))
+        if defenders:
+            defense_by_attacker[argument] = z3.Or(
+                *(in_vars[defender] for defender in defenders)
+            )
+        else:
+            undefended_attackers.add(argument)
+    for argument in sorted(framework.arguments):
+        attackers = tuple(sorted(attackers_index.get(argument, frozenset())))
+        if not attackers:
+            continue
+        if any(attacker in undefended_attackers for attacker in attackers):
+            solver.add(z3.Not(in_vars[argument]))
+            continue
+        defense_requirements = tuple(defense_by_attacker[attacker] for attacker in attackers)
+        defended = (
+            defense_requirements[0]
+            if len(defense_requirements) == 1
+            else z3.And(*defense_requirements)
+        )
+        solver.add(z3.Implies(in_vars[argument], defended))
 
 
 def _grow_preferred(
