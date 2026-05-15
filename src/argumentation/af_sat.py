@@ -648,13 +648,7 @@ class PreferredSuperCoreSolver:
                 break
             current = current - _attacked_by(attacker, self.framework.defeats)
 
-        current = current - _attacked_by(current, self.framework.defeats)
-        while True:
-            undefended_attackers = current - _attacked_by(current, self.framework.defeats)
-            next_current = current - _attacked_by(undefended_attackers, self.framework.defeats)
-            if next_current == current:
-                return current
-            current = next_current
+        return _prune_to_admissible_subset(current, self.framework.defeats)
 
 
 def find_semi_stable_extension(
@@ -717,16 +711,7 @@ def find_ideal_extension(
             break
         current = current - _attacked_by(attacker, framework.defeats)
 
-    current = current - _attacked_by(current, framework.defeats)
-    while True:
-        undefended_attackers = _attackers_of(
-            current,
-            framework.defeats,
-        ) - _attacked_by(current, framework.defeats)
-        next_current = current - _attacked_by(undefended_attackers, framework.defeats)
-        if next_current == current:
-            return current
-        current = next_current
+    return _prune_to_admissible_subset(current, framework.defeats)
 
 
 def find_stage_extension(
@@ -985,6 +970,20 @@ def _attackers_of(
     defeats: frozenset[tuple[str, str]],
 ) -> frozenset[str]:
     return frozenset(attacker for attacker, target in defeats if target in arguments)
+
+
+def _prune_to_admissible_subset(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    current = arguments - _attacked_by(arguments, defeats)
+    while True:
+        defended_attackers = _attacked_by(current, defeats)
+        undefended_attackers = _attackers_of(current, defeats) - defended_attackers
+        next_current = current - _attacked_by(undefended_attackers, defeats)
+        if next_current == current:
+            return current
+        current = next_current
 
 
 def _add_admissible_constraints(
