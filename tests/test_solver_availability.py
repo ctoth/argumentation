@@ -73,22 +73,22 @@ def test_solve_dung_extensions_defaults_to_auto_backend() -> None:
     assert result.extensions == (frozenset({"a"}),)
 
 
-def test_default_aba_single_extension_keeps_sat_witness_path_when_clingo_available(
+def test_default_aba_single_extension_uses_multishot_when_clingo_available(
     monkeypatch,
 ) -> None:
     pytest.importorskip("clingo")
     framework = _simple_aba_framework()
 
-    def sat_witness(*args, **kwargs):
-        return frozenset({_literal("a")})
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError("ABA preferred witness should use clingo multishot")
 
     monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
-    monkeypatch.setattr(solver_module, "sat_aba_support_extension", sat_witness)
+    monkeypatch.setattr(solver_module, "sat_aba_support_extension", forbidden_sat)
 
     result = solve_aba_single_extension(framework, semantics="preferred")
 
     assert isinstance(result, SingleExtensionSolverSuccess)
-    assert result.extension == frozenset({_literal("a")})
+    assert result.extension is not None
 
 
 def test_default_aba_acceptance_uses_multishot_when_clingo_available(

@@ -522,7 +522,10 @@ def _auto_aba_backend(backend: str, semantics: str, *, task: str) -> str:
             _has_clingo()
             and (
                 semantics == "grounded"
-                or (semantics == "preferred" and task == "skeptical")
+                or (
+                    semantics == "preferred"
+                    and task in {"single-extension", "skeptical"}
+                )
             )
         ):
             return "asp"
