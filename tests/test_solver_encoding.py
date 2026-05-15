@@ -580,6 +580,24 @@ def test_kernel_ideal_extension_uses_direct_ideal_utilities() -> None:
     assert "ideal_admissible_attacker" in utility_names
 
 
+def test_kernel_ideal_extension_prunes_undefended_current_arguments() -> None:
+    framework = af(
+        {"a", "aa", "b", "c"},
+        {
+            ("a", "aa"),
+            ("aa", "a"),
+            ("a", "b"),
+            ("aa", "b"),
+            ("b", "c"),
+        },
+    )
+
+    ideal = find_ideal_extension(framework)
+
+    assert ideal == ideal_extension(framework)
+    assert admissible(ideal, framework.arguments, framework.defeats)
+
+
 @given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=30)
 def test_stable_encoding_matches_brute_force_reference(framework) -> None:

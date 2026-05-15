@@ -719,7 +719,10 @@ def find_ideal_extension(
 
     current = current - _attacked_by(current, framework.defeats)
     while True:
-        undefended_attackers = current - _attacked_by(current, framework.defeats)
+        undefended_attackers = _attackers_of(
+            current,
+            framework.defeats,
+        ) - _attacked_by(current, framework.defeats)
         next_current = current - _attacked_by(undefended_attackers, framework.defeats)
         if next_current == current:
             return current
@@ -975,6 +978,13 @@ def _attacked_by(
     defeats: frozenset[tuple[str, str]],
 ) -> frozenset[str]:
     return frozenset(target for attacker, target in defeats if attacker in arguments)
+
+
+def _attackers_of(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    return frozenset(attacker for attacker, target in defeats if target in arguments)
 
 
 def _add_admissible_constraints(
