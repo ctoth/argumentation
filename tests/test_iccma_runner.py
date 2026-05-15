@@ -8,6 +8,7 @@ from tools.iccma2025_run_native import (
     build_worker_command,
     find_query_path,
     infer_task_matrix,
+    parse_worker_stdout,
     read_instance_text,
     resolve_instance_path,
     RunConfig,
@@ -282,3 +283,13 @@ def test_worker_profile_path_is_stable_and_filterable(tmp_path) -> None:
     assert path.parent == tmp_path / "profiles"
     assert path.name.startswith("main-DS-PR-Hard_Case.apx-")
     assert path.name.endswith(".raw.txt")
+
+
+def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
+    parsed = parse_worker_stdout(
+        "py-spy> Sampling process 100 times a second.\n"
+        '{"answer": "false", "status": "solved"}\n'
+        "py-spy> Wrote speedscope file.\n"
+    )
+
+    assert parsed == {"answer": "false", "status": "solved"}

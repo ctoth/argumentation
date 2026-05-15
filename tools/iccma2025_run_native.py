@@ -563,12 +563,17 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
 
 
 def parse_worker_stdout(stdout: str) -> dict[str, Any] | None:
-    try:
-        parsed = json.loads(stdout)
-    except json.JSONDecodeError:
-        return None
-    if isinstance(parsed, dict):
-        return parsed
+    candidates = [stdout, *reversed(stdout.splitlines())]
+    for candidate in candidates:
+        text = candidate.strip()
+        if not text.startswith("{"):
+            continue
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
     return None
 
 
