@@ -123,14 +123,14 @@ Framework mappings:
 
 ### Search Model
 
-Search is introduced in three layers:
+Search is introduced through one bounded dialectical expansion mechanism:
 
-1. **Depth 1:** evaluate legal moves from current state.
-2. **Depth 2:** for each candidate, enumerate opponent replies and construct
+1. At bound 0, evaluate legal moves from the current state.
+2. At bound 1, for each candidate, enumerate opponent replies and construct
    attacks from replies that mate, win material, or erase the candidate's
    warrant.
-3. **Depth 3:** for each reply attack, search our continuations and construct
-   defense arguments.
+3. At bound 2+, recursively search continuations that defend against reply
+   attacks.
 
 Only after these are correct should generic negamax/alpha-beta enter. When it
 does, it should serve as a witness generator for attacks and defenses, not as a
@@ -267,6 +267,8 @@ Tests:
 
 Goal: search begins as opponent attack generation.
 
+Status: complete for the generic bounded-expansion path at reply bound 1.
+
 Tasks:
 
 - For each candidate move, apply it and enumerate opponent replies.
@@ -294,7 +296,8 @@ Tests:
 
 ### Phase 4: Depth-3 Defense Search
 
-Goal: complete the first true dialectical loop: claim, attack, defense.
+Goal: extend the same bounded dialectical expansion to complete the first true
+dialectical loop: claim, attack, defense.
 
 Tasks:
 
