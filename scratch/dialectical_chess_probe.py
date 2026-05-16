@@ -71,6 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list-legal", action="store_true")
     parser.add_argument("--choose", action="store_true")
     parser.add_argument("--uci", action="store_true")
+    parser.add_argument("--dialectic-depth", type=int, default=1)
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -79,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
 
     game = load_game(args.pgn_in) if args.pgn_in else None
     board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
-    probes = probe_moves(board)
+    probes = probe_moves(board, dialectic_depth=args.dialectic_depth)
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
 
@@ -185,13 +186,15 @@ def parse_uci_position(command: str) -> chess.Board:
 
 
 def choose_uci_move(board: chess.Board) -> str:
-    probes = probe_moves(board)
+    probes = probe_moves(board, dialectic_depth=1)
     if not probes:
         return "0000"
     return choose_move(probes, build_root_argument_graph(probes)).uci
 
 
-def probe_moves(board: chess.Board) -> list[MoveProbe]:
+def probe_moves(board: chess.Board, *, dialectic_depth: int = 1) -> list[MoveProbe]:
+    if dialectic_depth < 0:
+        raise ValueError("dialectic_depth must be non-negative")
     probes = []
     for move in board.legal_moves:
         san = board.san(move)
@@ -220,7 +223,11 @@ def probe_moves(board: chess.Board) -> list[MoveProbe]:
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
-        reply_attacks = depth_two_reply_attacks(board, move)
+        reply_attacks = bounded_reply_attacks(
+            board,
+            move,
+            reply_depth=dialectic_depth,
+        )
         if not reasons:
             objections.append("objection:no_immediate_tactical_warrant")
 
@@ -251,7 +258,14 @@ def capture_value(board: chess.Board, move: chess.Move) -> int:
     return PIECE_VALUE[captured.piece_type]
 
 
-def depth_two_reply_attacks(board: chess.Board, move: chess.Move) -> tuple[str, ...]:
+def bounded_reply_attacks(
+    board: chess.Board,
+    move: chess.Move,
+    *,
+    reply_depth: int,
+) -> tuple[str, ...]:
+    if reply_depth <= 0:
+        return ()
     moved_piece = board.piece_at(move.from_square)
     moved_piece_value = PIECE_VALUE.get(moved_piece.piece_type, 0) if moved_piece else 0
     moved_to = move.to_square
@@ -261,15 +275,63 @@ def depth_two_reply_attacks(board: chess.Board, move: chess.Move) -> tuple[str, 
     if not board.is_game_over(claim_draw=False):
         for reply in board.legal_moves:
             reply_text = reply.uci()
-            reply_captures_moved_piece = board.is_capture(reply) and reply.to_square == moved_to
+            reply_captures_moved_piece = (
+                board.is_capture(reply)
+                and reply.to_square == moved_to
+                and moved_piece_value > 0
+            )
             board.push(reply)
+            defended = reply_depth > 1 and has_bounded_defense(board, reply_depth - 1)
             if board.is_checkmate():
-                attacks.append(f"reply_mate:{reply_text}")
+                attacks.append(
+                    defended_label("reply_mate", reply_text, defended=defended)
+                )
             board.pop()
-            if reply_captures_moved_piece and moved_piece_value > 0:
-                attacks.append(f"reply_captures_moved_piece:{reply_text}:{moved_piece_value}")
+            if reply_captures_moved_piece:
+                attacks.append(
+                    defended_label(
+                        "reply_captures_moved_piece",
+                        f"{reply_text}:{moved_piece_value}",
+                        defended=defended,
+                    )
+                )
     board.pop()
     return tuple(sorted(set(attacks)))
+
+
+def defended_label(kind: str, payload: str, *, defended: bool) -> str:
+    status = "defended" if defended else "undefended"
+    return f"{kind}:{status}:{payload}"
+
+
+def has_bounded_defense(board: chess.Board, depth: int) -> bool:
+    if depth <= 0:
+        return False
+    for move in board.legal_moves:
+        board.push(move)
+        try:
+            if board.is_checkmate():
+                return True
+            if depth > 1 and not has_unanswered_reply(board, depth - 1):
+                return True
+        finally:
+            board.pop()
+    return False
+
+
+def has_unanswered_reply(board: chess.Board, depth: int) -> bool:
+    if depth <= 0:
+        return False
+    for reply in board.legal_moves:
+        board.push(reply)
+        try:
+            if board.is_checkmate():
+                return True
+            if depth > 1 and not has_bounded_defense(board, depth - 1):
+                return True
+        finally:
+            board.pop()
+    return False
 
 
 def choose_move(
@@ -383,7 +445,8 @@ def build_root_argument_graph(probes: list[MoveProbe]) -> RootArgumentGraph:
         for reply_attack in probe.reply_attacks:
             reply_arg = f"reply_attack:{probe.uci}:{reply_attack}"
             arguments.add(reply_arg)
-            defeats.add((reply_arg, move_arg))
+            if ":undefended:" in reply_attack:
+                defeats.add((reply_arg, move_arg))
 
     frozen_arguments = frozenset(arguments)
     frozen_defeats = frozenset(defeats)
