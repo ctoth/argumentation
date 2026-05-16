@@ -43,17 +43,18 @@ black-box alpha-beta loop bolted on after the fact.
   move, and writes an appended PGN through `--pgn-out` or `--pgn`.
 - It can emit a simple AF JSON trace through `--emit-af`.
 - It can print legal move probes through `--list-legal`.
-- It currently chooses by one-ply hard tactical scoring:
-  checkmate > check > capture > promotion > no immediate warrant.
-- It uses `argumentation.dung.ArgumentationFramework` and
-  `argumentation.ranking.categoriser_scores` only for the emitted argument
-  trace ranking.
-- It does not yet speak UCI.
-- It does not yet search beyond one ply.
-- It does not yet own move generation; `python-chess` is the bootstrap
-  substrate.
+- It speaks a minimal UCI protocol.
+- It chooses through a root argument graph, with scalar scores only as
+  tie-breaks.
+- It supports bounded dialectical reply/defense expansion.
+- It supports material negamax and alpha-beta search witnesses.
+- It does not yet own legal move generation; `python-chess` is the bootstrap
+  substrate. The concrete owned-movegen control surface is
+  `workstreams/dialectical-chess-owned-movegen.md`.
 - It uses Z3 by default for mate-in-one witnesses and exposes
   `--no-smt-mate` for comparison runs.
+- It has an EPD benchmark runner. The concrete benchmark control surface is
+  `workstreams/dialectical-chess-benchmarks.md`.
 
 ## Control Rules
 
@@ -396,6 +397,8 @@ substrate.
 Status: complete for built-in smoke EPD and user-provided `bm` EPD JSON
 benchmarking.
 
+Control surface: `workstreams/dialectical-chess-benchmarks.md`.
+
 Standard benchmark families:
 
 - **Perft** for legal move generation correctness once an owned move generator
@@ -438,6 +441,8 @@ after the dialectical architecture is proven.
 
 Status: started. `scratch/dialectical_chess_owned.py` owns FEN parsing, square
 lookup, and material evaluation. Legal move generation is not yet owned.
+
+Control surface: `workstreams/dialectical-chess-owned-movegen.md`.
 
 Tasks:
 
