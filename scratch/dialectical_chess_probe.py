@@ -52,7 +52,9 @@ class MoveProbe:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--fen", default=DEFAULT_FEN)
+    parser.add_argument("--fen")
+    parser.add_argument("--pgn-in", type=Path)
+    parser.add_argument("--pgn-out", type=Path)
     parser.add_argument("--pgn", type=Path)
     parser.add_argument("--svg", type=Path)
     parser.add_argument("--emit-af", type=Path)
@@ -61,17 +63,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
-    board = chess.Board(args.fen)
+    game = load_game(args.pgn_in) if args.pgn_in else None
+    board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
     probes = probe_moves(board)
+    selected = choose_move(probes)
 
     if args.svg:
         svg = chess.svg.board(board=board, size=args.size)
         args.svg.parent.mkdir(parents=True, exist_ok=True)
         args.svg.write_text(svg, encoding="utf-8")
 
-    if args.pgn:
-        args.pgn.parent.mkdir(parents=True, exist_ok=True)
-        args.pgn.write_text(build_pgn(board, choose_move(probes)), encoding="utf-8")
+    pgn_path = args.pgn_out or args.pgn
+    if pgn_path:
+        pgn_path.parent.mkdir(parents=True, exist_ok=True)
+        pgn_path.write_text(build_pgn(board, selected, game=game), encoding="utf-8")
 
     if args.list_legal:
         for probe in probes:
@@ -83,11 +88,9 @@ def main(argv: list[str] | None = None) -> int:
         args.emit_af.write_text(json.dumps(af_payload, indent=2), encoding="utf-8")
 
     if args.choose:
-        selected = choose_move(probes)
         print(json.dumps(asdict(selected), indent=2))
 
-    if not any([args.svg, args.pgn, args.list_legal, args.emit_af, args.choose]):
-        selected = choose_move(probes)
+    if not any([args.svg, pgn_path, args.list_legal, args.emit_af, args.choose]):
         print(f"fen: {board.fen()}")
         print(f"bestmove: {selected.uci} ({selected.san})")
         print(f"reasons: {', '.join(selected.reasons)}")
@@ -159,30 +162,77 @@ def choose_move(probes: list[MoveProbe]) -> MoveProbe:
     return probes[0]
 
 
-def build_pgn(board: chess.Board, selected: MoveProbe) -> str:
-    game = chess.pgn.Game()
-    game.headers["Event"] = "Dialectical chess probe"
-    game.headers["Site"] = "C:/Users/Q/code/argumentation"
-    game.headers["Round"] = "-"
-    game.headers["White"] = "DialecticalProbe" if board.turn == chess.WHITE else "Unknown"
-    game.headers["Black"] = "Unknown" if board.turn == chess.WHITE else "DialecticalProbe"
-    if board.board_fen() != chess.STARTING_BOARD_FEN or board.fullmove_number != 1:
-        game.headers["SetUp"] = "1"
-        game.headers["FEN"] = board.fen()
+def load_game(path: Path) -> chess.pgn.Game:
+    with path.open(encoding="utf-8") as handle:
+        game = chess.pgn.read_game(handle)
+    if game is None:
+        raise SystemExit(f"no PGN game found in {path}")
+    return game
+
+
+def final_board(game: chess.pgn.Game) -> chess.Board:
+    board = game.board()
+    for move in game.mainline_moves():
+        board.push(move)
+    return board
+
+
+def build_pgn(
+    board: chess.Board,
+    selected: MoveProbe,
+    *,
+    game: chess.pgn.Game | None = None,
+) -> str:
+    output = clone_game_without_variations(game) if game else chess.pgn.Game()
+    if game is None:
+        output.headers["Event"] = "Dialectical chess probe"
+        output.headers["Site"] = "C:/Users/Q/code/argumentation"
+        output.headers["Round"] = "-"
+        output.headers["White"] = "DialecticalProbe" if board.turn == chess.WHITE else "Unknown"
+        output.headers["Black"] = "Unknown" if board.turn == chess.WHITE else "DialecticalProbe"
+        if board.board_fen() != chess.STARTING_BOARD_FEN or board.fullmove_number != 1:
+            output.headers["SetUp"] = "1"
+            output.headers["FEN"] = board.fen()
 
     move = chess.Move.from_uci(selected.uci)
     next_board = board.copy(stack=False)
     next_board.push(move)
     if next_board.is_checkmate():
-        game.headers["Result"] = "1-0" if board.turn == chess.WHITE else "0-1"
+        output.headers["Result"] = "1-0" if board.turn == chess.WHITE else "0-1"
     elif next_board.is_stalemate() or next_board.is_insufficient_material():
-        game.headers["Result"] = "1/2-1/2"
+        output.headers["Result"] = "1/2-1/2"
     else:
-        game.headers["Result"] = "*"
+        output.headers["Result"] = "*"
 
-    node = game
+    node = last_mainline_node(output)
     node.add_variation(move, comment="; ".join(selected.reasons or selected.objections))
-    return str(game) + "\n"
+    return str(output) + "\n"
+
+
+def clone_game_without_variations(game: chess.pgn.Game) -> chess.pgn.Game:
+    cloned = chess.pgn.Game()
+    cloned.headers.clear()
+    for key, value in game.headers.items():
+        cloned.headers[key] = value
+
+    source_node: chess.pgn.GameNode = game
+    target_node: chess.pgn.GameNode = cloned
+    while source_node.variations:
+        source_node = source_node.variations[0]
+        target_node = target_node.add_variation(
+            source_node.move,
+            comment=source_node.comment,
+            nags=source_node.nags,
+            starting_comment=source_node.starting_comment,
+        )
+    return cloned
+
+
+def last_mainline_node(game: chess.pgn.Game) -> chess.pgn.GameNode:
+    node: chess.pgn.GameNode = game
+    while node.variations:
+        node = node.variations[0]
+    return node
 
 
 def build_argument_payload(probes: list[MoveProbe]) -> dict[str, Any]:
