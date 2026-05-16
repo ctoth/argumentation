@@ -2,7 +2,6 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "chess>=1.11.0",
-#   "pillow>=10.0",
 # ]
 # ///
 """Sidecar probe for dialectical chess experiments.
@@ -22,8 +21,8 @@ from pathlib import Path
 from typing import Any
 
 import chess
+import chess.pgn
 import chess.svg
-from PIL import Image, ImageDraw, ImageFont
 
 
 DEFAULT_FEN = "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1"
@@ -54,7 +53,7 @@ class MoveProbe:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fen", default=DEFAULT_FEN)
-    parser.add_argument("--png", type=Path)
+    parser.add_argument("--pgn", type=Path)
     parser.add_argument("--svg", type=Path)
     parser.add_argument("--emit-af", type=Path)
     parser.add_argument("--list-legal", action="store_true")
@@ -65,14 +64,14 @@ def main(argv: list[str] | None = None) -> int:
     board = chess.Board(args.fen)
     probes = probe_moves(board)
 
-    if args.svg or args.png:
-        if args.svg:
-            svg = chess.svg.board(board=board, size=args.size)
-            args.svg.parent.mkdir(parents=True, exist_ok=True)
-            args.svg.write_text(svg, encoding="utf-8")
-        if args.png:
-            args.png.parent.mkdir(parents=True, exist_ok=True)
-            render_png(board, args.png, size=args.size)
+    if args.svg:
+        svg = chess.svg.board(board=board, size=args.size)
+        args.svg.parent.mkdir(parents=True, exist_ok=True)
+        args.svg.write_text(svg, encoding="utf-8")
+
+    if args.pgn:
+        args.pgn.parent.mkdir(parents=True, exist_ok=True)
+        args.pgn.write_text(build_pgn(board, choose_move(probes)), encoding="utf-8")
 
     if args.list_legal:
         for probe in probes:
@@ -87,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
         selected = choose_move(probes)
         print(json.dumps(asdict(selected), indent=2))
 
-    if not any([args.svg, args.png, args.list_legal, args.emit_af, args.choose]):
+    if not any([args.svg, args.pgn, args.list_legal, args.emit_af, args.choose]):
         selected = choose_move(probes)
         print(f"fen: {board.fen()}")
         print(f"bestmove: {selected.uci} ({selected.san})")
@@ -154,49 +153,36 @@ def capture_value(board: chess.Board, move: chess.Move) -> int:
     return PIECE_VALUE[captured.piece_type]
 
 
-def render_png(board: chess.Board, path: Path, *, size: int) -> None:
-    square = max(size // 8, 24)
-    image_size = square * 8
-    light = (238, 238, 210)
-    dark = (118, 150, 86)
-    image = Image.new("RGB", (image_size, image_size), light)
-    draw = ImageDraw.Draw(image)
-    font = ImageFont.load_default(size=max(12, square // 2))
-
-    for rank in range(8):
-        for file_index in range(8):
-            x0 = file_index * square
-            y0 = rank * square
-            color = light if (rank + file_index) % 2 == 0 else dark
-            draw.rectangle((x0, y0, x0 + square, y0 + square), fill=color)
-
-            board_rank = 7 - rank
-            board_file = file_index
-            piece = board.piece_at(chess.square(board_file, board_rank))
-            if piece is None:
-                continue
-            text = piece.symbol()
-            text_color = (245, 245, 245) if piece.color == chess.WHITE else (20, 20, 20)
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-            text_height = bbox[3] - bbox[1]
-            draw.text(
-                (
-                    x0 + (square - text_width) / 2,
-                    y0 + (square - text_height) / 2,
-                ),
-                text,
-                fill=text_color,
-                font=font,
-            )
-
-    image.save(path)
-
-
 def choose_move(probes: list[MoveProbe]) -> MoveProbe:
     if not probes:
         raise SystemExit("position has no legal moves")
     return probes[0]
+
+
+def build_pgn(board: chess.Board, selected: MoveProbe) -> str:
+    game = chess.pgn.Game()
+    game.headers["Event"] = "Dialectical chess probe"
+    game.headers["Site"] = "C:/Users/Q/code/argumentation"
+    game.headers["Round"] = "-"
+    game.headers["White"] = "DialecticalProbe" if board.turn == chess.WHITE else "Unknown"
+    game.headers["Black"] = "Unknown" if board.turn == chess.WHITE else "DialecticalProbe"
+    if board.board_fen() != chess.STARTING_BOARD_FEN or board.fullmove_number != 1:
+        game.headers["SetUp"] = "1"
+        game.headers["FEN"] = board.fen()
+
+    move = chess.Move.from_uci(selected.uci)
+    next_board = board.copy(stack=False)
+    next_board.push(move)
+    if next_board.is_checkmate():
+        game.headers["Result"] = "1-0" if board.turn == chess.WHITE else "0-1"
+    elif next_board.is_stalemate() or next_board.is_insufficient_material():
+        game.headers["Result"] = "1/2-1/2"
+    else:
+        game.headers["Result"] = "*"
+
+    node = game
+    node.add_variation(move, comment="; ".join(selected.reasons or selected.objections))
+    return str(game) + "\n"
 
 
 def build_argument_payload(probes: list[MoveProbe]) -> dict[str, Any]:
