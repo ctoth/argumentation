@@ -445,8 +445,11 @@ def build_root_argument_graph(probes: list[MoveProbe]) -> RootArgumentGraph:
         for reply_attack in probe.reply_attacks:
             reply_arg = f"reply_attack:{probe.uci}:{reply_attack}"
             arguments.add(reply_arg)
-            if ":undefended:" in reply_attack:
-                defeats.add((reply_arg, move_arg))
+            defeats.add((reply_arg, move_arg))
+            if ":defended:" in reply_attack:
+                defense_arg = f"defense:{probe.uci}:{reply_attack}"
+                arguments.add(defense_arg)
+                defeats.add((defense_arg, reply_arg))
 
     frozen_arguments = frozenset(arguments)
     frozen_defeats = frozenset(defeats)
