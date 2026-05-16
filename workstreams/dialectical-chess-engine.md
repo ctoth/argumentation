@@ -436,6 +436,9 @@ Tests:
 Goal: begin replacing `python-chess` as the engine's core state layer only
 after the dialectical architecture is proven.
 
+Status: started. `scratch/dialectical_chess_owned.py` owns FEN parsing, square
+lookup, and material evaluation. Legal move generation is not yet owned.
+
 Tasks:
 
 - Add an owned FEN parser.
