@@ -296,6 +296,7 @@ def run_backend_matrix(
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
+        emit_event("aba_shape_backend_start", instance=job.instance, subtrack=job.subtrack, backend=backend)
         started = time.perf_counter()
         command = build_backend_command(job, backend=backend, timeout_seconds=timeout_seconds)
         result = run_backend_command(
@@ -308,6 +309,14 @@ def run_backend_matrix(
         materialized["elapsed_seconds"] = elapsed
         materialized["validation"] = validate_result(framework, job.subtrack, materialized)
         results[backend] = materialized
+        emit_event(
+            "aba_shape_backend_done",
+            instance=job.instance,
+            subtrack=job.subtrack,
+            backend=backend,
+            status=materialized.get("status"),
+            reason=materialized.get("reason"),
+        )
     return results
 
 
@@ -441,8 +450,18 @@ def benchmark_rows(
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, job in enumerate(jobs, start=1):
+        emit_event("aba_shape_parse_start", index=index, total=len(jobs), instance=job.instance, subtrack=job.subtrack)
         framework = parse_aba(job.path.read_text(encoding="utf-8"))
+        emit_event("aba_shape_compute_start", index=index, total=len(jobs), instance=job.instance, subtrack=job.subtrack)
         shape = compute_aba_shape(framework)
+        emit_event(
+            "aba_shape_compute_done",
+            index=index,
+            total=len(jobs),
+            instance=job.instance,
+            subtrack=job.subtrack,
+            grounded_shape_status=shape.grounded_shape_status,
+        )
         class_name = solver_class(job.instance_kind, job.subtrack)
         backend_results = run_backend_matrix(
             job,
@@ -466,23 +485,20 @@ def benchmark_rows(
             "all_timed_out": all(result.get("status") == "timeout" for result in backend_results.values()),
         }
         rows.append(row)
-        print(
-            json.dumps(
-                {
-                    "event": "aba_shape_row",
-                    "index": index,
-                    "total": len(jobs),
-                    "instance": job.instance,
-                    "subtrack": job.subtrack,
-                    "best_solved_backend": best,
-                    "all_timed_out": row["all_timed_out"],
-                },
-                sort_keys=True,
-            ),
-            file=sys.stderr,
-            flush=True,
+        emit_event(
+            "aba_shape_row",
+            index=index,
+            total=len(jobs),
+            instance=job.instance,
+            subtrack=job.subtrack,
+            best_solved_backend=best,
+            all_timed_out=row["all_timed_out"],
         )
     return rows
+
+
+def emit_event(event: str, **fields: Any) -> None:
+    print(json.dumps({"event": event, **fields}, sort_keys=True), file=sys.stderr, flush=True)
 
 
 def summarize(rows: list[dict[str, Any]], *, backends: tuple[str, ...]) -> dict[str, Any]:
