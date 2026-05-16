@@ -2,7 +2,7 @@
 
 ## Summary
 
-The viable path is not to make formal argumentation replace chess move generation or game-tree search. It is to add a chess domain layer and use `argumentation` as an explainable, defeasible move-evaluation and move-ordering layer over legal moves and searched continuations. I did not find a mature prior-art line for "argumentation-based chess engines" as full engines. The closest prior art is: defeasible reasoning as an anytime interpretation of chess search, practical-reasoning argumentation for action choice, dynamic argumentation for changing situations, game-theoretic argument strength, value-based/prioritized argumentation, and mainstream chess-engine architecture. The strongest first build is therefore a small UCI-capable Python engine that uses a conventional legal move generator plus shallow negamax/alpha-beta, then maps each candidate move to arguments such as material gain, king safety, tactical liability, development, passed-pawn pressure, and opponent refutations.
+The viable path is not to make formal argumentation replace chess move generation or game-tree search. It is to add a chess domain layer and use `argumentation` as an explainable, defeasible move-evaluation and move-ordering layer over legal moves and searched continuations. I did not find a mature prior-art line for "argumentation-based chess engines" as full engines. The closest prior art is: defeasible reasoning as an anytime interpretation of chess search, practical-reasoning argumentation for action choice, dynamic argumentation for changing situations, game-theoretic argument strength, value-based/prioritized argumentation, and mainstream chess-engine architecture. The strongest first build is therefore a small UCI-capable Python engine that uses a conventional legal move generator plus shallow negamax/alpha-beta, then maps each candidate move to arguments such as material gain, king safety, tactical liability, development, passed-pawn pressure, and opponent refutations. External design critique via Claude CLI agreed with the main constraint: argumentation should own root-level selection, explanation, and style, while a chess substrate owns legality, UCI, search plumbing, and optionally tactical ground truth.
 
 ## Approaches Found
 
@@ -66,6 +66,18 @@ The viable path is not to make formal argumentation replace chess move generatio
 
 **Complexity:** Medium for a toy engine, High for competitive strength.
 
+### Argumentation as Glass-Box Annotation
+
+**Source:** local `src/argumentation/gradual.py`, `src/argumentation/llm_surface.py`, `src/argumentation/enforcement.py`; external critique via Claude CLI.
+
+**Description:** Run a conventional engine or shallow search first, then build a contestable argument graph around the candidate moves and principal variations. Use gradual strengths and Shapley-style impacts for feature attribution, labellings for accepted/defeated reasons, and `llm_surface` only as a prose layer over already-structured arguments.
+
+**Pros:** Strongest differentiator versus normal engines: not just `bestmove`, but why a move is IN, why alternatives are OUT, what assumptions would make an alternative acceptable, and how the answer changes under style/value profiles.
+
+**Cons:** The hard problem becomes motif extraction: pins, forks, overloads, discovered attacks, mating nets, pawn breaks, weak squares, and strategic plans must be detected reliably before argumentation can reason over them.
+
+**Complexity:** Medium for annotations over simple motifs; High for rich human-quality analysis.
+
 ## Key Papers
 
 - [Atkinson & Bench-Capon (2007)](https://philpapers.org/rec/ATKPRA) - practical reasoning as presumptive argumentation over Action-Based Alternating Transition Systems; locally represented by `practical_reasoning.py`.
@@ -87,7 +99,7 @@ The viable path is not to make formal argumentation replace chess move generatio
 
 ## Complexity vs Quality Tradeoffs
 
-The minimum playable route is to depend on an existing legal move generator and implement a simple negamax search with material/piece-square evaluation. Argumentation can then rank root moves and explain them. This would be weak but demonstrably "an argumentation chess engine".
+The minimum playable route is to depend on an existing legal move generator and implement a simple negamax search with material/piece-square evaluation. Argumentation can then rank root moves and explain them. This would be weak but demonstrably "an argumentation chess engine". The practical substrate should probably be `python-chess` first; writing a bitboard move generator is a separate chess-engine project and would delay the argumentation experiment.
 
 The best research route is an analysis engine: use conventional search to generate candidate principal variations, then synthesize an AF/ASPIC graph where arguments support or attack move claims. This could produce explanations that ordinary engines do not expose: accepted reasons, defeated tempting moves, and style-dependent move choices.
 
@@ -114,6 +126,8 @@ Add argumentation at the root first:
 - Use VAF/preferences for style: safety, material, initiative, development, endgame conversion.
 - Use ranking/weighted semantics to score accepted reasons and order moves.
 - Use search result as a high-priority argument: if depth search finds a refutation, it attacks shallow heuristic support.
+- Use gradual/Shapley attribution for explanation, not as the sole tactical oracle.
+- Use enforcement/counterfactual queries for analysis: "what would need to change for this tempting move to become acceptable?"
 
 Benchmark with three switches:
 
@@ -122,6 +136,8 @@ Benchmark with three switches:
 - Argumentation for root move ordering before alpha-beta.
 
 Success should be measured by legal correctness first (`perft`), then time-to-depth, node count, tactical test accuracy, and explanation quality. Playing Elo comes later.
+
+Hard tactical facts should dominate soft argument strengths. A mate-in-1 or forced material win should produce a degenerate top tier; if gradual semantics ranks a quiet heuristic move near a forcing move, the selector needs a hard tactical pre-filter or search-backed undercutter.
 
 ## Estimated Implementation Effort
 
@@ -138,10 +154,13 @@ Success should be measured by legal correctness first (`perft`), then time-to-de
 - [ ] Which style/value profiles matter first: materialist, king-safety, tactical, positional, human-like?
 - [ ] Should search refutations become ASPIC undercutters, Dung attacks, or weighted attacks?
 - [ ] Can local dynamic-AF update code incrementally update a root argument graph across iterative-deepening depths?
+- [ ] How hard is the first motif extractor spike, e.g. forks only, across a diverse tactical position set?
+- [ ] Does argument-based move ordering actually reduce searched nodes enough to pay for graph construction?
+- [ ] Should Stockfish be used only for evaluation/testing, or as a leaf oracle in the first explainable prototype?
 
 ## References
 
-- Local repo: `README.md`, `docs/architecture.md`, `src/argumentation/dung.py`, `src/argumentation/practical_reasoning.py`, `src/argumentation/ranking.py`, `src/argumentation/weighted.py`, `src/argumentation/vaf.py`, `src/argumentation/matt_toni.py`, `src/argumentation/dynamic.py`.
+- Local repo: `README.md`, `docs/architecture.md`, `src/argumentation/dung.py`, `src/argumentation/practical_reasoning.py`, `src/argumentation/ranking.py`, `src/argumentation/weighted.py`, `src/argumentation/vaf.py`, `src/argumentation/matt_toni.py`, `src/argumentation/dynamic.py`, `src/argumentation/gradual.py`, `src/argumentation/enforcement.py`, `src/argumentation/llm_surface.py`.
 - Local papers: `papers/Atkinson_2007_PracticalReasoningPresumptiveArgumentation/notes.md`, `papers/Matt_2008_Game-TheoreticMeasureArgumentStrength/notes.md`, `papers/Modgil_2018_GeneralAccountArgumentationPreferences/notes.md`, `papers/Lehtonen_2024_PreferentialASPIC/notes.md`, `papers/Bench-Capon_2003_PersuasionPracticalArgumentValue-based/notes.md`.
 - Atkinson & Bench-Capon (2007), practical reasoning as presumptive argumentation: https://philpapers.org/rec/ATKPRA
 - Ferretti et al. (2016), dynamic argumentation systems for decision making: https://www.sciencedirect.com/science/article/pii/S0004370216301175
@@ -156,4 +175,4 @@ Success should be measured by legal correctness first (`perft`), then time-to-de
 - Leela Chess Zero overview: https://lczero.org/dev/overview/
 - Silver et al. (2018), AlphaZero: https://discovery.ucl.ac.uk/id/eprint/10069050/
 - IBM Research Deep Blue paper page: https://research.ibm.com/publications/deep-blue
-
+- Claude CLI architectural critique, run locally with repo inspection on 2026-05-16. Its claims were used as critique leads and integrated only where consistent with local/web-verified repo facts.
