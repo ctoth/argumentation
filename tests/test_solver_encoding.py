@@ -25,6 +25,8 @@ from argumentation.af_sat import (
     PreferredSuperCoreSolver,
     RangeMaximalTaskSolver,
     SATCheck,
+    StableUnsatExplanation,
+    explain_stable_unsat,
     find_complete_extension,
     find_ideal_extension,
     find_preferred_extension,
@@ -113,6 +115,58 @@ def test_kernel_preferred_extension_handles_required_labels() -> None:
     assert find_preferred_extension(framework, require_in="b") == frozenset({"b"})
     assert find_preferred_extension(framework, require_in="c") is None
     assert find_preferred_extension(framework, require_out="a") == frozenset({"b"})
+
+
+def test_stable_unsat_explanation_odd_cycle_names_coverage_core() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
+
+    explanation = explain_stable_unsat(framework, simplify=False)
+
+    assert isinstance(explanation, StableUnsatExplanation)
+    assert explanation.status == "unsat"
+    assert explanation.stable_exists is False
+    assert explanation.solver_result == "unsat"
+    assert set(explanation.coverage_argument_ids) == {"a", "b", "c"}
+    assert set(explanation.core_argument_ids) == {"a", "b", "c"}
+    assert explanation.clause_group_count == 6
+    assert explanation.to_dict()["stable_exists"] is False
+
+
+def test_stable_unsat_explanation_self_loop_names_conflict_and_coverage() -> None:
+    framework = af({"s"}, {("s", "s")})
+
+    explanation = explain_stable_unsat(framework, simplify=False)
+
+    assert explanation.status == "unsat"
+    assert explanation.stable_exists is False
+    assert explanation.core_attack_ids == (("s", "s"),)
+    assert explanation.coverage_argument_ids == ("s",)
+    assert explanation.core_argument_ids == ("s",)
+
+
+def test_stable_unsat_explanation_sat_case_has_no_fake_core() -> None:
+    framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
+
+    explanation = explain_stable_unsat(framework, simplify=False)
+
+    assert explanation.status == "sat"
+    assert explanation.stable_exists is True
+    assert explanation.core_argument_ids == tuple()
+    assert explanation.core_attack_ids == tuple()
+    assert explanation.coverage_argument_ids == tuple()
+    assert explanation.model_extension_size == 1
+
+
+def test_stable_unsat_explanation_context_dependent_shape_can_be_unblocked() -> None:
+    blocked = af({"x", "y", "z"}, {("x", "y"), ("y", "z"), ("z", "x")})
+    unblocked = af({"x", "y", "z"}, {("y", "z"), ("z", "x")})
+
+    blocked_explanation = explain_stable_unsat(blocked, simplify=False)
+    unblocked_explanation = explain_stable_unsat(unblocked, simplify=False)
+
+    assert blocked_explanation.status == "unsat"
+    assert unblocked_explanation.status == "sat"
+    assert unblocked_explanation.core_argument_ids == tuple()
 
 
 def test_kernel_direct_skeptical_preferred_handles_basic_counterexample() -> None:
