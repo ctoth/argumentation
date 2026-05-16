@@ -296,9 +296,15 @@ def run_backend_matrix(
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
-        emit_event("aba_shape_backend_start", instance=job.instance, subtrack=job.subtrack, backend=backend)
-        started = time.perf_counter()
         command = build_backend_command(job, backend=backend, timeout_seconds=timeout_seconds)
+        emit_event(
+            "aba_shape_backend_start",
+            instance=job.instance,
+            subtrack=job.subtrack,
+            backend=backend,
+            command=command,
+        )
+        started = time.perf_counter()
         result = run_backend_command(
             command,
             timeout_seconds=timeout_seconds + 5.0,
@@ -327,7 +333,8 @@ def build_backend_command(
     timeout_seconds: float,
 ) -> list[str]:
     command = [
-        sys.executable,
+        "uv",
+        "run",
         "tools/iccma_run_selected.py",
         "--root",
         str(job.root),

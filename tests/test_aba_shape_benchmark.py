@@ -275,7 +275,7 @@ def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) ->
 
     command = build_backend_command(job, backend="asp", timeout_seconds=7.5)
 
-    assert command[1] == "tools/iccma_run_selected.py"
+    assert command[:3] == ["uv", "run", "tools/iccma_run_selected.py"]
     assert command[command.index("--backend") + 1] == "asp"
     assert command[command.index("--subtrack") + 1] == "SE-PR"
     assert command[command.index("--timeout-seconds") + 1] == "7.5"
