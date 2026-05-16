@@ -299,6 +299,9 @@ Tests:
 Goal: extend the same bounded dialectical expansion to complete the first true
 dialectical loop: claim, attack, defense.
 
+Status: complete for recapture and immediate-mate defense witnesses under the
+generic bounded-expansion path.
+
 Tasks:
 
 - For each `ReplyAttack`, enumerate our continuations.
