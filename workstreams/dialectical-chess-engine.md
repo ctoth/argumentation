@@ -364,6 +364,9 @@ Tests:
 
 Goal: introduce Z3 as a bounded tactic and counterexample engine.
 
+Status: complete for default-on Z3 mate-in-one witnesses checked against
+`python-chess` before becoming support arguments.
+
 Tasks:
 
 - Add a second PEP 723 script or optional path with `z3-solver`.
