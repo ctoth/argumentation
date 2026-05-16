@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=("negamax", "alphabeta"),
         default="negamax",
     )
-    parser.add_argument("--smt-mate", action="store_true")
+    parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -221,7 +221,7 @@ def probe_moves(
     dialectic_depth: int = 1,
     search_depth: int = 0,
     search_backend: str = "negamax",
-    smt_mate: bool = False,
+    smt_mate: bool = True,
 ) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
