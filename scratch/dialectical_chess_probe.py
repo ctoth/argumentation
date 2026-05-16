@@ -48,6 +48,7 @@ class MoveProbe:
     promotion_value: int
     reasons: tuple[str, ...]
     objections: tuple[str, ...]
+    reply_attacks: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -219,6 +220,7 @@ def probe_moves(board: chess.Board) -> list[MoveProbe]:
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
+        reply_attacks = depth_two_reply_attacks(board, move)
         if not reasons:
             objections.append("objection:no_immediate_tactical_warrant")
 
@@ -234,6 +236,7 @@ def probe_moves(board: chess.Board) -> list[MoveProbe]:
                 promotion_value=promotion_value,
                 reasons=tuple(reasons),
                 objections=tuple(objections),
+                reply_attacks=reply_attacks,
             )
         )
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
@@ -246,6 +249,27 @@ def capture_value(board: chess.Board, move: chess.Move) -> int:
     if captured is None:
         return 0
     return PIECE_VALUE[captured.piece_type]
+
+
+def depth_two_reply_attacks(board: chess.Board, move: chess.Move) -> tuple[str, ...]:
+    moved_piece = board.piece_at(move.from_square)
+    moved_piece_value = PIECE_VALUE.get(moved_piece.piece_type, 0) if moved_piece else 0
+    moved_to = move.to_square
+    attacks: list[str] = []
+
+    board.push(move)
+    if not board.is_game_over(claim_draw=False):
+        for reply in board.legal_moves:
+            reply_text = reply.uci()
+            reply_captures_moved_piece = board.is_capture(reply) and reply.to_square == moved_to
+            board.push(reply)
+            if board.is_checkmate():
+                attacks.append(f"reply_mate:{reply_text}")
+            board.pop()
+            if reply_captures_moved_piece and moved_piece_value > 0:
+                attacks.append(f"reply_captures_moved_piece:{reply_text}:{moved_piece_value}")
+    board.pop()
+    return tuple(sorted(set(attacks)))
 
 
 def choose_move(
@@ -356,6 +380,10 @@ def build_root_argument_graph(probes: list[MoveProbe]) -> RootArgumentGraph:
             objection_arg = f"{objection}:{probe.uci}"
             arguments.add(objection_arg)
             defeats.add((objection_arg, move_arg))
+        for reply_attack in probe.reply_attacks:
+            reply_arg = f"reply_attack:{probe.uci}:{reply_attack}"
+            arguments.add(reply_arg)
+            defeats.add((reply_arg, move_arg))
 
     frozen_arguments = frozenset(arguments)
     frozen_defeats = frozenset(defeats)
