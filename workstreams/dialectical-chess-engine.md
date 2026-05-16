@@ -235,6 +235,8 @@ Tests:
 Goal: make move selection genuinely argumentation-owned rather than only
 score-sorted.
 
+Status: complete.
+
 Tasks:
 
 - Introduce internal dataclasses for move claims, support arguments, objections,
