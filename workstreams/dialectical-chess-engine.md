@@ -393,6 +393,9 @@ Tests:
 Goal: measure what the engine actually does before optimizing or replacing the
 substrate.
 
+Status: complete for built-in smoke EPD and user-provided `bm` EPD JSON
+benchmarking.
+
 Standard benchmark families:
 
 - **Perft** for legal move generation correctness once an owned move generator
