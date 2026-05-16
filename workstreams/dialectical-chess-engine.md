@@ -165,7 +165,7 @@ counterexample-guided calls:
 
 ### Phase 0: Sidecar Probe Baseline
 
-Status: partially complete.
+Status: complete.
 
 Tasks:
 
@@ -198,6 +198,8 @@ uv run .\scratch\dialectical_chess_probe.py `
 ### Phase 1: UCI Shell
 
 Goal: make the probe a real chess-engine process.
+
+Status: complete.
 
 Tasks:
 
@@ -480,4 +482,3 @@ git diff --check
 - Claiming SMT contributed when it only duplicates a Python legality check.
 - Committing generated PGNs or AF traces as progress when the task did not ask
   to promote diagnostics.
-
