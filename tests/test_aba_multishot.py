@@ -23,6 +23,7 @@ import random
 import pytest
 
 from argumentation import aba as native_aba
+from argumentation import aba_asp
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aba_asp import solve_aba_with_backend
@@ -307,6 +308,27 @@ def test_stable_single_extension_avoids_full_multishot_enumeration(monkeypatch) 
 
     assert result.status == "success"
     assert result.extensions
+
+
+def test_multishot_asp_does_not_materialize_support_facts(monkeypatch) -> None:
+    framework = ALL[0]
+
+    def forbidden_minimal_supports(*args, **kwargs):
+        raise AssertionError("multishot ASP should use lean ABA facts")
+
+    monkeypatch.setattr(aba_asp, "_minimal_supports", forbidden_minimal_supports)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="single-extension",
+        simplify=False,
+    )
+
+    assert result.status == "success"
+    assert result.extensions
+    assert result.metadata["encoding"] == "flat_aba_core_facts"
 
 
 # ---------------------------------------------------------------------------

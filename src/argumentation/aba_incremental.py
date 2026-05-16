@@ -32,7 +32,7 @@ from importlib import resources
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba_asp import encode_aba_theory
+from argumentation.aba_asp import ABAEncoding, encode_aba_theory
 from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
 from argumentation.aspic import Literal
 
@@ -74,11 +74,12 @@ class AbaIncrementalSolver:
     builds a fresh ``Control`` (the L21-TPLP scheme).
     """
 
-    def __init__(self, framework: ABAFramework) -> None:
+    def __init__(self, framework: ABAFramework, *, encoding: ABAEncoding | None = None) -> None:
         if not isinstance(framework, ABAFramework):  # defensive; callers gate this
             raise TypeError("AbaIncrementalSolver only handles flat ABAFramework")
         self.framework = framework
-        encoding = encode_aba_theory(framework)
+        if encoding is None:
+            encoding = encode_aba_theory(framework, include_supports=False)
         # ABA(F) facts: encode_aba_theory emits a superset of assumption/1,
         # head/2, body/2, contrary/2 (also rule/1, body_count/2, support_*/2 --
         # the com module simply ignores those).
