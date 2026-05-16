@@ -35,6 +35,7 @@ ASSUMPTION_SIZE_THRESHOLDS = {"small_max": 50, "medium_max": 150}
 RULE_DENSITY_THRESHOLDS = {"sparse_max": 5.0, "medium_max": 25.0}
 MAX_ARITY_THRESHOLDS = {"low_max": 2, "medium_max": 5}
 GROUNDED_SHAPE_COST_LIMIT = 1000
+VALIDATION_COST_LIMIT = 1000
 
 
 @dataclass(frozen=True)
@@ -397,6 +398,13 @@ def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, An
     witness_text = result.get("witness")
     if witness_text is None:
         return {"status": "not_checked", "reason": "no witness"}
+    validation_cost = len(framework.assumptions) * max(1, len(framework.rules))
+    if validation_cost > VALIDATION_COST_LIMIT:
+        return {
+            "status": "not_checked",
+            "reason": f"validation_cost>{VALIDATION_COST_LIMIT}",
+            "check": "skipped_cost",
+        }
     witness = _parse_witness(framework, str(witness_text))
     semantics = solver_class("aba", subtrack).split("/")[-1]
     if semantics == "stable":

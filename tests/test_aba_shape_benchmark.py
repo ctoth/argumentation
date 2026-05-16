@@ -21,6 +21,7 @@ from tools.aba_shape_benchmark import (
     shape_buckets,
     solver_class,
     summarize,
+    validate_result,
 )
 
 
@@ -129,6 +130,27 @@ def test_compute_aba_shape_skips_expensive_grounded_reduct() -> None:
     assert shape.grounded_shape_status == "skipped_cost"
     assert shape.residual_assumptions == shape.assumptions
     assert shape.residual_rules == shape.rules
+
+
+def test_validate_result_skips_expensive_python_validation() -> None:
+    assumptions = frozenset(lit(f"a{index}") for index in range(40))
+    contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
+    language = assumptions | frozenset(contraries.values()) | frozenset({lit("x")})
+    rules = frozenset(Rule((assumption,), lit("x"), "strict") for assumption in assumptions)
+    framework = ABAFramework(
+        language=language,
+        rules=rules,
+        assumptions=assumptions,
+        contrary=contraries,
+    )
+
+    result = validate_result(framework, "SE-PR", {"status": "solved", "witness": "a0"})
+
+    assert result == {
+        "status": "not_checked",
+        "reason": "validation_cost>1000",
+        "check": "skipped_cost",
+    }
 
 
 def test_solver_class_maps_subtracks_to_general_class() -> None:
