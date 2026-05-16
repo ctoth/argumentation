@@ -50,6 +50,15 @@ class MoveProbe:
     objections: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class RootArgumentGraph:
+    arguments: frozenset[str]
+    defeats: frozenset[tuple[str, str]]
+    move_arguments: dict[str, str]
+    grounded_extension: frozenset[str]
+    ranking: dict[str, Any]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fen")
@@ -70,7 +79,8 @@ def main(argv: list[str] | None = None) -> int:
     game = load_game(args.pgn_in) if args.pgn_in else None
     board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
     probes = probe_moves(board)
-    selected = choose_move(probes)
+    graph = build_root_argument_graph(probes)
+    selected = choose_move(probes, graph)
 
     if args.svg:
         svg = chess.svg.board(board=board, size=args.size)
@@ -87,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{probe.uci:5} {probe.san:8} score={probe.score:6} {', '.join(probe.reasons)}")
 
     if args.emit_af:
-        af_payload = build_argument_payload(probes)
+        af_payload = build_argument_payload(probes, graph)
         args.emit_af.parent.mkdir(parents=True, exist_ok=True)
         args.emit_af.write_text(json.dumps(af_payload, indent=2), encoding="utf-8")
 
@@ -177,7 +187,7 @@ def choose_uci_move(board: chess.Board) -> str:
     probes = probe_moves(board)
     if not probes:
         return "0000"
-    return choose_move(probes).uci
+    return choose_move(probes, build_root_argument_graph(probes)).uci
 
 
 def probe_moves(board: chess.Board) -> list[MoveProbe]:
@@ -238,10 +248,20 @@ def capture_value(board: chess.Board, move: chess.Move) -> int:
     return PIECE_VALUE[captured.piece_type]
 
 
-def choose_move(probes: list[MoveProbe]) -> MoveProbe:
+def choose_move(
+    probes: list[MoveProbe],
+    graph: RootArgumentGraph | None = None,
+) -> MoveProbe:
     if not probes:
         raise SystemExit("position has no legal moves")
-    return probes[0]
+    graph = graph or build_root_argument_graph(probes)
+    accepted = [
+        probe
+        for probe in probes
+        if graph.move_arguments[probe.uci] in graph.grounded_extension
+    ]
+    candidates = accepted if accepted else probes
+    return sorted(candidates, key=lambda probe: (-probe.score, probe.uci))[0]
 
 
 def load_game(path: Path) -> chess.pgn.Game:
@@ -317,7 +337,7 @@ def last_mainline_node(game: chess.pgn.Game) -> chess.pgn.GameNode:
     return node
 
 
-def build_argument_payload(probes: list[MoveProbe]) -> dict[str, Any]:
+def build_root_argument_graph(probes: list[MoveProbe]) -> RootArgumentGraph:
     arguments: set[str] = set()
     defeats: set[tuple[str, str]] = set()
     move_args = {probe.uci: f"move:{probe.uci}" for probe in probes}
@@ -337,32 +357,45 @@ def build_argument_payload(probes: list[MoveProbe]) -> dict[str, Any]:
             arguments.add(objection_arg)
             defeats.add((objection_arg, move_arg))
 
-    ranking = local_argumentation_ranking(arguments, defeats)
+    frozen_arguments = frozenset(arguments)
+    frozen_defeats = frozenset(defeats)
+    grounded_extension = local_grounded_extension(frozen_arguments, frozen_defeats)
+    ranking = local_argumentation_ranking(frozen_arguments, frozen_defeats)
+    return RootArgumentGraph(
+        arguments=frozen_arguments,
+        defeats=frozen_defeats,
+        move_arguments=move_args,
+        grounded_extension=grounded_extension,
+        ranking=ranking,
+    )
+
+
+def build_argument_payload(
+    probes: list[MoveProbe],
+    graph: RootArgumentGraph | None = None,
+) -> dict[str, Any]:
+    graph = graph or build_root_argument_graph(probes)
     return {
-        "arguments": sorted(arguments),
-        "defeats": sorted([list(pair) for pair in defeats]),
+        "arguments": sorted(graph.arguments),
+        "defeats": sorted([list(pair) for pair in graph.defeats]),
         "move_scores": [asdict(probe) for probe in probes],
-        "argumentation_ranking": ranking,
+        "move_arguments": dict(sorted(graph.move_arguments.items())),
+        "grounded_extension": sorted(graph.grounded_extension),
+        "argumentation_ranking": graph.ranking,
     }
 
 
 def local_argumentation_ranking(
-    arguments: set[str],
-    defeats: set[tuple[str, str]],
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
 ) -> dict[str, Any]:
-    root = Path(__file__).resolve().parents[1]
-    src = root / "src"
-    if str(src) not in sys.path:
-        sys.path.insert(0, str(src))
-    try:
-        from argumentation.dung import ArgumentationFramework
-        from argumentation.ranking import categoriser_scores
-    except ImportError as exc:
-        return {"available": False, "reason": str(exc)}
-
+    imported = import_local_argumentation()
+    if isinstance(imported, str):
+        return {"available": False, "reason": imported}
+    ArgumentationFramework, _grounded_extension, categoriser_scores = imported
     framework = ArgumentationFramework(
-        arguments=frozenset(arguments),
-        defeats=frozenset(defeats),
+        arguments=arguments,
+        defeats=defeats,
     )
     result = categoriser_scores(framework)
     return {
@@ -371,6 +404,34 @@ def local_argumentation_ranking(
         "ranking": [sorted(tier) for tier in result.ranking],
         "semantics": result.semantics,
     }
+
+
+def local_grounded_extension(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    imported = import_local_argumentation()
+    if isinstance(imported, str):
+        return frozenset()
+    ArgumentationFramework, grounded_extension, _categoriser_scores = imported
+    framework = ArgumentationFramework(
+        arguments=arguments,
+        defeats=defeats,
+    )
+    return grounded_extension(framework)
+
+
+def import_local_argumentation() -> tuple[Any, Any, Any] | str:
+    root = Path(__file__).resolve().parents[1]
+    src = root / "src"
+    if str(src) not in sys.path:
+        sys.path.insert(0, str(src))
+    try:
+        from argumentation.dung import ArgumentationFramework, grounded_extension
+        from argumentation.ranking import categoriser_scores
+    except ImportError as exc:
+        return str(exc)
+    return ArgumentationFramework, grounded_extension, categoriser_scores
 
 
 if __name__ == "__main__":
