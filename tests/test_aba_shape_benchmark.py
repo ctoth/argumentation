@@ -11,6 +11,7 @@ from tools import aba_shape_benchmark
 from tools.aba_shape_benchmark import (
     AbaShape,
     BenchmarkJob,
+    backend_job,
     best_solved_backend,
     build_backend_command,
     build_jobs_from_instances,
@@ -275,11 +276,12 @@ def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) ->
 
     command = build_backend_command(job, backend="asp", timeout_seconds=7.5)
 
-    assert command[:3] == ["uv", "run", "tools/iccma_run_selected.py"]
-    assert command[command.index("--backend") + 1] == "asp"
-    assert command[command.index("--subtrack") + 1] == "SE-PR"
-    assert command[command.index("--timeout-seconds") + 1] == "7.5"
-    assert command[command.index("--arguments-or-atoms") + 1] == "10"
+    assert command == ["uv", "run", "tools/iccma2025_run_native.py", "_worker", "{job_path}"]
+    payload = backend_job(job, backend="asp", timeout_seconds=7.5)
+    assert payload["backend"] == "asp"
+    assert payload["solver_timeout_seconds"] == 7.5
+    assert payload["task"]["subtrack"] == "SE-PR"
+    assert payload["instance"]["arguments_or_atoms"] == 10
 
 
 def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
@@ -290,6 +292,7 @@ def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
 
     result = run_backend_command(
         ["ignored"],
+        job_payload={"ignored": True},
         timeout_seconds=0.1,
     )
 

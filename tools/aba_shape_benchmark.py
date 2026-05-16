@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any, Iterable
 
@@ -307,6 +308,7 @@ def run_backend_matrix(
         started = time.perf_counter()
         result = run_backend_command(
             command,
+            job_payload=backend_job(job, backend=backend, timeout_seconds=timeout_seconds),
             timeout_seconds=timeout_seconds + 5.0,
         )
         elapsed = time.perf_counter() - started
@@ -335,30 +337,44 @@ def build_backend_command(
     command = [
         "uv",
         "run",
-        "tools/iccma_run_selected.py",
-        "--root",
-        str(job.root),
-        "--relative-path",
-        job.instance,
-        "--kind",
-        "aba",
-        "--subtrack",
-        job.subtrack,
-        "--backend",
-        backend,
-        "--timeout-seconds",
-        str(timeout_seconds),
-        "--track",
-        job.track,
-        "--instance-kind",
-        job.instance_kind,
+        "tools/iccma2025_run_native.py",
+        "_worker",
+        "{job_path}",
     ]
-    if job.arguments_or_atoms is not None:
-        command.extend(["--arguments-or-atoms", str(job.arguments_or_atoms)])
     return command
 
 
-def run_backend_command(command: list[str], *, timeout_seconds: float) -> dict[str, Any]:
+def backend_job(job: BenchmarkJob, *, backend: str, timeout_seconds: float) -> dict[str, Any]:
+    return {
+        "root": str(job.root),
+        "backend": backend,
+        "iccma_binary": None,
+        "solver_timeout_seconds": timeout_seconds,
+        "profile_path": None,
+        "profile_format": "speedscope",
+        "instance": {
+            "kind": "aba",
+            "relative_path": job.instance,
+            "arguments_or_atoms": job.arguments_or_atoms,
+        },
+        "task": {
+            "track": job.track,
+            "subtrack": job.subtrack,
+            "instance_kind": job.instance_kind,
+        },
+    }
+
+
+def run_backend_command(
+    command_template: list[str],
+    *,
+    job_payload: dict[str, Any],
+    timeout_seconds: float,
+) -> dict[str, Any]:
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(job_payload, handle)
+        job_path = Path(handle.name)
+    command = [str(job_path) if item == "{job_path}" else item for item in command_template]
     try:
         completed = subprocess.run(
             command,
@@ -375,6 +391,8 @@ def run_backend_command(command: list[str], *, timeout_seconds: float) -> dict[s
             "stdout": "",
             "stderr": "",
         }
+    finally:
+        job_path.unlink(missing_ok=True)
     parsed = _parse_json_line(completed.stdout)
     if parsed is None:
         return {
