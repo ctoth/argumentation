@@ -117,6 +117,7 @@ A candidate move is acceptable if it survives the current dialectical burden:
 The engine can expose:
 
 - `bestmove`: UCI-compatible move string.
+- PGN-in to next-move PGN-out for quick analysis loops.
 - `claim`: the accepted top-level move argument.
 - `attackers`: strongest refutations considered.
 - `defenses`: continuations that answer the refutations.
@@ -156,11 +157,12 @@ The package itself should not add these dependencies until the experiment proves
 Milestone 0 should not try to be clever:
 
 1. Accept a supplied FEN and emit a one-move PGN for the selected move.
-2. List legal moves from the position.
-3. Create one top-level argument per legal move.
-4. Add hard attacks for illegal moves only if using generated pseudo-legal moves.
-5. Add simple support/attack arguments for checks, captures, and checkmates.
-6. Select checkmate immediately, otherwise rank captures/checks/development with a simple argument score.
+2. Accept a supplied PGN, replay the mainline to the final position, and emit a PGN with the selected next move appended.
+3. List legal moves from the position.
+4. Create one top-level argument per legal move.
+5. Add hard attacks for illegal moves only if using generated pseudo-legal moves.
+6. Add simple support/attack arguments for checks, captures, and checkmates.
+7. Select checkmate immediately, otherwise rank captures/checks/development with a simple argument score.
 
 This is enough to prove that chess positions can flow into argument graphs and back into a move choice.
 
@@ -192,6 +194,16 @@ uv run scratch/dialectical_chess_probe.py `
 ```
 
 Later:
+
+```powershell
+uv run scratch/dialectical_chess_probe.py `
+  --pgn-in scratch/input_game.pgn `
+  --pgn-out scratch/input_game_next.pgn `
+  --choose `
+  --emit-af scratch/input_game_next.af.json
+```
+
+Also useful:
 
 ```powershell
 uv run scratch/dialectical_chess_probe.py `
