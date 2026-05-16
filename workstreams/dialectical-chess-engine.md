@@ -333,6 +333,9 @@ Tests:
 
 Goal: add conventional bounded search as an argument witness source.
 
+Status: complete for material evaluation, plain negamax witnesses, and an
+alpha-beta backend that agrees on the mate smoke fixture.
+
 Tasks:
 
 - Add a material-only static evaluation.
