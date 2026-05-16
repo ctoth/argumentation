@@ -80,6 +80,7 @@ def test_compute_aba_shape_handles_zero_rules() -> None:
     assert shape.rules_per_contrary_avg == 0.0
     assert shape.assumption_to_language_ratio == 0.5
     assert shape.rule_to_assumption_ratio == 0.0
+    assert shape.grounded_shape_status == "exact"
 
 
 def test_compute_aba_shape_counts_rule_arity_heads_and_contraries() -> None:
@@ -104,6 +105,29 @@ def test_compute_aba_shape_reports_grounded_reduct_collapse() -> None:
     assert shape.preprocessing_collapsed is True
     assert shape.grounded_fixed_out >= 1
     assert shape.residual_assumptions < shape.assumptions
+    assert shape.grounded_shape_status == "exact"
+
+
+def test_compute_aba_shape_skips_expensive_grounded_reduct() -> None:
+    assumptions = frozenset(lit(f"a{index}") for index in range(40))
+    contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
+    language = assumptions | frozenset(contraries.values()) | frozenset({lit("x")})
+    rules = frozenset(
+        Rule((assumption,), lit("x"), "strict")
+        for assumption in assumptions
+    )
+    framework = ABAFramework(
+        language=language,
+        rules=rules,
+        assumptions=assumptions,
+        contrary=contraries,
+    )
+
+    shape = compute_aba_shape(framework)
+
+    assert shape.grounded_shape_status == "skipped_cost"
+    assert shape.residual_assumptions == shape.assumptions
+    assert shape.residual_rules == shape.rules
 
 
 def test_solver_class_maps_subtracks_to_general_class() -> None:
@@ -133,6 +157,7 @@ def test_shape_buckets_use_structural_fields_only() -> None:
         residual_assumptions=200,
         residual_rules=6000,
         preprocessing_collapsed=False,
+        grounded_shape_status="skipped_cost",
     )
 
     assert shape_buckets(shape, "aba/single-extension/preferred") == {

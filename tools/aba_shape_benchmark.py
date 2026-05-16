@@ -35,6 +35,7 @@ TASK_PREFIXES = {
 ASSUMPTION_SIZE_THRESHOLDS = {"small_max": 50, "medium_max": 150}
 RULE_DENSITY_THRESHOLDS = {"sparse_max": 5.0, "medium_max": 25.0}
 MAX_ARITY_THRESHOLDS = {"low_max": 2, "medium_max": 5}
+GROUNDED_SHAPE_COST_LIMIT = 1000
 
 
 @dataclass(frozen=True)
@@ -58,6 +59,7 @@ class AbaShape:
     residual_assumptions: int
     residual_rules: int
     preprocessing_collapsed: bool
+    grounded_shape_status: str
 
 
 @dataclass(frozen=True)
@@ -79,10 +81,10 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     rules_by_contrary = Counter(
         rule.consequent for rule in framework.rules if rule.consequent in set(contrary_literals)
     )
-    simplification = simplify_aba(framework, semantics="preferred")
     assumptions = len(framework.assumptions)
     language_literals = len(framework.language)
     rules = len(framework.rules)
+    grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
     return AbaShape(
         assumptions=assumptions,
         language_literals=language_literals,
@@ -98,12 +100,39 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
         rules_per_contrary_avg=_average(rules_by_contrary.values()),
         assumption_to_language_ratio=_ratio(assumptions, language_literals),
         rule_to_assumption_ratio=_ratio(rules, assumptions),
-        grounded_fixed_in=len(simplification.fixed_in),
-        grounded_fixed_out=len(simplification.fixed_out),
-        residual_assumptions=len(simplification.residual.assumptions),
-        residual_rules=len(simplification.residual.rules),
-        preprocessing_collapsed=not simplification.is_trivial,
+        grounded_fixed_in=grounded["grounded_fixed_in"],
+        grounded_fixed_out=grounded["grounded_fixed_out"],
+        residual_assumptions=grounded["residual_assumptions"],
+        residual_rules=grounded["residual_rules"],
+        preprocessing_collapsed=grounded["preprocessing_collapsed"],
+        grounded_shape_status=grounded["grounded_shape_status"],
     )
+
+
+def _grounded_shape_fields(
+    framework: ABAFramework,
+    *,
+    assumptions: int,
+    rules: int,
+) -> dict[str, Any]:
+    if assumptions * rules > GROUNDED_SHAPE_COST_LIMIT:
+        return {
+            "grounded_fixed_in": 0,
+            "grounded_fixed_out": 0,
+            "residual_assumptions": assumptions,
+            "residual_rules": rules,
+            "preprocessing_collapsed": False,
+            "grounded_shape_status": "skipped_cost",
+        }
+    simplification = simplify_aba(framework, semantics="preferred")
+    return {
+        "grounded_fixed_in": len(simplification.fixed_in),
+        "grounded_fixed_out": len(simplification.fixed_out),
+        "residual_assumptions": len(simplification.residual.assumptions),
+        "residual_rules": len(simplification.residual.rules),
+        "preprocessing_collapsed": not simplification.is_trivial,
+        "grounded_shape_status": "exact",
+    }
 
 
 def _average(values: Iterable[int]) -> float:
@@ -581,6 +610,7 @@ def build_payload(
                 "assumption_size": ASSUMPTION_SIZE_THRESHOLDS,
                 "max_arity": MAX_ARITY_THRESHOLDS,
                 "rule_density": RULE_DENSITY_THRESHOLDS,
+                "grounded_shape_cost_limit": GROUNDED_SHAPE_COST_LIMIT,
             },
             "timeout_seconds": timeout_seconds,
         },
