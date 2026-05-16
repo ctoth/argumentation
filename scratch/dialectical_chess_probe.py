@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "chess>=1.11.0",
-#   "cairosvg>=2.7.1",
+#   "pillow>=10.0",
 # ]
 # ///
 """Sidecar probe for dialectical chess experiments.
@@ -21,9 +21,9 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-import cairosvg
 import chess
 import chess.svg
+from PIL import Image, ImageDraw, ImageFont
 
 
 DEFAULT_FEN = "6k1/5ppp/8/8/8/8/5PPP/6KQ w - - 0 1"
@@ -66,13 +66,13 @@ def main(argv: list[str] | None = None) -> int:
     probes = probe_moves(board)
 
     if args.svg or args.png:
-        svg = chess.svg.board(board=board, size=args.size)
         if args.svg:
+            svg = chess.svg.board(board=board, size=args.size)
             args.svg.parent.mkdir(parents=True, exist_ok=True)
             args.svg.write_text(svg, encoding="utf-8")
         if args.png:
             args.png.parent.mkdir(parents=True, exist_ok=True)
-            cairosvg.svg2png(bytestring=svg.encode("utf-8"), write_to=str(args.png))
+            render_png(board, args.png, size=args.size)
 
     if args.list_legal:
         for probe in probes:
@@ -154,6 +154,45 @@ def capture_value(board: chess.Board, move: chess.Move) -> int:
     return PIECE_VALUE[captured.piece_type]
 
 
+def render_png(board: chess.Board, path: Path, *, size: int) -> None:
+    square = max(size // 8, 24)
+    image_size = square * 8
+    light = (238, 238, 210)
+    dark = (118, 150, 86)
+    image = Image.new("RGB", (image_size, image_size), light)
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default(size=max(12, square // 2))
+
+    for rank in range(8):
+        for file_index in range(8):
+            x0 = file_index * square
+            y0 = rank * square
+            color = light if (rank + file_index) % 2 == 0 else dark
+            draw.rectangle((x0, y0, x0 + square, y0 + square), fill=color)
+
+            board_rank = 7 - rank
+            board_file = file_index
+            piece = board.piece_at(chess.square(board_file, board_rank))
+            if piece is None:
+                continue
+            text = piece.symbol()
+            text_color = (245, 245, 245) if piece.color == chess.WHITE else (20, 20, 20)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            draw.text(
+                (
+                    x0 + (square - text_width) / 2,
+                    y0 + (square - text_height) / 2,
+                ),
+                text,
+                fill=text_color,
+                font=font,
+            )
+
+    image.save(path)
+
+
 def choose_move(probes: list[MoveProbe]) -> MoveProbe:
     if not probes:
         raise SystemExit("position has no legal moves")
@@ -218,4 +257,3 @@ def local_argumentation_ranking(
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
