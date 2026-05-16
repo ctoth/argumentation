@@ -15,6 +15,7 @@ prototype dependencies needed by this script.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from dataclasses import asdict, dataclass
@@ -89,11 +90,22 @@ def main(argv: list[str] | None = None) -> int:
         default="negamax",
     )
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
+    parser.add_argument("--owned-movegen", action="store_true")
+    parser.add_argument("--allow-owned-divergence", action="store_true")
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
     if args.uci:
-        return run_uci(sys.stdin, sys.stdout)
+        return run_uci(
+            sys.stdin,
+            sys.stdout,
+            dialectic_depth=args.dialectic_depth,
+            search_depth=args.search_depth,
+            search_backend=args.search_backend,
+            smt_mate=args.smt_mate,
+            owned_movegen=args.owned_movegen,
+            allow_owned_divergence=args.allow_owned_divergence,
+        )
 
     game = load_game(args.pgn_in) if args.pgn_in else None
     board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
@@ -103,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
         search_depth=args.search_depth,
         search_backend=args.search_backend,
         smt_mate=args.smt_mate,
+        owned_movegen=args.owned_movegen,
+        allow_owned_divergence=args.allow_owned_divergence,
     )
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
@@ -137,7 +151,17 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def run_uci(input_stream: TextIO, output_stream: TextIO) -> int:
+def run_uci(
+    input_stream: TextIO,
+    output_stream: TextIO,
+    *,
+    dialectic_depth: int = 1,
+    search_depth: int = 0,
+    search_backend: str = "negamax",
+    smt_mate: bool = True,
+    owned_movegen: bool = False,
+    allow_owned_divergence: bool = False,
+) -> int:
     board = chess.Board()
     while True:
         raw = input_stream.readline()
@@ -161,9 +185,35 @@ def run_uci(input_stream: TextIO, output_stream: TextIO) -> int:
             except ValueError as exc:
                 _uci_write(output_stream, f"info string invalid position: {exc}")
         elif command.startswith("go"):
-            _uci_write(output_stream, f"bestmove {choose_uci_move(board)}")
+            _uci_write(
+                output_stream,
+                "bestmove "
+                + choose_uci_move(
+                    board,
+                    dialectic_depth=dialectic_depth,
+                    search_depth=search_depth,
+                    search_backend=search_backend,
+                    smt_mate=smt_mate,
+                    owned_movegen=owned_movegen,
+                    allow_owned_divergence=allow_owned_divergence,
+                    output_stream=output_stream,
+                ),
+            )
         elif command == "stop":
-            _uci_write(output_stream, f"bestmove {choose_uci_move(board)}")
+            _uci_write(
+                output_stream,
+                "bestmove "
+                + choose_uci_move(
+                    board,
+                    dialectic_depth=dialectic_depth,
+                    search_depth=search_depth,
+                    search_backend=search_backend,
+                    smt_mate=smt_mate,
+                    owned_movegen=owned_movegen,
+                    allow_owned_divergence=allow_owned_divergence,
+                    output_stream=output_stream,
+                ),
+            )
         elif command == "quit":
             return 0
         elif command.startswith("setoption ") or command == "ponderhit":
@@ -208,8 +258,31 @@ def parse_uci_position(command: str) -> chess.Board:
     return board
 
 
-def choose_uci_move(board: chess.Board) -> str:
-    probes = probe_moves(board, dialectic_depth=1)
+def choose_uci_move(
+    board: chess.Board,
+    *,
+    dialectic_depth: int = 1,
+    search_depth: int = 0,
+    search_backend: str = "negamax",
+    smt_mate: bool = True,
+    owned_movegen: bool = False,
+    allow_owned_divergence: bool = False,
+    output_stream: TextIO | None = None,
+) -> str:
+    try:
+        probes = probe_moves(
+            board,
+            dialectic_depth=dialectic_depth,
+            search_depth=search_depth,
+            search_backend=search_backend,
+            smt_mate=smt_mate,
+            owned_movegen=owned_movegen,
+            allow_owned_divergence=allow_owned_divergence,
+        )
+    except ValueError as exc:
+        if output_stream is not None:
+            _uci_write(output_stream, f"info string {exc}")
+        return "0000"
     if not probes:
         return "0000"
     return choose_move(probes, build_root_argument_graph(probes)).uci
@@ -222,14 +295,22 @@ def probe_moves(
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
+    owned_movegen: bool = False,
+    allow_owned_divergence: bool = False,
 ) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
     if search_depth < 0:
         raise ValueError("search_depth must be non-negative")
+    legal_moves = sorted(board.legal_moves, key=lambda move: move.uci())
+    if owned_movegen:
+        legal_moves = owned_legal_moves(
+            board,
+            allow_divergence=allow_owned_divergence,
+        )
     smt_mate_moves = smt_mate_in_one_moves(board) if smt_mate else frozenset()
     probes = []
-    for move in board.legal_moves:
+    for move in legal_moves:
         san = board.san(move)
         is_capture = board.is_capture(move)
         captured_value = capture_value(board, move)
@@ -300,6 +381,42 @@ def probe_moves(
             )
         )
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
+
+
+def owned_legal_moves(
+    board: chess.Board,
+    *,
+    allow_divergence: bool,
+) -> list[chess.Move]:
+    owned = load_owned_module()
+    owned_board = owned.OwnedBoard.from_fen(board.fen())
+    owned_uci = {move.uci() for move in owned_board.legal_moves()}
+    oracle_uci = {move.uci() for move in board.legal_moves}
+    if owned_uci != oracle_uci:
+        missing = sorted(oracle_uci - owned_uci)
+        extra = sorted(owned_uci - oracle_uci)
+        message = (
+            "owned movegen diverged from oracle "
+            f"missing={missing} extra={extra} fen={board.fen()}"
+        )
+        if not allow_divergence:
+            raise ValueError(message)
+    usable_uci = owned_uci if allow_divergence else oracle_uci
+    return sorted(
+        [chess.Move.from_uci(move_text) for move_text in usable_uci if chess.Move.from_uci(move_text) in board.legal_moves],
+        key=lambda move: move.uci(),
+    )
+
+
+def load_owned_module() -> Any:
+    path = Path(__file__).resolve().with_name("dialectical_chess_owned.py")
+    spec = importlib.util.spec_from_file_location("dialectical_chess_owned", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot import {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def smt_mate_in_one_moves(board: chess.Board) -> frozenset[str]:
