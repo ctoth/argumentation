@@ -23,12 +23,16 @@ def run_selected(
     track: str = "legacy",
     instance_kind: str = "af",
     iccma_binary: str | None = None,
+    profile_path: Path | None = None,
+    profile_format: str = "speedscope",
 ) -> dict[str, Any]:
     job = {
         "root": str(root),
         "backend": backend,
         "iccma_binary": iccma_binary,
         "solver_timeout_seconds": timeout_seconds,
+        "profile_path": str(profile_path) if profile_path is not None else None,
+        "profile_format": profile_format,
         "instance": {
             "kind": kind,
             "relative_path": relative_path,
@@ -55,6 +59,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--track", default="legacy")
     parser.add_argument("--instance-kind", default="af")
     parser.add_argument("--iccma-binary")
+    parser.add_argument("--profile-path", type=Path)
+    parser.add_argument(
+        "--profile-format",
+        choices=["flamegraph", "raw", "speedscope", "chrometrace"],
+        default="speedscope",
+    )
     args = parser.parse_args(argv)
 
     row = run_selected(
@@ -68,6 +78,8 @@ def main(argv: list[str] | None = None) -> int:
         track=args.track,
         instance_kind=args.instance_kind,
         iccma_binary=args.iccma_binary,
+        profile_path=args.profile_path,
+        profile_format=args.profile_format,
     )
     print(json.dumps(row, sort_keys=True))
     return 0

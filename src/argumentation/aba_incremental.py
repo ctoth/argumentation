@@ -32,7 +32,7 @@ from importlib import resources
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba_asp import encode_aba_theory
+from argumentation.aba_asp import ABAEncoding, encode_aba_theory
 from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
 from argumentation.aspic import Literal
 
@@ -74,11 +74,12 @@ class AbaIncrementalSolver:
     builds a fresh ``Control`` (the L21-TPLP scheme).
     """
 
-    def __init__(self, framework: ABAFramework) -> None:
+    def __init__(self, framework: ABAFramework, *, encoding: ABAEncoding | None = None) -> None:
         if not isinstance(framework, ABAFramework):  # defensive; callers gate this
             raise TypeError("AbaIncrementalSolver only handles flat ABAFramework")
         self.framework = framework
-        encoding = encode_aba_theory(framework)
+        if encoding is None:
+            encoding = encode_aba_theory(framework, include_supports=False)
         # ABA(F) facts: encode_aba_theory emits a superset of assumption/1,
         # head/2, body/2, contrary/2 (also rule/1, body_count/2, support_*/2 --
         # the com module simply ignores those).
@@ -159,6 +160,18 @@ class AbaIncrementalSolver:
 
     def enumerate_stable(self, *, telemetry: IncrementalTelemetry | None = None) -> tuple[AssumptionSet, ...]:
         return self._enumerate(stable=True, telemetry=telemetry)
+
+    def find_complete_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+        ctl = self._new_control()
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        return self._solve_one(ctl)
+
+    def find_stable_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+        ctl = self._new_control(extra_program=":- out(X), not defeated(X).")
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        return self._solve_one(ctl)
 
     def grounded_extension(self) -> AssumptionSet:
         # Use the polynomial support-mask fixpoint rather than ``aba.grounded_extension``

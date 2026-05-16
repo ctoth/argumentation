@@ -36,7 +36,7 @@ class ABAQueryResult:
     counterexample: AssumptionSet | None = None
 
 
-def encode_aba_theory(framework: ABAFramework) -> ABAEncoding:
+def encode_aba_theory(framework: ABAFramework, *, include_supports: bool = True) -> ABAEncoding:
     """Encode a flat ABA framework into deterministic ASP facts."""
     assumption_by_id = {
         _literal_id(assumption): assumption
@@ -63,22 +63,29 @@ def encode_aba_theory(framework: ABAFramework) -> ABAEncoding:
         for antecedent in rule.antecedents:
             facts.add(f"body({rule_id},{_literal_id(antecedent)}).")
 
-    support_index = 0
-    for conclusion, supports in sorted(_minimal_supports(framework).items(), key=lambda item: repr(item[0])):
-        for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))):
-            support_id = f"sup_{support_index}"
-            support_index += 1
-            facts.add(f"support_concludes({support_id},{_literal_id(conclusion)}).")
-            facts.add(f"support_count({support_id},{len(support)}).")
-            for assumption in sorted(support, key=repr):
-                facts.add(f"support_member({support_id},{_literal_id(assumption)}).")
+    if include_supports:
+        support_index = 0
+        for conclusion, supports in sorted(_minimal_supports(framework).items(), key=lambda item: repr(item[0])):
+            for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))):
+                support_id = f"sup_{support_index}"
+                support_index += 1
+                facts.add(f"support_concludes({support_id},{_literal_id(conclusion)}).")
+                facts.add(f"support_count({support_id},{len(support)}).")
+                for assumption in sorted(support, key=repr):
+                    facts.add(f"support_member({support_id},{_literal_id(assumption)}).")
 
     ordered_facts = tuple(sorted(facts))
     signature = hashlib.sha256("\n".join(ordered_facts).encode("utf-8")).hexdigest()
     return ABAEncoding(
         facts=ordered_facts,
         signature=signature,
-        metadata={"encoding": "flat_aba_assumption_facts"},
+        metadata={
+            "encoding": (
+                "flat_aba_assumption_support_facts"
+                if include_supports
+                else "flat_aba_core_facts"
+            )
+        },
         assumption_by_id=assumption_by_id,
         literal_by_id=literal_by_id,
     )
@@ -125,7 +132,8 @@ def solve_aba_with_backend(
             reason="ABA+ ASP backend is not implemented",
         )
 
-    encoding = encode_aba_theory(framework)
+    needs_support_facts = backend not in {"asp", "clingo"}
+    encoding = encode_aba_theory(framework, include_supports=needs_support_facts)
     if semantics not in {"admissible", "complete", "stable", "preferred", "grounded"}:
         return _failure_result(
             status="unavailable_backend",
@@ -239,7 +247,7 @@ def _solve_multishot(
 
     metadata_base = {"encoding": encoding.metadata["encoding"], "solver": "clingo_multishot"}
     try:
-        solver = aba_incremental.AbaIncrementalSolver(framework)
+        solver = aba_incremental.AbaIncrementalSolver(framework, encoding=encoding)
     except RuntimeError as exc:
         return _failure_result(
             status="unavailable_backend",
@@ -262,6 +270,29 @@ def _solve_multishot(
             metadata=metadata_base | {"task": task, "algorithm": "L21-TPLP-Alg1"},
             answer=answer,
             counterexample=counterexample,
+        )
+
+    if task == "single-extension":
+        if semantics == "grounded":
+            extension = solver.grounded_extension()
+        elif semantics == "complete":
+            extension = solver.find_complete_extension()
+        elif semantics == "stable":
+            extension = solver.find_stable_extension()
+        elif semantics == "preferred":
+            extension = solver.find_preferred_extension()
+        else:  # pragma: no cover - dispatcher gates this
+            raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+        extensions = tuple() if extension is None else (extension,)
+        return _task_result(
+            framework,
+            encoding=encoding,
+            semantics=semantics,
+            backend=backend,
+            task=task,
+            query=query,
+            extensions=extensions,
+            metadata=metadata_base | {"algorithm": "first-model-witness"},
         )
 
     if semantics == "grounded":
@@ -313,11 +344,12 @@ def _solve_simplified(
     ):
         return _solve_simplified_ds_pr(simplification, backend=backend, query=query)
 
+    residual_task = "single-extension" if task == "single-extension" else "enum"
     residual_result = solve_aba_with_backend(
         residual,
         backend=backend,
         semantics=semantics,
-        task="enum",
+        task=residual_task,
         query=None,
         binary=binary,
         timeout_seconds=timeout_seconds,
@@ -447,6 +479,18 @@ def _task_result(
             accepted_assumptions=extensions[0] if len(extensions) == 1 else frozenset(),
             encoding=encoding,
             metadata=metadata | {"task": task},
+        )
+    if task == "single-extension":
+        extension = extensions[0] if extensions else frozenset()
+        return ABAQueryResult(
+            status="success",
+            semantics=semantics,
+            backend=backend,
+            extensions=extensions,
+            accepted_assumptions=extension,
+            encoding=encoding,
+            metadata=metadata | {"task": task},
+            witness=extension if extensions else None,
         )
     if query is None:
         return _failure_result(

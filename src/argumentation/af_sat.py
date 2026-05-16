@@ -40,6 +40,57 @@ class SATCheck:
 SATTraceSink = Callable[[SATCheck], None]
 
 
+@dataclass(frozen=True)
+class StableUnsatExplanation:
+    """Tracked-clause explanation surface for stable-extension SAT checks.
+
+    The core returned by Z3 is not guaranteed minimal. It is still useful as a
+    deterministic obstruction surface: it names which conflict-free, coverage,
+    and requirement groups participated in one unsat proof.
+    """
+
+    status: str
+    stable_exists: bool
+    solver_result: str
+    argument_count: int
+    attack_count: int
+    residual_argument_count: int
+    residual_attack_count: int
+    core_argument_ids: tuple[str, ...]
+    core_attack_ids: tuple[tuple[str, str], ...]
+    coverage_argument_ids: tuple[str, ...]
+    requirement_argument_ids: tuple[str, ...]
+    clause_group_count: int
+    runtime_seconds: float
+    simplification_fixed_in_count: int
+    simplification_removed_out_count: int
+    model_extension_size: int | None = None
+    model_extension_fingerprint: str | None = None
+    metadata: Mapping[str, object] | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "status": self.status,
+            "stable_exists": self.stable_exists,
+            "solver_result": self.solver_result,
+            "argument_count": self.argument_count,
+            "attack_count": self.attack_count,
+            "residual_argument_count": self.residual_argument_count,
+            "residual_attack_count": self.residual_attack_count,
+            "core_argument_ids": list(self.core_argument_ids),
+            "core_attack_ids": [list(edge) for edge in self.core_attack_ids],
+            "coverage_argument_ids": list(self.coverage_argument_ids),
+            "requirement_argument_ids": list(self.requirement_argument_ids),
+            "clause_group_count": self.clause_group_count,
+            "runtime_seconds": self.runtime_seconds,
+            "simplification_fixed_in_count": self.simplification_fixed_in_count,
+            "simplification_removed_out_count": self.simplification_removed_out_count,
+            "model_extension_size": self.model_extension_size,
+            "model_extension_fingerprint": self.model_extension_fingerprint,
+            "metadata": dict(self.metadata or {}),
+        }
+
+
 class AfSatKernel:
     """Reusable SAT state for one Dung AF."""
 
@@ -380,6 +431,139 @@ def find_stable_extension(
     return simplification.lift(problem.model_extension())
 
 
+def explain_stable_unsat(
+    framework: ArgumentationFramework,
+    *,
+    require_in: str | None = None,
+    require_out: str | None = None,
+    simplify: bool = True,
+    metadata: Mapping[str, object] | None = None,
+) -> StableUnsatExplanation:
+    """Return a tracked-clause explanation for stable-extension SAT/UNSAT.
+
+    This is a diagnostic API, not a replacement for :func:`find_stable_extension`.
+    It tracks stable constraints by semantic group and returns the solver's unsat
+    core when the stable-extension encoding is UNSAT. The core is not guaranteed
+    minimal, so callers should treat it as an obstruction surface rather than a
+    smallest proof.
+    """
+    started = perf_counter()
+    prepared = _prepare(
+        framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
+    )
+    if prepared is None:
+        return StableUnsatExplanation(
+            status="unsat_preprocessing",
+            stable_exists=False,
+            solver_result="unsat",
+            argument_count=len(framework.arguments),
+            attack_count=len(framework.defeats),
+            residual_argument_count=0,
+            residual_attack_count=0,
+            core_argument_ids=tuple(),
+            core_attack_ids=tuple(),
+            coverage_argument_ids=tuple(),
+            requirement_argument_ids=tuple(sorted(arg for arg in (require_in, require_out) if arg is not None)),
+            clause_group_count=0,
+            runtime_seconds=perf_counter() - started,
+            simplification_fixed_in_count=0,
+            simplification_removed_out_count=0,
+            metadata=metadata,
+        )
+
+    residual, simplification, residual_in, residual_out = prepared
+    z3 = _load_z3()
+    solver = z3.Solver()
+    arguments = tuple(sorted(residual.arguments))
+    in_vars = {argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)}
+    attackers_index = _attackers_index(residual.defeats)
+    label_map: dict[str, tuple[str, object]] = {}
+
+    def track(kind: str, payload: object, expression: object) -> None:
+        label = z3.Bool(f"stable_{kind}_{len(label_map)}")
+        label_map[str(label)] = (kind, payload)
+        solver.assert_and_track(expression, label)
+
+    conflict_relation = residual.attacks if residual.attacks is not None else residual.defeats
+    for attacker, target in sorted(conflict_relation):
+        track(
+            "conflict",
+            (attacker, target),
+            z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])),
+        )
+
+    for argument in arguments:
+        attackers = tuple(sorted(attackers_index.get(argument, frozenset())))
+        track(
+            "coverage",
+            argument,
+            z3.Or(in_vars[argument], *(in_vars[attacker] for attacker in attackers)),
+        )
+
+    for argument in sorted(_optional_argument(residual, residual_in)):
+        track("require_in", argument, in_vars[argument])
+    for argument in sorted(_optional_argument(residual, residual_out)):
+        track("require_out", argument, z3.Not(in_vars[argument]))
+
+    result_ref = solver.check()
+    runtime_seconds = perf_counter() - started
+    solver_result = str(result_ref)
+    model_size = None
+    model_fingerprint = None
+    core_attacks: set[tuple[str, str]] = set()
+    coverage_arguments: set[str] = set()
+    requirement_arguments: set[str] = set()
+
+    if solver_result == "sat":
+        extension = frozenset(
+            argument
+            for argument, variable in in_vars.items()
+            if z3.is_true(solver.model().evaluate(variable, model_completion=True))
+        )
+        model_size = len(simplification.lift(extension))
+        model_fingerprint = _extension_fingerprint(simplification.lift(extension))
+    elif solver_result == "unsat":
+        for item in solver.unsat_core():
+            mapped = label_map.get(str(item))
+            if mapped is None:
+                continue
+            kind, payload = mapped
+            if kind == "conflict" and isinstance(payload, tuple) and len(payload) == 2:
+                attacker, target = payload
+                core_attacks.add((str(attacker), str(target)))
+            elif kind == "coverage":
+                coverage_arguments.add(str(payload))
+            elif kind in {"require_in", "require_out"}:
+                requirement_arguments.add(str(payload))
+
+    core_arguments = set(coverage_arguments) | requirement_arguments
+    for attacker, target in core_attacks:
+        core_arguments.add(attacker)
+        core_arguments.add(target)
+
+    status = "sat" if solver_result == "sat" else ("unsat" if solver_result == "unsat" else "unknown")
+    return StableUnsatExplanation(
+        status=status,
+        stable_exists=solver_result == "sat",
+        solver_result=solver_result,
+        argument_count=len(framework.arguments),
+        attack_count=len(framework.defeats),
+        residual_argument_count=len(residual.arguments),
+        residual_attack_count=len(residual.defeats),
+        core_argument_ids=tuple(sorted(core_arguments)),
+        core_attack_ids=tuple(sorted(core_attacks)),
+        coverage_argument_ids=tuple(sorted(coverage_arguments)),
+        requirement_argument_ids=tuple(sorted(requirement_arguments)),
+        clause_group_count=len(label_map),
+        runtime_seconds=runtime_seconds,
+        simplification_fixed_in_count=len(simplification.fixed_in),
+        simplification_removed_out_count=len(simplification.removed_out),
+        model_extension_size=model_size,
+        model_extension_fingerprint=model_fingerprint,
+        metadata=metadata,
+    )
+
+
 def find_complete_extension(
     framework: ArgumentationFramework,
     *,
@@ -648,13 +832,7 @@ class PreferredSuperCoreSolver:
                 break
             current = current - _attacked_by(attacker, self.framework.defeats)
 
-        current = current - _attacked_by(current, self.framework.defeats)
-        while True:
-            undefended_attackers = current - _attacked_by(current, self.framework.defeats)
-            next_current = current - _attacked_by(undefended_attackers, self.framework.defeats)
-            if next_current == current:
-                return current
-            current = next_current
+        return _prune_to_admissible_subset(current, self.framework.defeats)
 
 
 def find_semi_stable_extension(
@@ -717,13 +895,7 @@ def find_ideal_extension(
             break
         current = current - _attacked_by(attacker, framework.defeats)
 
-    current = current - _attacked_by(current, framework.defeats)
-    while True:
-        undefended_attackers = current - _attacked_by(current, framework.defeats)
-        next_current = current - _attacked_by(undefended_attackers, framework.defeats)
-        if next_current == current:
-            return current
-        current = next_current
+    return _prune_to_admissible_subset(current, framework.defeats)
 
 
 def find_stage_extension(
@@ -977,6 +1149,27 @@ def _attacked_by(
     return frozenset(target for attacker, target in defeats if attacker in arguments)
 
 
+def _attackers_of(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    return frozenset(attacker for attacker, target in defeats if target in arguments)
+
+
+def _prune_to_admissible_subset(
+    arguments: frozenset[str],
+    defeats: frozenset[tuple[str, str]],
+) -> frozenset[str]:
+    current = arguments - _attacked_by(arguments, defeats)
+    while True:
+        defended_attackers = _attacked_by(current, defeats)
+        undefended_attackers = _attackers_of(current, defeats) - defended_attackers
+        next_current = current - _attacked_by(undefended_attackers, defeats)
+        if next_current == current:
+            return current
+        current = next_current
+
+
 def _add_admissible_constraints(
     z3,
     solver,
@@ -988,18 +1181,30 @@ def _add_admissible_constraints(
         solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
     attackers_index = _attackers_index(framework.defeats)
+    defense_by_attacker: dict[str, Any] = {}
+    undefended_attackers: set[str] = set()
     for argument in sorted(framework.arguments):
-        for attacker in sorted(attackers_index.get(argument, frozenset())):
-            defenders = tuple(sorted(attackers_index.get(attacker, frozenset())))
-            if defenders:
-                solver.add(
-                    z3.Implies(
-                        in_vars[argument],
-                        z3.Or(*(in_vars[defender] for defender in defenders)),
-                    )
-                )
-            else:
-                solver.add(z3.Not(in_vars[argument]))
+        defenders = tuple(sorted(attackers_index.get(argument, frozenset())))
+        if defenders:
+            defense_by_attacker[argument] = z3.Or(
+                *(in_vars[defender] for defender in defenders)
+            )
+        else:
+            undefended_attackers.add(argument)
+    for argument in sorted(framework.arguments):
+        attackers = tuple(sorted(attackers_index.get(argument, frozenset())))
+        if not attackers:
+            continue
+        if any(attacker in undefended_attackers for attacker in attackers):
+            solver.add(z3.Not(in_vars[argument]))
+            continue
+        defense_requirements = tuple(defense_by_attacker[attacker] for attacker in attackers)
+        defended = (
+            defense_requirements[0]
+            if len(defense_requirements) == 1
+            else z3.And(*defense_requirements)
+        )
+        solver.add(z3.Implies(in_vars[argument], defended))
 
 
 def _grow_preferred(
@@ -1421,6 +1626,8 @@ __all__ = [
     "PreferredSuperCoreSolver",
     "SATCheck",
     "SATTraceSink",
+    "StableUnsatExplanation",
+    "explain_stable_unsat",
     "find_complete_extension",
     "find_ideal_extension",
     "find_preferred_extension",

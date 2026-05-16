@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 from dataclasses import dataclass
+import hashlib
 import json
 import lzma
 import os
@@ -82,6 +83,9 @@ class RunConfig:
     timeout_seconds: float
     progress: bool
     event_log_path: Path | None
+    profile_workers_dir: Path | None = None
+    profile_workers_format: str = "speedscope"
+    profile_worker_subtracks: frozenset[str] = frozenset()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -112,6 +116,23 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Write runner and solver JSONL events directly to this file.",
     )
+    parser.add_argument(
+        "--profile-workers-dir",
+        type=Path,
+        default=None,
+        help="Launch matching worker subprocesses under py-spy and write profiles here.",
+    )
+    parser.add_argument(
+        "--profile-workers-format",
+        choices=["flamegraph", "raw", "speedscope", "chrometrace"],
+        default="speedscope",
+    )
+    parser.add_argument(
+        "--profile-worker-subtrack",
+        action="append",
+        default=[],
+        help="Only profile this subtrack; repeat to profile multiple subtracks. Defaults to all.",
+    )
     args = parser.parse_args(argv)
     if args.event_log_path is not None:
         args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout_seconds,
         progress=not args.no_progress,
         event_log_path=args.event_log_path,
+        profile_workers_dir=args.profile_workers_dir,
+        profile_workers_format=args.profile_workers_format,
+        profile_worker_subtracks=frozenset(args.profile_worker_subtrack),
     )
     rows = run_native(config)
     output_dir = config.root / "runs"
@@ -347,6 +371,10 @@ def run_or_skip(
         "iccma_binary": config.iccma_binary,
         "solver_timeout_seconds": config.timeout_seconds,
         "event_log_path": str(config.event_log_path) if config.event_log_path is not None else None,
+        "profile_path": str(worker_profile_path(config, instance, task))
+        if should_profile_worker(config, task)
+        else None,
+        "profile_format": config.profile_workers_format,
         "instance": instance,
         "task": task,
     }
@@ -456,7 +484,7 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
         job_path = Path(handle.name)
     try:
         process = subprocess.Popen(
-            [sys.executable, __file__, "_worker", str(job_path)],
+            build_worker_command(job, job_path),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -508,11 +536,22 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
     stdout = "".join(stdout_lines)
     stderr = "".join(stderr_lines)
     if returncode != 0:
+        parsed_stdout = parse_worker_stdout(stdout)
+        if parsed_stdout is not None:
+            print(
+                f"worker profiler exited with status {returncode}: {(stderr or stdout).strip()}",
+                file=sys.stderr,
+                flush=True,
+            )
+            return parsed_stdout
         return {
             "status": "error",
             "reason": "worker_nonzero_exit",
             "error": (stderr or stdout).strip(),
         }
+    parsed_stdout = parse_worker_stdout(stdout)
+    if parsed_stdout is not None:
+        return parsed_stdout
     try:
         return json.loads(stdout)
     except json.JSONDecodeError as exc:
@@ -521,6 +560,79 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
             "reason": "worker_bad_json",
             "error": f"{exc}: {stdout!r}",
         }
+
+
+def parse_worker_stdout(stdout: str) -> dict[str, Any] | None:
+    candidates = [stdout, *reversed(stdout.splitlines())]
+    for candidate in candidates:
+        text = candidate.strip()
+        if not text.startswith("{"):
+            continue
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    return None
+
+
+def build_worker_command(job: dict[str, Any], job_path: Path) -> list[str]:
+    profile_path = job.get("profile_path")
+    if not profile_path:
+        return [sys.executable, __file__, "_worker", str(job_path)]
+    Path(profile_path).parent.mkdir(parents=True, exist_ok=True)
+    return [
+        "uv",
+        "tool",
+        "run",
+        "py-spy",
+        "record",
+        "--subprocesses",
+        "--format",
+        str(job.get("profile_format") or "speedscope"),
+        "--output",
+        str(profile_path),
+        "--",
+        sys.executable,
+        __file__,
+        "_worker",
+        str(job_path),
+    ]
+
+
+def should_profile_worker(config: RunConfig, task: dict[str, Any]) -> bool:
+    if config.profile_workers_dir is None:
+        return False
+    return (
+        not config.profile_worker_subtracks
+        or str(task["subtrack"]) in config.profile_worker_subtracks
+    )
+
+
+def worker_profile_path(
+    config: RunConfig,
+    instance: dict[str, Any],
+    task: dict[str, Any],
+) -> Path:
+    assert config.profile_workers_dir is not None
+    relative_path = str(instance["relative_path"])
+    identity = "\n".join(
+        [
+            str(task["track"]),
+            str(task["subtrack"]),
+            str(instance["kind"]),
+            relative_path,
+        ]
+    )
+    digest = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:12]
+    leaf = Path(relative_path).name
+    safe_leaf = re.sub(r"[^A-Za-z0-9_.-]+", "_", leaf)[:80] or "instance"
+    extension = "json" if config.profile_workers_format in {"speedscope", "chrometrace"} else "txt"
+    return (
+        config.profile_workers_dir
+        / f"{task['track']}-{task['subtrack']}-{safe_leaf}-{digest}.{config.profile_workers_format}.{extension}"
+    )
 
 
 def worker_main(argv: list[str]) -> int:
