@@ -192,6 +192,62 @@ def test_shape_buckets_use_structural_fields_only() -> None:
     }
 
 
+def test_shape_bucket_boundaries_are_inclusive() -> None:
+    def bucketed(*, assumptions: int, rule_density: float, max_arity: int) -> dict[str, str]:
+        shape = AbaShape(
+            assumptions=assumptions,
+            language_literals=max(assumptions, 1),
+            rules=int(rule_density * max(assumptions, 1)),
+            contraries=assumptions,
+            distinct_contrary_literals=assumptions,
+            avg_rule_arity=0.0,
+            max_rule_arity=max_arity,
+            zero_body_rules=0,
+            rules_per_head_max=0,
+            rules_per_head_avg=0.0,
+            rules_per_contrary_max=0,
+            rules_per_contrary_avg=0.0,
+            assumption_to_language_ratio=1.0,
+            rule_to_assumption_ratio=rule_density,
+            grounded_fixed_in=0,
+            grounded_fixed_out=0,
+            residual_assumptions=assumptions,
+            residual_rules=0,
+            preprocessing_collapsed=False,
+            grounded_shape_status="exact",
+        )
+        return shape_buckets(shape, "aba/single-extension/preferred")
+
+    assert bucketed(assumptions=50, rule_density=5.0, max_arity=2) == {
+        "assumption_size": "small",
+        "rule_density": "sparse",
+        "max_arity": "low",
+        "preprocessing": "not_collapsed",
+        "solver_class": "aba/single-extension/preferred",
+    }
+    assert bucketed(assumptions=51, rule_density=5.1, max_arity=3) == {
+        "assumption_size": "medium",
+        "rule_density": "medium",
+        "max_arity": "medium",
+        "preprocessing": "not_collapsed",
+        "solver_class": "aba/single-extension/preferred",
+    }
+    assert bucketed(assumptions=150, rule_density=25.0, max_arity=5) == {
+        "assumption_size": "medium",
+        "rule_density": "medium",
+        "max_arity": "medium",
+        "preprocessing": "not_collapsed",
+        "solver_class": "aba/single-extension/preferred",
+    }
+    assert bucketed(assumptions=151, rule_density=25.1, max_arity=6) == {
+        "assumption_size": "large",
+        "rule_density": "dense",
+        "max_arity": "high",
+        "preprocessing": "not_collapsed",
+        "solver_class": "aba/single-extension/preferred",
+    }
+
+
 def test_build_jobs_from_manifest_filters_and_deduplicates(tmp_path: Path) -> None:
     rows = [
         {
