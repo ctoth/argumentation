@@ -388,7 +388,47 @@ Tests:
 - SMT mate-in-one agrees with legal move generation on curated fixtures.
 - Malformed/unavailable SMT path does not crash UCI or PGN mode.
 
-### Phase 7: Owned Chess Substrate
+### Phase 7: Benchmark Harness
+
+Goal: measure what the engine actually does before optimizing or replacing the
+substrate.
+
+Standard benchmark families:
+
+- **Perft** for legal move generation correctness once an owned move generator
+  exists.
+- **Tactical EPD suites** such as Win at Chess (WAC), Encyclopedia of Chess
+  Middlegames (ECM), Bratko-Kopec, BT2450/BT2630, and similar `bm`-annotated
+  suites.
+- **Strategic Test Suite (STS)** for long-term positional move choice.
+- **Lichess puzzle database** for large-scale real-game tactical positions.
+- **Engine matches** through UCI runners such as `cutechess-cli` or `fastchess`,
+  with SPRT once the engine can complete games reliably.
+
+Tasks:
+
+- Add an EPD benchmark runner that reads `bm` best-move operations.
+- Report solved count, total count, hit rate, elapsed time, and milliseconds per
+  position.
+- Record chosen move, expected best moves, SAN, UCI, and reason labels per
+  position.
+- Keep generated benchmark reports uncommitted unless explicitly promoted.
+- Add UCI match guidance for `cutechess-cli` once time controls are handled.
+
+Acceptance criteria:
+
+- A built-in smoke EPD suite runs without external files.
+- A user-provided EPD file can be scored.
+- Benchmark output is JSON so later comparisons are scriptable.
+- The report distinguishes tactical-suite score from match strength.
+
+Tests:
+
+- Built-in mate-in-one EPD gives 1/1.
+- A deliberately wrong expected move gives 0/1.
+- Runtime fields are present and numeric.
+
+### Phase 8: Owned Chess Substrate
 
 Goal: begin replacing `python-chess` as the engine's core state layer only
 after the dialectical architecture is proven.
@@ -415,7 +455,7 @@ Tests:
 - Special-move fixtures: castling, en passant, promotion, check evasions.
 - Differential fixture suite against `python-chess`.
 
-### Phase 8: Promotion Out of Scratch
+### Phase 9: Promotion Out of Scratch
 
 Goal: decide whether this remains a sidecar experiment or becomes a package
 surface.
@@ -424,6 +464,7 @@ Promotion criteria:
 
 - UCI shell works.
 - PGN-in/PGN-out works.
+- EPD benchmark harness works.
 - Depth-3 dialectical search works on fixtures.
 - Argument graphs are the actual selection control surface.
 - Generated diagnostics remain optional and uncommitted by default.
