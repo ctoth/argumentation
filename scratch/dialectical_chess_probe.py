@@ -49,6 +49,8 @@ class MoveProbe:
     reasons: tuple[str, ...]
     objections: tuple[str, ...]
     reply_attacks: tuple[str, ...] = ()
+    search_score: int | None = None
+    search_line: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,12 @@ class RootArgumentGraph:
     move_arguments: dict[str, str]
     grounded_extension: frozenset[str]
     ranking: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class SearchResult:
+    score: int
+    line: tuple[str, ...]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -72,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--choose", action="store_true")
     parser.add_argument("--uci", action="store_true")
     parser.add_argument("--dialectic-depth", type=int, default=1)
+    parser.add_argument("--search-depth", type=int, default=0)
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -80,7 +89,11 @@ def main(argv: list[str] | None = None) -> int:
 
     game = load_game(args.pgn_in) if args.pgn_in else None
     board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
-    probes = probe_moves(board, dialectic_depth=args.dialectic_depth)
+    probes = probe_moves(
+        board,
+        dialectic_depth=args.dialectic_depth,
+        search_depth=args.search_depth,
+    )
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
 
@@ -192,9 +205,16 @@ def choose_uci_move(board: chess.Board) -> str:
     return choose_move(probes, build_root_argument_graph(probes)).uci
 
 
-def probe_moves(board: chess.Board, *, dialectic_depth: int = 1) -> list[MoveProbe]:
+def probe_moves(
+    board: chess.Board,
+    *,
+    dialectic_depth: int = 1,
+    search_depth: int = 0,
+) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
+    if search_depth < 0:
+        raise ValueError("search_depth must be non-negative")
     probes = []
     for move in board.legal_moves:
         san = board.san(move)
@@ -223,6 +243,13 @@ def probe_moves(board: chess.Board, *, dialectic_depth: int = 1) -> list[MovePro
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
+        search_result = root_search_result(board, move, depth=search_depth)
+        if search_result is not None:
+            if search_result.score > 0:
+                reasons.append(f"search:negamax:{search_result.score}")
+            elif search_result.score < 0:
+                objections.append(f"search:negamax:{search_result.score}")
+            score += search_result.score
         reply_attacks = bounded_reply_attacks(
             board,
             move,
@@ -244,9 +271,70 @@ def probe_moves(board: chess.Board, *, dialectic_depth: int = 1) -> list[MovePro
                 reasons=tuple(reasons),
                 objections=tuple(objections),
                 reply_attacks=reply_attacks,
+                search_score=None if search_result is None else search_result.score,
+                search_line=() if search_result is None else search_result.line,
             )
         )
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
+
+
+def root_search_result(
+    board: chess.Board,
+    move: chess.Move,
+    *,
+    depth: int,
+) -> SearchResult | None:
+    if depth <= 0:
+        return None
+    board.push(move)
+    try:
+        child = negamax(board, depth - 1)
+        return SearchResult(score=-child.score, line=(move.uci(),) + child.line)
+    finally:
+        board.pop()
+
+
+def negamax(board: chess.Board, depth: int) -> SearchResult:
+    if board.is_checkmate():
+        return SearchResult(score=-100_000 - depth, line=())
+    if board.is_stalemate() or board.is_insufficient_material():
+        return SearchResult(score=0, line=())
+    if depth <= 0:
+        return SearchResult(score=static_evaluation(board), line=())
+
+    best: SearchResult | None = None
+    best_move: chess.Move | None = None
+    for move in board.legal_moves:
+        board.push(move)
+        try:
+            child = negamax(board, depth - 1)
+            candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
+        finally:
+            board.pop()
+        if (
+            best is None
+            or candidate.score > best.score
+            or (candidate.score == best.score and move.uci() < best_move.uci())
+        ):
+            best = candidate
+            best_move = move
+
+    if best is None:
+        return SearchResult(score=static_evaluation(board), line=())
+    return best
+
+
+def static_evaluation(board: chess.Board) -> int:
+    white = 0
+    black = 0
+    for piece in board.piece_map().values():
+        value = PIECE_VALUE[piece.piece_type]
+        if piece.color == chess.WHITE:
+            white += value
+        else:
+            black += value
+    material = white - black
+    return material if board.turn == chess.WHITE else -material
 
 
 def capture_value(board: chess.Board, move: chess.Move) -> int:
