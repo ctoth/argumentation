@@ -13,6 +13,7 @@ import argparse
 import importlib.util
 import json
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -109,6 +110,7 @@ def load_probe() -> Any:
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot import {PROBE_PATH}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
