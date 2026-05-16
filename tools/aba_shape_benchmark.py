@@ -334,10 +334,10 @@ def build_backend_command(
     backend: str,
     timeout_seconds: float,
 ) -> list[str]:
+    worker_script = Path(__file__).resolve().with_name("iccma2025_run_native.py")
     command = [
-        "uv",
-        "run",
-        "tools/iccma2025_run_native.py",
+        sys.executable,
+        str(worker_script),
         "_worker",
         "{job_path}",
     ]

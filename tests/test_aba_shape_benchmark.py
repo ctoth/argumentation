@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import subprocess
+import sys
 
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
@@ -276,7 +277,9 @@ def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) ->
 
     command = build_backend_command(job, backend="asp", timeout_seconds=7.5)
 
-    assert command == ["uv", "run", "tools/iccma2025_run_native.py", "_worker", "{job_path}"]
+    assert command[0] == sys.executable
+    assert Path(command[1]).name == "iccma2025_run_native.py"
+    assert command[2:] == ["_worker", "{job_path}"]
     payload = backend_job(job, backend="asp", timeout_seconds=7.5)
     assert payload["backend"] == "asp"
     assert payload["solver_timeout_seconds"] == 7.5
