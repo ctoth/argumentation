@@ -81,6 +81,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--uci", action="store_true")
     parser.add_argument("--dialectic-depth", type=int, default=1)
     parser.add_argument("--search-depth", type=int, default=0)
+    parser.add_argument(
+        "--search-backend",
+        choices=("negamax", "alphabeta"),
+        default="negamax",
+    )
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -93,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
         board,
         dialectic_depth=args.dialectic_depth,
         search_depth=args.search_depth,
+        search_backend=args.search_backend,
     )
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
@@ -210,6 +216,7 @@ def probe_moves(
     *,
     dialectic_depth: int = 1,
     search_depth: int = 0,
+    search_backend: str = "negamax",
 ) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
@@ -243,7 +250,12 @@ def probe_moves(
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
-        search_result = root_search_result(board, move, depth=search_depth)
+        search_result = root_search_result(
+            board,
+            move,
+            depth=search_depth,
+            backend=search_backend,
+        )
         if search_result is not None:
             if search_result.score > 0:
                 reasons.append(f"search:negamax:{search_result.score}")
@@ -283,12 +295,18 @@ def root_search_result(
     move: chess.Move,
     *,
     depth: int,
+    backend: str,
 ) -> SearchResult | None:
     if depth <= 0:
         return None
     board.push(move)
     try:
-        child = negamax(board, depth - 1)
+        if backend == "negamax":
+            child = negamax(board, depth - 1)
+        elif backend == "alphabeta":
+            child = alphabeta(board, depth - 1, alpha=-1_000_000, beta=1_000_000)
+        else:
+            raise ValueError(f"unsupported search backend: {backend}")
         return SearchResult(score=-child.score, line=(move.uci(),) + child.line)
     finally:
         board.pop()
@@ -318,6 +336,45 @@ def negamax(board: chess.Board, depth: int) -> SearchResult:
         ):
             best = candidate
             best_move = move
+
+    if best is None:
+        return SearchResult(score=static_evaluation(board), line=())
+    return best
+
+
+def alphabeta(
+    board: chess.Board,
+    depth: int,
+    *,
+    alpha: int,
+    beta: int,
+) -> SearchResult:
+    if board.is_checkmate():
+        return SearchResult(score=-100_000 - depth, line=())
+    if board.is_stalemate() or board.is_insufficient_material():
+        return SearchResult(score=0, line=())
+    if depth <= 0:
+        return SearchResult(score=static_evaluation(board), line=())
+
+    best: SearchResult | None = None
+    best_move: chess.Move | None = None
+    for move in board.legal_moves:
+        board.push(move)
+        try:
+            child = alphabeta(board, depth - 1, alpha=-beta, beta=-alpha)
+            candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
+        finally:
+            board.pop()
+        if (
+            best is None
+            or candidate.score > best.score
+            or (candidate.score == best.score and move.uci() < best_move.uci())
+        ):
+            best = candidate
+            best_move = move
+        alpha = max(alpha, candidate.score)
+        if alpha >= beta:
+            break
 
     if best is None:
         return SearchResult(score=static_evaluation(board), line=())
