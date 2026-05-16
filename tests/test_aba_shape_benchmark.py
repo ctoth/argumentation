@@ -17,6 +17,7 @@ from tools.aba_shape_benchmark import (
     build_jobs_from_instances,
     build_jobs_from_manifest,
     compute_aba_shape,
+    propose_portfolio_rules,
     run_backend_command,
     shape_buckets,
     solver_class,
@@ -408,3 +409,79 @@ def test_summary_is_order_invariant() -> None:
         [row_b, row_a],
         backends=("auto", "asp", "sat"),
     )
+
+
+def test_portfolio_proposal_requires_no_bucket_counterexamples() -> None:
+    bucket = {"solver_class": "aba/single-extension/preferred", "assumption_size": "small"}
+    rows = [
+        {
+            "instance": "first.aba",
+            "subtrack": "SE-PR",
+            "solver_class": "aba/single-extension/preferred",
+            "buckets": bucket,
+            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "solved"}},
+            "best_solved_backend": "asp",
+            "all_timed_out": False,
+        },
+        {
+            "instance": "second.aba",
+            "subtrack": "SE-PR",
+            "solver_class": "aba/single-extension/preferred",
+            "buckets": bucket,
+            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "solved"}},
+            "best_solved_backend": "auto",
+            "all_timed_out": False,
+        },
+    ]
+
+    assert propose_portfolio_rules(rows, backends=("auto", "asp")) == []
+
+
+def test_portfolio_proposal_records_evidence_and_empty_failures() -> None:
+    bucket = {"solver_class": "aba/single-extension/preferred", "assumption_size": "small"}
+    rows = [
+        {
+            "instance": "first.aba",
+            "subtrack": "SE-PR",
+            "solver_class": "aba/single-extension/preferred",
+            "buckets": bucket,
+            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "timeout"}},
+            "best_solved_backend": "asp",
+            "all_timed_out": False,
+        },
+        {
+            "instance": "second.aba",
+            "subtrack": "SE-PR",
+            "solver_class": "aba/single-extension/preferred",
+            "buckets": bucket,
+            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "timeout"}},
+            "best_solved_backend": "asp",
+            "all_timed_out": False,
+        },
+    ]
+
+    proposals = propose_portfolio_rules(rows, backends=("auto", "asp"))
+
+    assert proposals == [
+        {
+            "backend": "asp",
+            "candidate_rule": "prefer asp when shape_predicate matches",
+            "confidence": "medium",
+            "counterexamples": [],
+            "evidence_rows": [
+                {
+                    "instance": "first.aba",
+                    "solver_class": "aba/single-extension/preferred",
+                    "subtrack": "SE-PR",
+                },
+                {
+                    "instance": "second.aba",
+                    "solver_class": "aba/single-extension/preferred",
+                    "subtrack": "SE-PR",
+                },
+            ],
+            "failures": [],
+            "shape_predicate": bucket,
+            "solver_classes": ["aba/single-extension/preferred"],
+        }
+    ]

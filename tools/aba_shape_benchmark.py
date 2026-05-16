@@ -544,23 +544,41 @@ def propose_portfolio_rules(rows: list[dict[str, Any]], *, backends: tuple[str, 
         grouped[tuple(sorted(row["buckets"].items()))].append(row)
     proposals: list[dict[str, Any]] = []
     for key, bucket_rows in sorted(grouped.items()):
-        solved_best = [row["best_solved_backend"] for row in bucket_rows if row["best_solved_backend"]]
-        if len(bucket_rows) < 2 or not solved_best:
+        if len(bucket_rows) < 2:
             continue
-        counts = Counter(solved_best)
+        counts = Counter(row["best_solved_backend"] for row in bucket_rows if row["best_solved_backend"])
+        if not counts:
+            continue
         backend, count = counts.most_common(1)[0]
+        if count < 2:
+            continue
         counterexamples = [
-            row["instance"]
+            {
+                "instance": row["instance"],
+                "outcome": "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}",
+                "solver_class": row["solver_class"],
+            }
             for row in bucket_rows
-            if row["backend_results"][backend].get("status") != "solved"
+            if row["best_solved_backend"] != backend
         ]
         if counterexamples:
             continue
+        evidence_rows = [
+            {
+                "instance": row["instance"],
+                "solver_class": row["solver_class"],
+                "subtrack": row["subtrack"],
+            }
+            for row in bucket_rows
+        ]
         proposals.append(
             {
                 "backend": backend,
-                "confidence": "medium" if count == len(bucket_rows) else "low",
-                "evidence_rows": len(bucket_rows),
+                "candidate_rule": f"prefer {backend} when shape_predicate matches",
+                "confidence": "medium" if count >= 2 else "low",
+                "counterexamples": counterexamples,
+                "evidence_rows": evidence_rows,
+                "failures": [],
                 "shape_predicate": dict(key),
                 "solver_classes": sorted({row["solver_class"] for row in bucket_rows}),
             }
@@ -629,6 +647,7 @@ def build_payload(
                 "max_arity": MAX_ARITY_THRESHOLDS,
                 "rule_density": RULE_DENSITY_THRESHOLDS,
                 "grounded_shape_cost_limit": GROUNDED_SHAPE_COST_LIMIT,
+                "validation_cost_limit": VALIDATION_COST_LIMIT,
             },
             "timeout_seconds": timeout_seconds,
         },
