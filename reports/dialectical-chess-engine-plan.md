@@ -170,10 +170,10 @@ This is enough to prove that chess positions can flow into argument graphs and b
 Use a mate-in-one smoke position:
 
 ```text
-6k1/5ppp/8/8/8/8/5PPP/6KQ w - - 0 1
+7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1
 ```
 
-White to move has `Qb7#` available. The first engine should produce a hard accepted argument for `Qb7` because it is legal and immediately checkmates.
+White to move has `Ra8#` available. The first engine should produce a hard accepted argument for `Ra8` because it is legal and immediately checkmates.
 
 ## Falsifiers
 
@@ -187,7 +187,7 @@ White to move has `Qb7#` available. The first engine should produce a hard accep
 
 ```powershell
 uv run scratch/dialectical_chess_probe.py `
-  --fen "6k1/5ppp/8/8/8/8/5PPP/6KQ w - - 0 1" `
+  --fen "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" `
   --png scratch/dialectical_chess_mate_in_one.png `
   --list-legal
 ```
@@ -196,8 +196,7 @@ Later:
 
 ```powershell
 uv run scratch/dialectical_chess_probe.py `
-  --fen "6k1/5ppp/8/8/8/8/5PPP/6KQ w - - 0 1" `
+  --fen "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" `
   --choose `
   --emit-af scratch/dialectical_chess_mate_in_one.af.json
 ```
-
