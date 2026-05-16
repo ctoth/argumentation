@@ -10,7 +10,7 @@ from typing import Any, Sequence
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tools.iccma2025_run_native import infer_contest_tag
+from tools.iccma2025_run_native import TASK_TO_SEMANTICS, infer_contest_tag
 from tools.iccma_timeout_corpus import collect_timeout_rows, summarize_timeout_rows
 
 
@@ -18,6 +18,11 @@ DEFAULT_ROOT = Path("data") / "iccma" / "2025"
 DEFAULT_DATA_ROOT = Path("data") / "iccma"
 DEFAULT_TIMEOUT_MANIFEST = Path("tests") / "manifests" / "iccma2025-cap200-timeouts.json"
 DEFAULT_STALE_SUBTRACKS = ("SE-PR", "SE-ST")
+TASK_PREFIXES = {
+    "DC": "credulous-acceptance",
+    "DS": "skeptical-acceptance",
+    "SE": "single-extension",
+}
 
 
 @dataclass(frozen=True)
@@ -126,18 +131,65 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def solver_class(instance_kind: object, subtrack: object) -> str:
+    parts = str(subtrack).split("-", maxsplit=1)
+    if len(parts) != 2:
+        return f"{instance_kind}/unknown/{subtrack}"
+    task_prefix, semantic_tag = parts
+    task = TASK_PREFIXES.get(task_prefix, task_prefix.lower())
+    semantics = TASK_TO_SEMANTICS.get(semantic_tag, semantic_tag.lower())
+    return f"{instance_kind}/{task}/{semantics}"
+
+
+def summarize_result_classes(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    buckets: dict[str, dict[str, Any]] = {}
+    for item in results:
+        source = item["source"]
+        result = item["result"]
+        class_name = solver_class(source.get("instance_kind"), source.get("subtrack"))
+        bucket = buckets.setdefault(class_name, {"solver_class": class_name, "by_status": {}, "total": 0})
+        bucket["total"] += 1
+        status = str(result.get("status"))
+        bucket["by_status"][status] = bucket["by_status"].get(status, 0) + 1
+    return sorted(buckets.values(), key=lambda item: item["solver_class"])
+
+
+def summarize_timeout_classes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    buckets: dict[str, int] = {}
+    for row in rows:
+        class_name = solver_class(row.get("instance_kind"), row.get("subtrack"))
+        buckets[class_name] = buckets.get(class_name, 0) + 1
+    return [
+        {"solver_class": class_name, "timeouts": count}
+        for class_name, count in sorted(buckets.items())
+    ]
+
+
 def summarize_fresh_timeouts(csv_path: Path) -> dict[str, Any]:
     if not csv_path.exists():
-        return {"missing_csv": str(csv_path), "total_timeouts": None, "by_group": []}
+        return {
+            "missing_csv": str(csv_path),
+            "total_timeouts": None,
+            "by_group": [],
+            "by_solver_class": [],
+        }
     rows = collect_timeout_rows([csv_path])
-    return summarize_timeout_rows(rows)
+    summary = summarize_timeout_rows(rows)
+    return summary | {"by_solver_class": summarize_timeout_classes(rows)}
 
 
 def summarize_replay(output_path: Path) -> dict[str, Any]:
     if not output_path.exists():
-        return {"missing_output": str(output_path), "total": None, "by_status": {}}
+        return {
+            "missing_output": str(output_path),
+            "total": None,
+            "by_status": {},
+            "by_solver_class": [],
+        }
     payload = load_json(output_path)
-    return payload["summary"]
+    return payload["summary"] | {
+        "by_solver_class": summarize_result_classes(payload["results"]),
+    }
 
 
 def execute_workstream(config: WorkstreamConfig) -> dict[str, Any]:
@@ -206,6 +258,11 @@ def execute_workstream(config: WorkstreamConfig) -> dict[str, Any]:
             "timeout_manifest": str(config.timeout_manifest),
         },
         "commands": commands,
+        "optimization_scope": {
+            "benchmark_harness": "ICCMA 2025",
+            "target": "general formal argumentation solver classes",
+            "rule": "Use benchmark rows as reproducible pressure tests; keep speedups in reusable solvers, encodings, routing, preprocessing, or backend integrations.",
+        },
         "fresh_cap": {
             "outputs": {key: str(path) for key, path in cap_paths.items()},
             "timeout_summary": summarize_fresh_timeouts(cap_paths["csv"]),

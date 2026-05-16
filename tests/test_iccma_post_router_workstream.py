@@ -10,6 +10,9 @@ from tools.iccma_post_router_workstream import (
     cap_output_paths,
     parse_args,
     summarize_fresh_timeouts,
+    summarize_result_classes,
+    summarize_timeout_classes,
+    solver_class,
 )
 
 
@@ -99,4 +102,53 @@ def test_summarize_fresh_timeouts_reports_missing_csv(tmp_path: Path) -> None:
         "missing_csv": str(missing),
         "total_timeouts": None,
         "by_group": [],
+        "by_solver_class": [],
     }
+
+
+def test_solver_class_maps_iccma_subtrack_to_general_solver_class() -> None:
+    assert solver_class("aba", "SE-PR") == "aba/single-extension/preferred"
+    assert solver_class("af", "DS-SST") == "af/skeptical-acceptance/semi-stable"
+
+
+def test_summarize_result_classes_groups_by_general_solver_class() -> None:
+    results = [
+        {
+            "source": {"instance_kind": "aba", "subtrack": "SE-PR"},
+            "result": {"status": "solved"},
+        },
+        {
+            "source": {"instance_kind": "aba", "subtrack": "SE-PR"},
+            "result": {"status": "timeout"},
+        },
+        {
+            "source": {"instance_kind": "aba", "subtrack": "SE-ST"},
+            "result": {"status": "solved"},
+        },
+    ]
+
+    assert summarize_result_classes(results) == [
+        {
+            "solver_class": "aba/single-extension/preferred",
+            "by_status": {"solved": 1, "timeout": 1},
+            "total": 2,
+        },
+        {
+            "solver_class": "aba/single-extension/stable",
+            "by_status": {"solved": 1},
+            "total": 1,
+        },
+    ]
+
+
+def test_summarize_timeout_classes_counts_general_solver_classes() -> None:
+    rows = [
+        {"instance_kind": "aba", "subtrack": "SE-PR"},
+        {"instance_kind": "aba", "subtrack": "SE-PR"},
+        {"instance_kind": "af", "subtrack": "DS-SST"},
+    ]
+
+    assert summarize_timeout_classes(rows) == [
+        {"solver_class": "aba/single-extension/preferred", "timeouts": 2},
+        {"solver_class": "af/skeptical-acceptance/semi-stable", "timeouts": 1},
+    ]
