@@ -37,7 +37,7 @@ black-box alpha-beta loop bolted on after the fact.
 ## Current State
 
 - `scratch/dialectical_chess_probe.py` is a PEP 723 script.
-- The script depends only on `chess>=1.11.0`.
+- The script depends on `chess>=1.11.0` and `z3-solver>=4.12`.
 - It accepts a FEN through `--fen`.
 - It accepts a PGN through `--pgn-in`, replays the mainline, chooses the next
   move, and writes an appended PGN through `--pgn-out` or `--pgn`.
@@ -52,7 +52,8 @@ black-box alpha-beta loop bolted on after the fact.
 - It does not yet search beyond one ply.
 - It does not yet own move generation; `python-chess` is the bootstrap
   substrate.
-- It does not yet use SMT.
+- It uses Z3 by default for mate-in-one witnesses and exposes
+  `--no-smt-mate` for comparison runs.
 
 ## Control Rules
 
@@ -375,8 +376,8 @@ Tasks:
 Acceptance criteria:
 
 - At least one chosen move is supported by an SMT-produced witness.
-- If SMT is unavailable, the engine returns a typed/prose unavailable result
-  and falls back to non-SMT search.
+- SMT mate witnesses are enabled by default in the sidecar script; comparison
+  runs can disable them explicitly.
 - SMT witnesses are checked against `python-chess` before becoming arguments.
 
 Tests:
