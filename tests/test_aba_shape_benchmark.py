@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
 
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
@@ -11,9 +12,11 @@ from tools.aba_shape_benchmark import (
     AbaShape,
     BenchmarkJob,
     best_solved_backend,
+    build_backend_command,
     build_jobs_from_instances,
     build_jobs_from_manifest,
     compute_aba_shape,
+    run_backend_command,
     shape_buckets,
     solver_class,
     summarize,
@@ -231,6 +234,42 @@ def test_best_solved_backend_ignores_timeout_and_invalid() -> None:
         )
         == "sat"
     )
+
+
+def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) -> None:
+    job = BenchmarkJob(
+        year=2025,
+        track="aba",
+        subtrack="SE-PR",
+        instance_kind="aba",
+        instance="ABAs/example.aba",
+        root=tmp_path / "2025",
+        path=tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba",
+        arguments_or_atoms=10,
+    )
+
+    command = build_backend_command(job, backend="asp", timeout_seconds=7.5)
+
+    assert command[1] == "tools/iccma_run_selected.py"
+    assert command[command.index("--backend") + 1] == "asp"
+    assert command[command.index("--subtrack") + 1] == "SE-PR"
+    assert command[command.index("--timeout-seconds") + 1] == "7.5"
+    assert command[command.index("--arguments-or-atoms") + 1] == "10"
+
+
+def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
+    def timeout_run(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs["timeout"])
+
+    monkeypatch.setattr(aba_shape_benchmark.subprocess, "run", timeout_run)
+
+    result = run_backend_command(
+        ["ignored"],
+        timeout_seconds=0.1,
+    )
+
+    assert result["status"] == "timeout"
+    assert result["reason"] == "benchmark_timeout>0.1"
 
 
 def test_summary_is_order_invariant() -> None:

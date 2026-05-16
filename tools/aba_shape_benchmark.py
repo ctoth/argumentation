@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
+import subprocess
 import sys
 import time
 from typing import Any, Iterable
@@ -18,7 +19,6 @@ from argumentation.aba_preprocessing import simplify_aba
 from argumentation.aspic import GroundAtom, Literal
 from argumentation.iccma import parse_aba
 from tools.iccma2025_run_native import TASK_TO_SEMANTICS
-from tools.iccma_run_selected import run_selected
 
 
 DEFAULT_ROOT = Path("data") / "iccma" / "2025"
@@ -268,23 +268,95 @@ def run_backend_matrix(
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
         started = time.perf_counter()
-        result = run_selected(
-            root=job.root,
-            relative_path=job.instance,
-            kind="aba",
-            subtrack=job.subtrack,
-            backend=backend,
-            timeout_seconds=timeout_seconds,
-            arguments_or_atoms=job.arguments_or_atoms,
-            track=job.track,
-            instance_kind=job.instance_kind,
+        command = build_backend_command(job, backend=backend, timeout_seconds=timeout_seconds)
+        result = run_backend_command(
+            command,
+            timeout_seconds=timeout_seconds + 5.0,
         )
         elapsed = time.perf_counter() - started
         materialized = dict(result)
+        materialized["command"] = command
         materialized["elapsed_seconds"] = elapsed
         materialized["validation"] = validate_result(framework, job.subtrack, materialized)
         results[backend] = materialized
     return results
+
+
+def build_backend_command(
+    job: BenchmarkJob,
+    *,
+    backend: str,
+    timeout_seconds: float,
+) -> list[str]:
+    command = [
+        sys.executable,
+        "tools/iccma_run_selected.py",
+        "--root",
+        str(job.root),
+        "--relative-path",
+        job.instance,
+        "--kind",
+        "aba",
+        "--subtrack",
+        job.subtrack,
+        "--backend",
+        backend,
+        "--timeout-seconds",
+        str(timeout_seconds),
+        "--track",
+        job.track,
+        "--instance-kind",
+        job.instance_kind,
+    ]
+    if job.arguments_or_atoms is not None:
+        command.extend(["--arguments-or-atoms", str(job.arguments_or_atoms)])
+    return command
+
+
+def run_backend_command(command: list[str], *, timeout_seconds: float) -> dict[str, Any]:
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "timeout",
+            "reason": f"benchmark_timeout>{timeout_seconds}",
+            "error": None,
+            "stdout": "",
+            "stderr": "",
+        }
+    parsed = _parse_json_line(completed.stdout)
+    if parsed is None:
+        return {
+            "status": "error",
+            "reason": "missing_json_result",
+            "error": completed.stderr or completed.stdout,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+        }
+    parsed["stdout"] = completed.stdout
+    parsed["stderr"] = completed.stderr
+    parsed["returncode"] = completed.returncode
+    return parsed
+
+
+def _parse_json_line(stdout: str) -> dict[str, Any] | None:
+    for line in reversed(stdout.splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict):
+            return value
+    return None
 
 
 def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, Any]) -> dict[str, Any]:
