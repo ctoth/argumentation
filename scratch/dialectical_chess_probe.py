@@ -2,6 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #   "chess>=1.11.0",
+#   "z3-solver>=4.12",
 # ]
 # ///
 """Sidecar probe for dialectical chess experiments.
@@ -51,6 +52,7 @@ class MoveProbe:
     reply_attacks: tuple[str, ...] = ()
     search_score: int | None = None
     search_line: tuple[str, ...] = ()
+    smt_witnesses: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -86,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=("negamax", "alphabeta"),
         default="negamax",
     )
+    parser.add_argument("--smt-mate", action="store_true")
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -99,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
         dialectic_depth=args.dialectic_depth,
         search_depth=args.search_depth,
         search_backend=args.search_backend,
+        smt_mate=args.smt_mate,
     )
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
@@ -217,11 +221,13 @@ def probe_moves(
     dialectic_depth: int = 1,
     search_depth: int = 0,
     search_backend: str = "negamax",
+    smt_mate: bool = False,
 ) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
     if search_depth < 0:
         raise ValueError("search_depth must be non-negative")
+    smt_mate_moves = smt_mate_in_one_moves(board) if smt_mate else frozenset()
     probes = []
     for move in board.legal_moves:
         san = board.san(move)
@@ -250,6 +256,11 @@ def probe_moves(
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
+        smt_witnesses: list[str] = []
+        if move.uci() in smt_mate_moves:
+            score += 1_000_000
+            reasons.append("smt:mate_in_one")
+            smt_witnesses.append("mate_in_one")
         search_result = root_search_result(
             board,
             move,
@@ -285,9 +296,52 @@ def probe_moves(
                 reply_attacks=reply_attacks,
                 search_score=None if search_result is None else search_result.score,
                 search_line=() if search_result is None else search_result.line,
+                smt_witnesses=tuple(smt_witnesses),
             )
         )
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
+
+
+def smt_mate_in_one_moves(board: chess.Board) -> frozenset[str]:
+    try:
+        from z3 import Bool, Or, Solver, sat
+    except ImportError:
+        return frozenset()
+
+    mate_moves: dict[str, Any] = {}
+    for move in board.legal_moves:
+        board.push(move)
+        try:
+            if board.is_checkmate():
+                mate_moves[move.uci()] = Bool(f"mate_{move.uci()}")
+        finally:
+            board.pop()
+
+    if not mate_moves:
+        return frozenset()
+
+    solver = Solver()
+    solver.add(Or(*mate_moves.values()))
+    if solver.check() != sat:
+        return frozenset()
+    model = solver.model()
+    witnesses = {
+        move
+        for move, variable in mate_moves.items()
+        if model.eval(variable, model_completion=True)
+    }
+    return frozenset(move for move in witnesses if verifies_mate_in_one(board, move))
+
+
+def verifies_mate_in_one(board: chess.Board, move_text: str) -> bool:
+    move = chess.Move.from_uci(move_text)
+    if move not in board.legal_moves:
+        return False
+    board.push(move)
+    try:
+        return board.is_checkmate()
+    finally:
+        board.pop()
 
 
 def root_search_result(
