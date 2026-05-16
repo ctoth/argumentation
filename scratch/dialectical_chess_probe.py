@@ -281,7 +281,16 @@ def bounded_reply_attacks(
                 and moved_piece_value > 0
             )
             board.push(reply)
-            defended = reply_depth > 1 and has_bounded_defense(board, reply_depth - 1)
+            reply_piece = board.piece_at(reply.to_square)
+            reply_piece_value = (
+                PIECE_VALUE.get(reply_piece.piece_type, 0) if reply_piece else 0
+            )
+            defended = reply_depth > 1 and has_bounded_defense(
+                board,
+                reply_depth - 1,
+                target_square=reply.to_square,
+                target_value=reply_piece_value,
+            )
             if board.is_checkmate():
                 attacks.append(
                     defended_label("reply_mate", reply_text, defended=defended)
@@ -304,10 +313,23 @@ def defended_label(kind: str, payload: str, *, defended: bool) -> str:
     return f"{kind}:{status}:{payload}"
 
 
-def has_bounded_defense(board: chess.Board, depth: int) -> bool:
+def has_bounded_defense(
+    board: chess.Board,
+    depth: int,
+    *,
+    target_square: chess.Square | None = None,
+    target_value: int = 0,
+) -> bool:
     if depth <= 0:
         return False
     for move in board.legal_moves:
+        if (
+            target_square is not None
+            and board.is_capture(move)
+            and move.to_square == target_square
+            and capture_value(board, move) >= target_value
+        ):
+            return True
         board.push(move)
         try:
             if board.is_checkmate():
