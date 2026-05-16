@@ -6,9 +6,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
-import subprocess
 import sys
-import tempfile
 import time
 from typing import Any, Iterable
 
@@ -19,7 +17,7 @@ from argumentation.aba import ABAFramework, AssumptionSet
 from argumentation.aba_preprocessing import simplify_aba
 from argumentation.aspic import GroundAtom, Literal
 from argumentation.iccma import parse_aba
-from tools.iccma2025_run_native import TASK_TO_SEMANTICS
+from tools.iccma2025_run_native import TASK_TO_SEMANTICS, run_child as run_native_child
 
 
 DEFAULT_ROOT = Path("data") / "iccma" / "2025"
@@ -371,41 +369,12 @@ def run_backend_command(
     job_payload: dict[str, Any],
     timeout_seconds: float,
 ) -> dict[str, Any]:
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
-        json.dump(job_payload, handle)
-        job_path = Path(handle.name)
-    command = [str(job_path) if item == "{job_path}" else item for item in command_template]
-    try:
-        completed = subprocess.run(
-            command,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired:
-        return {
-            "status": "timeout",
-            "reason": f"benchmark_timeout>{timeout_seconds}",
-            "error": None,
-            "stdout": "",
-            "stderr": "",
-        }
-    finally:
-        job_path.unlink(missing_ok=True)
-    parsed = _parse_json_line(completed.stdout)
-    if parsed is None:
-        return {
-            "status": "error",
-            "reason": "missing_json_result",
-            "error": completed.stderr or completed.stdout,
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
-        }
-    parsed["stdout"] = completed.stdout
-    parsed["stderr"] = completed.stderr
-    parsed["returncode"] = completed.returncode
-    return parsed
+    _ = command_template
+    result = dict(run_native_child(job_payload, timeout_seconds=timeout_seconds))
+    result.setdefault("stdout", "")
+    result.setdefault("stderr", "")
+    result.setdefault("returncode", None)
+    return result
 
 
 def _parse_json_line(stdout: str) -> dict[str, Any] | None:

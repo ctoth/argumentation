@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import subprocess
 import sys
 
 from argumentation.aba import ABAFramework
@@ -288,10 +287,10 @@ def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) ->
 
 
 def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
-    def timeout_run(*args, **kwargs):
-        raise subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs["timeout"])
+    def timeout_child(job, *, timeout_seconds):
+        return {"status": "timeout", "reason": f"timeout>{timeout_seconds}", "error": None}
 
-    monkeypatch.setattr(aba_shape_benchmark.subprocess, "run", timeout_run)
+    monkeypatch.setattr(aba_shape_benchmark, "run_native_child", timeout_child)
 
     result = run_backend_command(
         ["ignored"],
@@ -300,7 +299,7 @@ def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
     )
 
     assert result["status"] == "timeout"
-    assert result["reason"] == "benchmark_timeout>0.1"
+    assert result["reason"] == "timeout>0.1"
 
 
 def test_summary_is_order_invariant() -> None:
