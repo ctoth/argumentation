@@ -258,9 +258,9 @@ def probe_moves(
         )
         if search_result is not None:
             if search_result.score > 0:
-                reasons.append(f"search:negamax:{search_result.score}")
+                reasons.append(f"search:{search_backend}:{search_result.score}")
             elif search_result.score < 0:
-                objections.append(f"search:negamax:{search_result.score}")
+                objections.append(f"search:{search_backend}:{search_result.score}")
             score += search_result.score
         reply_attacks = bounded_reply_attacks(
             board,
