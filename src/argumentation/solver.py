@@ -603,7 +603,7 @@ def _solve_asp_aba_single_extension(
         framework,
         backend=backend,
         semantics=semantics,
-        task="enum",
+        task="single-extension",
     )
     if result.status == "success":
         extension = result.extensions[0] if result.extensions else None

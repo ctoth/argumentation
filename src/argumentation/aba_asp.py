@@ -264,6 +264,29 @@ def _solve_multishot(
             counterexample=counterexample,
         )
 
+    if task == "single-extension":
+        if semantics == "grounded":
+            extension = solver.grounded_extension()
+        elif semantics == "complete":
+            extension = solver.find_complete_extension()
+        elif semantics == "stable":
+            extension = solver.find_stable_extension()
+        elif semantics == "preferred":
+            extension = solver.find_preferred_extension()
+        else:  # pragma: no cover - dispatcher gates this
+            raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+        extensions = tuple() if extension is None else (extension,)
+        return _task_result(
+            framework,
+            encoding=encoding,
+            semantics=semantics,
+            backend=backend,
+            task=task,
+            query=query,
+            extensions=extensions,
+            metadata=metadata_base | {"algorithm": "first-model-witness"},
+        )
+
     if semantics == "grounded":
         extensions = (solver.grounded_extension(),)
     elif semantics == "complete":
@@ -313,11 +336,12 @@ def _solve_simplified(
     ):
         return _solve_simplified_ds_pr(simplification, backend=backend, query=query)
 
+    residual_task = "single-extension" if task == "single-extension" else "enum"
     residual_result = solve_aba_with_backend(
         residual,
         backend=backend,
         semantics=semantics,
-        task="enum",
+        task=residual_task,
         query=None,
         binary=binary,
         timeout_seconds=timeout_seconds,
@@ -447,6 +471,18 @@ def _task_result(
             accepted_assumptions=extensions[0] if len(extensions) == 1 else frozenset(),
             encoding=encoding,
             metadata=metadata | {"task": task},
+        )
+    if task == "single-extension":
+        extension = extensions[0] if extensions else frozenset()
+        return ABAQueryResult(
+            status="success",
+            semantics=semantics,
+            backend=backend,
+            extensions=extensions,
+            accepted_assumptions=extension,
+            encoding=encoding,
+            metadata=metadata | {"task": task},
+            witness=extension if extensions else None,
         )
     if query is None:
         return _failure_result(

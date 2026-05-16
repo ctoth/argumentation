@@ -265,6 +265,50 @@ def test_multishot_enumeration_matches_subprocess_clingo(framework, semantics) -
     assert _show(multishot.extensions) == _show(subprocess.extensions)
 
 
+def test_preferred_single_extension_uses_limited_multishot_witness(monkeypatch) -> None:
+    framework = ALL[0]
+    limits: list[int | None] = []
+    original = AbaIncrementalSolver.enumerate_preferred
+
+    def spy_enumerate_preferred(self, *, telemetry=None, limit=None):
+        limits.append(limit)
+        return original(self, telemetry=telemetry, limit=limit)
+
+    monkeypatch.setattr(AbaIncrementalSolver, "enumerate_preferred", spy_enumerate_preferred)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="single-extension",
+        simplify=False,
+    )
+
+    assert result.status == "success"
+    assert result.extensions
+    assert limits == [1]
+
+
+def test_stable_single_extension_avoids_full_multishot_enumeration(monkeypatch) -> None:
+    framework = ALL[0]
+
+    def forbidden_enumeration(*args, **kwargs):
+        raise AssertionError("single stable witness should not enumerate every stable extension")
+
+    monkeypatch.setattr(AbaIncrementalSolver, "enumerate_stable", forbidden_enumeration)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="stable",
+        task="single-extension",
+        simplify=False,
+    )
+
+    assert result.status == "success"
+    assert result.extensions
+
+
 # ---------------------------------------------------------------------------
 # DS-PR (skeptical preferred) -- Algorithm 1
 # ---------------------------------------------------------------------------

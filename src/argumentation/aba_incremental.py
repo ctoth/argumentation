@@ -160,6 +160,18 @@ class AbaIncrementalSolver:
     def enumerate_stable(self, *, telemetry: IncrementalTelemetry | None = None) -> tuple[AssumptionSet, ...]:
         return self._enumerate(stable=True, telemetry=telemetry)
 
+    def find_complete_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+        ctl = self._new_control()
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        return self._solve_one(ctl)
+
+    def find_stable_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+        ctl = self._new_control(extra_program=":- out(X), not defeated(X).")
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        return self._solve_one(ctl)
+
     def grounded_extension(self) -> AssumptionSet:
         # Use the polynomial support-mask fixpoint rather than ``aba.grounded_extension``
         # -- the latter's ``_all_subsets`` blow-up is exponential, and it historically
