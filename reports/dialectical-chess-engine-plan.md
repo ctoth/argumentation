@@ -31,7 +31,7 @@ We need our own engine substrate, even if the first version is simple:
 - Check, checkmate, stalemate, castling, en passant, promotion.
 - Repetition and fifty-move bookkeeping eventually.
 - Perft tests for legal move correctness.
-- Optional PNG/SVG rendering for debugging positions.
+- PGN output for smoke games and optional SVG rendering for debugging positions.
 
 The first implementation can start with a clear Python board model before optimizing to bitboards. Correctness matters more than speed at this stage.
 
@@ -138,8 +138,7 @@ The engine can expose:
 
 Prototype-only dependencies can live in PEP 723 inline script metadata:
 
-- `chess`: FEN parsing, legal move sanity checks, and SVG board rendering while we build our own board.
-- `cairosvg`: SVG-to-PNG conversion for board snapshots.
+- `chess`: FEN parsing, legal move sanity checks, PGN writing, and optional SVG board rendering while we build our own board.
 - `z3-solver`: bounded tactical constraints.
 
 The package itself should not add these dependencies until the experiment proves useful.
@@ -149,14 +148,14 @@ The package itself should not add these dependencies until the experiment proves
 - FEN corpus for smoke tests.
 - Perft positions and expected node counts.
 - Mate-in-1, mate-in-2, and simple tactic suites.
-- Position PNGs for debugging.
+- PGN traces for selected moves.
 - JSON traces of dialectical proof graphs.
 
 ## First Concrete Milestone
 
 Milestone 0 should not try to be clever:
 
-1. Render a supplied FEN to PNG.
+1. Accept a supplied FEN and emit a one-move PGN for the selected move.
 2. List legal moves from the position.
 3. Create one top-level argument per legal move.
 4. Add hard attacks for illegal moves only if using generated pseudo-legal moves.
@@ -188,7 +187,7 @@ White to move has `Ra8#` available. The first engine should produce a hard accep
 ```powershell
 uv run scratch/dialectical_chess_probe.py `
   --fen "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" `
-  --png scratch/dialectical_chess_mate_in_one.png `
+  --pgn scratch/dialectical_chess_mate_in_one.pgn `
   --list-legal
 ```
 
