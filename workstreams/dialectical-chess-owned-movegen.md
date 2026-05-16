@@ -54,7 +54,7 @@ The sidecar can remain under `scratch/` until promotion:
   - `scratch/dialectical_chess/movegen.py`
   - `scratch/dialectical_chess/perft.py`
 
-## Phase 0: FEN and Board Invariants
+### Phase 0: FEN and Board Invariants
 
 Status: started.
 
@@ -88,7 +88,7 @@ uv run .\scratch\dialectical_chess_owned.py "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/
 uv run .\scratch\dialectical_chess_owned.py "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" --square a1
 ```
 
-## Phase 1: Move Type and Coordinate Operations
+### Phase 1: Move Type and Coordinate Operations
 
 Tasks:
 
@@ -111,7 +111,7 @@ Acceptance criteria:
 - Coordinate helpers agree with known squares: `a1=0`, `h1=7`, `a8=56`,
   `h8=63`.
 
-## Phase 2: Pseudo-Legal Non-King Moves
+### Phase 2: Pseudo-Legal Non-King Moves
 
 Tasks:
 
@@ -133,7 +133,7 @@ Acceptance criteria:
 - Promotion fixture emits four promotion choices.
 - Pseudo-legal output is deterministic sorted UCI.
 
-## Phase 3: Attack Detection and Check
+### Phase 3: Attack Detection and Check
 
 Tasks:
 
@@ -155,7 +155,7 @@ Acceptance criteria:
 - Check fixtures cover knight check, sliding check, pawn check, adjacent king
   illegality, and discovered line opening.
 
-## Phase 4: Make/Unmake or Immutable Apply
+### Phase 4: Make/Unmake or Immutable Apply
 
 Tasks:
 
@@ -178,7 +178,7 @@ Acceptance criteria:
 - Applying a move never mutates the source board if using immutable apply.
 - If mutable make/unmake is chosen, make followed by unmake restores exact FEN.
 
-## Phase 5: Legal Move Filtering
+### Phase 5: Legal Move Filtering
 
 Tasks:
 
@@ -196,7 +196,7 @@ Acceptance criteria:
 - Checkmate fixture has zero legal moves and `in_check=True`.
 - Stalemate fixture has zero legal moves and `in_check=False`.
 
-## Phase 6: Castling, En Passant, Promotion Completion
+### Phase 6: Castling, En Passant, Promotion Completion
 
 Tasks:
 
@@ -223,7 +223,7 @@ Acceptance criteria:
 - Curated en-passant fixtures match `python-chess`.
 - Curated promotion fixtures match `python-chess`.
 
-## Phase 7: Perft Harness
+### Phase 7: Perft Harness
 
 Tasks:
 
@@ -249,7 +249,7 @@ Acceptance criteria:
 - Divide output identifies the first mismatching root move when a fixture
   fails.
 
-## Phase 8: Differential Corpus
+### Phase 8: Differential Corpus
 
 Tasks:
 
@@ -274,7 +274,7 @@ Acceptance criteria:
 - All curated FENs match exactly.
 - Failure output names the FEN, missing moves, and extra moves.
 
-## Phase 9: Engine Integration Gate
+### Phase 9: Engine Integration Gate
 
 Tasks:
 

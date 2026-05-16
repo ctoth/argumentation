@@ -69,7 +69,7 @@ Use these families explicitly:
   task explicitly asks to promote a report.
 - Every generated report filename must include date or commit when promoted.
 
-## Phase 0: Built-In EPD Smoke
+### Phase 0: Built-In EPD Smoke
 
 Status: complete.
 
@@ -91,7 +91,7 @@ Known baseline from first smoke:
 
 - `1/1`, hit rate `1.0`, cold run about `249 ms` with SMT enabled.
 
-## Phase 1: Local EPD Fixture Suite
+### Phase 1: Local EPD Fixture Suite
 
 Goal: establish a tiny committed fixture suite that exercises success and
 failure paths without external downloads.
@@ -114,7 +114,7 @@ Acceptance criteria:
 - Deliberate failure fixture scores 0.
 - JSON report includes one record per EPD line.
 
-## Phase 2: External EPD Suite Runner
+### Phase 2: External EPD Suite Runner
 
 Goal: run standard tactical/strategic EPD files provided by path.
 
@@ -147,7 +147,7 @@ uv run .\scratch\dialectical_chess_bench.py `
   --search-backend alphabeta
 ```
 
-## Phase 3: Timing and Ablation Matrix
+### Phase 3: Timing and Ablation Matrix
 
 Goal: isolate which mechanism helps or hurts.
 
@@ -174,7 +174,7 @@ Acceptance criteria:
 - A comparison script or notebook is not required yet, but the raw JSON must be
   stable and scriptable.
 
-## Phase 4: Lichess Puzzle CSV Runner
+### Phase 4: Lichess Puzzle CSV Runner
 
 Goal: scale beyond curated EPD suites.
 
@@ -209,7 +209,7 @@ uv run .\scratch\dialectical_chess_bench.py `
   --json-out .\scratch\bench-lichess-sample-<commit>.json
 ```
 
-## Phase 5: UCI Match Harness
+### Phase 5: UCI Match Harness
 
 Goal: compare playing behavior against baseline engines.
 
@@ -245,7 +245,7 @@ Acceptance criteria:
 - Report includes W/D/L and crashes/time forfeits.
 - SPRT is not used until ordinary fixed-game matches complete reliably.
 
-## Phase 6: SPRT / Regression Testing
+### Phase 6: SPRT / Regression Testing
 
 Goal: test whether a change improves playing strength.
 
@@ -266,7 +266,7 @@ Acceptance criteria:
 - SPRT output is saved as diagnostic.
 - Result is reported as pass/fail/inconclusive, not overinterpreted.
 
-## Phase 7: Benchmark Report Promotion
+### Phase 7: Benchmark Report Promotion
 
 Goal: produce a committed report only when explicitly requested.
 
