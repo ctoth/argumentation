@@ -26,7 +26,7 @@ import chess.svg
 from PIL import Image, ImageDraw, ImageFont
 
 
-DEFAULT_FEN = "6k1/5ppp/8/8/8/8/5PPP/6KQ w - - 0 1"
+DEFAULT_FEN = "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1"
 PIECE_VALUE = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
