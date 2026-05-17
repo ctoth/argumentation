@@ -39,6 +39,7 @@ def main() -> int:
     parser.add_argument("--epd", type=Path)
     parser.add_argument("--lichess-puzzles", type=Path)
     parser.add_argument("--experiment-matrix", action="store_true")
+    parser.add_argument("--compare-positional", action="store_true")
     parser.add_argument("--matrix-preset", choices=("core", "smoke"), default="core")
     parser.add_argument("--perft", action="store_true")
     parser.add_argument("--ablation", action="store_true")
@@ -88,6 +89,8 @@ def main() -> int:
         payload = run_loss_mining(args)
     elif args.experiment_matrix:
         payload = run_experiment_matrix(args)
+    elif args.compare_positional:
+        payload = run_positional_comparison(args)
     elif args.lichess_puzzles:
         payload = run_lichess(args)
     elif args.ablation:
@@ -216,6 +219,172 @@ def run_ablation(args: argparse.Namespace) -> dict[str, Any]:
 
 def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
     return score_lichess_rows(selected_lichess_rows(args), args)
+
+
+def run_positional_comparison(args: argparse.Namespace) -> dict[str, Any]:
+    if args.lichess_puzzles is None:
+        raise ValueError("--compare-positional requires --lichess-puzzles")
+    rows = selected_lichess_rows(args)
+    results = []
+    changed_decisions = []
+    solved_only_positional_on = []
+    solved_only_positional_off = []
+    both_fail_changed = []
+    both_solve_changed = []
+
+    for index, row in enumerate(rows, start=1):
+        moves = row["Moves"].split()
+        expected = {moves[0]} if moves else set()
+        row_args = argparse.Namespace(**vars(args))
+        row_args.dialectic_depth = dialectic_depth_for_lichess_row(row, args)
+
+        on_args = argparse.Namespace(**vars(row_args))
+        on_args.positional_reasons = True
+        off_args = argparse.Namespace(**vars(row_args))
+        off_args.positional_reasons = False
+
+        board = chess.Board(row["FEN"])
+        positional_on = score_board(board, expected, on_args)
+        positional_off = score_board(board, expected, off_args)
+        entry = positional_delta_entry(row, positional_on, positional_off, row_args)
+        results.append(entry)
+
+        if entry["changed_decision"]:
+            changed_decisions.append(entry)
+            if entry["positional_on"]["correct"] and entry["positional_off"]["correct"]:
+                both_solve_changed.append(entry)
+            elif not entry["positional_on"]["correct"] and not entry["positional_off"]["correct"]:
+                both_fail_changed.append(entry)
+        if entry["positional_on"]["correct"] and not entry["positional_off"]["correct"]:
+            solved_only_positional_on.append(entry)
+        if entry["positional_off"]["correct"] and not entry["positional_on"]["correct"]:
+            solved_only_positional_off.append(entry)
+
+        report_progress("positional_compare", index, len(rows), args)
+
+    return {
+        "ok": True,
+        "mode": "positional_comparison",
+        "suite": str(args.lichess_puzzles),
+        "sample": summarize_lichess_rows(rows),
+        "settings": {
+            **settings(args),
+            "compared_positional_reasons": [True, False],
+        },
+        "total": len(results),
+        "changed_decisions": len(changed_decisions),
+        "solved_only_positional_on": len(solved_only_positional_on),
+        "solved_only_positional_off": len(solved_only_positional_off),
+        "both_fail_changed": len(both_fail_changed),
+        "both_solve_changed": len(both_solve_changed),
+        "positions": results,
+    }
+
+
+def positional_delta_entry(
+    row: dict[str, str],
+    positional_on: dict[str, Any],
+    positional_off: dict[str, Any],
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    on_move = positional_on.get("selected_uci")
+    off_move = positional_off.get("selected_uci")
+    return {
+        "id": row.get("PuzzleId", ""),
+        "fen": row["FEN"],
+        "moves": row.get("Moves", "").split(),
+        "expected_uci": positional_on["expected_uci"],
+        "rating": int(row.get("Rating") or 0),
+        "themes": row.get("Themes", "").split(),
+        "selector_mode": args.selector_mode,
+        "dialectic_depth": args.dialectic_depth,
+        "changed_decision": on_move != off_move,
+        "positional_on": positional_snapshot(positional_on),
+        "positional_off": positional_snapshot(positional_off),
+        "classification": classify_positional_delta(positional_on, positional_off),
+    }
+
+
+def positional_snapshot(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "selected_uci": result.get("selected_uci"),
+        "selected_san": result.get("selected_san"),
+        "correct": result.get("correct"),
+        "score": result.get("score"),
+        "reasons": result.get("reasons", []),
+        "objections": result.get("objections", []),
+        "reply_attacks": result.get("reply_attacks", []),
+        "search_score": result.get("search_score"),
+        "search_line": result.get("search_line", []),
+        "smt_witnesses": result.get("smt_witnesses", []),
+        "optimizer_trace": result.get("optimizer_trace", {}),
+        "elapsed_ms": result.get("elapsed_ms"),
+    }
+
+
+def classify_positional_delta(positional_on: dict[str, Any], positional_off: dict[str, Any]) -> dict[str, Any]:
+    on_reasons = positional_on.get("reasons", [])
+    off_reasons = positional_off.get("reasons", [])
+    on_reply_attacks = positional_on.get("reply_attacks", [])
+    off_reply_attacks = positional_off.get("reply_attacks", [])
+    return {
+        "harmful_when": (
+            "positional_off_only_success"
+            if positional_off.get("correct") and not positional_on.get("correct")
+            else None
+        ),
+        "helpful_when": (
+            "positional_on_only_success"
+            if positional_on.get("correct") and not positional_off.get("correct")
+            else None
+        ),
+        "positional_reason_families": sorted(
+            {
+                reason.split(":", 1)[0]
+                for reason in on_reasons
+                if is_positional_reason(reason)
+            }
+        ),
+        "winning_move_tactical_markers": tactical_markers(off_reasons),
+        "positional_move_tactical_markers": tactical_markers(on_reasons),
+        "positional_move_unresolved_reply_attacks": [
+            attack
+            for attack in on_reply_attacks
+            if ":defended:" not in attack
+        ],
+        "nonpositional_move_unresolved_reply_attacks": [
+            attack
+            for attack in off_reply_attacks
+            if ":defended:" not in attack
+        ],
+        "positional_move_no_immediate_tactical_warrant": (
+            "objection:no_immediate_tactical_warrant" in positional_on.get("objections", [])
+        ),
+    }
+
+
+def is_positional_reason(reason: str) -> bool:
+    return reason.startswith(
+        (
+            "center_control:",
+            "development:",
+            "file_control:",
+            "king_safety:",
+            "outpost:",
+            "pawn_structure:",
+            "piece_activity:",
+        )
+    )
+
+
+def tactical_markers(reasons: list[str]) -> list[str]:
+    markers = []
+    for reason in reasons:
+        if reason in {"terminal:checkmate", "tactical:check", "procedural:mate_in_one"}:
+            markers.append(reason)
+        elif reason.startswith(("material:", "smt:", "search:")):
+            markers.append(reason)
+    return markers
 
 
 def selected_lichess_rows(args: argparse.Namespace) -> list[dict[str, str]]:
