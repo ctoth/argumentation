@@ -59,11 +59,13 @@ def main() -> int:
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
     parser.add_argument("--internal-uci-match", action="store_true")
-    parser.add_argument("--match-baseline", choices=("nosmt", "random"), default="nosmt")
+    parser.add_argument("--match-baseline", choices=("nosmt", "random", "stockfish"), default="nosmt")
     parser.add_argument("--match-openings", type=Path, default=OPENINGS_PATH)
     parser.add_argument("--match-games", type=int, default=2)
     parser.add_argument("--match-max-plies", type=int, default=40)
     parser.add_argument("--match-tc", default="1+0.01")
+    parser.add_argument("--stockfish-path")
+    parser.add_argument("--stockfish-elo", type=int, default=1320)
     parser.set_defaults(smt_mate=True)
     args = parser.parse_args()
 
@@ -247,7 +249,7 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         str(args.match_games),
         "-repeat",
     ]
-    baseline_name, baseline_args = fastchess_baseline(args.match_baseline, uv_executable)
+    baseline_name, baseline_args = fastchess_baseline(args.match_baseline, uv_executable, args)
     games_per_round = 2 if args.match_games > 1 else 1
     rounds = max(1, (args.match_games + games_per_round - 1) // games_per_round)
     fastchess_args = [
@@ -275,7 +277,7 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         "-concurrency",
         "1",
     ]
-    if cutechess:
+    if cutechess and args.match_baseline == "nosmt":
         command = [cutechess, *cutechess_args]
         runner = "cutechess-cli"
     elif fastchess:
@@ -313,7 +315,7 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def fastchess_baseline(baseline: str, uv_executable: str) -> tuple[str, list[str]]:
+def fastchess_baseline(baseline: str, uv_executable: str, args: argparse.Namespace) -> tuple[str, list[str]]:
     if baseline == "nosmt":
         return (
             "DialecticalNoSMT",
@@ -332,6 +334,21 @@ def fastchess_baseline(baseline: str, uv_executable: str) -> tuple[str, list[str
                 "args=run .\\scripts\\dialectical_chess_random_uci.py",
                 "proto=uci",
                 f"dir={ROOT}",
+            ],
+        )
+    if baseline == "stockfish":
+        stockfish = args.stockfish_path or shutil.which("stockfish") or shutil.which("stockfish.exe")
+        if stockfish is None:
+            raise RuntimeError("stockfish baseline requested but no stockfish executable was found")
+        return (
+            f"StockfishElo{args.stockfish_elo}",
+            [
+                f"cmd={stockfish}",
+                "proto=uci",
+                "option.Threads=1",
+                "option.Hash=16",
+                "option.UCI_LimitStrength=true",
+                f"option.UCI_Elo={args.stockfish_elo}",
             ],
         )
     raise ValueError(f"unknown match baseline: {baseline}")
