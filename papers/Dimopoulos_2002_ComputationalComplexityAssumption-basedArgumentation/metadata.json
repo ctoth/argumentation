@@ -1,0 +1,17 @@
+{
+  "title": "On the computational complexity of assumption-based argumentation for default reasoning",
+  "authors": [
+    "Yannis Dimopoulos",
+    "Bernhard Nebel",
+    "Francesca Toni"
+  ],
+  "year": "2002",
+  "doi": "10.1016/S0004-3702(02)00245-X",
+  "url": "https://www.semanticscholar.org/paper/b58faf7f5b7596a6647c1d4e6ff2c659d666d94c",
+  "pdf_url": "https://doi.org/10.1016/s0004-3702(02)00245-x",
+  "bibtex": "@Article{Dimopoulos2002OnTC,\n author = {Yannis Dimopoulos and Bernhard Nebel and Francesca Toni},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {57-78},\n title = {On the computational complexity of assumption-based argumentation for default reasoning},\n volume = {141},\n year = {2002}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "141",
+  "pages": "57-78"
+}
