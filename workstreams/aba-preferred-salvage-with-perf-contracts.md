@@ -146,11 +146,19 @@ reject decisions.
 
 Goal: import only assets that improve future guardrails.
 
-- [ ] Import or recreate any missing failure record needed on `main`.
-- [ ] Import or recreate any missing test/tooling asset that enforces the new
+- [x] Import or recreate any missing failure record needed on `main`.
+- [x] Import or recreate any missing test/tooling asset that enforces the new
   contracts.
-- [ ] Do not import failed preferred production solver code.
-- [ ] Run the contract gate after each salvage edit.
+- [x] Do not import failed preferred production solver code.
+- [x] Run the contract gate after each salvage edit.
+
+Execution status:
+
+- Recreated the missing cross-branch failure record in
+  `reports\aba-preferred-salvage-inventory.md`.
+- Existing main-line contracts and tooling already covered the enforceable
+  assets from the failed branches, so no failed solver code was imported.
+- Phase 4 gate passed: `39 passed, 1 skipped in 4.67s`.
 
 Gate:
 
