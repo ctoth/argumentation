@@ -40,7 +40,7 @@ from dialectical_chess.smt import smt_fork_moves, smt_mate_in_one_moves  # noqa:
 from dialectical_chess.uci import choose_uci_move  # noqa: E402
 
 
-SELECTOR_MODES = ("argument", "score", "grounded", "support", "categoriser")
+SELECTOR_MODES = ("argument", "score", "grounded", "support", "categoriser", "optimizer")
 
 
 def quiet_probe(uci: str, score: int, reasons: tuple[str, ...] = ()) -> MoveProbe:
@@ -67,6 +67,42 @@ def test_score_selector_ignores_argument_support() -> None:
 
     assert choose_move(probes, graph, selector_mode="argument") == supported
     assert choose_move(probes, graph, selector_mode="score") == high_score
+
+
+def test_optimizer_selector_prefers_unrefuted_move_over_higher_score() -> None:
+    """Optimizer selector should minimize unresolved reply attacks before base score."""
+    refuted = MoveProbe(
+        uci="h2h4",
+        san="h2h4",
+        score=999,
+        is_checkmate=False,
+        gives_check=False,
+        is_capture=False,
+        captured_value=0,
+        promotion_value=0,
+        reasons=("development:h2h4:space",),
+        objections=(),
+        reply_attacks=("reply_captures_moved_piece:undefended:h2h4:100",),
+    )
+    quiet = MoveProbe(
+        uci="g2g3",
+        san="g2g3",
+        score=10,
+        is_checkmate=False,
+        gives_check=False,
+        is_capture=False,
+        captured_value=0,
+        promotion_value=0,
+        reasons=("development:g2g3:space",),
+        objections=(),
+    )
+    probes = [refuted, quiet]
+    graph = build_root_argument_graph(probes)
+
+    selected = choose_move(probes, graph, selector_mode="optimizer")
+
+    assert selected == quiet
+    assert selected.optimizer_trace["status"] == "optimal"
 
 
 @given(st.sampled_from(SELECTOR_MODES))
