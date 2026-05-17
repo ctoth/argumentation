@@ -13,11 +13,10 @@ from typing import Any
 
 import chess
 
-from dialectical_chess.arguments import build_root_argument_graph, choose_move
 from dialectical_chess.board import PERFT_FIXTURES, OwnedBoard, owned_perft
+from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.loss_mining import mine_loss_turning_points, reviewed_epd_lines
 from dialectical_chess.matches import run_internal_uci_match, run_uci_match
-from dialectical_chess.probe import probe_moves
 
 
 SCRIPT_DIR = Path(__file__).resolve().parents[1]
@@ -262,16 +261,17 @@ def score_board(
     avoid_uci: set[str] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    probes = probe_moves(
-        board,
-        dialectic_depth=args.dialectic_depth,
-        search_depth=args.search_depth,
-        search_backend=args.search_backend,
-        smt_mate=args.smt_mate,
-    )
-    selected = choose_move(probes, build_root_argument_graph(probes)) if probes else None
+    decision = DialecticalChessEngine(
+        EngineSettings(
+            dialectic_depth=args.dialectic_depth,
+            search_depth=args.search_depth,
+            search_backend=args.search_backend,
+            smt_mate=args.smt_mate,
+        )
+    ).choose_move(board)
+    selected = decision.selected
     elapsed_ms = (time.perf_counter() - started) * 1000.0
-    selected_uci = None if selected is None else selected.uci
+    selected_uci = None if selected is None else decision.move_uci
     avoid_uci = avoid_uci or set()
     return {
         "expected_uci": sorted(expected_uci),

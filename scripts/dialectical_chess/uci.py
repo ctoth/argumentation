@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import TextIO
 
-from dialectical_chess.arguments import build_root_argument_graph, choose_move
 from dialectical_chess.board import START_FEN
-from dialectical_chess.probe import owned_board_from_fen, probe_moves
+from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
+from dialectical_chess.probe import owned_board_from_fen
 
 
-@dataclass(frozen=True)
-class UciSettings:
-    dialectic_depth: int = 1
-    search_depth: int = 0
-    search_backend: str = "negamax"
-    smt_mate: bool = True
+UciSettings = EngineSettings
 
 
 def run_uci(
@@ -27,7 +21,7 @@ def run_uci(
     search_backend: str = "negamax",
     smt_mate: bool = True,
 ) -> int:
-    settings = UciSettings(
+    settings = EngineSettings(
         dialectic_depth=dialectic_depth,
         search_depth=search_depth,
         search_backend=search_backend,
@@ -112,30 +106,23 @@ def choose_uci_move(
     smt_mate: bool = True,
     output_stream: TextIO | None = None,
 ) -> str:
-    settings = settings or UciSettings(
+    settings = settings or EngineSettings(
         dialectic_depth=dialectic_depth,
         search_depth=search_depth,
         search_backend=search_backend,
         smt_mate=smt_mate,
     )
     try:
-        probes = probe_moves(
-            board,
-            dialectic_depth=settings.dialectic_depth,
-            search_depth=settings.search_depth,
-            search_backend=settings.search_backend,
-            smt_mate=settings.smt_mate,
-        )
+        decision = DialecticalChessEngine(settings).choose_move(board)
     except ValueError as exc:
         if output_stream is not None:
             _uci_write(output_stream, f"info string {exc}")
         return "0000"
-    if not probes:
+    if decision.selected is None:
         return "0000"
-    selected = choose_move(probes, build_root_argument_graph(probes))
     if output_stream is not None:
-        _uci_write(output_stream, f"info score cp {selected.score} pv {selected.uci}")
-    return selected.uci
+        _uci_write(output_stream, f"info score cp {decision.selected.score} pv {decision.move_uci}")
+    return decision.move_uci
 
 
 def _uci_write(output_stream: TextIO, line: str) -> None:

@@ -18,16 +18,10 @@ from pathlib import Path
 import chess
 
 from dialectical_chess.adapters import build_pgn, build_svg, final_board, load_game
-from dialectical_chess.arguments import (
-    MoveProbe,
-    RootArgumentGraph,
-    build_argument_payload,
-    build_root_argument_graph,
-    choose_move,
-    selection_key,
-)
-from dialectical_chess.probe import owned_board_from_fen, probe_moves
-from dialectical_chess.uci import choose_uci_move, parse_uci_position, run_uci
+from dialectical_chess.arguments import build_argument_payload
+from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
+from dialectical_chess.probe import owned_board_from_fen
+from dialectical_chess.uci import run_uci
 
 
 DEFAULT_FEN = "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1"
@@ -68,41 +62,46 @@ def main(argv: list[str] | None = None) -> int:
     game = load_game(args.pgn_in) if args.pgn_in else None
     notation_board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
     board = owned_board_from_fen(notation_board.fen())
-    probes = probe_moves(
-        board,
-        dialectic_depth=args.dialectic_depth,
-        search_depth=args.search_depth,
-        search_backend=args.search_backend,
-        smt_mate=args.smt_mate,
+    engine = DialecticalChessEngine(
+        EngineSettings(
+            dialectic_depth=args.dialectic_depth,
+            search_depth=args.search_depth,
+            search_backend=args.search_backend,
+            smt_mate=args.smt_mate,
+        )
     )
-    graph = build_root_argument_graph(probes)
-    selected = choose_move(probes, graph)
+    analysis = engine.analyze(board)
+    selected = analysis.decision.selected
 
     if args.svg:
         args.svg.parent.mkdir(parents=True, exist_ok=True)
         args.svg.write_text(build_svg(notation_board, size=args.size), encoding="utf-8")
 
     pgn_path = args.pgn_out or args.pgn
-    if pgn_path:
+    if pgn_path and selected is not None:
         pgn_path.parent.mkdir(parents=True, exist_ok=True)
         pgn_path.write_text(build_pgn(notation_board, selected, game=game), encoding="utf-8")
 
     if args.list_legal:
-        for probe in probes:
+        for probe in analysis.probes:
             print(f"{probe.uci:5} {probe.san:8} score={probe.score:6} {', '.join(probe.reasons)}")
 
     if args.emit_af:
-        af_payload = build_argument_payload(probes, graph)
+        af_payload = build_argument_payload(list(analysis.probes), analysis.graph)
         args.emit_af.parent.mkdir(parents=True, exist_ok=True)
         args.emit_af.write_text(json.dumps(af_payload, indent=2), encoding="utf-8")
 
     if args.choose:
-        print(json.dumps(asdict(selected), indent=2))
+        print(json.dumps(asdict(selected), indent=2) if selected is not None else json.dumps(asdict(analysis.decision), indent=2))
 
     if not any([args.svg, pgn_path, args.list_legal, args.emit_af, args.choose]):
         print(f"fen: {board.fen()}")
-        print(f"bestmove: {selected.uci} ({selected.san})")
-        print(f"reasons: {', '.join(selected.reasons)}")
+        if selected is None:
+            print("bestmove: 0000")
+            print("reasons: no legal moves")
+        else:
+            print(f"bestmove: {selected.uci} ({selected.san})")
+            print(f"reasons: {', '.join(selected.reasons)}")
 
     return 0
 

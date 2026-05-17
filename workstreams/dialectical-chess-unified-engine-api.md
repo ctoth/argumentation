@@ -61,7 +61,7 @@ That is cleaner than the old scripts, but it is not yet a unified chess engine.
 
 ### Phase 0: Lock Current Behavior
 
-Status: pending.
+Status: completed.
 
 Commands:
 
@@ -78,7 +78,7 @@ Acceptance criteria:
 
 ### Phase 1: Add Engine Data Model
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -94,7 +94,7 @@ Acceptance criteria:
 
 ### Phase 2: Add `DialecticalChessEngine`
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -113,7 +113,7 @@ Acceptance criteria:
 
 ### Phase 3: Update UCI Adapter
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -128,7 +128,7 @@ Acceptance criteria:
 
 ### Phase 4: Update Benchmark Adapter
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -143,7 +143,7 @@ Acceptance criteria:
 
 ### Phase 5: Update PGN/SVG/FEN Probe Adapter
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -158,7 +158,7 @@ Acceptance criteria:
 
 ### Phase 6: Tests
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
@@ -174,7 +174,7 @@ Acceptance criteria:
 
 ### Phase 7: Final Cleanup Gate
 
-Status: pending.
+Status: completed.
 
 Tasks:
 
