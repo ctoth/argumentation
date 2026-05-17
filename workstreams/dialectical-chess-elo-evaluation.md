@@ -270,6 +270,31 @@ uv run .\scripts\dialectical_chess_bench.py `
   Elo estimate because the match is only two games and ends by shallow
   adjudication.
 
+Observed bounded sample:
+
+- Command:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline stockfish `
+  --match-games 4 `
+  --match-max-plies 20 `
+  --match-tc 30+0.2
+```
+
+- Runner: `fast-chess`.
+- Baseline: Stockfish 18 with `UCI_LimitStrength=true`, `UCI_Elo=1320`,
+  `Threads=1`, `Hash=16`.
+- Games: 4.
+- W/D/L from the dialectical engine's perspective: 0/3/1.
+- Score: 1.5/4, 37.50%.
+- Reported relative Elo: -88.74 +/- 136.27.
+- Failures: 0 timeouts, 0 crashes, 0 losses-on-time.
+- Interpretation: the engine is below this Stockfish 1320 anchor in this small
+  bounded sample, but the confidence interval is wide and the max-ply cap still
+  makes this a calibration smoke rather than a stable absolute rating.
+
 ## Completion Criteria
 
 - Weak baseline exists and is committed.
