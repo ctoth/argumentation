@@ -31,6 +31,8 @@ STRUCTURAL_SIGNATURE_FIELDS = (
 class EvidenceAnalysis:
     total_rows: int
     by_backend: dict[str, dict[str, int]]
+    bucket_outcomes: list[dict[str, Any]]
+    all_timeout_rows: list[dict[str, Any]]
     backend_wins_zero_counterexamples: list[dict[str, Any]]
     all_timeout_signatures: list[dict[str, Any]]
     mixed_signatures: list[dict[str, Any]]
@@ -42,6 +44,8 @@ def analyze_payload(payload: dict[str, Any]) -> EvidenceAnalysis:
     return EvidenceAnalysis(
         total_rows=len(rows),
         by_backend=_backend_summary(rows),
+        bucket_outcomes=_bucket_outcomes(rows),
+        all_timeout_rows=[_row_with_signature(row) for row in rows if row["all_timed_out"]],
         backend_wins_zero_counterexamples=_backend_wins_zero_counterexamples(rows),
         all_timeout_signatures=_all_timeout_signatures(rows),
         mixed_signatures=_mixed_signatures(rows),
@@ -58,6 +62,31 @@ def _backend_summary(rows: Iterable[dict[str, Any]]) -> dict[str, dict[str, int]
         backend: dict(sorted(counter.items()))
         for backend, counter in sorted(statuses.items())
     }
+
+
+def _bucket_outcomes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[str(row["shape_bucket_id"])].append(row)
+
+    result: list[dict[str, Any]] = []
+    for bucket_id, bucket_rows in sorted(grouped.items()):
+        outcomes = Counter(
+            "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}"
+            for row in bucket_rows
+        )
+        result.append(
+            {
+                "bucket_id": bucket_id,
+                "outcomes": dict(sorted(outcomes.items())),
+                "total": len(bucket_rows),
+                "all_timeout_rows": [
+                    _row_with_signature(row) for row in bucket_rows if row["all_timed_out"]
+                ],
+                "mixed": len(outcomes) > 1,
+            }
+        )
+    return result
 
 
 def _backend_wins_zero_counterexamples(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -179,6 +208,14 @@ def _row_ref(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _row_with_signature(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **_row_ref(row),
+        "shape_bucket_id": row["shape_bucket_id"],
+        "signature": dict(_signature(row)),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Analyze ABA route evidence from shape benchmark JSON.")
     parser.add_argument("input_json", type=Path)
@@ -190,6 +227,8 @@ def main(argv: list[str] | None = None) -> int:
     output = {
         "total_rows": analysis.total_rows,
         "by_backend": analysis.by_backend,
+        "bucket_outcomes": analysis.bucket_outcomes,
+        "all_timeout_rows": analysis.all_timeout_rows,
         "backend_wins_zero_counterexamples": analysis.backend_wins_zero_counterexamples,
         "all_timeout_signatures": analysis.all_timeout_signatures,
         "mixed_signatures": analysis.mixed_signatures,

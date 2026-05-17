@@ -19,6 +19,35 @@ def test_analyze_payload_classifies_zero_counterexample_wins_and_mixed_signature
         "asp": {"solved": 2, "timeout": 2},
         "sat": {"solved": 1, "timeout": 3},
     }
+    assert analysis.bucket_outcomes == [
+        {
+            "bucket_id": "preferred-bucket",
+            "outcomes": {"best:asp": 2},
+            "total": 2,
+            "all_timeout_rows": [],
+            "mixed": False,
+        },
+        {
+            "bucket_id": "stable-bucket",
+            "outcomes": {"all_timeout": 1, "best:sat": 1},
+            "total": 2,
+            "all_timeout_rows": [
+                {
+                    **_ref("c.aba", "SE-ST", None, True),
+                    "shape_bucket_id": "stable-bucket",
+                    "signature": _signature("aba/single-extension/stable"),
+                }
+            ],
+            "mixed": True,
+        },
+    ]
+    assert analysis.all_timeout_rows == [
+        {
+            **_ref("c.aba", "SE-ST", None, True),
+            "shape_bucket_id": "stable-bucket",
+            "signature": _signature("aba/single-extension/stable"),
+        }
+    ]
     assert analysis.backend_wins_zero_counterexamples == [
         {
             "backend": "asp",
@@ -99,6 +128,7 @@ def _row(
         "instance": instance,
         "subtrack": subtrack,
         "solver_class": solver_class,
+        "shape_bucket_id": "stable-bucket" if subtrack == "SE-ST" else "preferred-bucket",
         "best_solved_backend": best_backend,
         "all_timed_out": all_timed_out,
         "backend_outcomes": backend_outcomes,
