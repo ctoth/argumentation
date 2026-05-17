@@ -372,11 +372,11 @@ uv run tools\aba_shape_benchmark.py --timeouts tests\manifests\iccma2025-cap200-
 
 Gate:
 
-- tests pass;
-- benchmark completes or reaches the configured timeout naturally;
-- generated JSON/CSV are inspected but not committed unless explicitly
+- [x] tests pass;
+- [x] benchmark completes or reaches the configured timeout naturally;
+- [x] generated JSON/CSV are inspected but not committed unless explicitly
   requested;
-- output contains no path-derived feature fields.
+- [x] output contains no path-derived feature fields.
 
 ## Phase 7: Cap-200 Rerun and Counterexample Gate
 
