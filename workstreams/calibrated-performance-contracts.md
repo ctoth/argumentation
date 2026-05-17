@@ -61,15 +61,20 @@ Expected result: clean tracked files on the experiment branch.
 
 Goal: add a reusable local calibration command.
 
-- [ ] Add `tools\perf_calibrate.py`.
-- [ ] Report machine metadata: platform, processor string, Python version,
+- [x] Add `tools\perf_calibrate.py`.
+- [x] Report machine metadata: platform, processor string, Python version,
   CPU count, and timestamp.
-- [ ] Measure repeatable small tasks: Python integer loop, ABA parse,
+- [x] Measure repeatable small tasks: Python integer loop, ABA parse,
   ABA closure, optional clingo solve, and optional Z3 check.
-- [ ] Emit JSON with schema version, benchmark records, elapsed seconds, and
+- [x] Emit JSON with schema version, benchmark records, elapsed seconds, and
   operations per second where meaningful.
-- [ ] Support `--output`, `--repeat`, and `--quiet`.
-- [ ] Do not commit generated calibration JSON.
+- [x] Support `--output`, `--repeat`, and `--quiet`.
+- [x] Do not commit generated calibration JSON.
+
+Execution status:
+
+- Added `tools\perf_calibrate.py`.
+- Phase 2 gate passed with all local probes reporting `ok` on this machine.
 
 Gate:
 
