@@ -8,7 +8,7 @@
 """Sidecar probe for dialectical chess experiments.
 
 This is intentionally outside the package source tree. It uses PEP 723 inline
-metadata so `uv run scratch/dialectical_chess_probe.py ...` can fetch only the
+metadata so `uv run scripts/dialectical_chess_probe.py ...` can fetch only the
 prototype dependencies needed by this script.
 """
 
@@ -28,6 +28,7 @@ import chess.svg
 
 
 DEFAULT_FEN = "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1"
+START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 PIECE_VALUE = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
@@ -36,6 +37,7 @@ PIECE_VALUE = {
     chess.QUEEN: 900,
     chess.KING: 0,
 }
+OWNED_PIECE_VALUE = {"p": 100, "n": 320, "b": 330, "r": 500, "q": 900, "k": 0}
 
 
 @dataclass(frozen=True)
@@ -90,8 +92,8 @@ def main(argv: list[str] | None = None) -> int:
         default="negamax",
     )
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
-    parser.add_argument("--owned-movegen", action="store_true")
-    parser.add_argument("--allow-owned-divergence", action="store_true")
+    parser.add_argument("--owned-movegen", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--allow-owned-divergence", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -103,33 +105,30 @@ def main(argv: list[str] | None = None) -> int:
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
-            owned_movegen=args.owned_movegen,
-            allow_owned_divergence=args.allow_owned_divergence,
         )
 
     game = load_game(args.pgn_in) if args.pgn_in else None
-    board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
+    notation_board = final_board(game) if game else chess.Board(args.fen or DEFAULT_FEN)
+    board = owned_board_from_fen(notation_board.fen())
     probes = probe_moves(
         board,
         dialectic_depth=args.dialectic_depth,
         search_depth=args.search_depth,
         search_backend=args.search_backend,
         smt_mate=args.smt_mate,
-        owned_movegen=args.owned_movegen,
-        allow_owned_divergence=args.allow_owned_divergence,
     )
     graph = build_root_argument_graph(probes)
     selected = choose_move(probes, graph)
 
     if args.svg:
-        svg = chess.svg.board(board=board, size=args.size)
+        svg = chess.svg.board(board=notation_board, size=args.size)
         args.svg.parent.mkdir(parents=True, exist_ok=True)
         args.svg.write_text(svg, encoding="utf-8")
 
     pgn_path = args.pgn_out or args.pgn
     if pgn_path:
         pgn_path.parent.mkdir(parents=True, exist_ok=True)
-        pgn_path.write_text(build_pgn(board, selected, game=game), encoding="utf-8")
+        pgn_path.write_text(build_pgn(notation_board, selected, game=game), encoding="utf-8")
 
     if args.list_legal:
         for probe in probes:
@@ -159,10 +158,8 @@ def run_uci(
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
-    owned_movegen: bool = False,
-    allow_owned_divergence: bool = False,
 ) -> int:
-    board = chess.Board()
+    board = owned_board_from_fen(START_FEN)
     while True:
         raw = input_stream.readline()
         if raw == "":
@@ -178,7 +175,7 @@ def run_uci(
         elif command == "isready":
             _uci_write(output_stream, "readyok")
         elif command == "ucinewgame":
-            board = chess.Board()
+            board = owned_board_from_fen(START_FEN)
         elif command.startswith("position "):
             try:
                 board = parse_uci_position(command)
@@ -194,8 +191,6 @@ def run_uci(
                     search_depth=search_depth,
                     search_backend=search_backend,
                     smt_mate=smt_mate,
-                    owned_movegen=owned_movegen,
-                    allow_owned_divergence=allow_owned_divergence,
                     output_stream=output_stream,
                 ),
             )
@@ -209,8 +204,6 @@ def run_uci(
                     search_depth=search_depth,
                     search_backend=search_backend,
                     smt_mate=smt_mate,
-                    owned_movegen=owned_movegen,
-                    allow_owned_divergence=allow_owned_divergence,
                     output_stream=output_stream,
                 ),
             )
@@ -226,14 +219,14 @@ def _uci_write(output_stream: TextIO, line: str) -> None:
     print(line, file=output_stream, flush=True)
 
 
-def parse_uci_position(command: str) -> chess.Board:
+def parse_uci_position(command: str) -> Any:
     tokens = command.split()
     if len(tokens) < 2 or tokens[0] != "position":
         raise ValueError(command)
 
     index = 1
     if tokens[index] == "startpos":
-        board = chess.Board()
+        board = owned_board_from_fen(START_FEN)
         index += 1
     elif tokens[index] == "fen":
         index += 1
@@ -243,30 +236,30 @@ def parse_uci_position(command: str) -> chess.Board:
         fen_fields = tokens[fen_start:index]
         if len(fen_fields) != 6:
             raise ValueError("fen position must contain six FEN fields")
-        board = chess.Board(" ".join(fen_fields))
+        board = owned_board_from_fen(" ".join(fen_fields))
     else:
         raise ValueError("position must use startpos or fen")
 
     if index < len(tokens):
         if tokens[index] != "moves":
             raise ValueError(f"unexpected token: {tokens[index]}")
+        legal_by_uci = {move.uci(): move for move in board.legal_moves()}
         for move_text in tokens[index + 1 :]:
-            move = chess.Move.from_uci(move_text)
-            if move not in board.legal_moves:
+            move = legal_by_uci.get(move_text)
+            if move is None:
                 raise ValueError(f"illegal move {move_text}")
-            board.push(move)
+            board = board.apply(move)
+            legal_by_uci = {next_move.uci(): next_move for next_move in board.legal_moves()}
     return board
 
 
 def choose_uci_move(
-    board: chess.Board,
+    board: Any,
     *,
     dialectic_depth: int = 1,
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
-    owned_movegen: bool = False,
-    allow_owned_divergence: bool = False,
     output_stream: TextIO | None = None,
 ) -> str:
     try:
@@ -276,8 +269,6 @@ def choose_uci_move(
             search_depth=search_depth,
             search_backend=search_backend,
             smt_mate=smt_mate,
-            owned_movegen=owned_movegen,
-            allow_owned_divergence=allow_owned_divergence,
         )
     except ValueError as exc:
         if output_stream is not None:
@@ -289,37 +280,29 @@ def choose_uci_move(
 
 
 def probe_moves(
-    board: chess.Board,
+    board: Any,
     *,
     dialectic_depth: int = 1,
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
-    owned_movegen: bool = False,
-    allow_owned_divergence: bool = False,
 ) -> list[MoveProbe]:
     if dialectic_depth < 0:
         raise ValueError("dialectic_depth must be non-negative")
     if search_depth < 0:
         raise ValueError("search_depth must be non-negative")
-    legal_moves = sorted(board.legal_moves, key=lambda move: move.uci())
-    if owned_movegen:
-        legal_moves = owned_legal_moves(
-            board,
-            allow_divergence=allow_owned_divergence,
-        )
+    board = ensure_owned_board(board)
+    legal_moves = sorted(board.legal_moves(), key=lambda move: move.uci())
     smt_mate_moves = smt_mate_in_one_moves(board) if smt_mate else frozenset()
     probes = []
     for move in legal_moves:
-        san = board.san(move)
-        is_capture = board.is_capture(move)
-        captured_value = capture_value(board, move)
-        promotion_value = PIECE_VALUE.get(move.promotion, 0)
-
-        board.push(move)
-        is_checkmate = board.is_checkmate()
-        gives_check = board.is_check()
-        board.pop()
+        san = move.uci()
+        is_capture = owned_is_capture(board, move)
+        captured_value = owned_capture_value(board, move)
+        promotion_value = OWNED_PIECE_VALUE.get(move.promotion or "", 0)
+        child = board.apply(move)
+        is_checkmate = owned_is_checkmate(child)
+        gives_check = child.in_check(child.turn)
 
         reasons: list[str] = []
         objections: list[str] = []
@@ -383,31 +366,6 @@ def probe_moves(
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
 
 
-def owned_legal_moves(
-    board: chess.Board,
-    *,
-    allow_divergence: bool,
-) -> list[chess.Move]:
-    owned = load_owned_module()
-    owned_board = owned.OwnedBoard.from_fen(board.fen())
-    owned_uci = {move.uci() for move in owned_board.legal_moves()}
-    oracle_uci = {move.uci() for move in board.legal_moves}
-    if owned_uci != oracle_uci:
-        missing = sorted(oracle_uci - owned_uci)
-        extra = sorted(owned_uci - oracle_uci)
-        message = (
-            "owned movegen diverged from oracle "
-            f"missing={missing} extra={extra} fen={board.fen()}"
-        )
-        if not allow_divergence:
-            raise ValueError(message)
-    usable_uci = owned_uci if allow_divergence else oracle_uci
-    return sorted(
-        [chess.Move.from_uci(move_text) for move_text in usable_uci if chess.Move.from_uci(move_text) in board.legal_moves],
-        key=lambda move: move.uci(),
-    )
-
-
 def load_owned_module() -> Any:
     path = Path(__file__).resolve().with_name("dialectical_chess_owned.py")
     spec = importlib.util.spec_from_file_location("dialectical_chess_owned", path)
@@ -419,20 +377,27 @@ def load_owned_module() -> Any:
     return module
 
 
-def smt_mate_in_one_moves(board: chess.Board) -> frozenset[str]:
+def ensure_owned_board(board: Any) -> Any:
+    if hasattr(board, "legal_moves") and callable(board.legal_moves):
+        return board
+    return owned_board_from_fen(board.fen())
+
+
+def owned_board_from_fen(fen: str) -> Any:
+    return load_owned_module().OwnedBoard.from_fen(fen)
+
+
+def smt_mate_in_one_moves(board: Any) -> frozenset[str]:
     try:
         from z3 import Bool, Or, Solver, sat
     except ImportError:
         return frozenset()
 
     mate_moves: dict[str, Any] = {}
-    for move in board.legal_moves:
-        board.push(move)
-        try:
-            if board.is_checkmate():
-                mate_moves[move.uci()] = Bool(f"mate_{move.uci()}")
-        finally:
-            board.pop()
+    board = ensure_owned_board(board)
+    for move in board.legal_moves():
+        if owned_is_checkmate(board.apply(move)):
+            mate_moves[move.uci()] = Bool(f"mate_{move.uci()}")
 
     if not mate_moves:
         return frozenset()
@@ -450,56 +415,45 @@ def smt_mate_in_one_moves(board: chess.Board) -> frozenset[str]:
     return frozenset(move for move in witnesses if verifies_mate_in_one(board, move))
 
 
-def verifies_mate_in_one(board: chess.Board, move_text: str) -> bool:
-    move = chess.Move.from_uci(move_text)
-    if move not in board.legal_moves:
-        return False
-    board.push(move)
-    try:
-        return board.is_checkmate()
-    finally:
-        board.pop()
+def verifies_mate_in_one(board: Any, move_text: str) -> bool:
+    board = ensure_owned_board(board)
+    legal_by_uci = {move.uci(): move for move in board.legal_moves()}
+    move = legal_by_uci.get(move_text)
+    return move is not None and owned_is_checkmate(board.apply(move))
 
 
 def root_search_result(
-    board: chess.Board,
-    move: chess.Move,
+    board: Any,
+    move: Any,
     *,
     depth: int,
     backend: str,
 ) -> SearchResult | None:
     if depth <= 0:
         return None
-    board.push(move)
-    try:
-        if backend == "negamax":
-            child = negamax(board, depth - 1)
-        elif backend == "alphabeta":
-            child = alphabeta(board, depth - 1, alpha=-1_000_000, beta=1_000_000)
-        else:
-            raise ValueError(f"unsupported search backend: {backend}")
-        return SearchResult(score=-child.score, line=(move.uci(),) + child.line)
-    finally:
-        board.pop()
+    child_board = board.apply(move)
+    if backend == "negamax":
+        child = negamax(child_board, depth - 1)
+    elif backend == "alphabeta":
+        child = alphabeta(child_board, depth - 1, alpha=-1_000_000, beta=1_000_000)
+    else:
+        raise ValueError(f"unsupported search backend: {backend}")
+    return SearchResult(score=-child.score, line=(move.uci(),) + child.line)
 
 
-def negamax(board: chess.Board, depth: int) -> SearchResult:
-    if board.is_checkmate():
+def negamax(board: Any, depth: int) -> SearchResult:
+    if owned_is_checkmate(board):
         return SearchResult(score=-100_000 - depth, line=())
-    if board.is_stalemate() or board.is_insufficient_material():
+    if owned_is_stalemate(board):
         return SearchResult(score=0, line=())
     if depth <= 0:
         return SearchResult(score=static_evaluation(board), line=())
 
     best: SearchResult | None = None
-    best_move: chess.Move | None = None
-    for move in board.legal_moves:
-        board.push(move)
-        try:
-            child = negamax(board, depth - 1)
-            candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
-        finally:
-            board.pop()
+    best_move: Any | None = None
+    for move in board.legal_moves():
+        child = negamax(board.apply(move), depth - 1)
+        candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
         if (
             best is None
             or candidate.score > best.score
@@ -514,28 +468,24 @@ def negamax(board: chess.Board, depth: int) -> SearchResult:
 
 
 def alphabeta(
-    board: chess.Board,
+    board: Any,
     depth: int,
     *,
     alpha: int,
     beta: int,
 ) -> SearchResult:
-    if board.is_checkmate():
+    if owned_is_checkmate(board):
         return SearchResult(score=-100_000 - depth, line=())
-    if board.is_stalemate() or board.is_insufficient_material():
+    if owned_is_stalemate(board):
         return SearchResult(score=0, line=())
     if depth <= 0:
         return SearchResult(score=static_evaluation(board), line=())
 
     best: SearchResult | None = None
-    best_move: chess.Move | None = None
-    for move in board.legal_moves:
-        board.push(move)
-        try:
-            child = alphabeta(board, depth - 1, alpha=-beta, beta=-alpha)
-            candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
-        finally:
-            board.pop()
+    best_move: Any | None = None
+    for move in board.legal_moves():
+        child = alphabeta(board.apply(move), depth - 1, alpha=-beta, beta=-alpha)
+        candidate = SearchResult(score=-child.score, line=(move.uci(),) + child.line)
         if (
             best is None
             or candidate.score > best.score
@@ -552,66 +502,58 @@ def alphabeta(
     return best
 
 
-def static_evaluation(board: chess.Board) -> int:
+def static_evaluation(board: Any) -> int:
     white = 0
     black = 0
-    for piece in board.piece_map().values():
-        value = PIECE_VALUE[piece.piece_type]
-        if piece.color == chess.WHITE:
+    for piece in board.squares:
+        if piece is None:
+            continue
+        value = OWNED_PIECE_VALUE[piece.lower()]
+        if piece.isupper():
             white += value
         else:
             black += value
     material = white - black
-    return material if board.turn == chess.WHITE else -material
-
-
-def capture_value(board: chess.Board, move: chess.Move) -> int:
-    if board.is_en_passant(move):
-        return PIECE_VALUE[chess.PAWN]
-    captured = board.piece_at(move.to_square)
-    if captured is None:
-        return 0
-    return PIECE_VALUE[captured.piece_type]
+    return material if board.turn == "w" else -material
 
 
 def bounded_reply_attacks(
-    board: chess.Board,
-    move: chess.Move,
+    board: Any,
+    move: Any,
     *,
     reply_depth: int,
 ) -> tuple[str, ...]:
     if reply_depth <= 0:
         return ()
     moved_piece = board.piece_at(move.from_square)
-    moved_piece_value = PIECE_VALUE.get(moved_piece.piece_type, 0) if moved_piece else 0
+    moved_piece_value = OWNED_PIECE_VALUE.get(moved_piece.lower(), 0) if moved_piece else 0
     moved_to = move.to_square
     attacks: list[str] = []
 
-    board.push(move)
-    if not board.is_game_over(claim_draw=False):
-        for reply in board.legal_moves:
+    child = board.apply(move)
+    if not owned_is_terminal(child):
+        for reply in child.legal_moves():
             reply_text = reply.uci()
             reply_captures_moved_piece = (
-                board.is_capture(reply)
+                owned_is_capture(child, reply)
                 and reply.to_square == moved_to
                 and moved_piece_value > 0
             )
-            board.push(reply)
-            reply_piece = board.piece_at(reply.to_square)
+            reply_child = child.apply(reply)
+            reply_piece = reply_child.piece_at(reply.to_square)
             reply_piece_value = (
-                PIECE_VALUE.get(reply_piece.piece_type, 0) if reply_piece else 0
+                OWNED_PIECE_VALUE.get(reply_piece.lower(), 0) if reply_piece else 0
             )
             defended = reply_depth > 1 and has_bounded_defense(
-                board,
+                reply_child,
                 reply_depth - 1,
                 target_square=reply.to_square,
                 target_value=reply_piece_value,
             )
-            if board.is_checkmate():
+            if owned_is_checkmate(reply_child):
                 attacks.append(
                     defended_label("reply_mate", reply_text, defended=defended)
                 )
-            board.pop()
             if reply_captures_moved_piece:
                 attacks.append(
                     defended_label(
@@ -620,7 +562,6 @@ def bounded_reply_attacks(
                         defended=defended,
                     )
                 )
-    board.pop()
     return tuple(sorted(set(attacks)))
 
 
@@ -630,46 +571,74 @@ def defended_label(kind: str, payload: str, *, defended: bool) -> str:
 
 
 def has_bounded_defense(
-    board: chess.Board,
+    board: Any,
     depth: int,
     *,
-    target_square: chess.Square | None = None,
+    target_square: int | None = None,
     target_value: int = 0,
 ) -> bool:
     if depth <= 0:
         return False
-    for move in board.legal_moves:
+    for move in board.legal_moves():
         if (
             target_square is not None
-            and board.is_capture(move)
+            and owned_is_capture(board, move)
             and move.to_square == target_square
-            and capture_value(board, move) >= target_value
+            and owned_capture_value(board, move) >= target_value
         ):
             return True
-        board.push(move)
-        try:
-            if board.is_checkmate():
-                return True
-            if depth > 1 and not has_unanswered_reply(board, depth - 1):
-                return True
-        finally:
-            board.pop()
+        child = board.apply(move)
+        if owned_is_checkmate(child):
+            return True
+        if depth > 1 and not has_unanswered_reply(child, depth - 1):
+            return True
     return False
 
 
-def has_unanswered_reply(board: chess.Board, depth: int) -> bool:
+def has_unanswered_reply(board: Any, depth: int) -> bool:
     if depth <= 0:
         return False
-    for reply in board.legal_moves:
-        board.push(reply)
-        try:
-            if board.is_checkmate():
-                return True
-            if depth > 1 and not has_bounded_defense(board, depth - 1):
-                return True
-        finally:
-            board.pop()
+    for reply in board.legal_moves():
+        child = board.apply(reply)
+        if owned_is_checkmate(child):
+            return True
+        if depth > 1 and not has_bounded_defense(child, depth - 1):
+            return True
     return False
+
+
+def owned_is_capture(board: Any, move: Any) -> bool:
+    target = board.piece_at(move.to_square)
+    if target is not None:
+        return True
+    piece = board.piece_at(move.from_square)
+    return (
+        piece is not None
+        and piece.lower() == "p"
+        and board.ep_square == move.to_square
+        and move.from_square % 8 != move.to_square % 8
+    )
+
+
+def owned_capture_value(board: Any, move: Any) -> int:
+    if not owned_is_capture(board, move):
+        return 0
+    target = board.piece_at(move.to_square)
+    if target is None:
+        return OWNED_PIECE_VALUE["p"]
+    return OWNED_PIECE_VALUE[target.lower()]
+
+
+def owned_is_terminal(board: Any) -> bool:
+    return len(board.legal_moves()) == 0
+
+
+def owned_is_checkmate(board: Any) -> bool:
+    return owned_is_terminal(board) and board.in_check(board.turn)
+
+
+def owned_is_stalemate(board: Any) -> bool:
+    return owned_is_terminal(board) and not board.in_check(board.turn)
 
 
 def choose_move(
