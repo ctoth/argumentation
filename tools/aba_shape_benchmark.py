@@ -37,6 +37,7 @@ RULE_DENSITY_THRESHOLDS = {"sparse_max": 5.0, "medium_max": 25.0}
 MAX_ARITY_THRESHOLDS = {"low_max": 2, "medium_max": 5}
 GROUNDED_SHAPE_COST_LIMIT = 1000
 VALIDATION_COST_LIMIT = 1000
+RULE_BODY_OVERLAP_EXACT_PAIR_LIMIT = 100_000
 ROUTE_REQUIRED_FIELDS = frozenset(
     {
         "is_flat",
@@ -134,6 +135,7 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
     dependency = _dependency_shape(framework)
     rule_density = _ratio(rules, assumptions)
+    rule_body_overlap = _rule_body_overlap(framework)
     grounded_iterations = (
         _grounded_iteration_count(framework)
         if assumptions * rules <= GROUNDED_SHAPE_COST_LIMIT
@@ -175,8 +177,8 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
         contrary_target_in_degree_avg=_average(contrary_target_counts.values()),
         contrary_target_entropy=_entropy(contrary_target_counts.values()),
         assumption_incidence_width_proxy=_assumption_incidence_width_proxy(framework),
-        rule_body_overlap_max=_rule_body_overlap(framework)["max"],
-        rule_body_overlap_avg=_rule_body_overlap(framework)["avg"],
+        rule_body_overlap_max=rule_body_overlap["max"],
+        rule_body_overlap_avg=rule_body_overlap["avg"],
         closure_growth_sample=_closure_growth_sample(framework),
         grounded_iteration_count=grounded_iterations,
         grounded_in_count=len(native_aba.grounded_extension(framework))
@@ -379,11 +381,27 @@ def _assumption_incidence_width_proxy(framework: ABAFramework) -> int:
 
 def _rule_body_overlap(framework: ABAFramework) -> dict[str, float | int]:
     bodies = [frozenset(rule.antecedents) for rule in framework.rules]
-    overlaps: list[int] = []
-    for left_index, left in enumerate(bodies):
-        for right in bodies[left_index + 1 :]:
-            overlaps.append(len(left & right))
-    return {"max": max(overlaps, default=0), "avg": _average(overlaps)}
+    pair_count = len(bodies) * (len(bodies) - 1) // 2
+    if pair_count == 0:
+        return {"max": 0, "avg": 0.0}
+
+    literal_counts = Counter(literal for body in bodies for literal in body)
+    total_overlap = sum(count * (count - 1) // 2 for count in literal_counts.values())
+    avg_overlap = total_overlap / pair_count
+    if pair_count <= RULE_BODY_OVERLAP_EXACT_PAIR_LIMIT:
+        max_overlap = 0
+        for left_index, left in enumerate(bodies):
+            for right in bodies[left_index + 1 :]:
+                max_overlap = max(max_overlap, len(left & right))
+        return {"max": max_overlap, "avg": avg_overlap}
+
+    duplicate_body_counts = Counter(bodies)
+    duplicate_body_max = max(
+        (len(body) for body, count in duplicate_body_counts.items() if count > 1),
+        default=0,
+    )
+    shared_literal_max = 1 if any(count > 1 for count in literal_counts.values()) else 0
+    return {"max": max(duplicate_body_max, shared_literal_max), "avg": avg_overlap}
 
 
 def _closure_growth_sample(framework: ABAFramework) -> float:

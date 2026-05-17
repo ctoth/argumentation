@@ -211,6 +211,22 @@ def test_compute_aba_shape_handles_long_dependency_chain_iteratively() -> None:
     assert shape.p_acyclic is True
 
 
+def test_compute_aba_shape_uses_bounded_rule_body_overlap_memory() -> None:
+    shared = lit("shared")
+    heads = tuple(lit(f"h{index}") for index in range(1500))
+    framework = ABAFramework(
+        language=frozenset((shared, *heads)),
+        rules=frozenset(Rule((shared,), head, "strict") for head in heads),
+        assumptions=frozenset({shared}),
+        contrary={shared: heads[-1]},
+    )
+
+    shape = compute_aba_shape(framework)
+
+    assert shape.rule_body_overlap_max == 1
+    assert shape.rule_body_overlap_avg == 1.0
+
+
 def test_validate_result_skips_expensive_python_validation() -> None:
     assumptions = frozenset(lit(f"a{index}") for index in range(40))
     contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
