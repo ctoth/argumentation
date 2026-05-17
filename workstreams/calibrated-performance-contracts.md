@@ -90,13 +90,19 @@ reported as skipped, not as command failure.
 Goal: expose conservative calibrated budgets to tests without requiring a
 machine-local file.
 
-- [ ] Add a test helper module for performance contracts.
-- [ ] Load optional calibration JSON from `ARGUMENTATION_PERF_CALIBRATION`.
-- [ ] Provide deterministic fallback budgets when no calibration file exists.
-- [ ] Provide `require_perf_contracts_enabled()` controlled by
+- [x] Add a test helper module for performance contracts.
+- [x] Load optional calibration JSON from `ARGUMENTATION_PERF_CALIBRATION`.
+- [x] Provide deterministic fallback budgets when no calibration file exists.
+- [x] Provide `require_perf_contracts_enabled()` controlled by
   `ARGUMENTATION_PERF_CONTRACTS`.
-- [ ] Make wall-clock contracts opt-in, while non-timed operational contracts
+- [x] Make wall-clock contracts opt-in, while non-timed operational contracts
   remain normal tests.
+
+Execution status:
+
+- Added `tests\performance_contracts.py`.
+- Phase 3 gate passed via `tests\test_performance_contracts.py`:
+  `6 passed, 1 skipped in 0.62s`.
 
 Gate:
 
@@ -110,12 +116,16 @@ Expected result: helper tests pass without a calibration file.
 
 Goal: add first contracts for known solver classes.
 
-- [ ] Test calibration JSON shape.
-- [ ] Test fallback calibrated budgets.
-- [ ] Test no-attack preferred ABA has a bounded operational shape.
-- [ ] Test the large/dense stable route chooses SAT without invoking ASP.
-- [ ] Add an opt-in wall-clock smoke test that uses calibrated budget helpers
+- [x] Test calibration JSON shape.
+- [x] Test fallback calibrated budgets.
+- [x] Test no-attack preferred ABA has a bounded operational shape.
+- [x] Test the large/dense stable route chooses SAT without invoking ASP.
+- [x] Add an opt-in wall-clock smoke test that uses calibrated budget helpers
   only when performance contracts are enabled.
+
+Execution status:
+
+- Added `tests\test_performance_contracts.py`.
 
 Gate:
 
