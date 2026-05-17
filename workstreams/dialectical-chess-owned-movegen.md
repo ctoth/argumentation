@@ -18,7 +18,9 @@ is allowed to depend on it for UCI, PGN, SMT, search, or benchmarks.
 - It applies moves immutably.
 - It implements check, checkmate/stalemate move absence, castling, en passant,
   promotion, perft, divide, and differential oracle checks.
-- `python-chess` remains the correctness oracle and PGN/SAN substrate.
+- The probe and UCI engine use the owned board as their runtime substrate.
+- `python-chess` remains the differential correctness oracle and PGN/SAN
+  substrate.
 
 ## Non-Negotiable Rules
 
@@ -26,8 +28,8 @@ is allowed to depend on it for UCI, PGN, SMT, search, or benchmarks.
   passes on standard fixtures.
 - Do not claim owned movegen is complete without castling, en passant,
   promotion, check evasions, pinned pieces, and double-check fixtures.
-- Every generated legal move set must be compared against `python-chess` until
-  the owned implementation is promoted.
+- Curated generated legal move sets must continue to be compared against
+  `python-chess` in selftests after promotion.
 - Perft failures block every downstream task. Do not compensate in
   argumentation, SMT, search, or benchmarks.
 - Keep diagnostics uncommitted unless the task explicitly asks to promote a
@@ -295,25 +297,27 @@ Status: complete.
 
 Tasks:
 
-- Add a probe option such as `--owned-movegen`.
-- When enabled, use owned legal moves but keep `python-chess` as oracle until
-  confidence gates pass.
-- If owned and oracle move sets differ, refuse to choose a move unless
-  `--allow-owned-divergence` is explicitly set for debugging.
+- Promote owned board/legal moves into the default probe and UCI runtime path.
+- Keep `python-chess` out of move selection; use it only for notation,
+  external format parsing, and selftest oracle checks.
+- Leave hidden compatibility flags only where old command lines may still pass
+  them; they must not select between runtime move generators.
 
 Acceptance criteria:
 
-- Default engine behavior remains stable.
-- `--owned-movegen` works on startpos and mate smoke after perft gates pass.
-- Divergence fails loudly and never silently changes benchmark results.
+- Default engine behavior uses owned movegen.
+- UCI startpos and mate smoke choose legal moves from the owned board.
+- Benchmark settings report `"movegen": "owned"` and no benchmark command
+  depends on `--owned-movegen`.
 
 ## Completion Criteria
 
 - Owned FEN roundtrip works.
 - Owned legal move sets match `python-chess` on curated corpus.
 - Perft depth 1-3 passes on startpos and special-move fixtures.
-- Probe can use owned movegen behind an explicit flag.
-- Benchmark runner records whether a run used owned or bootstrap movegen.
+- Probe and UCI paths use owned movegen by default.
+- Benchmark runner records owned movegen in settings and no longer exposes the
+  bootstrap comparison flags.
 
 ## Known Traps
 
