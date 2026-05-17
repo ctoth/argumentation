@@ -427,7 +427,19 @@ def test_benchmark_rows_emit_paper_route_features(monkeypatch, tmp_path: Path) -
         arguments_or_atoms=4,
     )
 
-    def backend_matrix(job, *, framework, backends, timeout_seconds):
+    def backend_matrix(
+        job,
+        *,
+        framework,
+        backends,
+        timeout_seconds,
+        profile_dir=None,
+        profile_format="speedscope",
+        profile_duration_seconds=None,
+    ):
+        assert profile_dir is None
+        assert profile_format == "speedscope"
+        assert profile_duration_seconds is None
         return {
             "asp": {
                 "status": "solved",
