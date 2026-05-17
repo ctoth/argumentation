@@ -141,11 +141,18 @@ enabled.
 
 Goal: complete the infrastructure slice cleanly.
 
-- [ ] Re-run the calibration CLI.
-- [ ] Re-run the performance contract tests.
+- [x] Re-run the calibration CLI.
+- [x] Re-run the performance contract tests.
 - [ ] Promote the minimal source/test/workstream diff to `main` if gates pass.
-- [ ] Keep generated calibration artifacts uncommitted unless explicitly
+- [x] Keep generated calibration artifacts uncommitted unless explicitly
   requested.
+
+Execution status:
+
+- Final calibration CLI gate passed with local Python, ABA parse, ABA closure,
+  clingo, and Z3 probes reporting `ok`.
+- Final performance contract gate passed: `55 passed, 1 skipped in 3.12s`.
+- No generated calibration artifacts were committed.
 
 Gate:
 
@@ -162,3 +169,6 @@ Expected result: clean tracked files, valid calibration output, passing tests.
 This workstream is complete only when the calibration CLI and performance
 contract test helper are committed, verified, and promoted to `main`, or a
 blocker is recorded with the exact unfinished phase.
+
+Status: implementation and verification passed on
+`experiment/calibrated-performance-contracts`; promotion to `main` remains.
