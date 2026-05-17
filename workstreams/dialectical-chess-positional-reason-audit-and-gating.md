@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: proposed.
+Status: executed.
 
 Branch: `main`.
 
@@ -342,3 +342,212 @@ This workstream is complete only when:
 - the fixed matrix rerun passes the positional-on versus no-positional gate;
 - final benchmark numbers and interpretation are written here;
 - all intentional source, test, and workstream edits are committed.
+
+## Execution Results
+
+Status: complete.
+
+Workflow actually used:
+
+- Confirmed `main` and task-owned cleanliness.
+- Added `--compare-positional` to the benchmark runner.
+- Added reusable scratch-summary scripts for positional deltas and matrix rows.
+- Mined positional-on/off deltas for `argument_d2` and `optimizer_d2`.
+- Added failing tests from mined regressions.
+- Implemented tactical positional gating in argument selectors and optimizer
+  features.
+- Found and fixed a related tactical witness instability: `smt_fork_moves`
+  returned one arbitrary model witness instead of all satisfying fork witnesses.
+- Reran the focused suite and fixed matrix.
+
+Generated diagnostics:
+
+- `scratch\positional_reason_delta_argument_d2.json`
+- `scratch\positional_reason_delta_optimizer_d2.json`
+- `scratch\positional_reason_delta_summary.md`
+- `scratch\positional_reason_delta_optimizer_d2_gated.json`
+- `scratch\positional_reason_delta_optimizer_d2_gated.md`
+- `scratch\lichess_1200_1600_matrix_core_100_positional_gated.json`
+- `scratch\lichess_1200_1600_matrix_core_100_positional_gated.md`
+
+These are diagnostic artifacts and were not committed.
+
+### Mined Failure Modes
+
+Initial positional-off-only successes:
+
+| Selector | Changed | Positional on only | Positional off only |
+| --- | ---: | ---: | ---: |
+| `argument_d2` | 66/100 | 4 | 7 |
+| `optimizer_d2` | 17/100 | 1 | 2 |
+
+Dominant harmful families:
+
+- `center_control`
+- `piece_activity`
+- `file_control`
+- `development`
+
+Dominant tactical context:
+
+- the move recovered by disabling positional reasons had concrete tactical
+  evidence: material capture, check, promotion, or SMT fork witness;
+- the bad positional move was usually not unsafe by reply analysis, so the
+  problem was not unresolved reply attacks;
+- the problem was evidence ordering: shallow positional supports were counted
+  too early, before tactical value.
+
+Regression candidates encoded in tests:
+
+- `000Zo`: argument selector must prefer `e5f6` over positional rook movement.
+- `00B3B`: argument selector must prefer `d7d8q` over center-control bishop
+  movement.
+- `002IE`: optimizer must prefer `c6e5` over the positional alternative.
+- `00H1C`: optimizer must not return the mined positional blunder `f7h5`;
+  after the later tactical witness stabilization, the exact no-positional move
+  was no longer stable, so this became a gating invariant rather than an exact
+  Lichess-solution invariant.
+
+### Implementation Notes
+
+Argument selectors now split support into tactical and positional evidence:
+
+- tactical reason prefixes:
+  - `terminal:`
+  - `tactical:`
+  - `material:`
+  - `procedural:`
+  - `smt:`
+  - `search:`
+- positional reason prefixes:
+  - `center_control:`
+  - `development:`
+  - `file_control:`
+  - `king_safety:`
+  - `outpost:`
+  - `pawn_structure:`
+  - `piece_activity:`
+
+When any accepted tactical reason exists in the graph, positional support mode
+is `tactical_gated`:
+
+- positional reason labels remain in traces;
+- positional support has zero effective count;
+- positional score bonus is removed from effective score;
+- unresolved reply attacks still outrank tactical gain;
+- concrete material or promotion gain outranks defended-reply count and generic
+  effective score.
+
+When no accepted tactical reason exists, positional support mode is `quiet`:
+
+- positional supports remain active;
+- quiet-position tests still verify opening development, castling, and passed
+  pawn structure labels.
+
+Optimizer adapter changes:
+
+- exposes `positional_support_mode`;
+- reports `positional_support_effective` in objective values;
+- uses effective score after positional gating;
+- orders material gain before accepted defenses in tactical contexts.
+
+SMT fork witness change:
+
+- `smt_fork_moves` now returns every satisfying fork witness after the solver
+  proves the candidate set satisfiable;
+- it no longer filters down to one arbitrary model-selected move.
+
+### Verification
+
+Focused tests:
+
+```powershell
+uv run --with chess --with z3-solver pytest .\tests\test_dialectical_chess_evidence_ablation.py .\tests\test_dialectical_chess_engine_api.py .\tests\test_dialectical_chess_cleanup.py .\tests\test_dialectical_chess_loss_mining.py -q
+```
+
+Result:
+
+- `42 passed in 3.68s`.
+
+Fixed matrix command:
+
+```powershell
+uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py --experiment-matrix --lichess-puzzles .\scratch\lichess_db_puzzle.csv --rating-min 1200 --rating-max 1600 --limit 100 --matrix-preset core --progress-every 25 --json-out .\scratch\lichess_1200_1600_matrix_core_100_positional_gated.json 1>$null
+```
+
+Timeout:
+
+- `300s`, adjusted from the measured `255s` prior matrix runtime.
+
+Result:
+
+- completed successfully;
+- elapsed: `259529.37 ms`;
+- sample: `100` puzzles;
+- line move counts: `2`: 9, `4`: 63, `6`: 26, `8`: 2;
+- mate themes: `mateIn1`: 9, `mateIn2`: 10, `mateIn3`: 3.
+
+Sorted rows:
+
+| Case | Solved | Hit Rate | Elapsed ms |
+| --- | ---: | ---: | ---: |
+| `argument_d2_search1` | 23/100 | 0.23 | 17855.40 |
+| `argument_d2_no_smt` | 22/100 | 0.22 | 11908.96 |
+| `argument_d2_no_positional` | 22/100 | 0.22 | 12785.30 |
+| `argument_d2` | 22/100 | 0.22 | 13963.71 |
+| `optimizer_d2_no_positional` | 21/100 | 0.21 | 20705.91 |
+| `optimizer_d2` | 21/100 | 0.21 | 22333.81 |
+| `argument_d1` | 20/100 | 0.20 | 13212.92 |
+| `argument_mate_theme_depth` | 20/100 | 0.20 | 16632.56 |
+| `optimizer_mate_theme_depth` | 19/100 | 0.19 | 24431.31 |
+| `argument_d0` | 18/100 | 0.18 | 5754.38 |
+| `optimizer_static` | 18/100 | 0.18 | 12558.07 |
+| `grounded_d1` | 18/100 | 0.18 | 13182.08 |
+| `categoriser_d2` | 16/100 | 0.16 | 13822.33 |
+| `support_d2` | 16/100 | 0.16 | 14003.87 |
+| `grounded_d2` | 14/100 | 0.14 | 13940.81 |
+| `support_d1` | 13/100 | 0.13 | 13187.39 |
+| `categoriser_d1` | 13/100 | 0.13 | 13233.09 |
+| `score_static` | 12/100 | 0.12 | 6014.42 |
+
+Positional gates:
+
+- `argument_d2` versus `argument_d2_no_positional`: pass, `22/100` versus
+  `22/100`.
+- `optimizer_d2` versus `optimizer_d2_no_positional`: pass, `21/100` versus
+  `21/100`.
+
+### Interpretation
+
+Tactical puzzle strength:
+
+- Positional reasons no longer hurt the fixed puzzle slice relative to disabling
+  them.
+- `argument_d2` improved from the earlier `17/100` positional-on baseline to
+  `22/100`.
+- `optimizer_d2` improved from the earlier `17/100` positional-on baseline to
+  `21/100`.
+- The strongest current matrix row is still `argument_d2_search1` at `23/100`.
+
+General chess-play plausibility:
+
+- Positional reasons are still too shallow to be a full strategic evaluator.
+- They are now usable as quiet-position evidence instead of global tactical
+  tiebreakers.
+- The next positional work should add phase/context-specific strategic features
+  rather than increasing the weight of the current shallow labels.
+
+Argument-trace interpretability:
+
+- Keeping raw positional labels while exposing effective gating gives better
+  traces than deleting positional reasons.
+- The trace can now say both what a move claimed positionally and whether those
+  claims were allowed to affect selection.
+
+Recommendation:
+
+- Keep positional reasons enabled only with tactical gating.
+- Do not make optimizer default yet: it ties its no-positional row but remains
+  slower than the argument selector.
+- Next workstream should target search/tactical witness quality, especially
+  noisy SMT fork witnesses and why `argument_d2_search1` is still the best row.
