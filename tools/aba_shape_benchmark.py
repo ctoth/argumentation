@@ -9,7 +9,7 @@ import math
 from pathlib import Path
 import sys
 import time
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -37,6 +37,19 @@ RULE_DENSITY_THRESHOLDS = {"sparse_max": 5.0, "medium_max": 25.0}
 MAX_ARITY_THRESHOLDS = {"low_max": 2, "medium_max": 5}
 GROUNDED_SHAPE_COST_LIMIT = 1000
 VALIDATION_COST_LIMIT = 1000
+ROUTE_REQUIRED_FIELDS = frozenset(
+    {
+        "is_flat",
+        "is_normal",
+        "rule_density",
+        "p_acyclic",
+        "tau_aba_primal_width_proxy",
+        "stable_obstruction_count",
+        "dependency_scc_max_size",
+        "contrary_target_in_degree_max",
+        "closure_growth_sample",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -96,6 +109,15 @@ class BenchmarkJob:
     root: Path
     path: Path
     arguments_or_atoms: int | None = None
+
+
+@dataclass(frozen=True)
+class RouteCandidate:
+    backend: str
+    predicate: str
+    production: bool
+    evidence_id: str | None
+    reason: dict[str, Any]
 
 
 def compute_aba_shape(framework: ABAFramework) -> AbaShape:
@@ -424,6 +446,100 @@ def shape_buckets(shape: AbaShape, solver_class_name: str) -> dict[str, str]:
         "preprocessing": "collapsed" if shape.preprocessing_collapsed else "not_collapsed",
         "solver_class": solver_class_name,
     }
+
+
+def route_candidates(
+    shape: AbaShape,
+    solver_class_name: str,
+    *,
+    available_backends: Iterable[str] = DEFAULT_BACKENDS,
+    timeout_budget_class: str | None = None,
+) -> list[RouteCandidate]:
+    return route_candidates_from_shape_data(
+        asdict(shape),
+        solver_class_name,
+        available_backends=available_backends,
+        timeout_budget_class=timeout_budget_class,
+    )
+
+
+def route_candidates_from_shape_data(
+    shape_data: Mapping[str, Any],
+    solver_class_name: str,
+    *,
+    available_backends: Iterable[str] = DEFAULT_BACKENDS,
+    timeout_budget_class: str | None = None,
+) -> list[RouteCandidate]:
+    if not ROUTE_REQUIRED_FIELDS <= set(shape_data):
+        return []
+
+    available = frozenset(available_backends)
+    candidates: list[RouteCandidate] = []
+    if "asp" in available and bool(shape_data["is_flat"]):
+        candidates.append(
+            RouteCandidate(
+                backend="asp",
+                predicate="flat_direct_asp_candidate",
+                production=False,
+                evidence_id=None,
+                reason={
+                    "paper": "Lehtonen_2021_DeclarativeAlgorithmsComplexityResults",
+                    "fields": ["is_flat", "rule_density", "stable_obstruction_count"],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    if bool(shape_data["p_acyclic"]):
+        candidates.append(
+            RouteCandidate(
+                backend="future_dispute_search",
+                predicate="p_acyclic_dispute_candidate",
+                production=False,
+                evidence_id=None,
+                reason={
+                    "paper": "Toni_2013_GeneralisedFrameworkDisputeDerivations",
+                    "fields": ["p_acyclic", "dependency_scc_max_size"],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    if int(shape_data["tau_aba_primal_width_proxy"]) <= 4:
+        candidates.append(
+            RouteCandidate(
+                backend="future_tree_decomposition",
+                predicate="low_tau_aba_width_candidate",
+                production=False,
+                evidence_id=None,
+                reason={
+                    "paper": "Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions",
+                    "fields": [
+                        "tau_aba_primal_width_proxy",
+                        "dependency_scc_max_size",
+                        "contrary_target_in_degree_max",
+                    ],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    if bool(shape_data["is_normal"]):
+        candidates.append(
+            RouteCandidate(
+                backend="semantic_equivalence",
+                predicate="normal_preferred_stable_coincidence_candidate",
+                production=False,
+                evidence_id=None,
+                reason={
+                    "paper": "Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation",
+                    "fields": ["is_normal", "stable_obstruction_count"],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    return candidates
 
 
 def _bucket_int(
