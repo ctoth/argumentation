@@ -79,9 +79,11 @@ def test_bench_settings_report_selector_mode() -> None:
         search_backend="alphabeta",
         smt_mate=False,
         selector_mode="support",
+        positional_reasons=False,
     )
 
     assert bench_settings(args)["selector_mode"] == "support"
+    assert bench_settings(args)["positional_reasons"] is False
 
 
 def test_ablation_selector_modes_are_explicitly_gated() -> None:
@@ -160,3 +162,14 @@ def test_positional_reasons_cover_castling_king_safety() -> None:
     probes = {probe.uci: probe for probe in probe_moves(board)}
 
     assert "king_safety:e1g1:castle" in probes["e1g1"].reasons
+
+
+def test_engine_settings_can_disable_positional_reasons() -> None:
+    from dialectical_chess.engine import DialecticalChessEngine
+
+    board = owned_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    analysis = DialecticalChessEngine(EngineSettings(positional_reasons=False)).analyze(board)
+    probes = {probe.uci: probe for probe in analysis.probes}
+
+    assert probes["e2e4"].reasons == ()
+    assert probes["e2e4"].objections == ("objection:no_immediate_tactical_warrant",)
