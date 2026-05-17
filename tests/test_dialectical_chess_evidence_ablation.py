@@ -24,10 +24,10 @@ from dialectical_chess.bench import (  # noqa: E402
     run_lichess,
     settings as bench_settings,
 )
-from dialectical_chess.probe import owned_board_from_fen  # noqa: E402
+from dialectical_chess.probe import owned_board_from_fen, probe_moves  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
 from dialectical_chess.search import owned_is_checkmate  # noqa: E402
-from dialectical_chess.smt import smt_mate_in_one_moves  # noqa: E402
+from dialectical_chess.smt import smt_fork_moves, smt_mate_in_one_moves  # noqa: E402
 from dialectical_chess.uci import choose_uci_move  # noqa: E402
 
 
@@ -133,3 +133,13 @@ def test_mate_in_one_smt_scaffold_matches_procedural_checker() -> None:
     )
 
     assert smt_mate_in_one_moves(board) == procedural_moves
+
+
+def test_smt_fork_witness_finds_knight_fork() -> None:
+    board = owned_board_from_fen("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1")
+
+    assert "b5c7" in smt_fork_moves(board)
+
+    fork_probe = next(probe for probe in probe_moves(board) if probe.uci == "b5c7")
+    assert "smt:fork:2:500" in fork_probe.reasons
+    assert "fork" in fork_probe.smt_witnesses
