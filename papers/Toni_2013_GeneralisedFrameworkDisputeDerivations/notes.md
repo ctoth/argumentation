@@ -245,6 +245,52 @@ This paper is directly relevant to an argumentation/proof-procedure implementati
 - [ ] Which canonical parameter choices are required for the project's target semantics, and which should be exposed as implementation strategy hooks? *(p.8-p.15)*
 - [ ] How should `Fail` be implemented or delegated if ideal semantics are needed? *(p.6, p.14-p.16)*
 
+## Additional Page-Image Extraction, pp.17-26
+
+### Structured Potential Arguments and Labels
+- A single proof tree can be represented by different potential arguments. For an assumption `alpha in A`, both `{} |-_{alpha} alpha` and `{alpha} |-_{empty} alpha` are potential arguments for `alpha`. *(p.17)*
+- A potential argument may produce no actual argument, one actual argument, or multiple actual arguments depending on the available inference rules. Example: with `A={a,b,c}` and `R={p <- a,q} union R'`, `{a} |-_{q} p` produces no actual argument if `R'={}`, one actual argument `{a} |-_{empty} p` if `R'={q <-}`, and two actual arguments `{a,b} |-_{empty} p` and `{a,c} |-_{empty} p` if `R'={q <- b; q <- c}`. *(p.17)*
+- Labels are introduced for potential arguments: `Args` contains expressions `l : A |-S sigma`; `Att` contains expressions `l -> l'`; `P` and `O` contain expressions `l : A |-S sigma -> l'` meaning that the labelled potential argument attacks another labelled argument. *(p.17)*
+- `newLabel()` returns a fresh label; `newLabel(l)` returns a fresh label of the form `l(...)`; a special label `emptyset` marks the initial claim argument as not attacking any prior argument. *(p.17)*
+- Structured X-dispute derivations eliminate the need for explicit marking by representing potential arguments in `P` and `O`: marked versus unmarked support is encoded in the potential-argument notation. *(p.17)*
+- Structured derivations interleave construction and semantic evaluation. Potential arguments remain in `P`/`O`; when evaluated they are removed from `P`/`O` and added to `Args`, with `Att` modified as needed. *(p.17)*
+
+### Structured X-Dispute Definition Details
+- Structured derivations add `memberP` to choose a labelled potential argument in `P`; `memberO` in the structured case chooses a labelled potential argument rather than only a support set. Canonicality requires `memberO(O) in O` when `O` is nonempty and `memberP(P) in P` when `P` is nonempty. *(p.17)*
+- A successful structured X-dispute derivation is a finite sequence `(P_i,O_i,D_i,C_i,F_i,Args_i,Att_i)` ending with `P_n=O_n=F_n={}`, output support `Delta=D_n`, output arguments `Args=Args_n`, and output attacks `Att=Att_n`. *(p.17-p.18)*
+- Initial structured state has `P_0={l_1:{}|-_{delta} delta -> emptyset}` for `l_1=newLabel()`, `D_0=A cap {delta}`, and `O_0=C_0=F_0=Args_0=Att_0={}`. *(p.18)*
+- Case 1, proponent turn: if the selected premise is an assumption, the derivation marks/moves it by adding a new attacker obligation in `O`, updating `Args` and `Att`, and preserving `D`, `C`, and `F`; if the selected premise is not an assumption, a rule `sigma <- R` may unfold it, adding new potential arguments, adding assumptions in the rule body to `D`, and updating `Args`/`Att`. *(p.18)*
+- Case 2, opponent turn: if the selected premise is an assumption it may be ignored, moved to `F` as already dealt with, or made a new culprit and used to start a counter-attack in `P`; if the selected premise is not an assumption, all applicable rule unfoldings are split according to culprit filtering into newly pursued opponent arguments and failed/dealt-with supports. *(p.18-p.19)*
+- Case 3, failed-support turn: if `turn(i)=F_i`, `memberF(F_i)=S`, and `Fail(S)` holds, then the derivation removes `S` from `F` and leaves the other components unchanged. *(p.19)*
+- The support and dialectical structure computed by a structured X-dispute derivation are `(D_n, (Args_n, Att_n))`; the culprits computed are `C_n`. *(p.19)*
+
+### Figures and Examples, pp.20-22
+- **Fig. 4 (p.20):** Structured decision tree extending Fig. 3. The main changes are choosing p-arguments from `P`/`O`, returning the dialectical structure `(Args, Att)`, moving supports of p-arguments to `F`, adding full new p-arguments to `O`, and modifying `Args`/`Att`.
+- **Fig. 5 (p.21):** Structured X-dispute derivation for GB-choices in Example 6.1. It computes support `{a,c}` for `p`, `Args_6={l_1:{a}|-empty p, l_2:{b}|-empty q, l_3:{c}|-empty r}`, and `Att_6={l_1->emptyset, l_2->l_1, l_3->l_2}`. *(p.21)*
+- **Fig. 6 (p.22):** Structured X-dispute derivation for IB-choices on the same Example 6.1; it adds a final step obtained by case 3 after carrying `{b}` in `F`. *(p.22)*
+- **Fig. 7 (p.22):** Larger structured derivation for Example 6.2 with support `{a,f}` for `p`, showing multiset-sensitive behavior and how some choices valid for AB/IB are not valid for GB because GB filtering rejects some rule bodies containing existing culprits. *(p.21-p.22)*
+- Example 6.1 also shows a failed attempt to derive `q`: the sequence reaches a nonempty `P_4` and cannot be extended to a successful structured derivation. *(p.21)*
+- Example 6.2 shows that an IB-choice counterpart can have different `F` components; if `F_11={{c},{b,r},{c,t}}` and `Fail({c})` does not hold because `{c,e}` is admissible, the sequence cannot extend to a successful structured derivation for IB-choices. *(p.23)*
+
+### Soundness of Structured X-Dispute Derivations
+- Section 7 first proves support soundness by using a one-to-one correspondence between ordinary X-dispute derivations and structured X-dispute derivations; then it studies soundness of the computed dialectical structure `(Args, Att)`. *(p.23)*
+- Theorem 7.1: a structured X-dispute derivation of support `Delta` and dialectical structure `(Args,Att)` for `delta` exists for some choices of parameters iff an ordinary X-dispute derivation of support `Delta` for `delta` exists for some choices of parameters. *(p.23)*
+- Corollary 7.1: if a structured derivation exists, then under GB-choices `Delta` is admissible and contained in the grounded set and supports an argument for `delta`; under AB-choices `Delta` is admissible, extends to some preferred set, and supports an argument for `delta`; under IB-choices `Delta` is contained in the ideal set and supports an argument for `delta`. *(p.23)*
+- Definition 7.1 maps a computed dialectical structure `(Args,Att)` into a labelled potential-argument tree `T*(Args,Att)`: its root is the potential argument labelled `l` such that `l -> emptyset in Att`, and children follow attack-label edges `l_M -> l_N`. *(p.23)*
+- Trees `T*(Args,Att)` may not themselves be dispute trees because they can contain non-actual arguments. The paper therefore first expands potential arguments into actual arguments, then prunes labels into a dialectical forest, and then expands filtered/dealt-with subtrees to prove admissible/ideal soundness. *(p.23-p.24)*
+- Definition 7.2 expands a potential argument `A |-S sigma` with nonempty `S` into a proof for `sigma` supported by `A union B`, where `B` is the union of supports for proofs of every sentence in `S`. *(p.24)*
+- Definition 7.3 constructs the actual dialectical structure `Actual(Args,Att)` by replacing potential non-actual arguments that can be expanded with actual arguments, removing potential non-actual arguments that cannot be made actual, and rewriting attack edges to match the surviving actual arguments. *(p.24)*
+- Proposition 7.1: if the selection function is patient, meaning it selects an assumption only when `S-A` is empty, then the actual dialectical structure equals the originally computed dialectical structure. Example 6.1 uses a patient selection function, while Example 6.2 does not. *(p.24)*
+- Definition 7.4 turns the actual dialectical structure into a dialectical forest: roots are actual arguments attacking `emptyset` or actual arguments that attack no existing actual argument; child links follow actual attack labels. The pruned dialectical forest removes the labels. *(p.25)*
+- Proposition 7.2: with a patient selection function, the dialectical forest is exactly the single tree `T*(Args,Att)`. *(p.25)*
+- Theorem 7.2: for GB-choices, every tree in the pruned forest is a grounded dispute tree for the argument at its root, and there exists a grounded dispute tree in the forest for an argument for the input sentence `delta`. *(p.25-p.26)*
+
+### Expanded Dialectical Forest for AB/IB Choices
+- For AB- or IB-choices, the pruned forest may not itself be a set of admissible/ideal dispute trees; Fig. 10's right-hand tree fails dispute-tree conditions because some leaves that should be opponent nodes have no children, and one proponent leaf is attacked by three arguments but has no children for those attackers. *(p.26)*
+- The missing children arise from `f_DbyD` and `f_CbyC` filtering under AB/IB choices. Adding the filtered arguments can yield a dispute tree, but the resulting tree may be infinite and reuses nodes already present in the forest. *(p.26)*
+- Lemma 7.1: for AB/IB choices, every leaf in the pruned forest holding an attackable argument has a matching node in the forest with an argument for the contrary of one of its support assumptions, with parity depending on the leaf level. This supplies the expansion witness called `arg_F(alpha)`. *(p.26)*
+- Definition 7.5 constructs an expanded dialectical tree by iteratively adding, to all attackable leaves, all `arg_F(alpha)` children for support assumptions if the leaf is at odd level and one `arg_F(alpha)` child for a culprit assumption if the leaf is at even level. The expanded forest is the set of all such limits. *(p.26)*
+
 ## Related Work Worth Reading
 - Dung et al. and Bondarenko et al. on ABA foundations and dispute derivations are repeatedly used as the base references for ABA semantics, dispute trees, and GB/AB/IB proof procedures. *(p.1-p.6)*
 - Prior structured AB-dispute derivations are the immediate precursor to structured X-dispute derivations. *(p.2, p.16)*
