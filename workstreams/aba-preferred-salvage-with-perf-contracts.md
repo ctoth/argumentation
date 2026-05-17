@@ -174,7 +174,7 @@ path is introduced.
 Goal: finish cleanly.
 
 - [x] Re-run all gates.
-- [ ] Promote the minimal report/test/workstream diff to `main` if gates pass.
+- [x] Promote the minimal report/test/workstream diff to `main` if gates pass.
 - [x] Keep generated diagnostics uncommitted unless explicitly requested.
 
 Execution status:
@@ -182,6 +182,8 @@ Execution status:
 - Final Phase 5 gate passed: `39 passed, 1 skipped in 4.23s`.
 - Tracked status was clean before the final gate.
 - No generated diagnostics were committed.
+- Promoted to `main` with a fast-forward merge from
+  `experiment/aba-preferred-salvage-perf-contracts`.
 
 Gate:
 
