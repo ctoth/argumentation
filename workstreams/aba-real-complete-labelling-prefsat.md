@@ -238,18 +238,30 @@ as semantic-only tests.
 
 Goal: code from the page images, not memory or previous branch shape.
 
-- [ ] Reread the Cerutti 2013 page images for complete-labelling variables,
+- [x] Reread the Cerutti 2013 page images for complete-labelling variables,
   preferred maximality, and subset blocking.
-- [ ] Reread the Cerutti 2015 page images for the ArgSemSAT implementation
+- [x] Reread the Cerutti 2015 page images for the ArgSemSAT implementation
   surface.
-- [ ] Reread the Niskanen/Jarvisalo page images before using persistent SAT
+- [x] Reread the Niskanen/Jarvisalo page images before using persistent SAT
   state, assumptions, preprocessing, or iterative calls.
-- [ ] Reread the Lehtonen page images for the ABA input surface and direct ABA
+- [x] Reread the Lehtonen page images for the ABA input surface and direct ABA
   solving constraints.
-- [ ] Record the exact page-image paths in `REAL_PREFSAT_PAGE_IMAGES`.
-- [ ] For each paper-derived assertion in
+- [x] Record the exact page-image paths in `REAL_PREFSAT_PAGE_IMAGES`.
+- [x] For each paper-derived assertion in
   `tests/test_aba_real_prefsat_contract.py`, include the page-image path in the
   assertion message or parametrization id.
+
+Execution status:
+
+- Reread all required page images directly.
+- Cerutti 2013/2015 pages confirm complete-labelling SAT, inner strict grow,
+  and outer subset-blocking structure.
+- Niskanen/Jarvisalo pages confirm persistent SAT state and assumption-style
+  iterative solver use.
+- Lehtonen pages confirm direct ABA fact/complete-set surface and avoiding
+  argument-construction blow-up.
+- Phase 2 diff gate was clean before production solver implementation.
+- Next unchecked item is Phase 3: Operational Contracts Before Code.
 
 Gate:
 
