@@ -206,7 +206,52 @@ def test_large_dense_stable_route_ignores_locator_fields() -> None:
     )
 
 
+def test_large_dense_preferred_has_no_production_route_without_evidence() -> None:
+    candidates = route_candidates_from_shape_data(
+        _large_dense_preferred_shape_data(),
+        SOLVER_CLASS,
+        available_backends=AVAILABLE_BACKENDS,
+        timeout_budget_class="30s",
+    )
+
+    assert candidates
+    assert all(not candidate.production for candidate in candidates)
+    assert all(candidate.evidence_id is None for candidate in candidates)
+
+
+def test_large_dense_preferred_asp_candidate_is_not_production_route() -> None:
+    candidates = route_candidates_from_shape_data(
+        _large_dense_preferred_shape_data(),
+        SOLVER_CLASS,
+        available_backends=AVAILABLE_BACKENDS,
+        timeout_budget_class="30s",
+    )
+
+    asp_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate.backend == "asp" and candidate.predicate == "flat_direct_asp_candidate"
+    ]
+    assert asp_candidates
+    assert all(not candidate.production for candidate in asp_candidates)
+
+
 def _large_dense_stable_shape_data() -> dict[str, Any]:
+    return {
+        "is_flat": True,
+        "is_normal": False,
+        "rule_density": 26.0,
+        "p_acyclic": False,
+        "tau_aba_primal_width_proxy": 26,
+        "stable_obstruction_count": 0,
+        "dependency_scc_max_size": 8,
+        "contrary_target_in_degree_max": 1,
+        "closure_growth_sample": 0.75,
+        "assumptions": 151,
+    }
+
+
+def _large_dense_preferred_shape_data() -> dict[str, Any]:
     return {
         "is_flat": True,
         "is_normal": False,
