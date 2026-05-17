@@ -5,6 +5,7 @@ import csv
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 import json
+import math
 from pathlib import Path
 import sys
 import time
@@ -40,6 +41,12 @@ VALIDATION_COST_LIMIT = 1000
 
 @dataclass(frozen=True)
 class AbaShape:
+    is_flat: bool
+    is_normal: bool
+    assumption_count: int
+    atom_count: int
+    rule_count: int
+    contrary_count: int
     assumptions: int
     language_literals: int
     rules: int
@@ -60,6 +67,23 @@ class AbaShape:
     residual_rules: int
     preprocessing_collapsed: bool
     grounded_shape_status: str
+    rule_density: float
+    dependency_scc_count: int
+    dependency_scc_max_size: int
+    dependency_cycle_count_or_flag: int
+    p_acyclic: bool
+    contrary_target_in_degree_max: int
+    contrary_target_in_degree_avg: float
+    contrary_target_entropy: float
+    assumption_incidence_width_proxy: int
+    rule_body_overlap_max: int
+    rule_body_overlap_avg: float
+    closure_growth_sample: float
+    grounded_iteration_count: int
+    grounded_in_count: int
+    grounded_out_count: int
+    stable_obstruction_count: int
+    tau_aba_primal_width_proxy: int
 
 
 @dataclass(frozen=True)
@@ -78,6 +102,7 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     arities = [len(rule.antecedents) for rule in framework.rules]
     rules_by_head = Counter(rule.consequent for rule in framework.rules)
     contrary_literals = tuple(framework.contrary.values())
+    contrary_target_counts = Counter(contrary_literals)
     rules_by_contrary = Counter(
         rule.consequent for rule in framework.rules if rule.consequent in set(contrary_literals)
     )
@@ -85,7 +110,16 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     language_literals = len(framework.language)
     rules = len(framework.rules)
     grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
+    dependency = _dependency_shape(framework)
+    rule_density = _ratio(rules, assumptions)
+    grounded_iterations = _grounded_iteration_count(framework)
     return AbaShape(
+        is_flat=_is_flat(framework),
+        is_normal=_is_normal_candidate(framework),
+        assumption_count=assumptions,
+        atom_count=language_literals,
+        rule_count=rules,
+        contrary_count=len(framework.contrary),
         assumptions=assumptions,
         language_literals=language_literals,
         rules=rules,
@@ -106,6 +140,25 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
         residual_rules=grounded["residual_rules"],
         preprocessing_collapsed=grounded["preprocessing_collapsed"],
         grounded_shape_status=grounded["grounded_shape_status"],
+        rule_density=rule_density,
+        dependency_scc_count=dependency["scc_count"],
+        dependency_scc_max_size=dependency["scc_max_size"],
+        dependency_cycle_count_or_flag=dependency["cycle_count_or_flag"],
+        p_acyclic=dependency["p_acyclic"],
+        contrary_target_in_degree_max=max(contrary_target_counts.values(), default=0),
+        contrary_target_in_degree_avg=_average(contrary_target_counts.values()),
+        contrary_target_entropy=_entropy(contrary_target_counts.values()),
+        assumption_incidence_width_proxy=_assumption_incidence_width_proxy(framework),
+        rule_body_overlap_max=_rule_body_overlap(framework)["max"],
+        rule_body_overlap_avg=_rule_body_overlap(framework)["avg"],
+        closure_growth_sample=_closure_growth_sample(framework),
+        grounded_iteration_count=grounded_iterations,
+        grounded_in_count=len(native_aba.grounded_extension(framework))
+        if assumptions * rules <= GROUNDED_SHAPE_COST_LIMIT
+        else 0,
+        grounded_out_count=grounded["grounded_fixed_out"],
+        stable_obstruction_count=_stable_obstruction_count(framework),
+        tau_aba_primal_width_proxy=_tau_aba_primal_width_proxy(framework),
     )
 
 
@@ -146,6 +199,198 @@ def _ratio(numerator: int, denominator: int) -> float:
     if denominator == 0:
         return 0.0
     return numerator / denominator
+
+
+def _entropy(counts: Iterable[int]) -> float:
+    materialized = [count for count in counts if count > 0]
+    total = sum(materialized)
+    if total == 0:
+        return 0.0
+    return -sum((count / total) * math.log2(count / total) for count in materialized)
+
+
+def _is_flat(framework: ABAFramework) -> bool:
+    return not any(rule.consequent in framework.assumptions for rule in framework.rules)
+
+
+def _is_normal_candidate(framework: ABAFramework) -> bool:
+    """Cheap structural candidate for Dimopoulos-style stable/preferred collapse.
+
+    The package currently accepts flat ABA only.  For routing we only need a
+    conservative flag: every assumption's contrary must be derivable from that
+    assumption alone or not derivable at all.  Small exhaustive semantic tests
+    are responsible for guarding any stronger production use of this field.
+    """
+
+    for assumption in framework.assumptions:
+        contrary = framework.contrary[assumption]
+        if contrary in _closure(framework, frozenset({assumption})):
+            continue
+        if contrary in _closure(framework, framework.assumptions):
+            return False
+    return True
+
+
+def _dependency_shape(framework: ABAFramework) -> dict[str, Any]:
+    nodes = set(framework.language) - set(framework.assumptions)
+    edges: dict[Literal, set[Literal]] = {node: set() for node in nodes}
+    self_loop = False
+    for rule in framework.rules:
+        if rule.consequent in framework.assumptions:
+            continue
+        nodes.add(rule.consequent)
+        edges.setdefault(rule.consequent, set())
+        for antecedent in rule.antecedents:
+            if antecedent in framework.assumptions:
+                continue
+            nodes.add(antecedent)
+            edges.setdefault(antecedent, set())
+            edges[antecedent].add(rule.consequent)
+            if antecedent == rule.consequent:
+                self_loop = True
+    components = _strongly_connected_components(nodes, edges)
+    cyclic_components = [
+        component for component in components if len(component) > 1 or any(node in edges.get(node, ()) for node in component)
+    ]
+    if self_loop and not cyclic_components:
+        cyclic_components = [frozenset()]
+    return {
+        "scc_count": len(components),
+        "scc_max_size": max((len(component) for component in components), default=0),
+        "cycle_count_or_flag": 1 if cyclic_components else 0,
+        "p_acyclic": not cyclic_components,
+    }
+
+
+def _strongly_connected_components(
+    nodes: set[Literal],
+    edges: dict[Literal, set[Literal]],
+) -> list[frozenset[Literal]]:
+    index = 0
+    stack: list[Literal] = []
+    on_stack: set[Literal] = set()
+    indices: dict[Literal, int] = {}
+    lowlinks: dict[Literal, int] = {}
+    components: list[frozenset[Literal]] = []
+
+    def strongconnect(node: Literal) -> None:
+        nonlocal index
+        indices[node] = index
+        lowlinks[node] = index
+        index += 1
+        stack.append(node)
+        on_stack.add(node)
+
+        for successor in edges.get(node, ()):
+            if successor not in indices:
+                strongconnect(successor)
+                lowlinks[node] = min(lowlinks[node], lowlinks[successor])
+            elif successor in on_stack:
+                lowlinks[node] = min(lowlinks[node], indices[successor])
+
+        if lowlinks[node] == indices[node]:
+            component: set[Literal] = set()
+            while True:
+                successor = stack.pop()
+                on_stack.remove(successor)
+                component.add(successor)
+                if successor == node:
+                    break
+            components.append(frozenset(component))
+
+    for node in sorted(nodes, key=repr):
+        if node not in indices:
+            strongconnect(node)
+    return components
+
+
+def _closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Literal]:
+    closure = set(premises)
+    changed = True
+    while changed:
+        changed = False
+        for rule in framework.rules:
+            if all(antecedent in closure for antecedent in rule.antecedents) and rule.consequent not in closure:
+                closure.add(rule.consequent)
+                changed = True
+    return frozenset(closure)
+
+
+def _grounded_iteration_count(framework: ABAFramework) -> int:
+    current = frozenset()
+    iterations = 0
+    while True:
+        next_extension = native_aba.def_operator(framework, current)
+        if next_extension == current:
+            return iterations
+        iterations += 1
+        if iterations > len(framework.assumptions):
+            return iterations
+        current = next_extension
+
+
+def _assumption_incidence_width_proxy(framework: ABAFramework) -> int:
+    incidence = Counter()
+    for rule in framework.rules:
+        for antecedent in rule.antecedents:
+            if antecedent in framework.assumptions:
+                incidence[antecedent] += 1
+    for assumption, contrary in framework.contrary.items():
+        incidence[assumption] += 1
+        if contrary in framework.assumptions:
+            incidence[contrary] += 1
+    return max(incidence.values(), default=0)
+
+
+def _rule_body_overlap(framework: ABAFramework) -> dict[str, float | int]:
+    bodies = [frozenset(rule.antecedents) for rule in framework.rules]
+    overlaps: list[int] = []
+    for left_index, left in enumerate(bodies):
+        for right in bodies[left_index + 1 :]:
+            overlaps.append(len(left & right))
+    return {"max": max(overlaps, default=0), "avg": _average(overlaps)}
+
+
+def _closure_growth_sample(framework: ABAFramework) -> float:
+    if not framework.language:
+        return 0.0
+    samples: list[AssumptionSet] = [frozenset(), framework.assumptions]
+    samples.extend(frozenset({assumption}) for assumption in sorted(framework.assumptions, key=repr)[:5])
+    growth = [
+        _ratio(len(_closure(framework, sample)) - len(sample), len(framework.language))
+        for sample in samples
+    ]
+    return _average(int(value * 1_000_000) for value in growth) / 1_000_000
+
+
+def _stable_obstruction_count(framework: ABAFramework) -> int:
+    return sum(
+        1
+        for assumption in framework.assumptions
+        if framework.contrary[assumption] in _closure(framework, frozenset({assumption}))
+    )
+
+
+def _tau_aba_primal_width_proxy(framework: ABAFramework) -> int:
+    neighbors: dict[object, set[object]] = defaultdict(set)
+
+    def connect(left: object, right: object) -> None:
+        neighbors[left].add(right)
+        neighbors[right].add(left)
+
+    for literal in framework.language:
+        neighbors.setdefault(("atom", literal), set())
+    for assumption in framework.assumptions:
+        connect(("atom", assumption), ("asm", assumption))
+    for index, rule in enumerate(sorted(framework.rules, key=repr)):
+        rule_node = ("rule", index)
+        neighbors.setdefault(rule_node, set())
+        connect(rule_node, ("atom", rule.consequent))
+        for antecedent in rule.antecedents:
+            connect(rule_node, ("atom", antecedent))
+    for assumption, contrary in framework.contrary.items():
+        connect(("atom", assumption), ("atom", contrary))
+    return max((len(values) for values in neighbors.values()), default=0)
 
 
 def solver_class(instance_kind: object, subtrack: object) -> str:

@@ -30,6 +30,61 @@ def lit(name: str) -> Literal:
     return Literal(GroundAtom(name))
 
 
+def shape_for_bucket(
+    *,
+    assumptions: int,
+    rule_density: float,
+    max_arity: int,
+    grounded_shape_status: str = "exact",
+) -> AbaShape:
+    rules = int(rule_density * max(assumptions, 1))
+    return AbaShape(
+        is_flat=True,
+        is_normal=True,
+        assumption_count=assumptions,
+        atom_count=max(assumptions, 1),
+        rule_count=rules,
+        contrary_count=assumptions,
+        assumptions=assumptions,
+        language_literals=max(assumptions, 1),
+        rules=rules,
+        contraries=assumptions,
+        distinct_contrary_literals=assumptions,
+        avg_rule_arity=0.0,
+        max_rule_arity=max_arity,
+        zero_body_rules=0,
+        rules_per_head_max=0,
+        rules_per_head_avg=0.0,
+        rules_per_contrary_max=0,
+        rules_per_contrary_avg=0.0,
+        assumption_to_language_ratio=1.0,
+        rule_to_assumption_ratio=rule_density,
+        grounded_fixed_in=0,
+        grounded_fixed_out=0,
+        residual_assumptions=assumptions,
+        residual_rules=0,
+        preprocessing_collapsed=False,
+        grounded_shape_status=grounded_shape_status,
+        rule_density=rule_density,
+        dependency_scc_count=0,
+        dependency_scc_max_size=0,
+        dependency_cycle_count_or_flag=0,
+        p_acyclic=True,
+        contrary_target_in_degree_max=1 if assumptions else 0,
+        contrary_target_in_degree_avg=1.0 if assumptions else 0.0,
+        contrary_target_entropy=0.0,
+        assumption_incidence_width_proxy=0,
+        rule_body_overlap_max=0,
+        rule_body_overlap_avg=0.0,
+        closure_growth_sample=0.0,
+        grounded_iteration_count=0,
+        grounded_in_count=0,
+        grounded_out_count=0,
+        stable_obstruction_count=0,
+        tau_aba_primal_width_proxy=0,
+    )
+
+
 def framework_zero_rules() -> ABAFramework:
     a = lit("a")
     b = lit("b")
@@ -161,28 +216,7 @@ def test_solver_class_maps_subtracks_to_general_class() -> None:
 
 
 def test_shape_buckets_use_structural_fields_only() -> None:
-    shape = AbaShape(
-        assumptions=200,
-        language_literals=400,
-        rules=6000,
-        contraries=200,
-        distinct_contrary_literals=200,
-        avg_rule_arity=2.0,
-        max_rule_arity=6,
-        zero_body_rules=0,
-        rules_per_head_max=10,
-        rules_per_head_avg=4.0,
-        rules_per_contrary_max=5,
-        rules_per_contrary_avg=2.0,
-        assumption_to_language_ratio=0.5,
-        rule_to_assumption_ratio=30.0,
-        grounded_fixed_in=0,
-        grounded_fixed_out=0,
-        residual_assumptions=200,
-        residual_rules=6000,
-        preprocessing_collapsed=False,
-        grounded_shape_status="skipped_cost",
-    )
+    shape = shape_for_bucket(assumptions=200, rule_density=30.0, max_arity=6)
 
     assert shape_buckets(shape, "aba/single-extension/preferred") == {
         "assumption_size": "large",
@@ -195,27 +229,10 @@ def test_shape_buckets_use_structural_fields_only() -> None:
 
 def test_shape_bucket_boundaries_are_inclusive() -> None:
     def bucketed(*, assumptions: int, rule_density: float, max_arity: int) -> dict[str, str]:
-        shape = AbaShape(
+        shape = shape_for_bucket(
             assumptions=assumptions,
-            language_literals=max(assumptions, 1),
-            rules=int(rule_density * max(assumptions, 1)),
-            contraries=assumptions,
-            distinct_contrary_literals=assumptions,
-            avg_rule_arity=0.0,
-            max_rule_arity=max_arity,
-            zero_body_rules=0,
-            rules_per_head_max=0,
-            rules_per_head_avg=0.0,
-            rules_per_contrary_max=0,
-            rules_per_contrary_avg=0.0,
-            assumption_to_language_ratio=1.0,
-            rule_to_assumption_ratio=rule_density,
-            grounded_fixed_in=0,
-            grounded_fixed_out=0,
-            residual_assumptions=assumptions,
-            residual_rules=0,
-            preprocessing_collapsed=False,
-            grounded_shape_status="exact",
+            rule_density=rule_density,
+            max_arity=max_arity,
         )
         return shape_buckets(shape, "aba/single-extension/preferred")
 
