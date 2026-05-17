@@ -40,6 +40,45 @@ Remaining common hard core:
 - direct stable shortcut experiment did not improve this core and was not
   promoted.
 
+## Live Shape Findings
+
+Recorded during the 2026-05-16 ABA shape matrix rerun over the ICCMA 2025
+cap-200 timeout manifest.
+
+The benchmark is not meant to pick a backend by contest row or filename. The
+useful signal is the structural class:
+
+- Large dense ABA frameworks with high maximum rule arity are not the current
+  hard class. `auto` and `asp` repeatedly solve those rows, while `sat` often
+  burns the full backend guard.
+- Large dense ABA frameworks with medium maximum rule arity are the hard class.
+  Preferred-semantics rows in that class repeatedly become all-timeout rows
+  under the current `auto`, `asp`, and `sat` candidates.
+- Stable-semantics rows in the same coarse hard class are not uniform. At least
+  one stable row is solved by `sat` after `auto` and `asp` time out, while
+  neighboring rows still time out across all current backends.
+- Therefore the current shape buckets are good enough to find the hard zone,
+  but too coarse for safe production routing inside that zone.
+- A broad route such as "use `sat` for the hard bucket" or "use `asp` for the
+  hard bucket" is not justified by this evidence. The hard bucket needs finer
+  structure before routing, or a new algorithmic candidate if finer structure
+  does not separate it.
+
+Next structural fields to add for this class:
+
+- dependency SCC count and maximum SCC size;
+- contrary-target in-degree distribution;
+- closure density estimate from sampled assumption sets;
+- cheap stable-obstruction count.
+
+Expected decision after the rerun:
+
+- If the final JSON contains a counterexample-free proposal with more than one
+  supporting row, that exact shape predicate may enter Phase 6.
+- If the large dense medium-arity hard bucket remains mixed or all-timeout, do
+  not add production routing for it. Treat it as an algorithm/encoding work item
+  for ABA preferred and as a finer-shape routing investigation for ABA stable.
+
 ## Non-Negotiable Rules
 
 - Do not parse filenames except to locate and read input files.
