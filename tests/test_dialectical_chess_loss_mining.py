@@ -56,7 +56,7 @@ def test_mines_first_engine_move_that_allows_immediate_mate() -> None:
         LossTurningPoint(
             game_index=1,
             ply=3,
-            fen_before="rnbqkbnr/pppp1ppp/8/4p3/6P1/7P/PPPPPP2/RNBQKBNR b KQkq g3 0 2",
+            fen_before="rnbqkbnr/pppp1ppp/8/4p3/8/7P/PPPPPPP1/RNBQKBNR w KQkq e6 0 2",
             played_move="g2g4",
             side_to_move="w",
             result="0-1",
