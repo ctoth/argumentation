@@ -40,6 +40,7 @@ def main() -> int:
     parser.add_argument("--lichess-puzzles", type=Path)
     parser.add_argument("--experiment-matrix", action="store_true")
     parser.add_argument("--compare-positional", action="store_true")
+    parser.add_argument("--compare-tactical-witness", action="store_true")
     parser.add_argument("--matrix-preset", choices=("core", "smoke"), default="core")
     parser.add_argument("--perft", action="store_true")
     parser.add_argument("--ablation", action="store_true")
@@ -92,6 +93,8 @@ def main() -> int:
         payload = run_experiment_matrix(args)
     elif args.compare_positional:
         payload = run_positional_comparison(args)
+    elif args.compare_tactical_witness:
+        payload = run_tactical_witness_comparison(args)
     elif args.lichess_puzzles:
         payload = run_lichess(args)
     elif args.ablation:
@@ -279,6 +282,145 @@ def run_positional_comparison(args: argparse.Namespace) -> dict[str, Any]:
         "both_fail_changed": len(both_fail_changed),
         "both_solve_changed": len(both_solve_changed),
         "positions": results,
+    }
+
+
+def run_tactical_witness_comparison(args: argparse.Namespace) -> dict[str, Any]:
+    if args.lichess_puzzles is None:
+        raise ValueError("--compare-tactical-witness requires --lichess-puzzles")
+    rows = selected_lichess_rows(args)
+    variants = tactical_witness_variants(args)
+    pairs = (
+        ("fork_on_vs_fork_off", "fork_on", "fork_off"),
+        ("fork_on_vs_search1", "fork_on", "search1"),
+        ("search1_vs_search1_no_fork", "search1", "search1_no_fork"),
+        ("fork_off_vs_search1_no_fork", "fork_off", "search1_no_fork"),
+    )
+    variant_totals = {
+        name: {"total": 0, "solved": 0}
+        for name in variants
+    }
+    delta_totals = {
+        name: {"changed_decisions": 0, "left_only_success": 0, "right_only_success": 0}
+        for name, _, _ in pairs
+    }
+    positions = []
+
+    for index, row in enumerate(rows, start=1):
+        moves = row["Moves"].split()
+        expected = {moves[0]} if moves else set()
+        row_args = argparse.Namespace(**vars(args))
+        row_args.dialectic_depth = dialectic_depth_for_lichess_row(row, args)
+        board = chess.Board(row["FEN"])
+
+        results = {}
+        for name, overrides in variants.items():
+            variant_args = argparse.Namespace(**vars(row_args))
+            for key, value in overrides.items():
+                setattr(variant_args, key, value)
+            result = score_board(board, expected, variant_args)
+            results[name] = tactical_witness_snapshot(result)
+            variant_totals[name]["total"] += 1
+            if result["correct"]:
+                variant_totals[name]["solved"] += 1
+
+        deltas = {}
+        for pair_name, left_name, right_name in pairs:
+            left = results[left_name]
+            right = results[right_name]
+            changed = left["selected_uci"] != right["selected_uci"]
+            left_only = left["correct"] and not right["correct"]
+            right_only = right["correct"] and not left["correct"]
+            deltas[pair_name] = {
+                "changed_decision": changed,
+                "left_only_success": left_only,
+                "right_only_success": right_only,
+            }
+            if changed:
+                delta_totals[pair_name]["changed_decisions"] += 1
+            if left_only:
+                delta_totals[pair_name]["left_only_success"] += 1
+            if right_only:
+                delta_totals[pair_name]["right_only_success"] += 1
+
+        positions.append(
+            {
+                "id": row.get("PuzzleId", ""),
+                "fen": row["FEN"],
+                "moves": moves,
+                "expected_uci": sorted(expected),
+                "rating": int(row.get("Rating") or 0),
+                "themes": row.get("Themes", "").split(),
+                "variants": results,
+                "deltas": deltas,
+            }
+        )
+        report_progress("tactical_witness_compare", index, len(rows), args)
+
+    for totals in variant_totals.values():
+        total = totals["total"]
+        totals["hit_rate"] = totals["solved"] / total if total else 0.0
+    return {
+        "ok": True,
+        "mode": "tactical_witness_comparison",
+        "suite": str(args.lichess_puzzles),
+        "sample": summarize_lichess_rows(rows),
+        "settings": settings(args),
+        "variant_totals": variant_totals,
+        "delta_totals": delta_totals,
+        "positions": positions,
+    }
+
+
+def tactical_witness_variants(args: argparse.Namespace) -> dict[str, dict[str, Any]]:
+    return {
+        "fork_on": {
+            "search_depth": args.search_depth,
+            "search_backend": args.search_backend,
+            "smt_fork": True,
+        },
+        "fork_off": {
+            "search_depth": args.search_depth,
+            "search_backend": args.search_backend,
+            "smt_fork": False,
+        },
+        "search1": {
+            "search_depth": 1,
+            "search_backend": "alphabeta",
+            "smt_fork": True,
+        },
+        "search1_no_fork": {
+            "search_depth": 1,
+            "search_backend": "alphabeta",
+            "smt_fork": False,
+        },
+    }
+
+
+def tactical_witness_snapshot(result: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "selected_uci": result.get("selected_uci"),
+        "selected_san": result.get("selected_san"),
+        "correct": result.get("correct"),
+        "score": result.get("score"),
+        "reasons": result.get("reasons", []),
+        "objections": result.get("objections", []),
+        "reply_attacks": result.get("reply_attacks", []),
+        "search_score": result.get("search_score"),
+        "search_line": result.get("search_line", []),
+        "smt_witnesses": result.get("smt_witnesses", []),
+        "fork_reasons": [
+            reason
+            for reason in result.get("reasons", [])
+            if reason.startswith("smt:fork")
+        ],
+        "search_reasons": [
+            reason
+            for reason in result.get("reasons", []) + result.get("objections", [])
+            if reason.startswith(("search:", "search_support:", "search_refutes:", "search_line:"))
+        ],
+        "optimizer_trace": result.get("optimizer_trace", {}),
+        "elapsed_ms": result.get("elapsed_ms"),
     }
 
 
