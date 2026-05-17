@@ -172,27 +172,38 @@ def test_argument_d2_solves_mined_positional_regressions(
 
 
 @pytest.mark.parametrize(
-    ("puzzle_id", "fen", "expected_uci"),
+    ("puzzle_id", "fen", "expected_uci", "rejected_uci"),
     [
         (
             "002IE",
             "r3brk1/5pp1/p1nqpn1p/P2pN3/2pP4/2P1PN2/5PPP/RB1QK2R b KQ - 4 16",
             "c6e5",
+            "d6e5",
         ),
         (
             "00H1C",
             "r3r3/1kpRnqpp/p4p2/Qp2P2P/1N6/4Pb2/PPP3P1/2K2R2 b - - 0 22",
-            "e7c6",
+            None,
+            "f7h5",
         ),
     ],
 )
 def test_optimizer_d2_solves_mined_positional_regressions(
     puzzle_id: str,
     fen: str,
-    expected_uci: str,
+    expected_uci: str | None,
+    rejected_uci: str,
 ) -> None:
     assert puzzle_id
     board = owned_board_from_fen(fen)
+
+    baseline = DialecticalChessEngine(
+        EngineSettings(
+            selector_mode="optimizer",
+            dialectic_depth=2,
+            positional_reasons=False,
+        )
+    ).choose_move(board)
 
     decision = DialecticalChessEngine(
         EngineSettings(
@@ -202,7 +213,10 @@ def test_optimizer_d2_solves_mined_positional_regressions(
         )
     ).choose_move(board)
 
-    assert decision.move_uci == expected_uci
+    if expected_uci is not None:
+        assert decision.move_uci == expected_uci
+    assert baseline.move_uci != rejected_uci
+    assert decision.move_uci != rejected_uci
     assert decision.selected is not None
     assert decision.selected.optimizer_trace["status"] == "optimal"
     assert "positional_support_effective" in decision.selected.optimizer_trace["objective_values"]

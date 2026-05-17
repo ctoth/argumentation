@@ -8,6 +8,24 @@ from pathlib import Path
 from typing import Any
 
 SELECTOR_MODES = frozenset({"argument", "score", "grounded", "support", "categoriser", "optimizer"})
+POSITIONAL_REASON_PREFIXES = (
+    "center_control:",
+    "development:",
+    "file_control:",
+    "king_safety:",
+    "outpost:",
+    "pawn_structure:",
+    "piece_activity:",
+)
+TACTICAL_REASON_PREFIXES = (
+    "terminal:",
+    "tactical:",
+    "material:",
+    "procedural:",
+    "smt:",
+    "search:",
+)
+POSITIONAL_SCORE_BONUS = 25
 
 
 @dataclass(frozen=True)
@@ -83,15 +101,13 @@ def score_selection_key(probe: MoveProbe) -> tuple[int, str]:
 def selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[float, int, int, int, int, str]:
+) -> tuple[float, int, int, int, int, int, str]:
     move_arg = graph.move_arguments[probe.uci]
     ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
     move_rank = float(ranking_scores.get(move_arg, 0.0))
-    accepted_support = sum(
-        1
-        for reason in probe.reasons
-        if f"reason:{probe.uci}:{reason}" in graph.grounded_extension
-    )
+    mode = positional_support_mode(graph)
+    accepted_tactical = accepted_tactical_support_count(probe, graph)
+    accepted_positional = effective_positional_support_count(probe, graph, mode)
     accepted_defenses = sum(
         1
         for reply_attack in probe.reply_attacks
@@ -102,12 +118,23 @@ def selection_key(
         for reply_attack in probe.reply_attacks
         if f"reply_attack:{probe.uci}:{reply_attack}" in graph.grounded_extension
     )
+    if mode == "quiet":
+        return (
+            -move_rank,
+            -accepted_tactical,
+            unresolved_attacks,
+            -accepted_defenses,
+            -accepted_positional,
+            -effective_score(probe, mode),
+            probe.uci,
+        )
     return (
-        -move_rank,
-        -accepted_support,
+        -accepted_tactical,
         unresolved_attacks,
         -accepted_defenses,
-        -probe.score,
+        -effective_score(probe, mode),
+        -move_rank,
+        -accepted_positional,
         probe.uci,
     )
 
@@ -115,15 +142,27 @@ def selection_key(
 def support_selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[int, int, int, int, str]:
-    accepted_support = accepted_support_count(probe, graph)
+) -> tuple[int, int, int, int, int, str]:
+    mode = positional_support_mode(graph)
+    accepted_tactical = accepted_tactical_support_count(probe, graph)
+    accepted_positional = effective_positional_support_count(probe, graph, mode)
     accepted_defenses = accepted_defense_count(probe, graph)
     unresolved_attacks = unresolved_attack_count(probe, graph)
+    if mode == "quiet":
+        return (
+            -accepted_tactical,
+            unresolved_attacks,
+            -accepted_defenses,
+            -accepted_positional,
+            -effective_score(probe, mode),
+            probe.uci,
+        )
     return (
-        -accepted_support,
+        -accepted_tactical,
         unresolved_attacks,
         -accepted_defenses,
-        -probe.score,
+        -effective_score(probe, mode),
+        -accepted_positional,
         probe.uci,
     )
 
@@ -131,15 +170,26 @@ def support_selection_key(
 def categoriser_selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[float, int, int, int, str]:
+) -> tuple[float, int, int, int, int, str]:
     move_arg = graph.move_arguments[probe.uci]
     ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
     move_rank = float(ranking_scores.get(move_arg, 0.0))
+    mode = positional_support_mode(graph)
+    if mode == "quiet":
+        return (
+            -move_rank,
+            -accepted_tactical_support_count(probe, graph),
+            unresolved_attack_count(probe, graph),
+            -effective_positional_support_count(probe, graph, mode),
+            -effective_score(probe, mode),
+            probe.uci,
+        )
     return (
-        -move_rank,
-        -accepted_support_count(probe, graph),
+        -accepted_tactical_support_count(probe, graph),
         unresolved_attack_count(probe, graph),
-        -probe.score,
+        -effective_score(probe, mode),
+        -move_rank,
+        -effective_positional_support_count(probe, graph, mode),
         probe.uci,
     )
 
@@ -149,6 +199,70 @@ def accepted_support_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
         1
         for reason in probe.reasons
         if f"reason:{probe.uci}:{reason}" in graph.grounded_extension
+    )
+
+
+def accepted_tactical_support_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
+    return _accepted_reason_count(probe, graph, is_tactical_reason)
+
+
+def accepted_positional_support_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
+    return _accepted_reason_count(probe, graph, is_positional_reason)
+
+
+def effective_positional_support_count(
+    probe: MoveProbe,
+    graph: RootArgumentGraph,
+    mode: str | None = None,
+) -> int:
+    if mode is None:
+        mode = positional_support_mode(graph)
+    if mode != "quiet":
+        return 0
+    return accepted_positional_support_count(probe, graph)
+
+
+def positional_support_mode(graph: RootArgumentGraph, *, include_positional: bool = True) -> str:
+    if not include_positional:
+        return "disabled"
+    if any(
+        argument.startswith("reason:")
+        and is_tactical_reason(argument.split(":", 2)[2])
+        and argument in graph.grounded_extension
+        for argument in graph.arguments
+    ):
+        return "tactical_gated"
+    return "quiet"
+
+
+def effective_score(probe: MoveProbe, mode: str) -> int:
+    if mode == "quiet":
+        return probe.score
+    return probe.score - POSITIONAL_SCORE_BONUS * positional_reason_count(probe)
+
+
+def positional_reason_count(probe: MoveProbe) -> int:
+    return sum(1 for reason in probe.reasons if is_positional_reason(reason))
+
+
+def is_positional_reason(reason: str) -> bool:
+    return reason.startswith(POSITIONAL_REASON_PREFIXES)
+
+
+def is_tactical_reason(reason: str) -> bool:
+    return reason.startswith(TACTICAL_REASON_PREFIXES)
+
+
+def _accepted_reason_count(
+    probe: MoveProbe,
+    graph: RootArgumentGraph,
+    predicate,
+) -> int:
+    return sum(
+        1
+        for reason in probe.reasons
+        if predicate(reason)
+        and f"reason:{probe.uci}:{reason}" in graph.grounded_extension
     )
 
 

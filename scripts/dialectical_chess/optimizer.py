@@ -10,21 +10,14 @@ from dialectical_chess.arguments import (
     MoveProbe,
     RootArgumentGraph,
     accepted_defense_count,
-    accepted_support_count,
+    accepted_positional_support_count,
+    accepted_tactical_support_count,
+    effective_score,
+    effective_positional_support_count,
     grounded_candidates,
+    positional_support_mode,
     selection_key,
     unresolved_attack_count,
-)
-
-
-POSITIONAL_PREFIXES = (
-    "center_control:",
-    "development:",
-    "file_control:",
-    "king_safety:",
-    "outpost:",
-    "pawn_structure:",
-    "piece_activity:",
 )
 
 
@@ -63,10 +56,11 @@ def choose_optimized_move(
             OptimizationObjective("accepted_defenses", direction="maximize", priority=3),
             OptimizationObjective("material_gain", direction="maximize", priority=4),
             OptimizationObjective("search_score", direction="maximize", priority=5),
-            OptimizationObjective("accepted_positional_support", direction="maximize", priority=6),
-            OptimizationObjective("base_score", direction="maximize", priority=7),
+            OptimizationObjective("positional_support_effective", direction="maximize", priority=6),
+            OptimizationObjective("base_score_effective", direction="maximize", priority=7),
         ),
     )
+    position_mode = positional_support_mode(graph, include_positional=include_positional)
     features = tuple(
         feature
         for probe in probes
@@ -74,7 +68,7 @@ def choose_optimized_move(
             probe,
             graph,
             OptimizationFeature,
-            include_positional=include_positional,
+            position_mode=position_mode,
         )
     )
     result = optimize_framework(framework, policy, features)
@@ -99,6 +93,7 @@ def choose_optimized_move(
             "selected_candidate": result.selected_candidate,
             "selected_arguments": sorted(result.selected_arguments),
             "objective_values": result.objective_values,
+            "positional_support_mode": position_mode,
             "trace": result.trace,
         },
     )
@@ -109,18 +104,12 @@ def _optimizer_features(
     graph: RootArgumentGraph,
     feature_type,
     *,
-    include_positional: bool,
+    position_mode: str,
 ):
     move_arg = graph.move_arguments[probe.uci]
-    accepted_support = accepted_support_count(probe, graph)
-    positional_support = _accepted_reason_count(
-        probe,
-        graph,
-        lambda reason: reason.startswith(POSITIONAL_PREFIXES),
-    )
-    tactical_support = accepted_support - positional_support
-    if not include_positional:
-        positional_support = 0
+    positional_support_raw = accepted_positional_support_count(probe, graph)
+    positional_support_effective = effective_positional_support_count(probe, graph, position_mode)
+    tactical_support = accepted_tactical_support_count(probe, graph)
     return (
         feature_type(move_arg, "terminal_mate", 1 if probe.is_checkmate or "terminal:checkmate" in probe.reasons else 0),
         feature_type(move_arg, "unresolved_reply_attacks", unresolved_attack_count(probe, graph)),
@@ -128,21 +117,9 @@ def _optimizer_features(
         feature_type(move_arg, "accepted_defenses", accepted_defense_count(probe, graph)),
         feature_type(move_arg, "material_gain", probe.captured_value + probe.promotion_value),
         feature_type(move_arg, "search_score", 0 if probe.search_score is None else probe.search_score),
-        feature_type(move_arg, "accepted_positional_support", positional_support),
-        feature_type(move_arg, "base_score", probe.score),
-    )
-
-
-def _accepted_reason_count(
-    probe: MoveProbe,
-    graph: RootArgumentGraph,
-    predicate,
-) -> int:
-    return sum(
-        1
-        for reason in probe.reasons
-        if predicate(reason)
-        and f"reason:{probe.uci}:{reason}" in graph.grounded_extension
+        feature_type(move_arg, "positional_support_raw", positional_support_raw),
+        feature_type(move_arg, "positional_support_effective", positional_support_effective),
+        feature_type(move_arg, "base_score_effective", effective_score(probe, position_mode)),
     )
 
 
