@@ -210,6 +210,7 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
                 break
     results = []
     by_rating: Counter[str] = Counter()
+    rating_totals: Counter[str] = Counter()
     by_theme: Counter[str] = Counter()
     theme_totals: Counter[str] = Counter()
     for row in rows:
@@ -223,6 +224,7 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
         if args.full_line and result["correct"]:
             result["full_line_correct"] = score_full_line(board, moves, args)
         bucket = rating_bucket(result["rating"])
+        rating_totals[bucket] += 1
         by_rating[bucket] += 1 if result["correct"] else 0
         for theme in result["themes"]:
             theme_totals[theme] += 1
@@ -237,7 +239,10 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
         "total": len(results),
         "solved": solved,
         "hit_rate": solved / len(results) if results else 0.0,
-        "by_rating_bucket": dict(sorted(by_rating.items())),
+        "by_rating_bucket": {
+            bucket: {"solved": by_rating[bucket], "total": rating_totals[bucket]}
+            for bucket in sorted(rating_totals)
+        },
         "by_theme": {
             theme: {"solved": by_theme[theme], "total": theme_totals[theme]}
             for theme in sorted(theme_totals)
