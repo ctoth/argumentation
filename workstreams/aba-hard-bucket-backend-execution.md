@@ -183,17 +183,27 @@ Goal: write properties before changing the backend.
 
 Required properties:
 
-- [ ] ABA(F) fact emission remains structural and page-cited to Lehtonen p.5.
-- [ ] `constr(out(I))` blocks exactly a candidate and its subsets, page-cited
+- [x] ABA(F) fact emission remains structural and page-cited to Lehtonen p.5.
+- [x] `constr(out(I))` blocks exactly a candidate and its subsets, page-cited
   to Lehtonen pp.5-6.
-- [ ] incremental backend metadata carries the page-image source used for the
+- [x] incremental backend metadata carries the page-image source used for the
   algorithm.
-- [ ] any SCC-conditioned optimization preserves complete, stable, and preferred
+- [x] any SCC-conditioned optimization preserves complete, stable, and preferred
   answers on generated small frameworks.
-- [ ] any maximality optimization returns only subset-maximal admissible or
+- [x] any maximality optimization returns only subset-maximal admissible or
   complete candidates on generated small frameworks.
-- [ ] no new production predicate reads path text, filename, parent directory,
+- [x] no new production predicate reads path text, filename, parent directory,
   ICCMA year, row order, or generator name.
+
+Phase 3 note:
+
+- Lehtonen page images 5, 6, and 12 were reread directly before Phase 4 work.
+- SCC-conditioned and maximality-specific properties are vacuously satisfied
+  for Phase 4 because no SCC-conditioned or maximality optimization is active
+  yet. Phases 5 and 6 still require fresh page-image reads and additional
+  page-cited properties before those optimizations can be implemented.
+- Gate passed on 2026-05-17:
+  `uv run pytest -q --timeout=180 tests\test_aba_incremental_paper_properties.py tests\test_aba_route_properties.py`.
 
 Gate:
 
