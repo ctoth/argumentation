@@ -129,11 +129,11 @@ does not complete the workstream.
 Goal: make the checklist itself executable enough that dependency mistakes are
 caught before implementation.
 
-- [ ] Add or update a lightweight order check for this workstream if a local
+- [x] Add or update a lightweight order check for this workstream if a local
   workstream-check tool already exists.
-- [ ] If no such tool exists, document in the first implementation commit that
+- [x] If no such tool exists, document in the first implementation commit that
   the phase order above is the control surface.
-- [ ] Before each later phase, reread this file and identify the next unchecked
+- [x] Before each later phase, reread this file and identify the next unchecked
   item.
 
 Gate:
@@ -191,11 +191,11 @@ Field meanings:
 
 Tests to write first:
 
-- [ ] `test_shape_contract_has_no_path_fields`
-- [ ] `test_p_acyclic_ignores_assumption_premises`
-- [ ] `test_tau_aba_proxy_uses_atoms_rules_heads_bodies_contraries`
-- [ ] `test_normal_framework_marks_preferred_stable_coincidence_candidate`
-- [ ] `test_flat_framework_marks_empty_set_admissible_candidate`
+- [x] `test_shape_contract_has_no_path_fields`
+- [x] `test_p_acyclic_ignores_assumption_premises`
+- [x] `test_tau_aba_proxy_uses_atoms_rules_heads_bodies_contraries`
+- [x] `test_normal_framework_marks_preferred_stable_coincidence_candidate`
+- [x] `test_flat_framework_marks_empty_set_admissible_candidate`
 
 Gate:
 
