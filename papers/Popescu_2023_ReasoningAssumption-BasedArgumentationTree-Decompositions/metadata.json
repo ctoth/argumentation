@@ -1,0 +1,19 @@
+{
+  "title": "Reasoning in Assumption-Based Argumentation Using Tree-Decompositions",
+  "authors": [
+    "Andrei Popescu",
+    "Johannes P. Wallner"
+  ],
+  "year": "2023",
+  "arxiv_id": null,
+  "doi": "10.1007/978-3-031-43619-2_14",
+  "abstract": "We address complex reasoning tasks in assumption-based argumentation (ABA) by developing dynamic programming algorithms based on tree-decompositions. As one of the prominent approaches in computational argumentation, our focus is on NP-hard reasoning in ABA. We utilize tree-width, a structural measure describing closeness to trees, for an approach to handle computationally complex tasks in ABA. We contribute to the state of the art by first showing that many reasoning tasks in ABA are fixed-parameter tractable w.r.t. tree-width using Courcelle's theorem, informally signaling wide applicability of dynamic programming algorithms for ABA. Secondly, we develop such algorithms operating on tree-decompositions of given ABA frameworks. We instantiate the algorithms in the recent D-FLAT framework allowing for declarative and extensible specification of dynamic programming algorithms. In an experimental evaluation on a resulting prototype, we show promise of the approach in particular for complex counting tasks.",
+  "url": "https://link.springer.com/chapter/10.1007/978-3-031-43619-2_14",
+  "pdf_url": "https://link.springer.com/content/pdf/10.1007/978-3-031-43619-2_14.pdf",
+  "venue": "JELIA 2023",
+  "venue_type": "conference",
+  "pages": "192-208",
+  "publisher": "Springer, Cham",
+  "series": "Lecture Notes in Computer Science",
+  "volume": "14281"
+}
