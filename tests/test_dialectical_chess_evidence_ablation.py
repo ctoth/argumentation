@@ -101,7 +101,7 @@ def test_optimizer_selector_prefers_unrefuted_move_over_higher_score() -> None:
 
     selected = choose_move(probes, graph, selector_mode="optimizer")
 
-    assert selected == quiet
+    assert selected.uci == quiet.uci
     assert selected.optimizer_trace["status"] == "optimal"
 
 
