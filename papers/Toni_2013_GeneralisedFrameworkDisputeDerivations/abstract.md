@@ -1,0 +1,11 @@
+# Abstract
+
+## Original Text (Verbatim)
+
+Assumption-based argumentation is a general-purpose argumentation framework with well-understood theoretical foundations and viable computational mechanisms (in the form of dispute derivations), as well as several applications. However, the existing computational mechanisms have several limitations, hindering their deployment in practice: (i) they are defined in terms of implicit parameters, that nonetheless need to be instantiated at implementation time; (ii) they are variations (for computing different semantics) of one another, but still require different implementation efforts; (iii) they reduce the problem of computing arguments to the problem of computing assumptions supporting these arguments, even though applications of argumentation require a justification of claims in terms of explicit arguments and attacks between them. In this context, the contribution of this paper is two-fold. Firstly, we provide a unified view of the existing (GB-, AB- and IB-)dispute derivations (for computation under the grounded, admissible and ideal semantics, respectively), by obtaining them as special instances of a single notion of X-dispute derivations that, in addition, renders explicit the implicit parameters in the original dispute derivations. Thus, X-dispute derivations address issues (i) and (ii). Secondly, we define structured X-dispute derivations, extending X-dispute derivations by computing explicitly the underlying arguments and attacks, in addition to assumptions. Thus, structured X-dispute derivations also address issue (iii). We prove soundness and completeness results for appropriate instances of (structured) X-dispute derivations, w.r.t. the grounded, admissible and ideal semantics, thus laying the necessary theoretical foundations for deployability thereof.
+
+---
+
+## Our Interpretation
+
+The paper turns several ABA proof procedures into one parameterized derivation framework, making implementation choices explicit rather than implicit. Its structured extension is the project-relevant part: it computes not only acceptable assumption supports, but also the explicit arguments and attacks needed for explainable/provenance-bearing argumentation.
