@@ -154,11 +154,24 @@ Expected result: property and regression tests pass before any speed claim.
 
 Goal: measure actual hard-row effect.
 
-- [ ] Run T1/T3/T5/T6/T8 and C1/C2/C3 under 30 seconds.
-- [ ] Validate every solved answer with the existing checker surface.
-- [ ] If no preferred target solves, record failure; do not run the full bucket
+- [x] Run T1/T3/T5/T6/T8 and C1/C2/C3 under 30 seconds.
+- [x] Validate every solved answer with the existing checker surface.
+- [x] If no preferred target solves, record failure; do not run the full bucket
   as a substitute.
-- [ ] Keep generated diagnostics uncommitted unless explicitly requested.
+- [x] Keep generated diagnostics uncommitted unless explicitly requested.
+
+Execution status:
+
+- Gate command completed and wrote generated diagnostics to
+  `data\iccma\2025\runs\aba-greedy-preferred-growth-targeted.json` and
+  `data\iccma\2025\runs\aba-greedy-preferred-growth-targeted.csv`.
+- T1/T3/T5/T6/T8 all timed out on `auto`, `asp`, and `sat`.
+- C1 was preserved by `sat`.
+- C2 was preserved by `auto` and `asp`; `sat` timed out.
+- C3 was preserved by `auto` and `asp`; `sat` timed out.
+- Summary: `asp solved 2 timeout 6`, `auto solved 2 timeout 6`,
+  `sat solved 1 timeout 7`.
+- The benchmark gate failed because zero required preferred hard targets solved.
 
 Gate:
 
@@ -180,10 +193,33 @@ If the gate passes:
 
 If the gate fails:
 
-- [ ] Do not promote the experiment branch.
-- [ ] Record the failed hypothesis, page citations, property result, target
+- [x] Do not promote the experiment branch.
+- [x] Record the failed hypothesis, page citations, property result, target
   rows, benchmark evidence, and next concrete hypothesis.
-- [ ] Leave the failed branch in place unless the user asks for branch cleanup.
+- [x] Leave the failed branch in place unless the user asks for branch cleanup.
+
+Failure record:
+
+- Failed hypothesis: repeated constrained complete-superset calls over one
+  grounded Lehtonen `pi_com` control can avoid preferred enumeration/global
+  optimization enough to solve at least one dense 200-assumption hard preferred
+  row under 30 seconds.
+- Page-image claims used: Lehtonen p.5 and p.6 for the ABA(F) and constrained
+  `in(I)` complete-set query surface; Egly p.164-p.165 for preferred
+  maximality as strict admissible-superset absence.
+- Property result: local greedy properties passed (`8 passed in 1.43s`) and
+  the full Phase 3 regression gate passed (`1060 passed in 118.72s`).
+- Target-row result: T1/T3/T5/T6/T8 all timed out on all three backends under
+  the gate.
+- Control result: C1 stayed solved via `sat`; C2/C3 stayed solved via
+  `auto`/`asp`.
+- Next concrete hypothesis: the first complete-extension search, not only
+  preferred maximality, is still too hard on the dense rows. The next slice
+  should profile one greedy T1 `asp` timeout and then attack complete-seed
+  construction directly: either a sparse/acyclic support-closure preprocessing
+  that forces obvious `out` assumptions before `pi_com`, or a SAT/ASP
+  conflict-directed complete-seed CEGAR that learns from failed `in(a)`
+  attempts instead of asking clingo for a full complete model from scratch.
 
 ## Definition of Done
 
