@@ -72,14 +72,22 @@ Expected result: clean tracked files on `experiment/aba-c1-stable-route`.
 
 Goal: prove the intended routing behavior before source changes.
 
-- [ ] Add a test that small stable ABA auto routing still uses clingo when
+- [x] Add a test that small stable ABA auto routing still uses clingo when
   clingo is available.
-- [ ] Add a test that large/dense flat ABA stable single-extension auto routing
+- [x] Add a test that large/dense flat ABA stable single-extension auto routing
   uses SAT and does not call clingo.
-- [ ] Add a route-shape invariance test proving the predicate ignores path,
+- [x] Add a route-shape invariance test proving the predicate ignores path,
   filename, year, generator, and row order.
-- [ ] Add C1-shaped benchmark-route metadata expectations if the benchmark
+- [x] Add C1-shaped benchmark-route metadata expectations if the benchmark
   route surface supports them.
+
+Execution status:
+
+- Added the route properties and fixed an unrelated Dung acceptance test oracle
+  that incorrectly required identical witnesses when SAT and native both return
+  valid preferred witnesses.
+- Phase 2 gate now fails only for the missing large/dense stable route:
+  `2 failed, 97 passed in 10.13s`.
 
 Gate:
 
