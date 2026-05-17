@@ -160,7 +160,7 @@ structural route or best solved backend.
 If the gate passes:
 
 - [x] Re-run the route tests and C1 benchmark gate.
-- [ ] Promote the minimal route/test/workstream diff to `main`.
+- [x] Promote the minimal route/test/workstream diff to `main`.
 - [x] Leave diagnostic artifacts uncommitted unless explicitly requested.
 
 If the gate fails:
@@ -184,4 +184,4 @@ and benchmarked successfully, or the route hypothesis is recorded as failed with
 the next concrete backend hypothesis.
 
 Status: implementation and benchmark gates passed on
-`experiment/aba-c1-stable-route`; promotion to `main` remains.
+`experiment/aba-c1-stable-route`; promoted to `main` by fast-forward merge.
