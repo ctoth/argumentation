@@ -130,10 +130,21 @@ Expected result: route tests pass before benchmarking.
 
 Goal: prove the route fixes the named stable control.
 
-- [ ] Run C1 under the 30-second budget.
-- [ ] Keep generated diagnostics uncommitted unless explicitly requested.
+- [x] Run C1 under the 30-second budget.
+- [x] Keep generated diagnostics uncommitted unless explicitly requested.
 - [ ] If C1 does not solve under auto, record the failed hypothesis; do not
   widen to preferred targets as a substitute.
+
+Execution status:
+
+- Gate command completed. C1 `auto` solved in 21.34s, explicit `sat` solved in
+  21.71s, and explicit `asp` timed out at `timeout>35.0`.
+- `best_solved_backend` was `auto`.
+- The benchmark row carried route evidence id
+  `aba-c1-stable-route-2026-05-17` and the production route candidate
+  `large_dense_stable_sat_route`.
+- Generated diagnostics were written under `data\iccma\2025\runs\` and are not
+  committed.
 
 Gate:
 
