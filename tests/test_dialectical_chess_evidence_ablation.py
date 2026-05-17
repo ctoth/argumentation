@@ -26,7 +26,12 @@ from dialectical_chess.bench import (  # noqa: E402
 )
 from dialectical_chess.probe import owned_board_from_fen, probe_moves  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
-from dialectical_chess.search import owned_is_checkmate  # noqa: E402
+from dialectical_chess.search import (  # noqa: E402
+    ReplyAnalysisCache,
+    ReplyAnalysisSettings,
+    bounded_reply_attacks,
+    owned_is_checkmate,
+)
 from dialectical_chess.smt import smt_fork_moves, smt_mate_in_one_moves  # noqa: E402
 from dialectical_chess.uci import choose_uci_move  # noqa: E402
 
@@ -208,3 +213,38 @@ def test_engine_settings_can_disable_positional_reasons() -> None:
 
     assert probes["e2e4"].reasons == ()
     assert probes["e2e4"].objections == ("objection:no_immediate_tactical_warrant",)
+
+
+def test_reply_analysis_cache_reuses_legal_moves_locally() -> None:
+    board = owned_board_from_fen("4k3/8/8/8/8/8/3q4/3QK3 w - - 0 1")
+    cache = ReplyAnalysisCache()
+
+    first = cache.legal_moves(board)
+    second = cache.legal_moves(board)
+
+    assert first is second
+    assert cache.legal_move_misses == 1
+    assert cache.legal_move_hits == 1
+
+
+def test_engine_settings_include_reply_analysis_settings() -> None:
+    settings = EngineSettings(
+        reply_analysis=ReplyAnalysisSettings(max_replies=7, max_defense_nodes=11)
+    )
+
+    assert settings.reply_analysis.max_replies == 7
+    assert settings.reply_analysis.max_defense_nodes == 11
+
+
+def test_reply_analysis_reports_budget_truncation() -> None:
+    board = owned_board_from_fen("4k3/8/8/8/8/8/3q4/3QK3 w - - 0 1")
+    move = next(move for move in board.legal_moves() if move.uci() == "d1d2")
+
+    labels = bounded_reply_attacks(
+        board,
+        move,
+        reply_depth=2,
+        settings=ReplyAnalysisSettings(max_replies=0, max_defense_nodes=0),
+    )
+
+    assert "reply_analysis:truncated:reply_budget" in labels
