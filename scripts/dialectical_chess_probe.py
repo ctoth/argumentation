@@ -276,7 +276,10 @@ def choose_uci_move(
         return "0000"
     if not probes:
         return "0000"
-    return choose_move(probes, build_root_argument_graph(probes)).uci
+    selected = choose_move(probes, build_root_argument_graph(probes))
+    if output_stream is not None:
+        _uci_write(output_stream, f"info score cp {selected.score} pv {selected.uci}")
+    return selected.uci
 
 
 def probe_moves(
