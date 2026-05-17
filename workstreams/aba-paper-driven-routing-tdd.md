@@ -410,6 +410,12 @@ uv run tools\aba_shape_benchmark.py --timeouts tests\manifests\iccma2025-cap200-
 Do not interrupt this command except on natural exit, configured timeout, user
 stop request, or concrete external harm.
 
+Result:
+
+- [x] rerun completed on natural exit;
+- [x] no counterexample-free production route exists in the rerun;
+- [x] mixed/all-timeout hard bucket identified for Phase 8.
+
 ## Phase 8: Route Proposal or Algorithm Work Item
 
 Goal: turn benchmark learning into one of two concrete outputs.
@@ -424,8 +430,8 @@ If a counterexample-free route exists:
 
 If the hard bucket remains mixed/all-timeout:
 
-- [ ] do not add production routing;
-- [ ] create a backend work item with exact structural signature:
+- [x] do not add production routing;
+- [x] create a backend work item with exact structural signature:
   - high/medium arity;
   - SCC profile;
   - width proxy;
@@ -433,7 +439,7 @@ If the hard bucket remains mixed/all-timeout:
   - closure growth;
   - stable obstruction count;
   - preferred maximality risk.
-- [ ] choose the next backend hypothesis:
+- [x] choose the next backend hypothesis:
   - Popescu-style low-width DP;
   - Lehtonen-style direct ASP encoding refinement;
   - Toni/Dung dispute search for p-acyclic query-shaped instances;
@@ -442,8 +448,9 @@ If the hard bucket remains mixed/all-timeout:
 
 Gate:
 
-- either a route proposal with zero counterexamples exists;
-- or a no-route algorithm work item exists with the exact hard-shape signature.
+- [ ] either a route proposal with zero counterexamples exists;
+- [x] or a no-route algorithm work item exists with the exact hard-shape
+  signature: `workstreams/aba-hard-bucket-backend-work-item.md`.
 
 ## Phase 9: Optional Production Routing
 
