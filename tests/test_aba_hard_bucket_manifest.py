@@ -69,6 +69,7 @@ def test_hard_bucket_runner_defaults_to_exact_manifest_backend_matrix() -> None:
     assert command[command.index("--timeout-seconds") + 1] == "30.0"
     assert command[command.index("--instance-kind") + 1] == "aba"
     assert command[command.index("--profile-format") + 1] == "speedscope"
+    assert command[command.index("--profile-duration-seconds") + 1] == "25.0"
     assert "aba-hard-bucket-targets" in command[command.index("--profile-dir") + 1]
     assert _values_after(command, "--backend") == ["auto", "asp", "sat"]
     assert _values_after(command, "--subtrack") == ["SE-PR", "SE-ST"]
