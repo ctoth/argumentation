@@ -771,7 +771,10 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
             sat=sat_config,
         )
         if isinstance(result, SingleExtensionSolverSuccess):
-            return solved_single_extension(result.extension)
+            return with_solver_metadata(
+                solved_single_extension(result.extension),
+                result.metadata,
+            )
         if isinstance(result, SolverBackendUnavailable):
             return unavailable_result(result.reason, result.install_hint)
         if isinstance(result, SolverBackendError):
@@ -792,7 +795,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
         sat=sat_config,
     )
     if isinstance(result, AcceptanceSolverSuccess):
-        return solved_acceptance(result)
+        return with_solver_metadata(solved_acceptance(result), result.metadata)
     if isinstance(result, SolverBackendUnavailable):
         return unavailable_result(result.reason, result.install_hint)
     if isinstance(result, SolverBackendError):
@@ -910,7 +913,10 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
             iccma=iccma_config,
         )
         if isinstance(result, SingleExtensionSolverSuccess):
-            return solved_single_extension(result.extension)
+            return with_solver_metadata(
+                solved_single_extension(result.extension),
+                result.metadata,
+            )
         if isinstance(result, SolverBackendUnavailable):
             return unavailable_result(result.reason, result.install_hint)
         if isinstance(result, SolverBackendError):
@@ -933,7 +939,7 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
         iccma=iccma_config,
     )
     if isinstance(result, AcceptanceSolverSuccess):
-        return solved_acceptance(result)
+        return with_solver_metadata(solved_acceptance(result), result.metadata)
     if isinstance(result, SolverBackendUnavailable):
         return unavailable_result(result.reason, result.install_hint)
     if isinstance(result, SolverBackendError):
@@ -960,6 +966,15 @@ def solve_from_extensions(
 def solved_se(extension_sets) -> dict[str, Any]:
     witness = first_extension(extension_sets)
     return solved_single_extension(witness, extension_count=len(extension_sets))
+
+
+def with_solver_metadata(
+    payload: dict[str, Any],
+    metadata: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if metadata:
+        return payload | {"solver_metadata": metadata}
+    return payload
 
 
 def solved_single_extension(
