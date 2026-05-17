@@ -654,7 +654,38 @@ def choose_move(
         if graph.move_arguments[probe.uci] in graph.grounded_extension
     ]
     candidates = accepted if accepted else probes
-    return sorted(candidates, key=lambda probe: (-probe.score, probe.uci))[0]
+    return sorted(candidates, key=lambda probe: selection_key(probe, graph))[0]
+
+
+def selection_key(probe: MoveProbe, graph: RootArgumentGraph) -> tuple[float, int, int, int, int, str]:
+    move_arg = graph.move_arguments[probe.uci]
+    ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
+    move_rank = float(ranking_scores.get(move_arg, 0.0))
+    accepted_support = sum(
+        1
+        for reason in probe.reasons
+        if f"reason:{probe.uci}:{reason}" in graph.grounded_extension
+    )
+    accepted_defenses = sum(
+        1
+        for reply_attack in probe.reply_attacks
+        if f"defense:{probe.uci}:{reply_attack}" in graph.grounded_extension
+    )
+    unresolved_attacks = sum(
+        1
+        for reply_attack in probe.reply_attacks
+        if f"reply_attack:{probe.uci}:{reply_attack}" in graph.grounded_extension
+    )
+    # Argument semantics decide first. Numeric chess score is only a final
+    # tie-break among equally ranked/defended argument statuses.
+    return (
+        -move_rank,
+        -accepted_support,
+        unresolved_attacks,
+        -accepted_defenses,
+        -probe.score,
+        probe.uci,
+    )
 
 
 def load_game(path: Path) -> chess.pgn.Game:
