@@ -52,7 +52,15 @@
 
 - Lehtonen, Wallner, Järvisalo 2020 — ASP encodings for ASPIC+ without preferences (already in collection as Lehtonen_2020)
 - Lehtonen, Wallner, Järvisalo 2022 — Computing stable conclusions under weakest-link
-- Lehtonen, Wallner, Järvisalo 2021 — Declarative algorithms and complexity for assumption-based argumentation
+- Lehtonen, Wallner, Järvisalo 2021 — Declarative algorithms and complexity for assumption-based argumentation → NOW IN COLLECTION: [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md)
 - Odekerken, Bex, Borgo, Testerink 2022 — Approximating stability for applied argument-based inquiry
 - Odekerken et al. 2023 — Argumentative reasoning in ASPIC+ under incomplete information (already in collection)
 - Prakken 2010 — Abstract framework for argumentation with structured arguments
+
+## Collection Cross-References
+
+### Now in Collection (previously listed as leads)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - ABA/ABA+ complexity and direct ASP predecessor to this paper's preferential ASPIC+ encodings.
+
+### Conceptual Links (not citation-based)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - same solver-design pattern shifted across structured formalisms: direct reasoning over compact semantic carriers rather than enumerating every argument/AF node first.

@@ -273,6 +273,7 @@ This paper is directly relevant to propstore's ASPIC+ bridge and planned Defeasi
 - [[Modgil_2018_GeneralAccountArgumentationPreferences]] — the definitive ASPIC+ reference; this paper's grounding procedure operates over the framework defined here
 - [[Modgil_2014_ASPICFrameworkStructuredArgumentation]] — tutorial companion to Modgil & Prakken 2018; provides the definitions (arguments, attacks, extensions) that this paper's correctness proofs rely on
 - [[Lehtonen_2020_AnswerSetProgrammingApproach]] — ASPforASPIC, the main comparison system; handles propositional ASPIC+ via ASP but cannot handle first-order rules directly
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - direct ABA ASP and complexity reference cited as part of the ASP-based structured-argumentation implementation lineage.
 - [[Dung_1995_AcceptabilityArguments]] — foundational AF semantics that ASPIC+ instantiates; the complete extensions preserved by Diller's grounding are Dung's complete extensions
 - [[Caminada_2006_IssueReinstatementArgumentation]] — labellings-based semantics for Dung AFs; the semantics that ANGRY's grounded output feeds into
 - [[Diller_2015_ExtensionBasedBeliefRevision]] — earlier work by the same first author on extension-based belief revision in AFs
@@ -296,7 +297,7 @@ This paper is directly relevant to propstore's ASPIC+ bridge and planned Defeasi
 - (none found)
 
 ## Related Work Worth Reading
-- Lehtonen, T., Wallner, J. P., and Järvisalo, M. 2021. Declarative algorithms and complexity results for assumption-based argumentation. *J. Artif. Intell. Res.* 71:265-318. (ASPforASPIC — main comparison target)
+- Lehtonen, T., Wallner, J. P., and Järvisalo, M. 2021. Declarative algorithms and complexity results for assumption-based argumentation. *J. Artif. Intell. Res.* 71:265-318. (direct ABA ASP/computational baseline) → NOW IN COLLECTION: [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md)
 - Modgil, S. and Prakken, H. 2018. Abstract rule-based argumentation. In Baroni et al., *Handbook of Formal Argumentation*, 287-364.
 - Hanisch, P. and Rauschenbach, F. 2025. ANGRY: A grounder for rule-based argumentation. (System paper for the ANGRY prototype)
 - Lehtonen, T., Wallner, J. P., and Järvisalo, M. 2022. ASP-based algorithms for the alternative-based and abstraction-based semantics for ASPIC+.

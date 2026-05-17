@@ -346,7 +346,7 @@ This paper is **foundational** for propstore's argumentation/reasoning layer (la
 - **Dung, Kowalski, Toni (2006)** — "Dialectic proof procedures for assumption-based, admissible argumentation", Artificial Intelligence 170. Original dispute derivations.
 - **Dung, Mancarella, Toni (2007)** — "Computing ideal sceptical argumentation", AI Journal 171. Ideal-semantics dispute derivations.
 - **Dung, Kowalski, Toni (2009)** — "Assumption-based argumentation", chapter in *Argumentation in AI*, Springer. Overview paper.
-- **Toni (2013)** — "A generalised framework for dispute derivations in ABA", AI Journal 195:1-43. Extended derivation types.
+- **Toni (2013)** — "A generalised framework for dispute derivations in ABA", AI Journal 195:1-43. Extended derivation types. → NOW IN COLLECTION: [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md).
 - **Toni (2012)** — "Reasoning on the web with ABA". Ontology integration; also proves AA ⇔ ABA equivalence.
 - **Gaertner & Toni (2007)** — CaSAPI implementation.
 - **Craven, Toni, Williams (2013)** — grapharg (graph-based dispute derivations).
@@ -355,9 +355,19 @@ This paper is **foundational** for propstore's argumentation/reasoning layer (la
 - **Caminada & Amgoud (2007)** — evaluation of argumentation formalisms via rationality postulates.
 - **Modgil & Prakken (2013)** — general account of argumentation with preferences (ASPIC+).
 - **García & Simari (2004)** — DeLP (companion structured framework).
-- **Dimopoulos, Nebel, Toni (2002)** — computational complexity of ABA.
+- **Dimopoulos, Nebel, Toni (2002)** — computational complexity of ABA. → NOW IN COLLECTION: [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md).
 - **Dunne (2009)** — complexity of ideal semantics.
 - **Sartor (1994); Prakken & Vreeswijk (2002); Cayrol, Devred, Lagasquie-Schiex (2006)** — persuasion-dialogue antecedents cited in §6.
 - **Kowalski & Toni (1996)** — "Abstract argumentation" (last-link principle for preferences).
 - **Kakas, Kowalski, Toni (1992, 1998)** — abductive logic programming foundations.
 - **Reiter (1980); McCarthy (1980); Lin & Shoham (1989); Pollock (1987); Kakas & Toni (1999); Eshghi & Kowalski (1989)** — non-monotonic reasoning and argumentation lineage.
+
+## Collection Cross-References
+
+### Now in Collection (previously listed as leads)
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) - the extended derivation reference for GB/AB/IB and structured X-dispute procedures that the tutorial points readers toward.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - fills the complexity gap that the tutorial explicitly leaves outside its scope.
+
+### Conceptual Links (not citation-based)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - direct solver complement to the tutorial: it turns the ABA definitions and semantics into ASP encodings and benchmarked implementation choices.
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - structural-algorithm complement to the tutorial's framework presentation, especially for low-treewidth ABA instances.

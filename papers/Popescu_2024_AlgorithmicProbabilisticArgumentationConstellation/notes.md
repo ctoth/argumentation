@@ -214,7 +214,15 @@ This paper is directly relevant to propstore's probabilistic argumentation layer
 
 ## Related Work Worth Reading
 - Fazzinga, Flesca, and Furfaro 2013, 2015, 2018: ASP-based approaches to probabilistic argumentation complexity
-- Popescu and Wallner 2023: Reasoning in assumption-based argumentation using tree-decompositions (JELIA 2023) — predecessor to this work
+- Popescu and Wallner 2023: Reasoning in assumption-based argumentation using tree-decompositions (JELIA 2023) — predecessor to this work -> NOW IN COLLECTION: [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md)
 - Wallner 2020: Structural constraints for dynamic operators in abstract argumentation
 - Dvořák, Woltran et al. 2012: Tractable abstract argumentation via backdoor sets (structural parameters)
 - Samer and Szeider 2010: Algorithms for propositional model counting (foundational for #P DP)
+
+## Collection Cross-References
+
+### Now in Collection (previously listed as leads)
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - predecessor applying tree-decomposition dynamic programming to flat finite ABA; this probabilistic AF paper reuses the bounded-width DP strategy in a constellation-probability setting.
+
+### Conceptual Links (not citation-based)
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - strong connection: both use tree-decomposition DP with witness-style table state to make hard argumentation tasks tractable on low-treewidth instances, but target different formalisms and query types.

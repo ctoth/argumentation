@@ -168,6 +168,7 @@ This paper is directly relevant to propstore's sceptical conflict-resolution lay
 - [[Dung_1995_AcceptabilityArguments]] — cited as [7]; the abstract foundation whose preferred, complete, grounded, and ideal semantics are refined into explicit proof procedures here.
 - [[Bondarenko_1997_AbstractArgumentation-TheoreticApproachDefault]] — cited as [3]; one of the assumption-based argumentation foundations that this paper builds on for its ABA results.
 - [[Pollock_1987_DefeasibleReasoning]] — cited as [18]; part of the defeasible-reasoning background that frames the dialogue/proof-procedure perspective.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - cited as an ABA complexity reference for the nonmonotonic-reasoning setting.
 
 ### New Leads (Not Yet in Collection)
 - Dung, Kowalski, and Toni (2006) — "Dialectic proof procedures for assumption-based, admissible argumentation" — direct procedural predecessor adapted here.
@@ -180,6 +181,7 @@ This paper is directly relevant to propstore's sceptical conflict-resolution lay
 - [[Caminada_2006_IssueReinstatementArgumentation]] — cites it in the context of extension-semantics relationships around grounded and ideal reasoning.
 
 ### Conceptual Links (not citation-based)
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) — Strong. Toni generalizes the GB/AB/IB dispute derivation family that this paper uses for admissible and ideal ABA reasoning.
 - [[Baroni_2007_Principle-basedEvaluationExtension-basedArgumentation]] — Moderate. Baroni's principles explain what skeptical semantics should satisfy; this paper gives concrete procedures for one of those skeptical semantics, namely ideal semantics.
 - [[Caminada_2006_IssueReinstatementArgumentation]] — Moderate. Caminada recasts classical semantics via labellings, while this paper supplies proof procedures for the ideal semantics that sits between grounded and preferred.
 - [[Amgoud_2013_Ranking-BasedSemanticsArgumentationFrameworks]] — Moderate. Ranking semantics addresses the same dissatisfaction with grounded semantics' coarseness, but by gradual ordering rather than ideal-set proof procedures.

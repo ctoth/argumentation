@@ -337,6 +337,7 @@ For synthetic data:
 
 ### Now in Collection (previously listed as leads)
 - [[Lehtonen_2020_AnswerSetProgrammingApproach]] — Provides the base ASP encodings for computing ASPIC+ semantics (without preferences) that this paper extends with incomplete-information reasoning. Lehtonen et al. reformulate extensions as σ-assumptions (pairs of ordinary premises and defeasible rules), proving these biject with AF extensions (Theorem 5) and providing correct ASP encodings for conflict-free, admissible, complete, stable, and preferred semantics that scale to N=3000 atoms.
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - ABA direct-ASP and complexity predecessor for the same broader solver line that this ASPIC+ incomplete-information paper extends.
 
 ### Supersedes or Recontextualizes
 - (none)
