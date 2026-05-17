@@ -287,7 +287,7 @@ def _solve_multishot(
         elif semantics == "complete":
             extension = solver.find_complete_extension(telemetry=telemetry)
         elif semantics == "stable":
-            extension = solver.find_stable_extension(telemetry=telemetry)
+            extension = solver.find_stable_extension_direct(telemetry=telemetry)
         elif semantics == "preferred":
             extension = solver.find_preferred_extension(telemetry=telemetry)
         else:  # pragma: no cover - dispatcher gates this
@@ -302,7 +302,13 @@ def _solve_multishot(
             query=query,
             extensions=extensions,
             metadata=metadata_base
-            | {"algorithm": "first-model-witness"}
+            | {
+                "algorithm": (
+                    "direct-stable-witness"
+                    if semantics == "stable"
+                    else "first-model-witness"
+                )
+            }
             | _incremental_telemetry_metadata(telemetry),
         )
 
