@@ -19,7 +19,11 @@ from dialectical_chess.arguments import (  # noqa: E402
     build_root_argument_graph,
     choose_move,
 )
-from dialectical_chess.bench import ablation_selector_modes, settings as bench_settings  # noqa: E402
+from dialectical_chess.bench import (  # noqa: E402
+    ablation_selector_modes,
+    run_lichess,
+    settings as bench_settings,
+)
 from dialectical_chess.probe import owned_board_from_fen  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
 from dialectical_chess.uci import choose_uci_move  # noqa: E402
@@ -93,3 +97,26 @@ def test_uci_info_reports_selector_mode() -> None:
     choose_uci_move(board, settings=EngineSettings(selector_mode="score"), output_stream=output)
 
     assert "info string selector_mode=score" in output.getvalue()
+
+
+def test_lichess_summary_reports_rating_bucket_totals() -> None:
+    args = argparse.Namespace(
+        lichess_puzzles=SCRIPTS / "dialectical_chess_puzzles_sample.csv",
+        limit=None,
+        rating_min=None,
+        rating_max=None,
+        theme_include=[],
+        theme_exclude=[],
+        side_to_move=None,
+        full_line=False,
+        dialectic_depth=1,
+        search_depth=0,
+        search_backend="negamax",
+        smt_mate=True,
+        selector_mode="argument",
+    )
+
+    payload = run_lichess(args)
+
+    assert payload["by_rating_bucket"]["800-999"]["total"] == 1
+    assert payload["by_rating_bucket"]["1200-1399"]["total"] == 1
