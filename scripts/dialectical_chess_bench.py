@@ -484,8 +484,6 @@ def score_board(
         search_depth=args.search_depth,
         search_backend=args.search_backend,
         smt_mate=args.smt_mate,
-        owned_movegen=args.owned_movegen,
-        allow_owned_divergence=args.allow_owned_divergence,
     )
     selected = probe.choose_move(probes, probe.build_root_argument_graph(probes)) if probes else None
     elapsed_ms = (time.perf_counter() - started) * 1000.0
@@ -596,7 +594,7 @@ def settings(args: argparse.Namespace) -> dict[str, Any]:
         "search_depth": args.search_depth,
         "search_backend": args.search_backend,
         "smt_mate": args.smt_mate,
-        "owned_movegen": args.owned_movegen,
+        "movegen": "owned",
     }
 
 
