@@ -137,6 +137,11 @@ def choose_uci_move(
         _uci_write(output_stream, f"info string selector_mode={settings.selector_mode}")
         _uci_write(output_stream, f"info string positional_reasons={settings.positional_reasons}")
         _uci_write(output_stream, f"info string reply_analysis={settings.reply_analysis}")
+        if decision.selected.optimizer_trace:
+            _uci_write(
+                output_stream,
+                f"info string optimizer_status={decision.selected.optimizer_trace.get('status')}",
+            )
         _uci_write(output_stream, f"info score cp {decision.selected.score} pv {decision.move_uci}")
     return decision.move_uci
 
