@@ -21,6 +21,8 @@ from dialectical_chess.arguments import (  # noqa: E402
 )
 from dialectical_chess.bench import (  # noqa: E402
     ablation_selector_modes,
+    dialectic_depth_for_lichess_row,
+    mate_theme_depth,
     run_lichess,
     run_experiment_matrix,
     settings as bench_settings,
@@ -266,6 +268,19 @@ def test_lichess_sample_summary_reports_move_line_lengths_and_mate_themes() -> N
     assert summary["scoring_target"] == "first engine move only"
 
 
+def test_mate_theme_depth_parses_mate_in_names() -> None:
+    assert mate_theme_depth(("mate", "mateIn1", "oneMove")) == 1
+    assert mate_theme_depth(("mateIn3", "long")) == 3
+    assert mate_theme_depth(("crushing", "fork")) is None
+
+
+def test_lichess_row_can_use_mate_theme_as_dialectic_depth() -> None:
+    args = argparse.Namespace(dialectic_depth=2, dialectic_depth_from_mate_theme=True)
+
+    assert dialectic_depth_for_lichess_row({"Themes": "mate mateIn3"}, args) == 3
+    assert dialectic_depth_for_lichess_row({"Themes": "crushing fork"}, args) == 2
+
+
 def test_experiment_matrix_runs_named_lichess_cases() -> None:
     args = argparse.Namespace(
         lichess_puzzles=SCRIPTS / "dialectical_chess_puzzles_sample.csv",
@@ -285,6 +300,7 @@ def test_experiment_matrix_runs_named_lichess_cases() -> None:
         positional_reasons=True,
         progress_every=0,
         matrix_preset="smoke",
+        dialectic_depth_from_mate_theme=False,
         reply_max_replies=128,
         reply_max_defense_nodes=5000,
         reply_min_defense_material=300,
@@ -297,5 +313,6 @@ def test_experiment_matrix_runs_named_lichess_cases() -> None:
         "argument_d0",
         "argument_d1",
         "score_static",
+        "argument_mate_theme_depth",
     ]
     assert payload["sample"]["total"] == 2
