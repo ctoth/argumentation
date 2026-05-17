@@ -44,6 +44,7 @@ ROUTE_REQUIRED_FIELDS = frozenset(
     {
         "is_flat",
         "is_normal",
+        "assumptions",
         "rule_density",
         "p_acyclic",
         "tau_aba_primal_width_proxy",
@@ -508,6 +509,32 @@ def route_candidates_from_shape_data(
 
     available = frozenset(available_backends)
     candidates: list[RouteCandidate] = []
+    if (
+        "sat" in available
+        and solver_class_name == "aba/single-extension/stable"
+        and bool(shape_data["is_flat"])
+        and int(shape_data["assumptions"]) > ASSUMPTION_SIZE_THRESHOLDS["medium_max"]
+        and float(shape_data["rule_density"]) > RULE_DENSITY_THRESHOLDS["medium_max"]
+    ):
+        candidates.append(
+            RouteCandidate(
+                backend="sat",
+                predicate="large_dense_stable_sat_route",
+                production=True,
+                evidence_id="aba-c1-stable-route-2026-05-17",
+                reason={
+                    "paper": "Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation",
+                    "fields": [
+                        "is_flat",
+                        "assumptions",
+                        "rule_density",
+                        "stable_obstruction_count",
+                    ],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
     if "asp" in available and bool(shape_data["is_flat"]):
         candidates.append(
             RouteCandidate(

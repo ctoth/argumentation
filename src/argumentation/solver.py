@@ -149,7 +149,12 @@ def solve_aba_single_extension(
     iccma: ICCMAConfig | None = None,
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
-    backend = _auto_aba_backend(backend, semantics, task="single-extension")
+    backend = _auto_aba_backend_for_framework(
+        backend,
+        semantics,
+        task="single-extension",
+        framework=framework,
+    )
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
@@ -199,7 +204,12 @@ def solve_aba_acceptance(
     """Solve flat ABA credulous or skeptical acceptance queries."""
     if query not in _aba_base(framework).language:
         raise ValueError(f"query literal is not in framework language: {query!r}")
-    backend = _auto_aba_backend(backend, semantics, task=task)
+    backend = _auto_aba_backend_for_framework(
+        backend,
+        semantics,
+        task=task,
+        framework=framework,
+    )
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
@@ -532,6 +542,33 @@ def _auto_aba_backend(backend: str, semantics: str, *, task: str) -> str:
             return "asp"
         return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
     return backend
+
+
+def _auto_aba_backend_for_framework(
+    backend: str,
+    semantics: str,
+    *,
+    task: str,
+    framework: ABAInput,
+) -> str:
+    if (
+        backend == "auto"
+        and semantics == "stable"
+        and task == "single-extension"
+        and isinstance(framework, ABAFramework)
+        and _is_large_dense_flat_aba(framework)
+    ):
+        return "sat"
+    return _auto_aba_backend(backend, semantics, task=task)
+
+
+def _is_large_dense_flat_aba(framework: ABAFramework) -> bool:
+    assumptions = len(framework.assumptions)
+    if assumptions <= 150:
+        return False
+    if any(rule.consequent in framework.assumptions for rule in framework.rules):
+        return False
+    return (len(framework.rules) / assumptions) > 25.0
 
 
 def _has_clingo() -> bool:
