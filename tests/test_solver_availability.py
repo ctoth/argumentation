@@ -3,6 +3,7 @@ import pytest
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom
 from argumentation.aspic import Literal
+from argumentation.aspic import Rule
 from argumentation.dung import ArgumentationFramework
 from argumentation.dung import complete_extensions
 from argumentation.dung import grounded_extension
@@ -47,6 +48,23 @@ def _simple_aba_framework() -> ABAFramework:
         rules=frozenset(),
         assumptions=frozenset({a, b}),
         contrary={a: ca, b: cb},
+    )
+
+
+def _large_dense_aba_framework() -> ABAFramework:
+    assumptions = tuple(_literal(f"a{index}") for index in range(151))
+    contraries = {_literal(f"a{index}"): _literal(f"ca{index}") for index in range(151)}
+    heads = tuple(_literal(f"h{index}_{offset}") for index in range(151) for offset in range(26))
+    rules = frozenset(
+        Rule((assumptions[index],), heads[index * 26 + offset], "strict")
+        for index in range(151)
+        for offset in range(26)
+    )
+    return ABAFramework(
+        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        rules=rules,
+        assumptions=frozenset(assumptions),
+        contrary=contraries,
     )
 
 
@@ -107,6 +125,25 @@ def test_default_aba_stable_single_extension_uses_multishot_when_clingo_availabl
 
     assert isinstance(result, SingleExtensionSolverSuccess)
     assert result.extension is not None
+
+
+def test_large_dense_aba_stable_single_extension_auto_uses_sat_not_clingo(
+    monkeypatch,
+) -> None:
+    framework = _large_dense_aba_framework()
+    witness = frozenset({min(framework.assumptions, key=repr)})
+
+    def forbidden_asp(*args, **kwargs):
+        raise AssertionError("large dense ABA stable auto route should use SAT")
+
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+    monkeypatch.setattr(solver_module, "_solve_asp_aba_single_extension", forbidden_asp)
+    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", lambda framework: witness)
+
+    result = solve_aba_single_extension(framework, semantics="stable")
+
+    assert isinstance(result, SingleExtensionSolverSuccess)
+    assert result.extension == witness
 
 
 def test_default_aba_acceptance_uses_multishot_when_clingo_available(

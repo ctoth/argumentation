@@ -21,6 +21,7 @@ from tools.aba_shape_benchmark import (
 
 
 SOLVER_CLASS = "aba/single-extension/preferred"
+STABLE_SOLVER_CLASS = "aba/single-extension/stable"
 AVAILABLE_BACKENDS = ("auto", "asp", "sat")
 
 
@@ -159,11 +160,76 @@ def test_production_route_predicates_have_benchmark_evidence_id(
             assert candidate.evidence_id
 
 
-def _route_signature(shape_data: dict[str, Any]) -> tuple[tuple[Any, ...], ...]:
+def test_large_dense_stable_route_candidate_is_production_sat() -> None:
+    shape_data = _large_dense_stable_shape_data()
+
+    candidates = route_candidates_from_shape_data(
+        shape_data,
+        STABLE_SOLVER_CLASS,
+        available_backends=AVAILABLE_BACKENDS,
+        timeout_budget_class="30s",
+    )
+
+    assert any(
+        candidate.backend == "sat"
+        and candidate.predicate == "large_dense_stable_sat_route"
+        and candidate.production
+        and candidate.evidence_id == "aba-c1-stable-route-2026-05-17"
+        for candidate in candidates
+    )
+
+
+def test_large_dense_stable_route_ignores_locator_fields() -> None:
+    shape_data = _large_dense_stable_shape_data()
+    left = dict(
+        shape_data,
+        path="C:/bench/iccma2025/ABAs/aba_2000_0.1_5_5_3.aba",
+        filename="aba_2000_0.1_5_5_3.aba",
+        parent_directory="ABAs",
+        year=2025,
+        generator_name="iccma",
+        row_number=84,
+    )
+    right = dict(
+        shape_data,
+        path="D:/local/renamed/unrelated.aba",
+        filename="unrelated.aba",
+        parent_directory="renamed",
+        year=2019,
+        generator_name="local",
+        row_number=1,
+    )
+
+    assert _route_signature(left, solver_class_name=STABLE_SOLVER_CLASS) == _route_signature(
+        right,
+        solver_class_name=STABLE_SOLVER_CLASS,
+    )
+
+
+def _large_dense_stable_shape_data() -> dict[str, Any]:
+    return {
+        "is_flat": True,
+        "is_normal": False,
+        "rule_density": 26.0,
+        "p_acyclic": False,
+        "tau_aba_primal_width_proxy": 26,
+        "stable_obstruction_count": 0,
+        "dependency_scc_max_size": 8,
+        "contrary_target_in_degree_max": 1,
+        "closure_growth_sample": 0.75,
+        "assumptions": 151,
+    }
+
+
+def _route_signature(
+    shape_data: dict[str, Any],
+    *,
+    solver_class_name: str = SOLVER_CLASS,
+) -> tuple[tuple[Any, ...], ...]:
     return _candidate_signature(
         route_candidates_from_shape_data(
             shape_data,
-            SOLVER_CLASS,
+            solver_class_name,
             available_backends=AVAILABLE_BACKENDS,
             timeout_budget_class="30s",
         )
