@@ -464,6 +464,7 @@ def score_board(
         "search_score": None if selected is None else selected.search_score,
         "search_line": [] if selected is None else list(selected.search_line),
         "smt_witnesses": [] if selected is None else list(selected.smt_witnesses),
+        "optimizer_trace": {} if selected is None else dict(selected.optimizer_trace),
         "elapsed_ms": elapsed_ms,
     }
 
