@@ -327,15 +327,15 @@ Route predicates must not use:
 
 Properties:
 
-- [ ] Renaming the instance file path does not change route decision.
-- [ ] Moving the same file to a different directory does not change route
+- [x] Renaming the instance file path does not change route decision.
+- [x] Moving the same file to a different directory does not change route
   decision.
-- [ ] Shuffling manifest row order does not change route decision.
-- [ ] Atom renaming does not change route decision.
-- [ ] Rule-order permutation does not change route decision.
-- [ ] Route predicate cannot fire unless all required shape fields are present.
-- [ ] Route predicate emits a reason object naming paper-backed fields.
-- [ ] Any route predicate marked `production` has a benchmark evidence id.
+- [x] Shuffling manifest row order does not change route decision.
+- [x] Atom renaming does not change route decision.
+- [x] Rule-order permutation does not change route decision.
+- [x] Route predicate cannot fire unless all required shape fields are present.
+- [x] Route predicate emits a reason object naming paper-backed fields.
+- [x] Any route predicate marked `production` has a benchmark evidence id.
 
 Gate:
 
