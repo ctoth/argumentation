@@ -33,13 +33,18 @@ def benchmark_args(args: argparse.Namespace, *, manifest: Path | None = None) ->
         str(args.output_json),
         "--output-csv",
         str(args.output_csv),
-        "--profile-dir",
-        str(args.profile_dir),
-        "--profile-format",
-        str(args.profile_format),
-        "--profile-duration-seconds",
-        str(args.profile_duration_seconds),
     ]
+    if not args.no_profile:
+        command.extend(
+            [
+                "--profile-dir",
+                str(args.profile_dir),
+                "--profile-format",
+                str(args.profile_format),
+                "--profile-duration-seconds",
+                str(args.profile_duration_seconds),
+            ]
+        )
     for subtrack in args.subtrack:
         command.extend(["--subtrack", subtrack])
     for backend in args.backend:
@@ -74,6 +79,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--profile-format",
         choices=["flamegraph", "raw", "speedscope", "chrometrace"],
         default="speedscope",
+    )
+    parser.add_argument(
+        "--no-profile",
+        action="store_true",
+        help="Disable py-spy profiling for benchmark gates that only need status.",
     )
     return parser.parse_args(argv)
 
