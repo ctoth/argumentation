@@ -102,12 +102,21 @@ chooses clingo.
 
 Goal: route the proven class without broadening the solver contract.
 
-- [ ] Change ABA auto backend selection so it can inspect flat ABA framework
+- [x] Change ABA auto backend selection so it can inspect flat ABA framework
   shape for stable single-extension tasks.
-- [ ] Route large/dense stable single-extension ABA to SAT.
-- [ ] Preserve preferred auto routing through ASP when clingo is available.
-- [ ] Preserve small stable clingo routing.
-- [ ] Do not inspect filenames, paths, years, generator names, or manifest ids.
+- [x] Route large/dense stable single-extension ABA to SAT.
+- [x] Preserve preferred auto routing through ASP when clingo is available.
+- [x] Preserve small stable clingo routing.
+- [x] Do not inspect filenames, paths, years, generator names, or manifest ids.
+
+Execution status:
+
+- Added `_auto_aba_backend_for_framework` and a structural large/dense flat ABA
+  predicate for stable single-extension auto routing.
+- Added a production benchmark route candidate
+  `large_dense_stable_sat_route` with evidence id
+  `aba-c1-stable-route-2026-05-17`.
+- Phase 3 gate passed: `99 passed in 6.84s`.
 
 Gate:
 
