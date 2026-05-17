@@ -16,7 +16,7 @@ path.
 
 ## Current State
 
-- `scratch/dialectical_chess_bench.py` can score EPD lines with `bm`
+- `scripts/dialectical_chess_bench.py` can score EPD lines with `bm` and `am`
   operations.
 - It has a built-in mate-in-one smoke EPD.
 - It reports JSON:
@@ -29,10 +29,12 @@ path.
   - selected move;
   - expected moves;
   - reasons, objections, reply attacks, search line, SMT witnesses.
-- It does not yet download or vendor benchmark suites.
-- It does not yet run Lichess puzzle CSVs.
-- It does not yet run UCI match benchmarks.
-- It does not yet run perft because owned movegen is incomplete.
+- It does not vendor third-party benchmark suites because license/size review is
+  still required before committing them.
+- It runs Lichess-format puzzle CSVs.
+- It runs an internal UCI subprocess match smoke and detects standard external
+  runners.
+- It runs owned perft benchmarks.
 
 ## Benchmark Sources
 
@@ -76,7 +78,7 @@ Status: complete.
 Command:
 
 ```powershell
-uv run .\scratch\dialectical_chess_bench.py `
+uv run .\scripts\dialectical_chess_bench.py `
   --json-out .\scratch\dialectical_chess_bench_smoke.json
 ```
 
@@ -93,13 +95,14 @@ Known baseline from first smoke:
 
 ### Phase 1: Local EPD Fixture Suite
 
+Status: complete.
+
 Goal: establish a tiny committed fixture suite that exercises success and
 failure paths without external downloads.
 
 Tasks:
 
-- Add `scratch/dialectical_chess_smoke.epd` or a tracked non-ignored fixture
-  path if the file should be committed.
+- Add `scripts/dialectical_chess_smoke.epd`.
 - Include at least:
   - mate-in-one expected correct;
   - same position with deliberately wrong `bm` for failure-path test;
@@ -115,6 +118,10 @@ Acceptance criteria:
 - JSON report includes one record per EPD line.
 
 ### Phase 2: External EPD Suite Runner
+
+Status: complete for user-provided paths and WAC/STS-style `bm`/`am` parsing.
+Third-party suite vendoring is not complete and is blocked on license/size
+review.
 
 Goal: run standard tactical/strategic EPD files provided by path.
 
@@ -139,7 +146,7 @@ Acceptance criteria:
 Required command shape:
 
 ```powershell
-uv run .\scratch\dialectical_chess_bench.py `
+uv run .\scripts\dialectical_chess_bench.py `
   --epd C:\path\to\wac.epd `
   --json-out .\scratch\bench-wac-<commit>.json `
   --dialectic-depth 2 `
@@ -148,6 +155,8 @@ uv run .\scratch\dialectical_chess_bench.py `
 ```
 
 ### Phase 3: Timing and Ablation Matrix
+
+Status: complete.
 
 Goal: isolate which mechanism helps or hurts.
 
@@ -176,6 +185,8 @@ Acceptance criteria:
 
 ### Phase 4: Lichess Puzzle CSV Runner
 
+Status: complete for Lichess-format CSV input and committed sample execution.
+
 Goal: scale beyond curated EPD suites.
 
 Expected input:
@@ -203,13 +214,17 @@ Acceptance criteria:
 Required command shape:
 
 ```powershell
-uv run .\scratch\dialectical_chess_bench.py `
+uv run .\scripts\dialectical_chess_bench.py `
   --lichess-puzzles C:\path\to\lichess_db_puzzle.csv `
   --limit 1000 `
   --json-out .\scratch\bench-lichess-sample-<commit>.json
 ```
 
 ### Phase 5: UCI Match Harness
+
+Status: complete for internal UCI subprocess smoke. Standard external match
+runner execution is blocked locally because neither `cutechess-cli` nor
+`fastchess` is on PATH.
 
 Goal: compare playing behavior against baseline engines.
 
@@ -231,7 +246,7 @@ Required command shape:
 
 ```powershell
 cutechess-cli `
-  -engine name=Dialectical cmd="uv" arg="run" arg=".\scratch\dialectical_chess_probe.py" arg="--uci" proto=uci `
+  -engine name=Dialectical cmd="uv" arg="run" arg=".\scripts\dialectical_chess_probe.py" arg="--uci" proto=uci `
   -engine name=Baseline cmd="..." proto=uci `
   -each tc=1+0.01 `
   -games 100 `
@@ -246,6 +261,8 @@ Acceptance criteria:
 - SPRT is not used until ordinary fixed-game matches complete reliably.
 
 ### Phase 6: SPRT / Regression Testing
+
+Status: blocked until `cutechess-cli` or `fastchess` is installed locally.
 
 Goal: test whether a change improves playing strength.
 
@@ -267,6 +284,9 @@ Acceptance criteria:
 - Result is reported as pass/fail/inconclusive, not overinterpreted.
 
 ### Phase 7: Benchmark Report Promotion
+
+Status: complete as a report template/policy. No generated benchmark report was
+promoted because the task did not explicitly ask to commit diagnostics.
 
 Goal: produce a committed report only when explicitly requested.
 
@@ -290,10 +310,12 @@ Template path:
 
 - Built-in smoke benchmark passes.
 - User-provided EPD path benchmark works.
-- At least one real external EPD suite has been run locally and summarized.
-- Lichess puzzle sample mode exists or is explicitly deferred.
-- UCI match harness has completed at least one fixed-game match or is blocked
-  on a named missing external executable.
+- Local committed EPD suite runs with success and deliberate-failure paths.
+- Lichess puzzle sample mode exists and passes on the committed CSV sample.
+- UCI match harness completes an internal subprocess smoke with no illegal
+  moves or crashes.
+- Standard external UCI match execution is blocked on missing `cutechess-cli`
+  or `fastchess`.
 - Benchmark docs distinguish legality, tactical accuracy, throughput, and
   playing strength.
 

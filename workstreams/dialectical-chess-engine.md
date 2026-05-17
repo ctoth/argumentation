@@ -15,7 +15,7 @@ parity with Stockfish. The target is an engine that can:
   artifacts.
 
 This workstream is intentionally sidecar-first. The current implementation
-lives under `scratch/` while the design is still experimental. Do not promote it
+lives under `scripts/` while the design is still experimental. Do not promote it
 into `src/argumentation` until the engine has stable tests, a clear API, and a
 reason to be part of the package rather than a consumer of the package.
 
@@ -36,7 +36,7 @@ black-box alpha-beta loop bolted on after the fact.
 
 ## Current State
 
-- `scratch/dialectical_chess_probe.py` is a PEP 723 script.
+- `scripts/dialectical_chess_probe.py` is a PEP 723 script.
 - The script depends on `chess>=1.11.0` and `z3-solver>=4.12`.
 - It accepts a FEN through `--fen`.
 - It accepts a PGN through `--pgn-in`, replays the mainline, chooses the next
@@ -48,13 +48,13 @@ black-box alpha-beta loop bolted on after the fact.
   tie-breaks.
 - It supports bounded dialectical reply/defense expansion.
 - It supports material negamax and alpha-beta search witnesses.
-- It does not yet own legal move generation; `python-chess` is the bootstrap
-  substrate. The concrete owned-movegen control surface is
-  `workstreams/dialectical-chess-owned-movegen.md`.
+- It owns a correctness-first legal move generator in
+  `scripts/dialectical_chess_owned.py`; `python-chess` remains the oracle for
+  PGN/SAN and divergence checks.
 - It uses Z3 by default for mate-in-one witnesses and exposes
   `--no-smt-mate` for comparison runs.
-- It has an EPD benchmark runner. The concrete benchmark control surface is
-  `workstreams/dialectical-chess-benchmarks.md`.
+- It has an EPD/Lichess/perft/ablation/UCI-smoke benchmark runner in
+  `scripts/dialectical_chess_bench.py`.
 
 ## Control Rules
 
@@ -171,7 +171,7 @@ Status: complete.
 
 Tasks:
 
-- Keep `scratch/dialectical_chess_probe.py` as the executable bootstrap.
+- Keep `scripts/dialectical_chess_probe.py` as the executable bootstrap.
 - Support FEN input.
 - Support PGN input and PGN output.
 - Support AF JSON trace output.
@@ -189,7 +189,7 @@ Acceptance criteria:
 Smoke command:
 
 ```powershell
-uv run .\scratch\dialectical_chess_probe.py `
+uv run .\scripts\dialectical_chess_probe.py `
   --pgn-in .\scratch\dialectical_chess_input_smoke.pgn `
   --pgn-out .\scratch\dialectical_chess_input_smoke_next.pgn `
   --emit-af .\scratch\dialectical_chess_input_smoke_next.af.json `
@@ -394,8 +394,9 @@ Tests:
 Goal: measure what the engine actually does before optimizing or replacing the
 substrate.
 
-Status: complete for built-in smoke EPD and user-provided `bm` EPD JSON
-benchmarking.
+Status: complete for built-in smoke EPD, committed local EPD, user-provided
+EPD, perft, Lichess-format CSV, ablation matrix, external UCI runner detection,
+and internal UCI subprocess match smoke.
 
 Control surface: `workstreams/dialectical-chess-benchmarks.md`.
 
@@ -439,8 +440,10 @@ Tests:
 Goal: begin replacing `python-chess` as the engine's core state layer only
 after the dialectical architecture is proven.
 
-Status: started. `scratch/dialectical_chess_owned.py` owns FEN parsing, square
-lookup, and material evaluation. Legal move generation is not yet owned.
+Status: complete for correctness-first owned move generation.
+`scripts/dialectical_chess_owned.py` owns FEN parsing/serialization, legal move
+generation, make/apply, attack detection, check, castling, en passant,
+promotion, perft, and differential oracle checks.
 
 Control surface: `workstreams/dialectical-chess-owned-movegen.md`.
 
@@ -468,6 +471,9 @@ Tests:
 
 ### Phase 9: Promotion Out of Scratch
 
+Status: complete for sidecar relocation to `scripts/`. The engine is still not
+promoted into `src/argumentation`.
+
 Goal: decide whether this remains a sidecar experiment or becomes a package
 surface.
 
@@ -484,7 +490,7 @@ Promotion criteria:
 
 Possible target surfaces:
 
-- `examples/dialectical_chess_engine.py` if it remains demonstrative.
+- `scripts/dialectical_chess_probe.py` while it remains an executable sidecar.
 - separate sidecar package if it grows beyond example scope.
 - `src/argumentation` only for reusable argumentation abstractions that are not
   chess-specific.
@@ -494,7 +500,7 @@ Possible target surfaces:
 Current smoke:
 
 ```powershell
-uv run .\scratch\dialectical_chess_probe.py `
+uv run .\scripts\dialectical_chess_probe.py `
   --fen "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" `
   --choose `
   --list-legal
@@ -503,7 +509,7 @@ uv run .\scratch\dialectical_chess_probe.py `
 PGN next-move smoke:
 
 ```powershell
-uv run .\scratch\dialectical_chess_probe.py `
+uv run .\scripts\dialectical_chess_probe.py `
   --pgn-in .\scratch\dialectical_chess_input_smoke.pgn `
   --pgn-out .\scratch\dialectical_chess_input_smoke_next.pgn `
   --emit-af .\scratch\dialectical_chess_input_smoke_next.af.json `

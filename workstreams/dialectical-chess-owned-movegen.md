@@ -10,16 +10,15 @@ is allowed to depend on it for UCI, PGN, SMT, search, or benchmarks.
 
 ## Current State
 
-- `scratch/dialectical_chess_owned.py` parses six-field FEN.
-- It exposes square lookup.
+- `scripts/dialectical_chess_owned.py` parses and serializes six-field FEN.
+- It exposes square lookup and coordinate helpers.
 - It computes material balance.
-- It does not generate pseudo-legal moves.
-- It does not filter legal moves by king safety.
-- It does not make/unmake moves.
-- It does not implement check, checkmate, stalemate, castling, en passant, or
-  promotion.
-- `python-chess` remains the correctness oracle and production substrate for
-  the sidecar engine.
+- It generates pseudo-legal and legal moves.
+- It filters legal moves by king safety.
+- It applies moves immutably.
+- It implements check, checkmate/stalemate move absence, castling, en passant,
+  promotion, perft, divide, and differential oracle checks.
+- `python-chess` remains the correctness oracle and PGN/SAN substrate.
 
 ## Non-Negotiable Rules
 
@@ -37,9 +36,9 @@ is allowed to depend on it for UCI, PGN, SMT, search, or benchmarks.
 
 ## Target Module Shape
 
-The sidecar can remain under `scratch/` until promotion:
+The sidecar remains under `scripts/` until any package promotion:
 
-- `scratch/dialectical_chess_owned.py`
+- `scripts/dialectical_chess_owned.py`
   - `OwnedBoard`
   - `OwnedMove`
   - FEN parse/serialize
@@ -50,13 +49,13 @@ The sidecar can remain under `scratch/` until promotion:
   - check/game-over detection
   - perft
 - later split, only if needed:
-  - `scratch/dialectical_chess/board.py`
-  - `scratch/dialectical_chess/movegen.py`
-  - `scratch/dialectical_chess/perft.py`
+  - `scripts/dialectical_chess/board.py`
+  - `scripts/dialectical_chess/movegen.py`
+  - `scripts/dialectical_chess/perft.py`
 
 ### Phase 0: FEN and Board Invariants
 
-Status: started.
+Status: complete.
 
 Tasks:
 
@@ -84,11 +83,13 @@ Acceptance criteria:
 Commands:
 
 ```powershell
-uv run .\scratch\dialectical_chess_owned.py "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-uv run .\scratch\dialectical_chess_owned.py "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" --square a1
+uv run .\scripts\dialectical_chess_owned.py "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+uv run .\scripts\dialectical_chess_owned.py "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1" --square a1
 ```
 
 ### Phase 1: Move Type and Coordinate Operations
+
+Status: complete.
 
 Tasks:
 
@@ -113,6 +114,8 @@ Acceptance criteria:
 
 ### Phase 2: Pseudo-Legal Non-King Moves
 
+Status: complete.
+
 Tasks:
 
 - Generate pawn pushes and captures, including double pushes from initial rank.
@@ -135,6 +138,8 @@ Acceptance criteria:
 
 ### Phase 3: Attack Detection and Check
 
+Status: complete.
+
 Tasks:
 
 - Implement `is_square_attacked(square, by_color)`.
@@ -156,6 +161,8 @@ Acceptance criteria:
   illegality, and discovered line opening.
 
 ### Phase 4: Make/Unmake or Immutable Apply
+
+Status: complete with immutable apply.
 
 Tasks:
 
@@ -180,6 +187,8 @@ Acceptance criteria:
 
 ### Phase 5: Legal Move Filtering
 
+Status: complete.
+
 Tasks:
 
 - Filter pseudo-legal moves that leave own king in check.
@@ -197,6 +206,8 @@ Acceptance criteria:
 - Stalemate fixture has zero legal moves and `in_check=False`.
 
 ### Phase 6: Castling, En Passant, Promotion Completion
+
+Status: complete.
 
 Tasks:
 
@@ -225,6 +236,8 @@ Acceptance criteria:
 
 ### Phase 7: Perft Harness
 
+Status: complete.
+
 Tasks:
 
 - Implement `owned_perft(board, depth)`.
@@ -237,10 +250,10 @@ Required initial perft fixtures:
 | Name | FEN | Depth 1 | Depth 2 | Depth 3 |
 |---|---|---:|---:|---:|
 | startpos | `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1` | 20 | 400 | 8902 |
-| mate-smoke | `7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1` | 19 | TBD by oracle | TBD by oracle |
+| kiwipete | `r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1` | 48 | 2039 | 97862 |
+| promotion | `4k3/P7/8/8/8/8/8/4K3 w - - 0 1` | 9 | 41 | 500 |
 
-The `TBD by oracle` values must be generated once with `python-chess` and then
-pinned in this file or a fixture file before claiming Phase 7 complete.
+The non-startpos values are pinned in `scripts/dialectical_chess_owned.py`.
 
 Acceptance criteria:
 
@@ -250,6 +263,8 @@ Acceptance criteria:
   fails.
 
 ### Phase 8: Differential Corpus
+
+Status: complete.
 
 Tasks:
 
@@ -275,6 +290,8 @@ Acceptance criteria:
 - Failure output names the FEN, missing moves, and extra moves.
 
 ### Phase 9: Engine Integration Gate
+
+Status: complete.
 
 Tasks:
 
