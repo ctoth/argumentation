@@ -596,7 +596,7 @@ def build_worker_command(job: dict[str, Any], job_path: Path) -> list[str]:
     ]
     profile_duration = job.get("profile_duration_seconds")
     if profile_duration is not None:
-        command.extend(["--duration", str(profile_duration)])
+        command.extend(["--duration", str(int(profile_duration))])
     command.extend(["--", sys.executable, __file__, "_worker", str(job_path)])
     return command
 
