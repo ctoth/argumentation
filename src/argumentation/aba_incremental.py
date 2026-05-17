@@ -37,6 +37,15 @@ from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
 from argumentation.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
+_DIRECT_STABLE_PROGRAM = """
+{ in(X) } :- assumption(X).
+out(X) :- assumption(X), not in(X).
+supported(X) :- assumption(X), in(X).
+supported(X) :- head(R,X), triggered_by_in(R).
+triggered_by_in(R) :- head(R,_), supported(X) : body(R,X).
+:- in(X), contrary(X,Y), supported(Y).
+:- out(X), contrary(X,Y), not supported(Y).
+"""
 
 SUPPORTED_SEMANTICS = frozenset({"complete", "stable", "preferred", "grounded"})
 
@@ -184,6 +193,24 @@ class AbaIncrementalSolver:
 
     def find_stable_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
         ctl = self._new_control(extra_program=":- out(X), not defeated(X).")
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        return self._solve_one(ctl)
+
+    def find_stable_extension_direct(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> AssumptionSet | None:
+        """Find one stable set without grounding the complete-set module.
+
+        Lehtonen p.5 supplies the ABA(F) fact surface, and p.6's Listing 1 uses
+        the same forward ``supported`` closure over ``in`` assumptions. Stable
+        single-extension only needs conflict-freeness plus attack of every
+        assumption outside the candidate, so it can avoid the complete/admissible
+        machinery in ``pi_com``.
+        """
+        ctl = self._clingo.Control(["--models=1", "--warn=none"])
+        ctl.add("base", [], self._facts_text + "\n" + _DIRECT_STABLE_PROGRAM)
+        ctl.ground([("base", [])])
         if telemetry is not None:
             telemetry.solver_calls += 1
         return self._solve_one(ctl)
