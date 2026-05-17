@@ -22,7 +22,9 @@ from dialectical_chess.arguments import (  # noqa: E402
 from dialectical_chess.bench import (  # noqa: E402
     ablation_selector_modes,
     run_lichess,
+    run_experiment_matrix,
     settings as bench_settings,
+    summarize_lichess_rows,
 )
 from dialectical_chess.probe import owned_board_from_fen, probe_moves  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
@@ -248,3 +250,52 @@ def test_reply_analysis_reports_budget_truncation() -> None:
     )
 
     assert "reply_analysis:truncated:reply_budget" in labels
+
+
+def test_lichess_sample_summary_reports_move_line_lengths_and_mate_themes() -> None:
+    rows = [
+        {"Moves": "a1a8", "Themes": "mate mateIn1"},
+        {"Moves": "e2e4 e7e5 g1f3", "Themes": "opening middlegame"},
+        {"Moves": "h5f7 e8f7", "Themes": "mate mateIn2"},
+    ]
+
+    summary = summarize_lichess_rows(rows)
+
+    assert summary["line_move_counts"] == {"1": 1, "2": 1, "3": 1}
+    assert summary["mate_theme_counts"] == {"mateIn1": 1, "mateIn2": 1}
+    assert summary["scoring_target"] == "first engine move only"
+
+
+def test_experiment_matrix_runs_named_lichess_cases() -> None:
+    args = argparse.Namespace(
+        lichess_puzzles=SCRIPTS / "dialectical_chess_puzzles_sample.csv",
+        limit=2,
+        rating_min=None,
+        rating_max=None,
+        theme_include=[],
+        theme_exclude=[],
+        side_to_move=None,
+        full_line=False,
+        dialectic_depth=1,
+        search_depth=0,
+        search_backend="negamax",
+        smt_mate=True,
+        selector_mode="argument",
+        selector_mode_ablation=False,
+        positional_reasons=True,
+        progress_every=0,
+        matrix_preset="smoke",
+        reply_max_replies=128,
+        reply_max_defense_nodes=5000,
+        reply_min_defense_material=300,
+    )
+
+    payload = run_experiment_matrix(args)
+
+    assert payload["mode"] == "lichess_experiment_matrix"
+    assert [run["name"] for run in payload["runs"]] == [
+        "argument_d0",
+        "argument_d1",
+        "score_static",
+    ]
+    assert payload["sample"]["total"] == 2
