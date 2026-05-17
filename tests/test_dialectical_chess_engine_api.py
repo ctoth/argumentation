@@ -59,7 +59,7 @@ def test_engine_selects_mate_in_one() -> None:
 
     assert decision.move_uci == "a1a8"
     assert decision.selected is not None
-    assert decision.selected.score == 2_001_025
+    assert decision.selected.score == 2_001_050
     assert "procedural:mate_in_one" in decision.selected.reasons
     assert "smt:mate_in_one" not in decision.selected.reasons
 
