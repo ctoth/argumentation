@@ -15,7 +15,6 @@ prototype dependencies needed by this script.
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import sys
 from dataclasses import asdict, dataclass
@@ -25,6 +24,8 @@ from typing import Any, TextIO
 import chess
 import chess.pgn
 import chess.svg
+
+from dialectical_chess.board import OwnedBoard
 
 
 DEFAULT_FEN = "7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1"
@@ -92,8 +93,6 @@ def main(argv: list[str] | None = None) -> int:
         default="negamax",
     )
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
-    parser.add_argument("--owned-movegen", action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument("--allow-owned-divergence", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--size", type=int, default=480)
     args = parser.parse_args(argv)
 
@@ -369,17 +368,6 @@ def probe_moves(
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
 
 
-def load_owned_module() -> Any:
-    path = Path(__file__).resolve().with_name("dialectical_chess_owned.py")
-    spec = importlib.util.spec_from_file_location("dialectical_chess_owned", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot import {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 def ensure_owned_board(board: Any) -> Any:
     if hasattr(board, "legal_moves") and callable(board.legal_moves):
         return board
@@ -387,7 +375,7 @@ def ensure_owned_board(board: Any) -> Any:
 
 
 def owned_board_from_fen(fen: str) -> Any:
-    return load_owned_module().OwnedBoard.from_fen(fen)
+    return OwnedBoard.from_fen(fen)
 
 
 def smt_mate_in_one_moves(board: Any) -> frozenset[str]:
