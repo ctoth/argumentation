@@ -8,6 +8,7 @@ from typing import Any
 from dialectical_chess.arguments import (
     MoveProbe,
     RootArgumentGraph,
+    SELECTOR_MODES,
     build_root_argument_graph,
     choose_move,
 )
@@ -20,6 +21,11 @@ class EngineSettings:
     search_depth: int = 0
     search_backend: str = "negamax"
     smt_mate: bool = True
+    selector_mode: str = "argument"
+
+    def __post_init__(self) -> None:
+        if self.selector_mode not in SELECTOR_MODES:
+            raise ValueError(f"unknown selector_mode: {self.selector_mode}")
 
 
 @dataclass(frozen=True)
@@ -56,7 +62,7 @@ class DialecticalChessEngine:
             )
         )
         graph = build_root_argument_graph(list(probes))
-        selected = choose_move(list(probes), graph) if probes else None
+        selected = choose_move(list(probes), graph, selector_mode=self.settings.selector_mode) if probes else None
         decision = EngineDecision(
             move_uci="0000" if selected is None else selected.uci,
             selected=selected,

@@ -42,6 +42,7 @@ def test_engine_settings_are_plain_serializable(
         "search_depth": search_depth,
         "search_backend": search_backend,
         "smt_mate": smt_mate,
+        "selector_mode": "argument",
     }
 
 

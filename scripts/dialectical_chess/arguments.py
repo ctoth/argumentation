@@ -7,6 +7,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+SELECTOR_MODES = frozenset({"argument", "score", "grounded", "support", "categoriser"})
+
 
 @dataclass(frozen=True)
 class MoveProbe:
@@ -38,17 +40,39 @@ class RootArgumentGraph:
 def choose_move(
     probes: list[MoveProbe],
     graph: RootArgumentGraph | None = None,
+    *,
+    selector_mode: str = "argument",
 ) -> MoveProbe:
     if not probes:
         raise SystemExit("position has no legal moves")
+    if selector_mode not in SELECTOR_MODES:
+        raise ValueError(f"unknown selector_mode: {selector_mode}")
     graph = graph or build_root_argument_graph(probes)
+    if selector_mode == "score":
+        return sorted(probes, key=score_selection_key)[0]
+    if selector_mode == "grounded":
+        return sorted(grounded_candidates(probes, graph), key=score_selection_key)[0]
+    if selector_mode == "support":
+        return sorted(probes, key=lambda probe: support_selection_key(probe, graph))[0]
+    if selector_mode == "categoriser":
+        return sorted(probes, key=lambda probe: categoriser_selection_key(probe, graph))[0]
+    return sorted(
+        grounded_candidates(probes, graph),
+        key=lambda probe: selection_key(probe, graph),
+    )[0]
+
+
+def grounded_candidates(probes: list[MoveProbe], graph: RootArgumentGraph) -> list[MoveProbe]:
     accepted = [
         probe
         for probe in probes
         if graph.move_arguments[probe.uci] in graph.grounded_extension
     ]
-    candidates = accepted if accepted else probes
-    return sorted(candidates, key=lambda probe: selection_key(probe, graph))[0]
+    return accepted if accepted else probes
+
+
+def score_selection_key(probe: MoveProbe) -> tuple[int, str]:
+    return (-probe.score, probe.uci)
 
 
 def selection_key(
@@ -80,6 +104,62 @@ def selection_key(
         -accepted_defenses,
         -probe.score,
         probe.uci,
+    )
+
+
+def support_selection_key(
+    probe: MoveProbe,
+    graph: RootArgumentGraph,
+) -> tuple[int, int, int, int, str]:
+    accepted_support = accepted_support_count(probe, graph)
+    accepted_defenses = accepted_defense_count(probe, graph)
+    unresolved_attacks = unresolved_attack_count(probe, graph)
+    return (
+        -accepted_support,
+        unresolved_attacks,
+        -accepted_defenses,
+        -probe.score,
+        probe.uci,
+    )
+
+
+def categoriser_selection_key(
+    probe: MoveProbe,
+    graph: RootArgumentGraph,
+) -> tuple[float, int, int, int, str]:
+    move_arg = graph.move_arguments[probe.uci]
+    ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
+    move_rank = float(ranking_scores.get(move_arg, 0.0))
+    return (
+        -move_rank,
+        -accepted_support_count(probe, graph),
+        unresolved_attack_count(probe, graph),
+        -probe.score,
+        probe.uci,
+    )
+
+
+def accepted_support_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
+    return sum(
+        1
+        for reason in probe.reasons
+        if f"reason:{probe.uci}:{reason}" in graph.grounded_extension
+    )
+
+
+def accepted_defense_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
+    return sum(
+        1
+        for reply_attack in probe.reply_attacks
+        if f"defense:{probe.uci}:{reply_attack}" in graph.grounded_extension
+    )
+
+
+def unresolved_attack_count(probe: MoveProbe, graph: RootArgumentGraph) -> int:
+    return sum(
+        1
+        for reply_attack in probe.reply_attacks
+        if f"reply_attack:{probe.uci}:{reply_attack}" in graph.grounded_extension
     )
 
 
