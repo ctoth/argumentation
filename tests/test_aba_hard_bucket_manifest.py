@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from tools.aba_shape_benchmark import benchmark_profile_path, build_jobs_from_manifest
-from tools.run_aba_hard_bucket import benchmark_args, parse_args
+from tools.run_aba_hard_bucket import benchmark_args, parse_args, selected_manifest
 
 
 MANIFEST = Path("tests") / "manifests" / "aba-hard-bucket-targets.json"
@@ -109,6 +109,27 @@ def test_hard_bucket_profile_paths_are_stable_and_backend_specific(tmp_path: Pat
     assert first.parent == tmp_path / "profiles"
     assert first.name.startswith("aba-SE-PR-asp-")
     assert first.name.endswith(".speedscope.json")
+
+
+def test_hard_bucket_target_filter_writes_diagnostic_manifest(tmp_path: Path) -> None:
+    output_json = tmp_path / "runs" / "selected.json"
+    args = parse_args(
+        [
+            "--target-id",
+            "T1",
+            "--target-id",
+            "C3",
+            "--output-json",
+            str(output_json),
+        ]
+    )
+
+    manifest = selected_manifest(args)
+    rows = json.loads(manifest.read_text(encoding="utf-8"))
+
+    assert manifest == output_json.with_suffix(".manifest.json")
+    assert [row["target_id"] for row in rows] == ["T1", "C3"]
+    assert benchmark_args(args, manifest=manifest)[1] == str(manifest)
 
 
 def _values_after(command: list[str], flag: str) -> list[str]:
