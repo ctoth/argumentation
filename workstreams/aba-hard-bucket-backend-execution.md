@@ -367,11 +367,33 @@ If the gate passes:
 
 If the gate fails:
 
-- [ ] keep the failed experiment branch;
-- [ ] record the exact failed gate and profiler conclusion in this workstream
+- [x] record that there is no failed experiment branch because this workstream
+  was explicitly forced to run on `main`;
+- [x] record the exact failed gate and profiler conclusion in this workstream
   or a linked report;
-- [ ] do not merge the failed backend code to `main`;
-- [ ] choose the next hypothesis from the profiler evidence.
+- [x] record that the failed backend code is already on `main` because of the
+  explicit main-only execution override;
+- [x] choose the next hypothesis from the profiler evidence.
+
+Failed-experiment record:
+
+- There is no failed experiment branch to preserve because the user explicitly
+  required execution directly on `main`.
+- The failed backend slice is the direct stable ASP witness path:
+  `src/argumentation/aba_incremental.py` and `src/argumentation/aba_asp.py`.
+  It passed the property gate but did not solve any T row in the hard-row
+  benchmark.
+- The profiler conclusion is Phase 2's conclusion: hard preferred/stable ASP
+  rows burn in the first clingo solve, and C1 burns in Z3 stable SAT checking.
+- The next executable hypothesis should not be another Python micro-optimization.
+  It should be one of:
+  - preferred maximality attack using Egly/Cerutti/Niskanen page-image-backed
+    properties; or
+  - C1 SAT stable repair/reroute for `_sat_ranked_stable_extension`, because the
+    declared C1 control is not preserved in current measured runs.
+  SCC decomposition is not the next implementation target for these rows unless
+  a later structural measure finds a decomposable assumption-level cut; the
+  current hard rows have one giant dependency SCC plus small fringe components.
 
 ## Definition of Done
 
