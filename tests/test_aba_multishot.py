@@ -266,16 +266,13 @@ def test_multishot_enumeration_matches_subprocess_clingo(framework, semantics) -
     assert _show(multishot.extensions) == _show(subprocess.extensions)
 
 
-def test_preferred_single_extension_uses_limited_multishot_witness(monkeypatch) -> None:
+def test_preferred_single_extension_uses_greedy_growth(monkeypatch) -> None:
     framework = ALL[0]
-    limits: list[int | None] = []
-    original = AbaIncrementalSolver.enumerate_preferred
 
-    def spy_enumerate_preferred(self, *, telemetry=None, limit=None):
-        limits.append(limit)
-        return original(self, telemetry=telemetry, limit=limit)
+    def forbidden_enumeration(*args, **kwargs):
+        raise AssertionError("single preferred witness should use greedy growth, not enumerate preferred sets")
 
-    monkeypatch.setattr(AbaIncrementalSolver, "enumerate_preferred", spy_enumerate_preferred)
+    monkeypatch.setattr(AbaIncrementalSolver, "enumerate_preferred", forbidden_enumeration)
 
     result = solve_aba_with_backend(
         framework,
@@ -287,7 +284,7 @@ def test_preferred_single_extension_uses_limited_multishot_witness(monkeypatch) 
 
     assert result.status == "success"
     assert result.extensions
-    assert limits == [1]
+    assert result.metadata["algorithm"] == "L21-complete-greedy-preferred-growth"
 
 
 def test_stable_single_extension_avoids_full_multishot_enumeration(monkeypatch) -> None:
