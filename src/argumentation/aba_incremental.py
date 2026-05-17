@@ -40,6 +40,21 @@ _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
 
 SUPPORTED_SEMANTICS = frozenset({"complete", "stable", "preferred", "grounded"})
 
+LEHTONEN_INCREMENTAL_ASP_CITATION = "Lehtonen_2021_IncrementalASP_ABA"
+LEHTONEN_INCREMENTAL_ASP_PAGE_CITATIONS = (
+    "p.5: ABA(F) fact surface and Algorithm 1; "
+    "p.6: pi_com Listing 1 and constr(out(I)) refinement; "
+    "p.12: incremental Python interface of Clingo"
+)
+
+
+def lehtonen_incremental_asp_metadata() -> dict[str, str]:
+    """Page-image provenance for the incremental ABA multishot backend."""
+    return {
+        "paper": LEHTONEN_INCREMENTAL_ASP_CITATION,
+        "paper_pages": LEHTONEN_INCREMENTAL_ASP_PAGE_CITATIONS,
+    }
+
 
 def _load_clingo():
     try:
