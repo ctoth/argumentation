@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
-import importlib.util
 import json
 import re
-import sys
 import time
 from collections import Counter
 from pathlib import Path
@@ -15,8 +13,10 @@ from typing import Any
 
 import chess
 
+from dialectical_chess.arguments import build_root_argument_graph, choose_move
 from dialectical_chess.board import PERFT_FIXTURES, OwnedBoard, owned_perft
 from dialectical_chess.matches import run_internal_uci_match, run_uci_match
+from dialectical_chess.probe import probe_moves
 
 
 SCRIPT_DIR = Path(__file__).resolve().parents[1]
@@ -89,7 +89,6 @@ def main() -> int:
 
 
 def run_epd(args: argparse.Namespace) -> dict[str, Any]:
-    probe = load_module("dialectical_chess_probe", PROBE_PATH)
     lines = read_epd_lines(args.epd)
     if args.limit is not None:
         lines = lines[: args.limit]
@@ -98,7 +97,6 @@ def run_epd(args: argparse.Namespace) -> dict[str, Any]:
         try:
             case = parse_epd_case(line, index=index)
             result = score_board(
-                probe,
                 case["board"],
                 case["expected_uci"],
                 args,
@@ -153,7 +151,6 @@ def run_ablation(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
-    probe = load_module("dialectical_chess_probe", PROBE_PATH)
     rows = []
     with args.lichess_puzzles.open(newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
@@ -169,12 +166,12 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
         board = chess.Board(row["FEN"])
         moves = row["Moves"].split()
         expected = {moves[0]} if moves else set()
-        result = score_board(probe, board, expected, args)
+        result = score_board(board, expected, args)
         result["id"] = row.get("PuzzleId", "")
         result["rating"] = int(row.get("Rating") or 0)
         result["themes"] = row.get("Themes", "").split()
         if args.full_line and result["correct"]:
-            result["full_line_correct"] = score_full_line(probe, board, moves, args)
+            result["full_line_correct"] = score_full_line(board, moves, args)
         bucket = rating_bucket(result["rating"])
         by_rating[bucket] += 1 if result["correct"] else 0
         for theme in result["themes"]:
@@ -227,7 +224,6 @@ def run_perft() -> dict[str, Any]:
 
 
 def score_board(
-    probe: Any,
     board: chess.Board,
     expected_uci: set[str],
     args: argparse.Namespace,
@@ -235,14 +231,14 @@ def score_board(
     avoid_uci: set[str] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    probes = probe.probe_moves(
+    probes = probe_moves(
         board,
         dialectic_depth=args.dialectic_depth,
         search_depth=args.search_depth,
         search_backend=args.search_backend,
         smt_mate=args.smt_mate,
     )
-    selected = probe.choose_move(probes, probe.build_root_argument_graph(probes)) if probes else None
+    selected = choose_move(probes, build_root_argument_graph(probes)) if probes else None
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     selected_uci = None if selected is None else selected.uci
     avoid_uci = avoid_uci or set()
@@ -264,12 +260,12 @@ def score_board(
     }
 
 
-def score_full_line(probe: Any, board: chess.Board, moves: list[str], args: argparse.Namespace) -> bool:
+def score_full_line(board: chess.Board, moves: list[str], args: argparse.Namespace) -> bool:
     working = board.copy(stack=False)
     for index, move_text in enumerate(moves):
         expected = chess.Move.from_uci(move_text)
         if index % 2 == 0:
-            result = score_board(probe, working, {move_text}, args)
+            result = score_board(working, {move_text}, args)
             if not result["correct"]:
                 return False
         if expected not in working.legal_moves:
@@ -353,13 +349,3 @@ def settings(args: argparse.Namespace) -> dict[str, Any]:
         "smt_mate": args.smt_mate,
         "movegen": "owned",
     }
-
-
-def load_module(name: str, path: Path) -> Any:
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot import {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module

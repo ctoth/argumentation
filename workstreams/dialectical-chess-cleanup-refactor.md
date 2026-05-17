@@ -79,7 +79,7 @@ only when the merged file still has one responsibility.
 
 ### Phase 0: Lock Current Behavior
 
-Status: pending.
+Status: completed.
 
 Goal: capture the current behavior before moving code.
 
@@ -109,7 +109,7 @@ uv run .\scripts\dialectical_chess_bench.py --uci-match-command --match-baseline
 
 ### Phase 1: Create the Script Package Shell
 
-Status: pending.
+Status: completed.
 
 Goal: make imports explicit without changing behavior.
 
@@ -126,7 +126,7 @@ Acceptance criteria:
 
 ### Phase 2: Move Owned Board Into `board.py`
 
-Status: pending.
+Status: completed.
 
 Goal: make the owned chess substrate the named foundation.
 
@@ -148,7 +148,7 @@ Acceptance criteria:
 
 ### Phase 3: Extract Probe Data and Argument Selection
 
-Status: pending.
+Status: completed.
 
 Goal: separate "what moves mean" from "how the CLI is invoked."
 
@@ -171,7 +171,7 @@ Acceptance criteria:
 
 ### Phase 4: Extract Search and SMT
 
-Status: pending.
+Status: completed.
 
 Goal: make tactical witnesses explicit and replaceable.
 
@@ -191,7 +191,7 @@ Acceptance criteria:
 
 ### Phase 5: Extract UCI and Presentation
 
-Status: pending.
+Status: completed.
 
 Goal: make the engine loop and file-format presentation thin and boring.
 
@@ -211,7 +211,7 @@ Acceptance criteria:
 
 ### Phase 6: Extract Benchmarks and Match Runners
 
-Status: pending.
+Status: completed.
 
 Goal: make benchmark scoring and match orchestration separately testable.
 
@@ -236,7 +236,7 @@ Acceptance criteria:
 
 ### Phase 7: Add Focused Tests Where Scripts Are Too Coarse
 
-Status: pending.
+Status: completed.
 
 Goal: stop relying only on full script smoke tests for refactor safety.
 
@@ -257,7 +257,7 @@ Acceptance criteria:
 
 ### Phase 8: Final Cleanup Gate
 
-Status: pending.
+Status: completed.
 
 Goal: make the codebase ready for the next strength phase.
 
@@ -292,3 +292,58 @@ Do not start these until the cleanup gate passes:
 
 The cleanup is not cosmetic. It is the prerequisite for making the next
 argumentation changes observable, testable, and reversible.
+
+## Completed Module Map
+
+Workflow used: cleanup/refactor workstream in this document.
+
+- `dialectical_chess_probe.py`: thin PEP 723 probe entrypoint for CLI output,
+  PGN/SVG writes, AF emission, and UCI delegation.
+- `dialectical_chess_bench.py`: thin PEP 723 benchmark entrypoint.
+- `dialectical_chess_owned.py`: thin PEP 723 owned-board entrypoint.
+- `dialectical_chess/board.py`: owned board, legal move generation, perft,
+  divide, and oracle selftest diagnostics.
+- `dialectical_chess/arguments.py`: `MoveProbe`, `RootArgumentGraph`, argument
+  payloads, grounded/ranking calls, and argument-first move selection.
+- `dialectical_chess/probe.py`: move probing and named probe settings.
+- `dialectical_chess/search.py`: static evaluation, negamax, alpha-beta,
+  bounded reply attacks, defense checks, and search settings.
+- `dialectical_chess/smt.py`: Z3 mate-in-one witnesses and SMT settings.
+- `dialectical_chess/uci.py`: UCI command loop, position parsing, and bestmove
+  output.
+- `dialectical_chess/adapters.py`: PGN, SVG, and python-chess presentation
+  bridges.
+- `dialectical_chess/bench.py`: EPD, Lichess CSV, perft, ablation, and scoring
+  runners.
+- `dialectical_chess/matches.py`: internal UCI games and external
+  fast-chess/cutechess orchestration.
+- `dialectical_chess/baselines.py`: no-SMT, random, and Stockfish baseline
+  command definitions.
+- `tests/test_dialectical_chess_cleanup.py`: focused cleanup safety tests.
+
+Verification recorded during completion:
+
+- `uv run .\scripts\dialectical_chess_owned.py --selftest`: passed.
+- `uv run .\scripts\dialectical_chess_bench.py --perft`: passed, 9/9.
+- `uv run .\scripts\dialectical_chess_bench.py --epd .\scripts\dialectical_chess_smoke.epd`:
+  passed, 2/3 with the deliberate wrong fixture failing.
+- UCI mate smoke: passed, emitted `info score cp 2001000 pv a1a8` and
+  `bestmove a1a8`.
+- `uv run .\scripts\dialectical_chess_probe.py --choose --no-smt-mate`:
+  passed and removed the SMT witness.
+- `uv run .\scripts\dialectical_chess_probe.py --choose --search-depth 1 --search-backend alphabeta`:
+  passed.
+- `uv run .\scripts\dialectical_chess_bench.py --ablation`: passed on the
+  built-in smoke suite.
+- PGN/SVG output smoke: passed.
+- `uv run .\scripts\dialectical_chess_bench.py --internal-uci-match --match-games 2 --match-max-plies 6`:
+  passed with 0 crashes and 0 illegal moves.
+- `uv run .\scripts\dialectical_chess_bench.py --uci-match-command --match-baseline stockfish --match-games 2 --match-max-plies 6 --match-tc 10+0.1`:
+  passed and includes `UCI_LimitStrength=true` and `UCI_Elo=1320`.
+- `uv run .\scripts\dialectical_chess_bench.py --run-uci-match --match-baseline stockfish --match-games 2 --match-max-plies 6 --match-tc 10+0.1`:
+  passed with 0 timeouts, 0 crashes, and 0 losses on time.
+- `uv run pytest .\tests\test_dialectical_chess_cleanup.py`: passed with
+  dependency-specific tests skipped when PEP 723 dependencies are not installed
+  in the project environment.
+- `uv run --with chess --with z3-solver pytest .\tests\test_dialectical_chess_cleanup.py`:
+  passed, 5/5.
