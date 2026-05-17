@@ -155,6 +155,7 @@ def test_positional_reasons_cover_quiet_opening_development() -> None:
     assert "center_control:e2e4:1" in probes["e2e4"].reasons
     assert "objection:no_immediate_tactical_warrant" not in probes["e2e4"].objections
     assert "development:g1f3:minor_piece" in probes["g1f3"].reasons
+    assert "piece_activity:g1f3:mobility_gain:5" in probes["g1f3"].reasons
 
 
 def test_positional_reasons_cover_castling_king_safety() -> None:
@@ -162,6 +163,13 @@ def test_positional_reasons_cover_castling_king_safety() -> None:
     probes = {probe.uci: probe for probe in probe_moves(board)}
 
     assert "king_safety:e1g1:castle" in probes["e1g1"].reasons
+
+
+def test_positional_reasons_cover_passed_pawn_structure() -> None:
+    board = owned_board_from_fen("4k3/8/8/8/4P3/8/8/4K3 w - - 0 1")
+    probes = {probe.uci: probe for probe in probe_moves(board)}
+
+    assert "pawn_structure:e4e5:passed_pawn" in probes["e4e5"].reasons
 
 
 def test_engine_settings_can_disable_positional_reasons() -> None:
