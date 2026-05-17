@@ -232,8 +232,9 @@ def run_perft() -> dict[str, Any]:
 
 def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
     cutechess = shutil.which("cutechess-cli")
-    fastchess = shutil.which("fastchess")
-    engine_args = [
+    fastchess = shutil.which("fastchess") or shutil.which("fast-chess")
+    uv_executable = shutil.which("uv") or "uv"
+    cutechess_args = [
         "-engine",
         'name=Dialectical cmd="uv" arg="run" arg=".\\scripts\\dialectical_chess_probe.py" arg="--uci" proto=uci',
         "-engine",
@@ -244,18 +245,42 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         str(args.match_games),
         "-repeat",
     ]
+    fastchess_args = [
+        "-engine",
+        "name=Dialectical",
+        f"cmd={uv_executable}",
+        "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen",
+        "proto=uci",
+        f"dir={ROOT}",
+        "-engine",
+        "name=DialecticalNoSMT",
+        f"cmd={uv_executable}",
+        "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen --no-smt-mate",
+        "proto=uci",
+        f"dir={ROOT}",
+        "-each",
+        f"tc={args.match_tc}",
+        "-rounds",
+        "1",
+        "-games",
+        str(args.match_games),
+        "-maxmoves",
+        str(max(1, args.match_max_plies // 2)),
+        "-concurrency",
+        "1",
+    ]
     if cutechess:
-        command = [cutechess, *engine_args]
+        command = [cutechess, *cutechess_args]
         runner = "cutechess-cli"
     elif fastchess:
-        command = [fastchess, *engine_args]
+        command = [fastchess, *fastchess_args]
         runner = "fastchess"
     else:
         return {
             "ok": False,
             "mode": "uci_match",
-            "blocked": "missing cutechess-cli or fastchess executable on PATH",
-            "suggested_command": "cutechess-cli " + " ".join(engine_args),
+            "blocked": "missing cutechess-cli, fastchess, or fast-chess executable on PATH",
+            "suggested_command": "fast-chess " + " ".join(fastchess_args),
         }
     if not args.run_uci_match:
         return {"ok": True, "mode": "uci_match", "runner": runner, "command": command}
