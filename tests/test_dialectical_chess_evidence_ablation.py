@@ -118,12 +118,39 @@ def test_lichess_summary_reports_rating_bucket_totals() -> None:
         search_backend="negamax",
         smt_mate=True,
         selector_mode="argument",
+        progress_every=0,
     )
 
     payload = run_lichess(args)
 
     assert payload["by_rating_bucket"]["800-999"]["total"] == 1
     assert payload["by_rating_bucket"]["1200-1399"]["total"] == 1
+
+
+def test_lichess_runner_reports_progress(capsys: pytest.CaptureFixture[str]) -> None:
+    args = argparse.Namespace(
+        lichess_puzzles=SCRIPTS / "dialectical_chess_puzzles_sample.csv",
+        limit=None,
+        rating_min=None,
+        rating_max=None,
+        theme_include=[],
+        theme_exclude=[],
+        side_to_move=None,
+        full_line=False,
+        dialectic_depth=1,
+        search_depth=0,
+        search_backend="negamax",
+        smt_mate=True,
+        selector_mode="argument",
+        positional_reasons=True,
+        progress_every=1,
+    )
+
+    run_lichess(args)
+
+    captured = capsys.readouterr()
+    assert "progress lichess_csv 1/2" in captured.err
+    assert "progress lichess_csv 2/2" in captured.err
 
 
 def test_mate_in_one_smt_scaffold_matches_procedural_checker() -> None:
