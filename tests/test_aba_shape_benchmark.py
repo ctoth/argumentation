@@ -485,6 +485,31 @@ def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
     assert result["reason"] == "timeout>0.1"
 
 
+def test_benchmark_rows_keep_commands_out_of_feature_payload(monkeypatch, tmp_path: Path) -> None:
+    instance_path = tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text(write_aba(framework_zero_rules()), encoding="utf-8")
+    job = BenchmarkJob(
+        year=2025,
+        track="aba",
+        subtrack="SE-PR",
+        instance_kind="aba",
+        instance="ABAs/example.aba",
+        root=tmp_path / "2025",
+        path=instance_path,
+        arguments_or_atoms=4,
+    )
+
+    def solved_child(job_payload, *, timeout_seconds):
+        return {"status": "solved", "witness": "", "backend": job_payload["backend"]}
+
+    monkeypatch.setattr(aba_shape_benchmark, "run_native_child", solved_child)
+
+    rows = benchmark_rows([job], backends=("asp",), timeout_seconds=30)
+
+    assert "command" not in rows[0]["backend_results"]["asp"]
+
+
 def test_summary_is_order_invariant() -> None:
     row_a = {
         "solver_class": "aba/single-extension/preferred",

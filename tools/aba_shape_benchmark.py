@@ -741,7 +741,6 @@ def run_backend_matrix(
         )
         elapsed = time.perf_counter() - started
         materialized = dict(result)
-        materialized["command"] = command
         materialized["elapsed_seconds"] = elapsed
         materialized["validation"] = validate_result(framework, job.subtrack, materialized)
         results[backend] = materialized
