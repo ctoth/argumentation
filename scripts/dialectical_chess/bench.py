@@ -6,6 +6,7 @@ import argparse
 import csv
 import json
 import re
+import sys
 import time
 from collections import Counter
 from pathlib import Path
@@ -43,6 +44,7 @@ def main() -> int:
     parser.add_argument("--loss-mate-depth", type=int, default=1)
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--progress-every", type=int, default=5)
     parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument("--full-line", action="store_true")
     parser.add_argument("--rating-min", type=int)
@@ -144,6 +146,7 @@ def run_epd(args: argparse.Namespace) -> dict[str, Any]:
             if args.fail_fast:
                 raise
             results.append({"line": index, "error": str(exc), "correct": False})
+        report_progress("epd", index, len(lines), args)
     solved = sum(1 for result in results if result.get("correct"))
     avoided = sum(1 for result in results if result.get("avoided"))
     return {
@@ -214,7 +217,7 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
     rating_totals: Counter[str] = Counter()
     by_theme: Counter[str] = Counter()
     theme_totals: Counter[str] = Counter()
-    for row in rows:
+    for index, row in enumerate(rows, start=1):
         board = chess.Board(row["FEN"])
         moves = row["Moves"].split()
         expected = {moves[0]} if moves else set()
@@ -232,6 +235,7 @@ def run_lichess(args: argparse.Namespace) -> dict[str, Any]:
             if result["correct"]:
                 by_theme[theme] += 1
         results.append(result)
+        report_progress("lichess_csv", index, len(rows), args)
     solved = sum(1 for result in results if result.get("correct"))
     return {
         "ok": True,
@@ -398,6 +402,14 @@ def parse_expected_move(board: chess.Board, token: str) -> chess.Move:
 def rating_bucket(rating: int) -> str:
     low = (rating // 200) * 200
     return f"{low}-{low + 199}"
+
+
+def report_progress(mode: str, completed: int, total: int, args: argparse.Namespace) -> None:
+    every = getattr(args, "progress_every", 5)
+    if every <= 0:
+        return
+    if completed == total or completed % every == 0:
+        print(f"progress {mode} {completed}/{total}", file=sys.stderr, flush=True)
 
 
 def ablation_selector_modes(args: argparse.Namespace) -> tuple[str, ...]:
