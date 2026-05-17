@@ -197,24 +197,31 @@ Expected result: every listed phase matches a phase heading in order.
 
 Goal: make the real target architecture a testable requirement.
 
-- [ ] Add `tests/test_aba_real_prefsat_contract.py`.
-- [ ] Add `test_real_prefsat_exposes_three_valued_labelling_surface`, asserting
+- [x] Add `tests/test_aba_real_prefsat_contract.py`.
+- [x] Add `test_real_prefsat_exposes_three_valued_labelling_surface`, asserting
   the architecture fields `prefsat_in`, `prefsat_out`, and `prefsat_undec`
   exist and contain one entry per assumption.
-- [ ] Add `test_real_prefsat_rejects_old_cegar_forwarding`, monkeypatching the
+- [x] Add `test_real_prefsat_rejects_old_cegar_forwarding`, monkeypatching the
   old support-aware CEGAR preferred entrypoint and asserting the real PrefSat
   route does not call it.
-- [ ] Add `test_real_prefsat_rejects_asp_and_greedy_substitutes`, asserting the
+- [x] Add `test_real_prefsat_rejects_asp_and_greedy_substitutes`, asserting the
   route metadata has `backend == "sat"` and
   `algorithm == "complete-labelling-prefsat"`.
-- [ ] Add `test_real_prefsat_route_ignores_filename_and_manifest_identity`,
+- [x] Add `test_real_prefsat_route_ignores_filename_and_manifest_identity`,
   asserting route decisions are identical when only path, year, target id, and
   generator-like text change.
-- [ ] Add `test_dense_flat_real_prefsat_does_not_materialize_minimal_supports`,
+- [x] Add `test_dense_flat_real_prefsat_does_not_materialize_minimal_supports`,
   asserting `prefsat_support_materializations == 0`.
-- [ ] Store page-image citations in a test constant named
+- [x] Store page-image citations in a test constant named
   `REAL_PREFSAT_PAGE_IMAGES` and assert it contains every page listed in this
   workstream's minimum reread set.
+
+Execution status:
+
+- Added `tests/test_aba_real_prefsat_contract.py`.
+- Contract file collection passed: `10 tests collected in 0.60s`.
+- Phase 1 gate passed: `18 passed, 1 skipped in 2.86s`.
+- Next unchecked item is Phase 2: Paper-Image Reread.
 
 Gate:
 
