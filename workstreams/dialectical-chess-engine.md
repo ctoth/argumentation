@@ -44,13 +44,13 @@ black-box alpha-beta loop bolted on after the fact.
 - It can emit a simple AF JSON trace through `--emit-af`.
 - It can print legal move probes through `--list-legal`.
 - It speaks a minimal UCI protocol.
-- It chooses through a root argument graph, with scalar scores only as
-  tie-breaks.
+- It chooses through a root argument graph. Grounded acceptance and gradual
+  ranking drive selection first; scalar chess scores are final tie-breaks.
 - It supports bounded dialectical reply/defense expansion.
 - It supports material negamax and alpha-beta search witnesses.
-- It owns a correctness-first legal move generator in
-  `scripts/dialectical_chess_owned.py`; `python-chess` remains the oracle for
-  PGN/SAN and divergence checks.
+- It owns the runtime chess-state and legal-move substrate in
+  `scripts/dialectical_chess_owned.py`; `python-chess` remains only for
+  PGN/SAN/EPD parsing, display, and differential selftests.
 - It uses Z3 by default for mate-in-one witnesses and exposes
   `--no-smt-mate` for comparison runs.
 - It has an EPD/Lichess/perft/ablation/UCI-smoke benchmark runner in
@@ -82,12 +82,15 @@ black-box alpha-beta loop bolted on after the fact.
 
 ### Chess Substrate
 
-Initial substrate:
+Current runtime substrate:
 
-- `python-chess` for PGN, FEN, board state, legal moves, SAN/UCI formatting,
-  and smoke correctness.
+- `scripts/dialectical_chess_owned.py` for FEN, board state, legal moves,
+  make/apply, check, checkmate/stalemate, castling, en passant, promotion, and
+  perft.
+- `python-chess` for PGN/SAN/EPD parsing, display notation, and differential
+  correctness checks only.
 
-Target owned substrate:
+Target owned substrate extensions:
 
 - board representation, likely bitboards after a correctness-first mailbox
   version if needed;
