@@ -180,6 +180,69 @@ For ABA+, some complexity table entries remain open or only partially bounded at
 ## Relevance to Project
 This is directly relevant to an argumentation backend because it supplies formal semantics, complexity expectations, and ASP-oriented implementation hooks for ABA and ABA+ reasoning. It is especially useful for deciding which ABA+ tasks should be implemented as polynomial checks, NP/coNP calls, or higher-level solver workflows.
 
+## Additional Extraction: Complexity, Encodings, and Evaluation
+
+### ABA+ Grounded and Admissible Complexity
+- ABA+ frameworks satisfying the FL-property allow the grounded assumption set to be obtained by iterating the defense function from the empty set. The FL-property says that for any <-admissible `A` and any `x in def_F(A)`, `A union {x}` remains <-admissible. *(p.286)*
+- Lemma 17: for a finite ABA+ framework satisfying the FL-property, `def_F^i(emptyset)` is the <-grounded assumption set for some `i >= 0`; the iteration reaches a fixpoint after at most `|\mathcal{A}|` applications in the same style as ordinary ABA. *(p.286)*
+- Proposition 18: in ABA+ frameworks satisfying the FL-property, the <-grounded assumption set can be computed by a deterministic polynomial-time algorithm with access to an NP oracle; the proof bounds the computation by at most `|\mathcal{A}|^2` NP-oracle calls. *(p.287)*
+- WCP, the Axiom of Weak Contraposition, implies the FL-property, but the authors emphasize that WCP does not make the overall ABA+ complexity mild: Proposition 14 and Theorem 15 hardness results still hold under WCP. *(p.287)*
+- Theorem 19: credulous acceptance under <-admissible semantics in ABA+ is `Sigma_2^P`-complete, reflecting the need to guess an assumption set and verify <-admissibility, where the latter is coNP-complete. *(p.287)*
+
+### ASP Preliminaries Used by the Encodings
+- The implementation target is standard normal ASP with rules of the form `h <- b1,...,bk, not b{k+1},...,not bm`; `h` and all body atoms are atoms. The paper uses no ASP functions, variables are uppercase, and constants are lowercase. *(p.288)*
+- A non-ground program is grounded by all substitutions from variables to constants. An interpretation satisfies a positive rule if all positive body atoms being in the interpretation implies the head is also in the interpretation. Answer sets are defined via the Gelfond-Lifschitz reduct. *(p.288)*
+- The implementation uses CLINGO for answer-set existence/enumeration and cautious reasoning, and ASPRIN for subset-maximal optimization over a unary predicate, especially to compute preferred assumption sets. *(p.288)*
+
+### ASP Input Representation
+- A given ABA framework `F=(\mathcal{L},\mathcal{R},\mathcal{A},bar)` with rules `R={r1,...,rn}` is represented as facts `assumption(a)`, `head(i,b)`, `body(i,b)`, and `contrary(a,b)`. The rule index `i` links heads and bodies. *(p.289)*
+- Example 10 maps an ABA framework with sentences `{a,b,x,y}`, assumptions `{a,b}`, contraries `bar a=y`, `bar b=x`, and rules `{x <- a,y; y <- b}` into facts `assumption(a). assumption(b). head(1,x). body(1,a). body(1,y). head(2,y). body(2,b). contrary(a,y). contrary(b,x).` *(p.289)*
+- Query sentences are represented by adding `query(s)` to the semantics encoding. Later descriptions identify predicates with the set of constants for which they hold. *(p.289)*
+
+### Common ABA Encoding
+- Listing 1 defines `pi_common`, the reusable ASP module for conflict-free assumption sets and forward derivations: `in(X)`/`out(X)` guess assumption membership; `supported(X)` derives assumptions in the set and rule heads whose bodies are supported; `triggered_by_in(R)` checks rule body support; `defeated(X)` marks attacked assumptions; and the final constraint rejects any set containing an assumption it attacks. *(p.290)*
+- Credulous acceptance is checked by adding a constraint that rules out answer sets where the query is not supported: `<- not supported(X), query(X).` Skeptical acceptance is checked by searching for a counterexample using `<- supported(X), query(X).`; if the resulting program has no answer set, the query is skeptically accepted. *(p.290)*
+
+### ABA Semantics Encodings
+- Stable semantics adds the constraint `<- out(X), not defeated(X).`, forcing every assumption to be either selected or attacked by the selected set. *(p.291)*
+- Admissibility uses Proposition 4: a conflict-free set is admissible iff undefeated assumptions do not attack it. Listing 2 computes derivability from undefeated assumptions and constrains against selected assumptions attacked by undefeated assumptions. *(p.291)*
+- Complete semantics extends admissibility with a constraint excluding any `out` assumption that is not attacked by undefeated assumptions, i.e. assumptions defended by `in` must be included. *(p.291)*
+- Preferred semantics uses ASPRIN subset-maximal optimization over `in`: `#preference(p1,superset){in(X): assumption(X)}.` and `#optimize(p1).` over the admissibility encoding. *(p.291)*
+- Grounded ABA semantics is encoded in Listing 3 using Lemma 7's explicit iteration. The number of iterations is the number of assumptions; `in(X,I)` represents `I_i`, `defeated(X,I)` represents `D_i`, and `not defeated` represents `U_i`; the final iteration gives the grounded assumption set. *(p.292)*
+- The authors explicitly warn that the grounded-semantics encoding in the preliminary 2019 version was erroneous and refer to Appendix B. *(p.292)*
+- Ideal semantics adapts Dunne's algorithm: compute assumptions not credulously accepted under admissibility, form `A_in`, remove assumptions attacked by `A_in`, then repeatedly remove assumptions not defended by the current candidate until a fixpoint is reached. The paper notes Dunne's original lines 8-9 were incorrect and are corrected here. *(p.292-p.293)*
+
+### ABA+ ASP Encodings
+- ABA+ input extends ABA facts with `preferred(x,y)` whenever `y <= x`, and Listing 4 computes transitive closure plus `strictly_less_preferred` and `no_less_preferred`. *(p.293-p.294)*
+- Listing 5 encodes <-stable semantics for ABA+. It combines the common ABA module, the preference module, and a `<-stable` module. Normal attacks are computed with `preferedly_supported` by considering only selected assumptions not less preferred than the target; reverse attacks are computed by checking whether assumptions not normally attacked by `in` can attack a more-preferred selected assumption. *(p.294)*
+- The final <-stable constraint rejects any `out` assumption that is neither normally nor reversely `<`-attacked by `in`, matching Proposition 9. *(p.294)*
+- Listing 6 is the subroutine used for <-grounded semantics. It guesses suspect attackers, checks normal and reverse attacks between suspects, target, and current defended set, and concludes the target is <-defended exactly when the subroutine program is unsatisfiable. *(p.295-p.297)*
+- Algorithm 2 computes the <-grounded assumption set for FL-property ABA+ frameworks by iteratively applying a solver-backed singleton-defense test: for each candidate `a`, if the subroutine with current `grounded` and `target(a)` is unsatisfiable, add `a` to `grounded`, repeating to a fixpoint. *(p.296)*
+
+### Systems Compared
+- Existing ABA reasoning systems are grouped into translation-based, specialized, and direct declarative approaches. ABAGRAPH implements dispute derivations in Prolog and supports credulous admissible/grounded, solution enumeration, credulous complete/preferred via admissible, and skeptical complete via grounded. *(p.297)*
+- TweetyProject supports enumeration of admissible, complete, stable, preferred, ideal, and grounded assumption sets, but is not optimized for runtime. *(p.297)*
+- ABA2AF translates ABA frameworks to AFs and uses AF-level ASP encodings; the authors note that translation can dominate runtime and can produce exponentially larger AFs. *(p.297-p.298)*
+- The direct ASP approach in this paper supports credulous, skeptical, and enumeration tasks for ABA admissible, complete, stable, preferred, grounded, and ideal semantics. *(p.298)*
+- ABAPLUS is the only ABA+ system identified by the authors. It translates ABA+ to AFs, supports enumeration under <-stable, <-grounded, <-complete, <-preferred, and <-ideal, and answers credulous/skeptical queries through enumeration. It also enforces WCP and may modify the input framework when WCP is not satisfied, meaning it may reason over a modified framework rather than the original instance. *(p.299)*
+
+### Empirical Setup and Results
+- For ABA comparisons with ABAGRAPH and ABA2AF, the authors used 680 ABA frameworks with up to 90 sentences from earlier experiments. For acceptance problems they chose ten query sentences per framework and filtered trivial instances, leaving 1728 instances for credulous admissible/grounded and 4613 for skeptical stable; all 680 base frameworks were used for preferred enumeration. *(p.299)*
+- Additional ABA+ comparison benchmarks were generated from modified parameter family 4 of Craven and Toni: each framework has 37% of sentences as assumptions, rule counts and body sizes chosen from bounded intervals dependent on sentence count, all sentences derivable by at least one rule, and rule/body bounds capped at 20. Complete and ideal benchmarks used 20 frameworks at each of 10,14,18,22,26,30 sentences, for 120 frameworks. ABA+ preferences used random assumption permutations with density 15% or 40%. *(p.300)*
+- Computing setup: CLINGO 5.2.2 for ASP and ABA2AF; ASPRIN 3 for preferred semantics; SICStus Prolog 4.5 for ABAGRAPH; 2.83 GHz Intel Xeon E5440 quad-core machine with 32 GB RAM; 600-second timeout per instance. *(p.300)*
+- Table 6 shows the ASP approach had zero timeouts and small cumulative runtimes across all listed comparisons, while ABAGRAPH, ABA2AF, and ABAPLUS generally had many timeouts and much higher runtimes. Examples: ABA admissible enumeration with query has ASP cumulative 53s versus ABAGRAPH 20131s and ABA2AF 24897s; ABA+ <-stable enumeration without query has ASP cumulative 2s versus ABAPLUS 1729s; ABA+ <-grounded has ASP cumulative 46s versus ABAPLUS 1732s. *(p.301)*
+- The authors conclude the ASP-based approach clearly outperforms state-of-the-art systems on every tested ABA and ABA+ problem variant. Even the smallest average performance gap was ABA preferred, where ASP median runtime was about three quarters of ABA2AF on commonly solved instances and ASP cumulative runtime was under one tenth of ABA2AF's. *(p.302)*
+- Scalability benchmarks used larger frameworks with sentence counts `{50,250,500,1000,1500,2000,2500,3000,3500,4000}`; for ABA they tested 10 arbitrary query sentences per framework for admissible, complete, and stable, extension enumeration for preferred, and no queries for unique ideal semantics; for ABA+ they generated six frameworks per sentence count, three preference orderings at density 15% and three at 40%, then queried ten arbitrary sentences per framework. *(p.302)*
+- The ASP approach routinely solved instances up to 3000 sentences for ABA and up to 1000 for ABA+, while earlier comparison benchmarks had only up to 90 sentences. In the larger ABA benchmark, ABAGRAPH only solved 50-sentence instances within the timeout. *(p.302-p.303)*
+- For ABA+ <-stable scalability, preference density had little effect: densities 15% and 40% showed the same timeout behavior and mean runtimes within five seconds for each sentence count. *(p.303)*
+
+### Related Work and Interpretation of Preferences
+- ABA complexity has been studied by Dimopoulos et al., Dunne, Karamlou et al., Cyras et al., and summarized by Dvorak and Dunne. Results corresponding to Corollaries 5 and 6 were independently shown by Cyras et al. *(p.304)*
+- ASPIC+ can capture the commonly studied ABA fragment without preferences; extending the ASP approach to ASPIC+ variants is identified as a promising direction, with first steps already made by Lehtonen et al. (2020). *(p.304)*
+- Preferences can be used to modify the attack relation, as in ABA+, or to select among extensions without modifying attacks. The paper argues that this distinction matters for applications because modifying attacks can change results compared to the same framework without preferences. *(p.305)*
+- The authors cite Wakaki's legal reasoning example where careless ABA+ preference use violates the principle that an accused is innocent until proven guilty, illustrating that different preference-handling schemes may fit different application settings. *(p.305)*
+- p_ABA uses preferences to select most preferred extensions without modifying the attack relation; ABA+ uses reverse attacks; and ASPIC+ permits preferences over arguments or over premises/defeasible rules, with several ways to lift preferences to the argument level. *(p.305)*
+
 ## Open Questions
 - [ ] Table 3 leaves several ABA+ acceptance complexities open at this stage: skeptical <-admissible, credulous <-complete, and skeptical <-complete. *(p.277)*
 - [ ] Later sections must be read for the concrete ASP encodings and empirical benchmark details before implementing the backend from this paper. *(p.267-p.268)*
@@ -189,4 +252,3 @@ This is directly relevant to an argumentation backend because it supplies formal
 - Dimopoulos et al. (2002), Dunne (2009), and Dvorak & Dunne (2018) for established ABA complexity. *(p.268, p.276-p.277)*
 - Cyras and Toni / Bao et al. work on ABA+ preferences. *(p.266, p.274-p.275)*
 - Craven and Toni dispute-derivation systems and ABA2AF/ABAPLUS translation-based systems for implementation comparison. *(p.267)*
-
