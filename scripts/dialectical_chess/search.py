@@ -268,6 +268,10 @@ def has_bounded_defense(
     cache = cache or ReplyAnalysisCache()
     if not cache.consume_defense_node(settings):
         return False
+    if target_square is not None and target_value > 0 and board.is_square_attacked(target_square, board.turn):
+        return True
+    if depth <= 1:
+        return False
     for move in cache.legal_moves(board):
         if (
             target_square is not None
@@ -276,8 +280,6 @@ def has_bounded_defense(
             and owned_capture_value(board, move) >= target_value
         ):
             return True
-    if depth <= 1:
-        return False
     for move in cache.legal_moves(board):
         child = cache.apply(board, move)
         if cache.is_checkmate(child):
