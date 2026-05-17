@@ -277,26 +277,34 @@ added yet.
 
 Goal: make performance learning executable before implementation.
 
-- [ ] Add a Hypothesis strategy named `small_flat_aba_for_real_prefsat` covering
+- [x] Add a Hypothesis strategy named `small_flat_aba_for_real_prefsat` covering
   at most 8 assumptions, at most 16 rules, body size at most 3, cycles,
   contrary chains, empty bodies, unused literals, and multiple complete
   extensions.
-- [ ] Add a contract asserting
+- [x] Add a contract asserting
   `prefsat_solver_checks <= 2 * prefsat_candidate_blocks + 4`,
   `prefsat_candidate_models <= prefsat_candidate_blocks + 2`, and
   `prefsat_candidate_blocks <= len(assumptions) + 2` on that family.
-- [ ] Add a clause-growth contract asserting
+- [x] Add a clause-growth contract asserting
   `prefsat_labelling_variables == 3 * len(assumptions)`,
   `prefsat_exactly_one_clauses == len(assumptions)`, and
   `prefsat_complete_clauses <= 24 * (len(assumptions) + len(rules) + attack_edge_count)`.
-- [ ] Add a dense-flat contract asserting
+- [x] Add a dense-flat contract asserting
   `prefsat_support_materializations == 0`.
-- [ ] Add residual-reduction checks asserting every accepted grow/block
+- [x] Add residual-reduction checks asserting every accepted grow/block
   iteration either increases `prefsat_max_in_count_seen` or increments
   `prefsat_candidate_blocks`; two consecutive iterations with neither change
   fail the test.
-- [ ] Keep wall-clock checks calibrated or benchmark-only; do not make brittle
+- [x] Keep wall-clock checks calibrated or benchmark-only; do not make brittle
   uncalibrated time assertions.
+
+Execution status:
+
+- Operational contracts are in `tests/test_aba_real_prefsat_contract.py`.
+- Contract file collection passed: `10 tests collected in 0.59s`.
+- Phase 3 gate passed: `18 passed, 1 skipped in 2.29s`.
+- No production solver implementation diff existed before Phase 4.
+- Next unchecked item is Phase 4: Experiment Branch.
 
 Gate:
 
