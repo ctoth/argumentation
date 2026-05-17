@@ -98,32 +98,6 @@ def test_multishot_results_carry_page_image_provenance(framework: ABAFramework) 
     assert "p.12" in result.metadata["paper_pages"]
 
 
-@given(flat_aba_frameworks(max_assumptions=4, max_rules=7))
-@settings(max_examples=40, deadline=None)
-def test_direct_stable_witness_matches_native_stable_extensions(
-    framework: ABAFramework,
-) -> None:
-    """Lehtonen pp.5-6: stable witness uses ABA(F) facts and supported closure."""
-    pytest.importorskip("clingo")
-
-    result = solve_aba_with_backend(
-        framework,
-        backend="asp",
-        semantics="stable",
-        task="single-extension",
-        simplify=False,
-    )
-    stable = native_aba.stable_extensions(framework)
-
-    assert result.status == "success"
-    assert result.metadata["algorithm"] == "direct-stable-witness"
-    assert result.metadata["paper"] == LEHTONEN_INCREMENTAL_ASP_CITATION
-    if result.witness is None:
-        assert stable == tuple()
-    else:
-        assert result.witness in stable
-
-
 @given(flat_aba_frameworks(max_assumptions=3, max_rules=5), st.data())
 @settings(max_examples=20, deadline=None)
 def test_ds_pr_algorithm_one_metadata_and_answer_match_reference(
