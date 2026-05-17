@@ -47,7 +47,7 @@ def test_mines_first_engine_move_that_allows_immediate_mate() -> None:
 [Black "StockfishElo1320"]
 [Result "0-1"]
 
-1. h3 e5 2. g4 Qh4# 0-1
+1. f3 e5 2. g4 Qh4# 0-1
 """
 
     points = mine_loss_turning_points(pgn, engine_name="Dialectical", mate_depth=1)
@@ -56,7 +56,7 @@ def test_mines_first_engine_move_that_allows_immediate_mate() -> None:
         LossTurningPoint(
             game_index=1,
             ply=3,
-            fen_before="rnbqkbnr/pppp1ppp/8/4p3/8/7P/PPPPPPP1/RNBQKBNR w KQkq e6 0 2",
+            fen_before="rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2",
             played_move="g2g4",
             side_to_move="w",
             result="0-1",
