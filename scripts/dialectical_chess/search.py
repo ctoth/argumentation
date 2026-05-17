@@ -275,10 +275,13 @@ def has_bounded_defense(
             and owned_capture_value(board, move) >= target_value
         ):
             return True
+    if depth <= 1:
+        return False
+    for move in cache.legal_moves(board):
         child = cache.apply(board, move)
         if cache.is_checkmate(child):
             return True
-        if depth > 1 and not has_unanswered_reply(child, depth - 1, settings=settings, cache=cache):
+        if not has_unanswered_reply(child, depth - 1, settings=settings, cache=cache):
             return True
     return False
 
