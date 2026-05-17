@@ -1,150 +1,275 @@
-# Dialectical Chess Optimizer Selector Workstream
+# Argumentation Optimization Semantics for Dialectical Chess
 
 ## Goal
 
-Add an optimizer-backed selector that keeps procedural chess move generation but
-uses Z3 `Optimize` to choose among legal move probes from structured tactical,
-search, and argumentation evidence.
+Build the chess optimizer as an instance of a generic optimization semantics in
+`argumentation`, not as a chess-only selector.
 
-This is option 1: enumerate legal moves first, attach evidence, then optimize
-over the candidate set. It deliberately does not try to encode chess legality
-symbolically.
+The chess sidecar should still enumerate legal moves procedurally. The generic
+library should provide the principled part: optimize over argument acceptance,
+defeat, support, weights, and domain-supplied objective features.
 
-## Premise
+## Paper Basis
 
-The current engine already produces one `MoveProbe` per legal move. Each probe
-has:
+Local processed notes read for this rewrite:
 
-- scalar `score`
-- tactical flags and material deltas
-- reason labels
-- objection labels
-- reply attack labels
-- search score and principal line
-- SMT witness labels
-- argument graph acceptance/ranking information
+- `papers\Dung_1995_AcceptabilityArguments`: abstract AFs, admissibility,
+  grounded/preferred/stable semantics, and the explicit link to n-person games.
+- `..\propstore\papers\Modgil_2014_ASPICFrameworkStructuredArgumentation`:
+  ASPIC+ as the structured argument layer with strict/defeasible rules,
+  undercutting/rebutting/undermining, preferences, and Dung reduction.
+- `papers\Dunne_2011_WeightedArgumentSystemsBasic`: weighted attacks and
+  inconsistency budgets, including optimization formulations for disregarded
+  attack weight.
+- `papers\Bench-Capon_2003_PersuasionPracticalArgumentValue-based`: values and
+  audience-specific value orderings as a principled model of practical
+  decision priorities.
+- `..\propstore\papers\Amgoud_2017_AcceptabilitySemanticsWeightedArgumentation`:
+  weighted argument graphs and gradual acceptability degrees.
+- `papers\Amgoud_2013_Ranking-BasedSemanticsArgumentationFrameworks`: ranking
+  semantics and discussion-depth rankings for arguments.
+- `papers\Cayrol_2005_AcceptabilityArgumentsBipolarArgumentation`: support as a
+  first-class relation independent from defeat.
+- `papers\Rago_2016_AdaptingDFQuADBipolarArgumentation`: quantitative
+  attack/support aggregation for bipolar frameworks.
+- `papers\Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers`: SAT encodings of
+  complete labellings and optimization/search over labelling space.
+- `..\propstore\papers\Bjorner_2014_MaximalSatisfactionZ3`: Z3 optimization,
+  MaxSMT, and lexicographic/Pareto objective combinations.
+- `..\propstore\papers\Sebastiani_2015_OptiMathSATToolOptimizationModulo`:
+  OMT and multi-objective optimization over SMT formulas.
+- `..\propstore\papers\Moura_2008_Z3EfficientSMTSolver`: Z3 as the underlying
+  SMT infrastructure.
 
-The missing piece is a principled optimization selector that treats those fields
-as hard constraints and lexicographic objectives instead of relying on one tuple
-sort.
+Execution rule for implementation:
+
+- When coding a semantics detail from a paper, reread the relevant local page
+  images where available before claiming the implementation matches the paper.
+- Cite the source paper in code docstrings or comments where a public API,
+  semantics constraint, or objective policy is paper-derived.
+- If page images are unavailable for a needed detail, cite the processed local
+  notes/abstract used and say that the page image was not reread.
+- Do not use PDF text extraction as the basis for paper rereads.
+
+Interpretation:
+
+- Dung gives the semantics constraints.
+- ASPIC+ gives structured reasons and preferences.
+- Weighted, value-based, ranking, and bipolar argumentation justify objective
+  features beyond binary in/out.
+- SAT/SMT/OMT work justifies a solver-backed implementation surface.
+- Chess supplies domain features, but should not own the optimization semantics.
 
 ## Non-Negotiables
 
 - Stay on the current branch.
-- Keep legal move generation procedural.
-- Do not remove existing selector modes.
-- Add `optimizer` as a normal selector mode and matrix case.
-- Keep the optimizer result explainable in benchmark JSON and UCI output.
-- Use TDD: red tests for optimizer objective ordering before implementation.
+- Do not encode chess legality symbolically in the first implementation.
+- Keep legal move generation procedural in the chess sidecar.
+- Add a generic `argumentation.optimization` module first.
+- Keep chess-specific scoring outside `src\argumentation`.
+- Use TDD: tests for the generic optimizer before chess integration.
 - Use `uv run`, not bare Python.
-- Keep generated benchmark outputs under `scratch` uncommitted.
+- Keep generated benchmark JSON/profile artifacts under `scratch` uncommitted.
+- Preserve existing selector modes while adding `optimizer`.
 
 ## Target Architecture
 
-Introduce a chess-side optimizer module:
+### Generic Library Layer
 
-- `scripts\dialectical_chess\optimizer.py`
+Add:
 
-Responsibilities:
+- `src\argumentation\optimization.py`
 
-- Build one Z3 Boolean decision variable per `MoveProbe`.
-- Add hard constraints:
-  - exactly one move variable is selected;
-  - terminal checkmate moves dominate all non-checkmate moves;
-  - optionally reject moves with undefeated tactical refutations once we expose
-    that as a hard selector setting.
-- Add lexicographic optimization objectives:
-  1. maximize terminal mate;
-  2. minimize unresolved reply attacks;
-  3. maximize accepted argument support;
-  4. maximize accepted defenses;
-  5. maximize tactical material gain;
-  6. maximize search score when present;
-  7. maximize base probe score;
-  8. deterministic UCI tie-break.
-- Return both the selected probe and an `OptimizerTrace`.
+Core types:
 
-The selector should consume the already-built `RootArgumentGraph` rather than
-recomputing argumentation.
+- `OptimizationFeature`
+  - argument id;
+  - feature name;
+  - integer value;
+  - objective direction.
+- `OptimizationObjective`
+  - name;
+  - direction: maximize/minimize;
+  - priority tier;
+  - optional weight.
+- `OptimizationPolicy`
+  - semantics constraint: initially `conflict_free` or `admissible`;
+  - objective list;
+  - optional required/forbidden arguments;
+  - optional candidate decision arguments.
+- `OptimizationResult`
+  - selected arguments;
+  - selected candidate argument;
+  - objective values;
+  - solver status;
+  - backend trace.
 
-## Phase 0: Tests Define Objective Semantics
+Initial backend:
+
+- Z3 `Optimize`, with one Boolean variable per argument.
+- Hard constraints over the AF:
+  - selected set is conflict-free;
+  - optional admissibility: selected arguments must be defended;
+  - candidate selection: exactly one candidate decision argument is selected.
+- Lexicographic objectives over accepted argument features.
+
+This is a generic OMT-backed argumentation semantics:
+
+```text
+Given:
+  AF = (arguments, defeats)
+  candidate arguments C
+  feature map f(argument, feature_name) -> int
+  ordered objectives O
+
+Find:
+  an accepted set S and selected candidate c in C
+
+Subject to:
+  S satisfies the chosen argumentation constraints
+  c in S, or c is selected under a declared candidate rule
+
+Optimizing:
+  O_1(S, c), then O_2(S, c), ...
+```
+
+### Chess Client Layer
+
+Chess should translate `MoveProbe` and `RootArgumentGraph` into generic
+optimization input:
+
+- candidate arguments: `move:<uci>`;
+- support features:
+  - accepted support count;
+  - categoriser score bucket;
+  - terminal mate;
+  - tactical material;
+  - search score;
+  - positional support count;
+- penalty features:
+  - unresolved reply attacks;
+  - objections;
+  - truncation labels;
+  - unsafe tactical replies.
+
+Then chess calls:
+
+```python
+optimize_framework(framework, policy, features)
+```
+
+and maps the selected candidate argument back to a `MoveProbe`.
+
+## Phase 0: Generic Red Tests
 
 Status: pending.
 
 Tasks:
 
-- Add tests for the `optimizer` selector mode.
-- Prove it prefers checkmate over material.
-- Prove it avoids unresolved reply attacks when material score is higher.
-- Prove accepted support can break ties.
-- Prove UCI tie-break is deterministic.
-- Prove `EngineSettings(selector_mode="optimizer")` is accepted.
+- Add tests for `argumentation.optimization`.
+- Test conflict-free optimization with candidate arguments.
+- Test admissibility rejects undefended selected arguments.
+- Test lexicographic priority beats lower-tier numeric score.
+- Test deterministic tie-breaking.
+- Test unavailable Z3 produces explicit unavailable status, not a silent
+  fallback.
 
 Acceptance criteria:
 
-- Tests fail before implementation because `optimizer` is unknown or missing.
+- Tests fail because `argumentation.optimization` does not exist yet.
 
-## Phase 1: Optimizer Module
+## Phase 1: Generic Optimizer Implementation
 
 Status: pending.
 
 Tasks:
 
-- Add `optimizer.py`.
-- Implement `OptimizerTrace`.
-- Implement `choose_optimized_move(probes, graph)`.
-- Keep all Z3 interaction isolated to this module.
-- If Z3 is unavailable, return an explicit unavailable trace and fall back to
-  the existing `argument` selector only through a deliberate caller path.
+- Add `src\argumentation\optimization.py`.
+- Implement conflict-free constraints.
+- Implement admissibility constraints using Dung defense.
+- Implement exactly-one candidate selection.
+- Implement lexicographic objectives using Z3 `Optimize`.
+- Return objective values and selected candidate.
 
 Acceptance criteria:
 
-- Focused optimizer tests pass.
-- The optimizer trace records objective values for the selected move.
+- Generic optimizer tests pass.
+- No chess imports exist under `src\argumentation`.
+- The API accepts any `ArgumentationFramework`, not only chess graphs.
 
-## Phase 2: Selector Integration
+## Phase 2: Chess Adapter
 
 Status: pending.
 
 Tasks:
 
+- Add a small chess adapter module under `scripts\dialectical_chess`.
+- Convert `MoveProbe` plus `RootArgumentGraph` into optimizer features.
 - Add `optimizer` to `SELECTOR_MODES`.
-- Route `choose_move(... selector_mode="optimizer")` through the optimizer.
-- Thread optimizer trace into engine analysis payloads without breaking current
-  benchmark JSON.
-- Print a short UCI `info string selector_mode=optimizer` and selected objective
-  summary.
+- Route `choose_move(... selector_mode="optimizer")` through the generic
+  optimizer.
+- Preserve existing `argument`, `score`, `grounded`, `support`, and
+  `categoriser` modes.
 
 Acceptance criteria:
 
-- Existing selector tests pass.
-- UCI accepts `--selector-mode optimizer`.
-- Benchmark JSON identifies optimizer settings and selected objective values.
+- `EngineSettings(selector_mode="optimizer")` is accepted.
+- Optimizer selection is visible in benchmark JSON.
+- UCI can run with `--selector-mode optimizer`.
 
-## Phase 3: Matrix Integration
+## Phase 3: Objective Policy
+
+Status: pending.
+
+Initial chess policy:
+
+1. maximize terminal checkmate;
+2. minimize unresolved reply attacks;
+3. maximize accepted tactical support;
+4. maximize accepted defense count;
+5. maximize material gain;
+6. maximize search score when present;
+7. maximize accepted positional support;
+8. maximize base probe score;
+9. minimize deterministic UCI rank.
+
+Tasks:
+
+- Keep this policy data-driven in the chess adapter.
+- Split tactical and positional features so positional noise can be ablated.
+- Record objective values for the selected move.
+
+Acceptance criteria:
+
+- The optimizer can run with positional objectives enabled or disabled.
+- The selected move trace explains which objective tiers decided the move.
+
+## Phase 4: Matrix Integration
 
 Status: pending.
 
 Tasks:
 
-- Add `optimizer_static` to the core experiment matrix.
-- Add `optimizer_d2` if optimizer uses argumentation features from
-  `dialectic_depth=2`.
-- Add `optimizer_mate_theme_depth` if the mate-theme dynamic depth case remains
-  useful after the latest run.
+- Add matrix rows:
+  - `optimizer_static`;
+  - `optimizer_d2`;
+  - `optimizer_d2_no_positional`;
+  - `optimizer_mate_theme_depth`.
+- Keep the existing sample metadata:
+  - line move counts;
+  - mate theme counts;
+  - first-engine-move scoring target.
 
 Acceptance criteria:
 
-- Matrix output includes optimizer cases.
-- The sample metadata still records line lengths and mate theme counts.
+- Matrix output includes optimizer rows.
+- Existing rows remain comparable to previous runs.
 
-## Phase 4: Benchmark Run
+## Phase 5: Benchmark Run
 
 Status: pending.
 
-Tasks:
-
-- Run the same fixed 100-puzzle Lichess slice:
+Run the fixed 100-puzzle Lichess slice:
 
 ```powershell
 uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py `
@@ -158,56 +283,59 @@ uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py `
   --json-out .\scratch\lichess_1200_1600_matrix_core_100_optimizer.json
 ```
 
-- Choose timeout from the current 14-case baseline plus modest slack.
-- Summarize optimizer rows against:
-  - `score_static`
-  - `argument_d2`
-  - `grounded_d2`
-  - `argument_d2_no_positional`
+Timeout:
+
+- Choose from the latest 14-case baseline plus modest slack.
+
+Compare against:
+
+- `score_static`: `13/100`;
+- `argument_d2`: `17/100`;
+- `grounded_d2`: `19/100`;
+- `argument_d2_no_positional`: `21/100`.
 
 Acceptance criteria:
 
 - Runtime is bounded.
-- Notes record solved count, hit rate, elapsed time, and whether optimizer beats
-  the current `21%` best row.
+- Results note whether the generic optimizer beats the current `21%` best row.
+- Results note whether Z3 overhead is acceptable.
 
-## Phase 5: Interpret and Tighten
+## Phase 6: Decide What Is Principled Enough
 
 Status: pending.
 
-Tasks:
+Questions to answer from evidence:
 
-- If optimizer loses to static score, inspect objective ordering on misses.
-- If optimizer beats argument modes, promote its objective ordering as the next
-  default candidate.
-- If positional reasons hurt optimizer too, add a follow-up workstream for
-  tactical gating of positional objectives.
-- If Z3 Optimize overhead is high, compare against an equivalent pure-Python
-  lexicographic selector to prove whether Z3 is buying anything.
+- Does OMT-backed argumentation improve selection, or only make the tuple sort
+  auditable?
+- Does admissibility as a hard constraint help or hurt puzzle solving?
+- Should weighted attacks follow Dunne-style attack budgets instead of direct
+  objective penalties?
+- Should chess use value-based priorities for game phase or tactical context?
+- Should support move from ad hoc reason counts to a bipolar/DF-QuAD-style
+  strength function?
+- Does pure Python lexicographic optimization match Z3 exactly and run faster?
 
 Acceptance criteria:
 
-- We know whether optimizer is adding strength, explainability, both, or just
-  overhead.
+- The workstream ends with a concrete recommendation:
+  - keep generic optimizer and use it in chess;
+  - keep generic optimizer but leave chess on existing selector;
+  - or remove the optimizer path as non-useful overhead.
 
-## Open Design Questions
+## Why This Is More Principled Than the First Draft
 
-- Should unresolved tactical reply attacks be a hard constraint or the second
-  lexicographic objective?
-- Should accepted grounded support count more than categoriser score, or should
-  categoriser score be the direct optimizer objective?
-- Should search score be lexicographically late, or should it dominate all
-  non-terminal positional terms?
-- Should mate-theme depth control optimizer evidence generation by default for
-  Lichess puzzle runs?
+The first draft put Z3 Optimize directly in the chess selector. That would work,
+but it would make optimization a chess-specific trick.
 
-## Initial Hypotheses
+This rewrite puts the reusable semantics in `argumentation`:
 
-- Optimizer should beat `score_static` because it can encode tactical objections
-  before material.
-- Optimizer may beat `argument_d2` if it prevents noisy positional reasons from
-  outranking tactical safety.
-- Optimizer will not automatically beat `argument_d2_no_positional` unless the
-  objective order sharply devalues positional support under tactical conflict.
-- Z3 Optimize is useful first as an auditable objective surface; raw speed is a
-  secondary question until the benchmark says otherwise.
+- Dung constraints define legal accepted sets.
+- ASPIC+ and preferences explain where structured chess arguments should come
+  from later.
+- Weighted and value-based argumentation justify costs, priorities, and
+  audience/context-sensitive objectives.
+- Ranking and gradual semantics justify numeric argument features.
+- OMT provides the backend for choosing an optimal accepted candidate.
+
+Chess becomes a demanding client and benchmark, not the owner of the idea.
