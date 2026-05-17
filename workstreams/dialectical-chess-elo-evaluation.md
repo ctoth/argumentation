@@ -11,17 +11,20 @@ available.
 
 - `scripts/dialectical_chess_bench.py --run-uci-match` can run a bounded
   `fast-chess` smoke match.
-- The smoke match completed two games between the engine and its no-SMT
-  ablation with no crashes or illegal moves.
-- That smoke produced `0/0/2` and no meaningful Elo.
+- The current random-baseline smoke at `10+0.1` completed two games with 0
+  crashes, 0 timeouts, and 0 losses-on-time.
+- The current random-baseline smoke at `1+0.01` fails honestly with 1 timeout
+  and 1 loss-on-time in a two-game run.
 - `scripts/dialectical_chess_random_uci.py` is a committed deterministic weak
   legal baseline.
 - `scripts/dialectical_chess_openings.epd` is a committed small opening set.
-- First fixed-game relative matches have been run:
+- Historical fixed-game relative matches were run before timeout/loss-on-time
+  failure counts were promoted into the benchmark payload:
   - default vs random baseline: 20 games, `13/7/0`, +269.37 +/- 89.78 Elo
     relative to the committed random baseline;
   - default vs no-SMT ablation: 20 games, `5/10/5`, 0.00 +/- 0.00 Elo under
     this exact setup.
+- Current absolute Elo remains unknown.
 
 ## Evaluation Rules
 
@@ -44,7 +47,8 @@ available.
 
 ### Phase 0: External Match Smoke
 
-Status: complete.
+Status: complete for a lenient two-game random-baseline smoke; blitz smoke
+currently exposes a timeout and is not a clean strength measurement.
 
 Command:
 
@@ -55,13 +59,22 @@ uv run .\scripts\dialectical_chess_bench.py `
   --match-max-plies 4
 ```
 
-Observed result:
+Observed current clean result:
 
 - Runner: `fast-chess`.
 - Games: 2.
-- Result: 2 draws by adjudication.
+- Time control: `10+0.1`.
+- Result: 2 draws by adjudication against the committed random baseline.
 - Return code: 0.
+- Failures: 0 timeouts, 0 crashes, 0 losses-on-time.
 - Interpretation: UCI match harness works; Elo remains unknown.
+
+Observed current contaminated result:
+
+- Command shape: same two-game random-baseline smoke at `1+0.01`.
+- Result: JSON `ok: false`.
+- Failures: 1 timeout, 0 crashes, 1 loss-on-time.
+- Interpretation: do not use this run as a strength estimate.
 
 ### Phase 1: Committed Weak Baseline
 
@@ -105,8 +118,8 @@ Acceptance criteria:
 
 ### Phase 3: Fixed-Game Relative Rating
 
-Status: complete for the first 20-game random-baseline run. More games are
-needed for a tighter interval.
+Status: historical only for the first 20-game random-baseline run. Re-run under
+the current timeout/loss-on-time checks before treating it as current strength.
 
 Goal: produce the first meaningful relative-strength estimate.
 
@@ -129,7 +142,7 @@ Acceptance criteria:
 - Result is reported as relative Elo versus the committed weak baseline, not
   absolute Elo.
 
-Observed first run:
+Observed historical first run:
 
 - Command:
 
@@ -148,12 +161,14 @@ uv run .\scripts\dialectical_chess_bench.py `
 - W/D/L: 13/7/0 from the dialectical engine's perspective.
 - Score: 16.5/20, 82.50%.
 - Reported relative Elo: +269.37 +/- 89.78.
-- Interpretation: the engine is clearly stronger than this deterministic weak
-  baseline under this setup. This is not an absolute Elo.
+- Interpretation: the engine was clearly stronger than this deterministic weak
+  baseline under that setup. Because timeout/loss-on-time checks were added
+  later, this must be re-run before being used as the current rating.
 
 ### Phase 4: Ablation Rating
 
-Status: complete for the first no-SMT fixed-game run.
+Status: historical only for the first no-SMT fixed-game run. Re-run under the
+current timeout/loss-on-time checks before treating it as current strength.
 
 Goal: measure whether SMT and dialectical depth help.
 
@@ -168,7 +183,7 @@ Acceptance criteria:
 - Same openings and time control across variants.
 - Report says whether the result is inconclusive when confidence is wide.
 
-Observed no-SMT run:
+Observed historical no-SMT run:
 
 - Command:
 
@@ -189,7 +204,8 @@ uv run .\scripts\dialectical_chess_bench.py `
 - Reported relative Elo: 0.00 +/- 0.00.
 - Interpretation: this run found no playing-strength difference between
   default SMT and `--no-smt-mate`; because all wins/losses paired symmetrically,
-  this is a narrow statement about this setup, not proof that SMT never matters.
+  this is a narrow historical statement about that setup, not proof that SMT
+  never matters.
 
 ### Phase 5: SPRT
 
