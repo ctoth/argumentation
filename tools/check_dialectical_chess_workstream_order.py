@@ -10,6 +10,7 @@ WORKSTREAMS = (
     Path("workstreams/dialectical-chess-engine.md"),
     Path("workstreams/dialectical-chess-owned-movegen.md"),
     Path("workstreams/dialectical-chess-benchmarks.md"),
+    Path("workstreams/dialectical-chess-elo-evaluation.md"),
 )
 PHASE_RE = re.compile(r"^### Phase (?P<number>\d+): (?P<title>.+)$")
 
