@@ -159,9 +159,9 @@ structural route or best solved backend.
 
 If the gate passes:
 
-- [ ] Re-run the route tests and C1 benchmark gate.
+- [x] Re-run the route tests and C1 benchmark gate.
 - [ ] Promote the minimal route/test/workstream diff to `main`.
-- [ ] Leave diagnostic artifacts uncommitted unless explicitly requested.
+- [x] Leave diagnostic artifacts uncommitted unless explicitly requested.
 
 If the gate fails:
 
@@ -169,8 +169,19 @@ If the gate fails:
 - [ ] Record the failed route hypothesis and the next concrete backend
   hypothesis.
 
+Execution status:
+
+- Rerun route gate passed: `99 passed in 7.15s`.
+- Rerun C1 gate passed: `auto` solved, explicit `sat` solved, and explicit
+  `asp` timed out at `timeout>35.0`.
+- Generated rerun diagnostics were written under `data\iccma\2025\runs\` and
+  are not committed.
+
 ## Definition of Done
 
 This workstream is complete only when C1 auto stable is structurally rerouted
 and benchmarked successfully, or the route hypothesis is recorded as failed with
 the next concrete backend hypothesis.
+
+Status: implementation and benchmark gates passed on
+`experiment/aba-c1-stable-route`; promotion to `main` remains.
