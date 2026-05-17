@@ -81,8 +81,8 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
         smt_witnesses: list[str] = []
         if move.uci() in smt_mate_moves:
             score += 1_000_000
-            reasons.append("smt:mate_in_one")
-            smt_witnesses.append("mate_in_one")
+            reasons.append("procedural:mate_in_one")
+            smt_witnesses.append("procedural_mate_in_one")
         search_result = root_search_result(board, move, settings=settings.search)
         if search_result is not None:
             if search_result.score > 0:
