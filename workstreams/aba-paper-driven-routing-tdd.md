@@ -131,8 +131,8 @@ caught before implementation.
 
 - [x] Add or update a lightweight order check for this workstream if a local
   workstream-check tool already exists.
-- [x] If no such tool exists, document in the first implementation commit that
-  the phase order above is the control surface.
+- [x] Existing `tools\check_workstream_phase_order.py` covered this workstream;
+  no fallback documentation path was needed.
 - [x] Before each later phase, reread this file and identify the next unchecked
   item.
 
