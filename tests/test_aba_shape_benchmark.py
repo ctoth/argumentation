@@ -12,6 +12,7 @@ from tools.aba_shape_benchmark import (
     AbaShape,
     BenchmarkJob,
     backend_job,
+    benchmark_rows,
     best_solved_backend,
     build_backend_command,
     build_jobs_from_instances,
@@ -19,6 +20,7 @@ from tools.aba_shape_benchmark import (
     compute_aba_shape,
     propose_portfolio_rules,
     run_backend_command,
+    shape_bucket_id,
     shape_buckets,
     solver_class,
     summarize,
@@ -227,6 +229,21 @@ def test_shape_buckets_use_structural_fields_only() -> None:
     }
 
 
+def test_shape_bucket_id_is_deterministic() -> None:
+    buckets = {
+        "solver_class": "aba/single-extension/preferred",
+        "max_arity": "low",
+        "assumption_size": "small",
+        "rule_density": "sparse",
+        "preprocessing": "not_collapsed",
+    }
+
+    assert shape_bucket_id(buckets) == (
+        "assumption_size=small|max_arity=low|preprocessing=not_collapsed|"
+        "rule_density=sparse|solver_class=aba/single-extension/preferred"
+    )
+
+
 def test_shape_bucket_boundaries_are_inclusive() -> None:
     def bucketed(*, assumptions: int, rule_density: float, max_arity: int) -> dict[str, str]:
         shape = shape_for_bucket(
@@ -356,6 +373,55 @@ def test_best_solved_backend_ignores_timeout_and_invalid() -> None:
         )
         == "sat"
     )
+
+
+def test_benchmark_rows_emit_paper_route_features(monkeypatch, tmp_path: Path) -> None:
+    instance_path = tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text(write_aba(framework_zero_rules()), encoding="utf-8")
+    job = BenchmarkJob(
+        year=2025,
+        track="aba",
+        subtrack="SE-PR",
+        instance_kind="aba",
+        instance="ABAs/example.aba",
+        root=tmp_path / "2025",
+        path=instance_path,
+        arguments_or_atoms=4,
+    )
+
+    def backend_matrix(job, *, framework, backends, timeout_seconds):
+        return {
+            "asp": {
+                "status": "solved",
+                "elapsed_seconds": 0.1,
+                "validation": {"status": "valid"},
+                "witness_size": 0,
+            },
+            "sat": {
+                "status": "timeout",
+                "elapsed_seconds": timeout_seconds,
+                "validation": {"status": "not_checked"},
+            },
+        }
+
+    monkeypatch.setattr(aba_shape_benchmark, "run_backend_matrix", backend_matrix)
+
+    rows = benchmark_rows([job], backends=("asp", "sat"), timeout_seconds=30)
+
+    row = rows[0]
+    assert set(row["shape"]) == set(AbaShape.__dataclass_fields__)
+    assert row["shape_bucket_id"] == shape_bucket_id(row["buckets"])
+    assert row["backend_outcomes"] == {"asp": "solved", "sat": "timeout"}
+    assert row["witness_validation_results"] == {"asp": "valid", "sat": "not_checked"}
+    assert row["route_candidates"]
+    assert row["route_counterexamples"].keys() == {
+        candidate["predicate"] for candidate in row["route_candidates"]
+    }
+    assert row["route_evidence_ids"] == []
+    assert "path" not in row["shape"]
+    assert "filename" not in row["shape"]
+    assert "parent_directory" not in row["shape"]
 
 
 def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) -> None:

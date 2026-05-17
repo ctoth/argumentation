@@ -134,7 +134,11 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
     dependency = _dependency_shape(framework)
     rule_density = _ratio(rules, assumptions)
-    grounded_iterations = _grounded_iteration_count(framework)
+    grounded_iterations = (
+        _grounded_iteration_count(framework)
+        if assumptions * rules <= GROUNDED_SHAPE_COST_LIMIT
+        else 0
+    )
     return AbaShape(
         is_flat=_is_flat(framework),
         is_normal=_is_normal_candidate(framework),
@@ -542,6 +546,61 @@ def route_candidates_from_shape_data(
     return candidates
 
 
+def shape_bucket_id(buckets: Mapping[str, str]) -> str:
+    return "|".join(f"{key}={value}" for key, value in sorted(buckets.items()))
+
+
+def backend_outcomes(backend_results: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
+    return {
+        backend: str(result.get("status", "unknown"))
+        for backend, result in sorted(backend_results.items())
+    }
+
+
+def witness_validation_results(
+    backend_results: Mapping[str, Mapping[str, Any]],
+) -> dict[str, str]:
+    return {
+        backend: str(result.get("validation", {}).get("status", "not_checked"))
+        for backend, result in sorted(backend_results.items())
+    }
+
+
+def route_counterexamples(
+    candidates: Iterable[RouteCandidate],
+    backend_results: Mapping[str, Mapping[str, Any]],
+    *,
+    best_solved: str | None,
+) -> dict[str, list[dict[str, Any]]]:
+    observed: dict[str, list[dict[str, Any]]] = {}
+    for candidate in candidates:
+        examples: list[dict[str, Any]] = []
+        result = backend_results.get(candidate.backend)
+        if result is not None:
+            validation_status = str(result.get("validation", {}).get("status", "not_checked"))
+            status = str(result.get("status", "unknown"))
+            if status != "solved" or validation_status == "invalid":
+                examples.append(
+                    {
+                        "backend": candidate.backend,
+                        "status": status,
+                        "validation_status": validation_status,
+                        "best_solved_backend": best_solved,
+                    }
+                )
+            elif best_solved is not None and best_solved != candidate.backend:
+                examples.append(
+                    {
+                        "backend": candidate.backend,
+                        "status": status,
+                        "validation_status": validation_status,
+                        "best_solved_backend": best_solved,
+                    }
+                )
+        observed[candidate.predicate] = examples
+    return observed
+
+
 def _bucket_int(
     value: int,
     *,
@@ -833,6 +892,13 @@ def benchmark_rows(
             timeout_seconds=timeout_seconds,
         )
         best = best_solved_backend(backend_results)
+        buckets = shape_buckets(shape, class_name)
+        candidates = route_candidates(
+            shape,
+            class_name,
+            available_backends=backends,
+            timeout_budget_class=f"{timeout_seconds:g}s",
+        )
         row = {
             "index": index,
             "year": job.year,
@@ -842,10 +908,24 @@ def benchmark_rows(
             "instance": job.instance,
             "solver_class": class_name,
             "shape": asdict(shape),
-            "buckets": shape_buckets(shape, class_name),
+            "buckets": buckets,
+            "shape_bucket_id": shape_bucket_id(buckets),
             "backend_results": backend_results,
+            "backend_outcomes": backend_outcomes(backend_results),
+            "witness_validation_results": witness_validation_results(backend_results),
             "best_solved_backend": best,
             "all_timed_out": all(result.get("status") == "timeout" for result in backend_results.values()),
+            "route_candidates": [asdict(candidate) for candidate in candidates],
+            "route_evidence_ids": [
+                candidate.evidence_id
+                for candidate in candidates
+                if candidate.production and candidate.evidence_id
+            ],
+            "route_counterexamples": route_counterexamples(
+                candidates,
+                backend_results,
+                best_solved=best,
+            ),
         }
         rows.append(row)
         emit_event(
@@ -958,14 +1038,20 @@ def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ..
         "instance",
         "subtrack",
         "solver_class",
+        "shape_bucket_id",
         "backend",
+        "backend_outcome",
         "status",
         "elapsed_seconds",
         "reason",
         "witness_size",
         "validation_status",
+        "witness_validation_result",
         "best_solved_backend",
         "all_timed_out",
+        "route_candidate_predicates",
+        "route_evidence_ids",
+        "route_counterexample_count",
     ]
     shape_fields = list(AbaShape.__dataclass_fields__)
     bucket_fields = ["assumption_size", "rule_density", "max_arity", "preprocessing"]
@@ -981,14 +1067,24 @@ def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ..
                         **{field: row["buckets"][field] for field in bucket_fields},
                         "all_timed_out": row["all_timed_out"],
                         "backend": backend,
+                        "backend_outcome": row["backend_outcomes"].get(backend),
                         "best_solved_backend": row["best_solved_backend"],
                         "elapsed_seconds": result.get("elapsed_seconds"),
                         "instance": row["instance"],
                         "reason": result.get("reason"),
+                        "route_candidate_predicates": " ".join(
+                            candidate["predicate"] for candidate in row["route_candidates"]
+                        ),
+                        "route_counterexample_count": sum(
+                            len(examples) for examples in row["route_counterexamples"].values()
+                        ),
+                        "route_evidence_ids": " ".join(row["route_evidence_ids"]),
+                        "shape_bucket_id": row["shape_bucket_id"],
                         "solver_class": row["solver_class"],
                         "status": result.get("status"),
                         "subtrack": row["subtrack"],
                         "validation_status": result.get("validation", {}).get("status"),
+                        "witness_validation_result": row["witness_validation_results"].get(backend),
                         "witness_size": result.get("witness_size"),
                     }
                 )
