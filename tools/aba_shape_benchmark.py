@@ -4,9 +4,11 @@ import argparse
 import csv
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
+import hashlib
 import json
 import math
 from pathlib import Path
+import re
 import sys
 import time
 from typing import Any, Iterable, Mapping
@@ -740,6 +742,8 @@ def run_backend_matrix(
     framework: ABAFramework,
     backends: tuple[str, ...],
     timeout_seconds: float,
+    profile_dir: Path | None = None,
+    profile_format: str = "speedscope",
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
@@ -754,7 +758,18 @@ def run_backend_matrix(
         started = time.perf_counter()
         result = run_backend_command(
             command,
-            job_payload=backend_job(job, backend=backend, timeout_seconds=timeout_seconds),
+            job_payload=backend_job(
+                job,
+                backend=backend,
+                timeout_seconds=timeout_seconds,
+                profile_path=benchmark_profile_path(
+                    profile_dir,
+                    job,
+                    backend=backend,
+                    profile_format=profile_format,
+                ),
+                profile_format=profile_format,
+            ),
             timeout_seconds=timeout_seconds + 5.0,
         )
         elapsed = time.perf_counter() - started
@@ -789,14 +804,21 @@ def build_backend_command(
     return command
 
 
-def backend_job(job: BenchmarkJob, *, backend: str, timeout_seconds: float) -> dict[str, Any]:
+def backend_job(
+    job: BenchmarkJob,
+    *,
+    backend: str,
+    timeout_seconds: float,
+    profile_path: Path | None = None,
+    profile_format: str = "speedscope",
+) -> dict[str, Any]:
     return {
         "root": str(job.root),
         "backend": backend,
         "iccma_binary": None,
         "solver_timeout_seconds": timeout_seconds,
-        "profile_path": None,
-        "profile_format": "speedscope",
+        "profile_path": str(profile_path) if profile_path is not None else None,
+        "profile_format": profile_format,
         "instance": {
             "kind": "aba",
             "relative_path": job.instance,
@@ -808,6 +830,35 @@ def backend_job(job: BenchmarkJob, *, backend: str, timeout_seconds: float) -> d
             "instance_kind": job.instance_kind,
         },
     }
+
+
+def benchmark_profile_path(
+    profile_dir: Path | None,
+    job: BenchmarkJob,
+    *,
+    backend: str,
+    profile_format: str,
+) -> Path | None:
+    if profile_dir is None:
+        return None
+    identity = "\n".join(
+        [
+            str(job.year),
+            job.track,
+            job.subtrack,
+            job.instance_kind,
+            backend,
+            job.instance,
+        ]
+    )
+    digest = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:12]
+    leaf = Path(job.instance).name
+    safe_leaf = re.sub(r"[^A-Za-z0-9_.-]+", "_", leaf)[:80] or "instance"
+    extension = "json" if profile_format in {"speedscope", "chrometrace"} else "txt"
+    return (
+        profile_dir
+        / f"{job.track}-{job.subtrack}-{backend}-{safe_leaf}-{digest}.{profile_format}.{extension}"
+    )
 
 
 def run_backend_command(
@@ -895,6 +946,8 @@ def benchmark_rows(
     *,
     backends: tuple[str, ...],
     timeout_seconds: float,
+    profile_dir: Path | None = None,
+    profile_format: str = "speedscope",
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, job in enumerate(jobs, start=1):
@@ -916,6 +969,8 @@ def benchmark_rows(
             framework=framework,
             backends=backends,
             timeout_seconds=timeout_seconds,
+            profile_dir=profile_dir,
+            profile_format=profile_format,
         )
         best = best_solved_backend(backend_results)
         buckets = shape_buckets(shape, class_name)
@@ -1121,6 +1176,8 @@ def build_payload(
     *,
     backends: tuple[str, ...],
     timeout_seconds: float,
+    profile_dir: Path | None = None,
+    profile_format: str = "speedscope",
 ) -> dict[str, Any]:
     return {
         "config": {
@@ -1132,6 +1189,8 @@ def build_payload(
                 "grounded_shape_cost_limit": GROUNDED_SHAPE_COST_LIMIT,
                 "validation_cost_limit": VALIDATION_COST_LIMIT,
             },
+            "profile_dir": str(profile_dir) if profile_dir is not None else None,
+            "profile_format": profile_format,
             "timeout_seconds": timeout_seconds,
         },
         "rows": rows,
@@ -1150,6 +1209,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--instance-kind", default="aba")
     parser.add_argument("--backend", action="append", default=[])
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--profile-dir", type=Path)
+    parser.add_argument(
+        "--profile-format",
+        choices=["flamegraph", "raw", "speedscope", "chrometrace"],
+        default="speedscope",
+    )
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--output-csv", type=Path, required=True)
     return parser.parse_args(argv)
@@ -1175,8 +1240,20 @@ def main(argv: list[str] | None = None) -> int:
         jobs.extend(build_jobs_from_instances(args.instance, root=args.root, subtracks=subtracks))
     if not jobs:
         raise SystemExit("no ABA benchmark jobs selected")
-    rows = benchmark_rows(jobs, backends=backends, timeout_seconds=args.timeout_seconds)
-    payload = build_payload(rows, backends=backends, timeout_seconds=args.timeout_seconds)
+    rows = benchmark_rows(
+        jobs,
+        backends=backends,
+        timeout_seconds=args.timeout_seconds,
+        profile_dir=args.profile_dir,
+        profile_format=args.profile_format,
+    )
+    payload = build_payload(
+        rows,
+        backends=backends,
+        timeout_seconds=args.timeout_seconds,
+        profile_dir=args.profile_dir,
+        profile_format=args.profile_format,
+    )
     write_json(args.output_json, payload)
     write_csv(args.output_csv, rows, backends=backends)
     print(json.dumps({"output_json": str(args.output_json), "output_csv": str(args.output_csv), "summary": payload["summary"]}, indent=2, sort_keys=True))
