@@ -249,21 +249,21 @@ Goal: prove the extractor is structural.
 
 Hypothesis properties:
 
-- [ ] Renaming atoms and assumptions preserves every bucketed shape field.
-- [ ] Permuting rules preserves every shape field except optional stable
+- [x] Renaming atoms and assumptions preserves every bucketed shape field.
+- [x] Permuting rules preserves every shape field except optional stable
   deterministic tie-break metadata.
-- [ ] Permuting contrary declarations preserves every shape field.
-- [ ] Adding an unreachable rule changes only global size/width fields and not
+- [x] Permuting contrary declarations preserves every shape field.
+- [x] Adding an unreachable rule changes only global size/width fields and not
   query-local closure fields.
-- [ ] Duplicating an identical rule changes duplicate-sensitive density fields
+- [x] Duplicating an identical rule changes duplicate-sensitive density fields
   but not Boolean acyclicity/flatness.
-- [ ] Removing zero-body facts cannot increase closure size.
-- [ ] P-acyclicity is equivalent to acyclicity of the assumption-deleted
+- [x] Removing zero-body facts cannot increase closure size.
+- [x] P-acyclicity is equivalent to acyclicity of the assumption-deleted
   dependency graph.
-- [ ] SCC count and max SCC size agree with an independent graph construction.
-- [ ] Contrary-target in-degree is invariant under renaming and declaration
+- [x] SCC count and max SCC size agree with an independent graph construction.
+- [x] Contrary-target in-degree is invariant under renaming and declaration
   order.
-- [ ] Closure growth is monotone with respect to adding assumptions to the
+- [x] Closure growth is monotone with respect to adding assumptions to the
   starting set.
 
 Gate:
