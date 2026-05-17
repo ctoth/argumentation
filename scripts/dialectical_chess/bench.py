@@ -31,6 +31,7 @@ BUILT_IN_EPD = '7k/6pp/8/8/8/8/6PP/R5K1 w - - bm Ra8#; id "mate-in-one-smoke";'
 BM_RE = re.compile(r"\bbm\s+([^;]+);")
 AM_RE = re.compile(r"\bam\s+([^;]+);")
 ID_RE = re.compile(r"\bid\s+\"([^\"]+)\";")
+MATE_THEME_RE = re.compile(r"^mateIn([1-9][0-9]*)$")
 
 
 def main() -> int:
@@ -56,6 +57,7 @@ def main() -> int:
     parser.add_argument("--theme-exclude", action="append", default=[])
     parser.add_argument("--side-to-move", choices=("w", "b"))
     parser.add_argument("--dialectic-depth", type=int, default=1)
+    parser.add_argument("--dialectic-depth-from-mate-theme", action="store_true")
     parser.add_argument("--search-depth", type=int, default=0)
     parser.add_argument("--search-backend", choices=("negamax", "alphabeta"), default="negamax")
     parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
@@ -237,12 +239,15 @@ def score_lichess_rows(rows: list[dict[str, str]], args: argparse.Namespace) -> 
         board = chess.Board(row["FEN"])
         moves = row["Moves"].split()
         expected = {moves[0]} if moves else set()
-        result = score_board(board, expected, args)
+        row_args = argparse.Namespace(**vars(args))
+        row_args.dialectic_depth = dialectic_depth_for_lichess_row(row, args)
+        result = score_board(board, expected, row_args)
         result["id"] = row.get("PuzzleId", "")
         result["rating"] = int(row.get("Rating") or 0)
         result["themes"] = row.get("Themes", "").split()
+        result["dialectic_depth"] = row_args.dialectic_depth
         if args.full_line and result["correct"]:
-            result["full_line_correct"] = score_full_line(board, moves, args)
+            result["full_line_correct"] = score_full_line(board, moves, row_args)
         bucket = rating_bucket(result["rating"])
         rating_totals[bucket] += 1
         by_rating[bucket] += 1 if result["correct"] else 0
@@ -321,6 +326,10 @@ def experiment_matrix_cases(preset: str) -> list[dict[str, Any]]:
             {"name": "argument_d0", "overrides": {"selector_mode": "argument", "dialectic_depth": 0}},
             {"name": "argument_d1", "overrides": {"selector_mode": "argument", "dialectic_depth": 1}},
             {"name": "score_static", "overrides": {"selector_mode": "score", "dialectic_depth": 0}},
+            {
+                "name": "argument_mate_theme_depth",
+                "overrides": {"selector_mode": "argument", "dialectic_depth_from_mate_theme": True},
+            },
         ]
     return [
         {"name": "argument_d0", "overrides": {"selector_mode": "argument", "dialectic_depth": 0}},
@@ -350,6 +359,10 @@ def experiment_matrix_cases(preset: str) -> list[dict[str, Any]]:
                 "search_backend": "alphabeta",
             },
         },
+        {
+            "name": "argument_mate_theme_depth",
+            "overrides": {"selector_mode": "argument", "dialectic_depth_from_mate_theme": True},
+        },
     ]
 
 
@@ -371,6 +384,21 @@ def summarize_lichess_rows(rows: list[dict[str, str]]) -> dict[str, Any]:
         "mate_theme_counts": dict(sorted(mate_theme_counts.items())),
         "theme_counts": dict(sorted(theme_counts.items())),
     }
+
+
+def mate_theme_depth(themes: tuple[str, ...] | list[str]) -> int | None:
+    depths = []
+    for theme in themes:
+        match = MATE_THEME_RE.match(theme)
+        if match:
+            depths.append(int(match.group(1)))
+    return min(depths) if depths else None
+
+
+def dialectic_depth_for_lichess_row(row: dict[str, str], args: argparse.Namespace) -> int:
+    if not getattr(args, "dialectic_depth_from_mate_theme", False):
+        return args.dialectic_depth
+    return mate_theme_depth(row.get("Themes", "").split()) or args.dialectic_depth
 
 
 def run_perft() -> dict[str, Any]:
@@ -548,6 +576,7 @@ def ablation_selector_modes(args: argparse.Namespace) -> tuple[str, ...]:
 def settings(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "dialectic_depth": args.dialectic_depth,
+        "dialectic_depth_from_mate_theme": getattr(args, "dialectic_depth_from_mate_theme", False),
         "search_depth": args.search_depth,
         "search_backend": args.search_backend,
         "smt_mate": args.smt_mate,
