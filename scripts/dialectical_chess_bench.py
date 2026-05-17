@@ -56,8 +56,6 @@ def main() -> int:
     parser.add_argument("--search-depth", type=int, default=0)
     parser.add_argument("--search-backend", choices=("negamax", "alphabeta"), default="negamax")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
-    parser.add_argument("--owned-movegen", action="store_true")
-    parser.add_argument("--allow-owned-divergence", action="store_true")
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
     parser.add_argument("--internal-uci-match", action="store_true")
@@ -256,7 +254,7 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         "-engine",
         "name=Dialectical",
         f"cmd={uv_executable}",
-        "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen",
+        "args=run .\\scripts\\dialectical_chess_probe.py --uci",
         "proto=uci",
         f"dir={ROOT}",
         "-engine",
@@ -300,14 +298,16 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
             "command": command,
         }
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    failures = parse_uci_match_failures(completed.stdout)
     return {
-        "ok": completed.returncode == 0,
+        "ok": completed.returncode == 0 and not any(failures.values()),
         "mode": "uci_match",
         "runner": runner,
         "baseline": args.match_baseline,
         "requested_games": args.match_games,
         "command": command,
         "returncode": completed.returncode,
+        "failures": failures,
         "stdout": completed.stdout,
         "stderr": completed.stderr,
     }
@@ -319,7 +319,7 @@ def fastchess_baseline(baseline: str, uv_executable: str) -> tuple[str, list[str
             "DialecticalNoSMT",
             [
                 f"cmd={uv_executable}",
-                "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen --no-smt-mate",
+                "args=run .\\scripts\\dialectical_chess_probe.py --uci --no-smt-mate",
                 "proto=uci",
                 f"dir={ROOT}",
             ],
@@ -337,13 +337,24 @@ def fastchess_baseline(baseline: str, uv_executable: str) -> tuple[str, list[str
     raise ValueError(f"unknown match baseline: {baseline}")
 
 
+def parse_uci_match_failures(stdout: str) -> dict[str, int]:
+    timeouts = sum(int(match.group(1)) for match in re.finditer(r"\bTimeouts:\s+(\d+)", stdout))
+    crashes = sum(int(match.group(1)) for match in re.finditer(r"\bCrashed:\s+(\d+)", stdout))
+    losses_on_time = len(re.findall(r"\bloses on time\b", stdout, flags=re.IGNORECASE))
+    return {
+        "timeouts": timeouts,
+        "crashes": crashes,
+        "losses_on_time": losses_on_time,
+    }
+
+
 def run_internal_uci_match(args: argparse.Namespace) -> dict[str, Any]:
     games = []
     crashes = 0
     illegal_moves = 0
     for game_index in range(args.match_games):
-        white_args = ["--owned-movegen"] if game_index % 2 == 0 else ["--no-smt-mate", "--owned-movegen"]
-        black_args = ["--no-smt-mate", "--owned-movegen"] if game_index % 2 == 0 else ["--owned-movegen"]
+        white_args = [] if game_index % 2 == 0 else ["--no-smt-mate"]
+        black_args = ["--no-smt-mate"] if game_index % 2 == 0 else []
         result = play_internal_uci_game(white_args, black_args, args.match_max_plies)
         crashes += result["crashes"]
         illegal_moves += result["illegal_moves"]
