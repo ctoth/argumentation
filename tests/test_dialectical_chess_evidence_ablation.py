@@ -25,6 +25,7 @@ from dialectical_chess.bench import (  # noqa: E402
     mate_theme_depth,
     run_lichess,
     run_experiment_matrix,
+    run_tactical_witness_comparison,
     settings as bench_settings,
     summarize_lichess_rows,
 )
@@ -320,6 +321,40 @@ def test_lichess_runner_reports_progress(capsys: pytest.CaptureFixture[str]) -> 
     captured = capsys.readouterr()
     assert "progress lichess_csv 1/2" in captured.err
     assert "progress lichess_csv 2/2" in captured.err
+
+
+def test_tactical_witness_comparison_reports_named_variants_and_deltas() -> None:
+    args = argparse.Namespace(
+        lichess_puzzles=SCRIPTS / "dialectical_chess_puzzles_sample.csv",
+        limit=2,
+        rating_min=None,
+        rating_max=None,
+        theme_include=[],
+        theme_exclude=[],
+        side_to_move=None,
+        full_line=False,
+        dialectic_depth=2,
+        dialectic_depth_from_mate_theme=False,
+        search_depth=0,
+        search_backend="negamax",
+        smt_mate=True,
+        smt_fork=True,
+        selector_mode="argument",
+        selector_mode_ablation=False,
+        positional_reasons=True,
+        progress_every=0,
+        reply_max_replies=128,
+        reply_max_defense_nodes=5000,
+        reply_min_defense_material=300,
+    )
+
+    payload = run_tactical_witness_comparison(args)
+
+    assert payload["mode"] == "tactical_witness_comparison"
+    assert payload["variant_totals"]["fork_on"]["total"] == 2
+    assert {"fork_on", "fork_off", "search1", "search1_no_fork"} == set(payload["variant_totals"])
+    assert "fork_on_vs_fork_off" in payload["delta_totals"]
+    assert len(payload["positions"]) == 2
 
 
 def test_mate_in_one_smt_scaffold_matches_procedural_checker() -> None:
