@@ -35,34 +35,7 @@ def run_uci_match(args: Namespace) -> dict[str, Any]:
         str(args.match_games),
         "-repeat",
     ]
-    baseline_name, baseline_args = fastchess_baseline(args.match_baseline, uv_executable, args)
-    games_per_round = 2 if args.match_games > 1 else 1
-    rounds = max(1, (args.match_games + games_per_round - 1) // games_per_round)
-    fastchess_args = [
-        "-engine",
-        "name=Dialectical",
-        f"cmd={uv_executable}",
-        "args=run .\\scripts\\dialectical_chess_probe.py --uci",
-        "proto=uci",
-        f"dir={ROOT}",
-        "-engine",
-        f"name={baseline_name}",
-        *baseline_args,
-        "-each",
-        f"tc={args.match_tc}",
-        "-rounds",
-        str(rounds),
-        "-games",
-        str(games_per_round),
-        "-openings",
-        f"file={args.match_openings}",
-        "format=epd",
-        "order=sequential",
-        "-maxmoves",
-        str(max(1, args.match_max_plies // 2)),
-        "-concurrency",
-        "1",
-    ]
+    fastchess_args = build_fastchess_args(args, uv_executable)
     if cutechess and args.match_baseline == "nosmt":
         command = [cutechess, *cutechess_args]
         runner = "cutechess-cli"
@@ -99,6 +72,52 @@ def run_uci_match(args: Namespace) -> dict[str, Any]:
         "stdout": completed.stdout,
         "stderr": completed.stderr,
     }
+
+
+def build_fastchess_command(args: Namespace, *, fastchess: str, uv_executable: str) -> list[str]:
+    return [fastchess, *build_fastchess_args(args, uv_executable)]
+
+
+def build_fastchess_args(args: Namespace, uv_executable: str) -> list[str]:
+    baseline_name, baseline_args = fastchess_baseline(args.match_baseline, uv_executable, args)
+    games_per_round = 2 if args.match_games > 1 else 1
+    rounds = max(1, (args.match_games + games_per_round - 1) // games_per_round)
+    command = [
+        "-engine",
+        "name=Dialectical",
+        f"cmd={uv_executable}",
+        "args=run .\\scripts\\dialectical_chess_probe.py --uci",
+        "proto=uci",
+        f"dir={ROOT}",
+        "-engine",
+        f"name={baseline_name}",
+        *baseline_args,
+        "-each",
+        f"tc={args.match_tc}",
+        "-rounds",
+        str(rounds),
+        "-games",
+        str(games_per_round),
+        "-openings",
+        f"file={args.match_openings}",
+        "format=epd",
+        "order=sequential",
+        "-maxmoves",
+        str(max(1, args.match_max_plies // 2)),
+        "-concurrency",
+        "1",
+    ]
+    pgn_out = getattr(args, "match_pgn_out", None)
+    if pgn_out is not None:
+        command.extend(
+            [
+                "-pgnout",
+                f"file={Path(pgn_out)}",
+                "notation=uci",
+                "append=false",
+            ]
+        )
+    return command
 
 
 def parse_uci_match_failures(stdout: str) -> dict[str, int]:
