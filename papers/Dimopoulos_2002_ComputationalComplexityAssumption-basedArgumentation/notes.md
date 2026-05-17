@@ -20,7 +20,7 @@ Bondarenko et al.'s abstract assumption-based framework captures theorist, circu
 - Gives generic upper bounds for reasoning under stability, admissibility, and preferability, parameterized by the complexity class `C` of the underlying monotonic derivability problem. *(pp.9-14)*
 - Shows that for theorist and circumscription, which are normal and simple frameworks, admissibility/preferability mostly reproduce the stability-semantics complexity landscape, except sceptical admissibility reduces to monotonic derivability. *(pp.14-15)*
 - Shows that for flat LP and DL frameworks, sceptical admissibility collapses to underlying monotonic derivability, while preferred sceptical reasoning may be one polynomial-hierarchy level higher than stable reasoning. *(pp.16-19)*
-- Shows that for AEL, a general framework that is neither flat, simple, nor normal, the generic upper bounds are tight: credulous admissible/preferred reasoning is at the third level of the polynomial hierarchy, and sceptical admissible/preferred reasoning reaches the third level as co-classes. *(pp.20-21)*
+- Shows that for AEL, a general framework that is neither flat, simple, nor normal, the generic upper bounds are tight: credulous admissible/preferred reasoning is `Sigma^p_3`-complete, sceptical admissible reasoning is `Pi^p_3`-complete, and sceptical preferred reasoning is `Pi^p_4`-complete. *(pp.20-24)*
 
 ## Study Design
 
@@ -148,10 +148,13 @@ Where `alpha_i`, `beta_j`, and `gamma` are classical sentences; `M beta` is trea
 - For DL `Sigma^p_2` hardness, Theorem 17 reduces from `2-QBF` by creating defaults `M p_i / p_i` and `M not p_i / not p_i` that simulate truth-value choices for existential variables. *(p.17)*
 - For DL `Pi^p_3` hardness, Theorem 18 reduces from `3-QBF` to co-sceptical reasoning under preferability. The construction uses atoms for `p`, `q`, and selector atoms `t_i`, `s_j`, defaults for truth choices, defaults to prohibit all `q` choices satisfying `Phi`, defaults to enforce all-or-none choices, and attack-generating defaults `M Phi / not Phi`, `M not t_i / t_i`, and `M not s_j / s_j`. *(pp.18-19)*
 - For AEL `Sigma^p_3` hardness, Theorem 19 reduces from `3-QBF` to credulous admissibility by encoding truth choices and defence/attack conditions in an AEL theory. *(pp.20-21)*
+- Theorem 20 proves sceptical AEL admissibility is `Pi^p_3`-complete by extending the Theorem 19 construction to `T' = T cup {L and_i t_i}` and reducing `3-QBF` to co-sceptical admissibility. *(p.22)*
+- Theorem 21 proves sceptical AEL preferability is `Pi^p_4`-complete by reducing `4-QBF` to co-sceptical preferability. The construction adds atoms `v` and `w`: `v` blocks `q_j` truth assignments, while `w` prohibits choices on assumptions `{not L not r_h, not L r_h}` in the preferred argument. *(pp.22-24)*
 
 ## Figures of Interest
 - **Table 1 (p.9):** Existing complexity results under stability semantics: LP is NP/co-NP, while theorist, circumscription, DL, and AEL sit at `Sigma^p_2`/`Pi^p_2`.
 - **Theorem 8 table (p.13):** Generic upper bounds by framework family and semantics; this is the main reusable summary for implementation planning.
+- **Table 2 (p.25):** Final overview of concrete complexity results for AEL, DL, LP, theorist, and circumscription across admissibility, preferability, and stability semantics.
 
 ## Results Summary
 For stability semantics, applying the generic algorithm with `P^C` verification yields `NP^C` bounds for credulous and co-sceptical reasoning. For admissibility and preferability, verification is harder in general, producing higher bounds. Structural properties reduce them: flatness lowers admissibility verification, normality lowers preferability verification, and simplicity makes sceptical admissibility collapse to underlying monotonic derivability. *(pp.10-14)*
@@ -162,21 +165,26 @@ For LP, sceptical admissible reasoning is P-complete, credulous admissible/prefe
 
 For DL, sceptical admissible reasoning is co-NP-complete, credulous admissible/preferred is `Sigma^p_2`-complete, and sceptical preferred is `Pi^p_3`-complete. *(pp.17-19)*
 
-For AEL, the paper begins the proof that generic-framework hardness is tight: credulous admissible/preferred reasoning is `Sigma^p_3`-complete, via a reduction from `3-QBF`; later pages complete the AEL classification. *(pp.20-21)*
+For AEL, all new-semantics reasoning problems are harder than under stability semantics. Credulous admissible/preferred reasoning is `Sigma^p_3`-complete, one level above stability; sceptical admissible reasoning is `Pi^p_3`-complete, one level above stability; sceptical preferred reasoning is `Pi^p_4`-complete, two levels above stability. The authors also note that AEL under admissibility/preferability is harder than DL even though AEL and DL have the same complexity under stability. *(pp.20-25)*
+
+Table 2's final classification is: AEL/general has admissibility credulous `Sigma^p_3`-complete, admissibility sceptical `Pi^p_3`-complete, preferability credulous `Sigma^p_3`-complete, preferability sceptical `Pi^p_4`-complete, stability credulous `Sigma^p_2`-complete, and stability sceptical `Pi^p_2`-complete. DL/flat has admissibility credulous `Sigma^p_2`-complete, admissibility sceptical co-NP-complete, preferability credulous `Sigma^p_2`-complete, preferability sceptical `Pi^p_3`-complete, stability credulous `Sigma^p_2`-complete, and stability sceptical `Pi^p_2`-complete. LP/flat has admissibility credulous NP-complete, admissibility sceptical P-complete, preferability credulous NP-complete, preferability sceptical `Pi^p_2`-complete, stability credulous NP-complete, and stability sceptical co-NP-complete. Theorist and circumscription/simple+normal have admissibility credulous `Sigma^p_2`-complete, admissibility sceptical co-NP-complete, preferability credulous `Sigma^p_2`-complete, preferability sceptical `Pi^p_2`-complete, stability credulous `Sigma^p_2`-complete, and stability sceptical `Pi^p_2`-complete. *(p.25)*
 
 ## Limitations
 - The study is for propositional variants of the default-reasoning formalisms, even though the abstract framework and some source formalisms are first-order in their general definitions. *(pp.1-3)*
 - The paper explicitly uses co-sceptical reasoning as a technical complement for complexity analysis, not as an epistemologically interesting or practically advocated reasoning task. *(p.7)*
 - For flat/simple cases where sceptical admissibility becomes easier, the authors warn that this can mean default reasoning has been trivialized by deriving only monotonic conclusions and ignoring assumptions. *(p.14)*
+- The comparison to parsimonious and moderately grounded AEL semantics is left outside the paper's scope, though the authors say it would be interesting to relate those semantics to admissible/preferred arguments for AEL. *(p.24)*
 
 ## Arguments Against Prior Work
 - The authors challenge the expectation, motivated by the local-search intuition for admissible/preferred arguments, that new ABA semantics should reduce complexity compared with stable semantics. They show that all sources of complexity remain: exponentially many sanctioned assumption sets and nontrivial derivability in the underlying monotonic logic. *(pp.1-3)*
 - Previous expressiveness results for `DATALOG not` under Sacca's possible/definite M-stable semantics already suggested higher complexity for LP preferred reasoning; this paper extends that warning across theorist, circumscription, LP, DL, and AEL. *(pp.3, 16)*
+- The results clash with the intuition that admissible/preferred arguments are seemingly easier to compute than stable extensions, but the authors argue the clash is only apparent: the new semantics do not restrict the number of extensions, and preferred-set verification requires proving that no admissible superset exists. *(pp.25-26)*
 
 ## Design Rationale
 - The paper separates framework structure (`flat`, `normal`, `simple`) from derivability complexity `C`, so generic algorithms can be instantiated across multiple nonmonotonic logics without repeating every proof. *(pp.9-14)*
 - Co-sceptical reasoning is introduced because it is the complement of sceptical reasoning and fits the nondeterministic "guess a sanctioned set" proof pattern. *(p.7)*
 - The distinction between verifying a sanctioned assumption set and verifying derivability from that set is central: admissibility and preferability are hard mainly because sanction verification itself has higher oracle complexity. *(pp.10-12)*
+- The paper preserves the practical case for local admissible-argument construction despite worst-case hardness: local construction can avoid accessing irrelevant parts of a program, can help in first-order cases with infinite propositional groundings, and fits applications where credulous reasoning is enough. *(p.26)*
 
 ## Testable Properties
 - In any implemented ABA framework, an attack from `Delta` to assumption `alpha` must be detected exactly when `bar(alpha)` is derivable from `T cup Delta`. *(p.5)*
@@ -186,14 +194,18 @@ For AEL, the paper begins the proof that generic-framework hardness is tight: cr
 - Every preferred set must be admissible, and every admissible set must be contained in at least one preferred set. *(p.6)*
 - In flat frameworks, the empty assumption set is admissible; sceptical admissibility should reduce to derivability from `T`. *(pp.6, 13)*
 - In normal frameworks, preferred and stable extension computations should coincide. *(pp.6, 12)*
+- For AEL implementations, preferred-sceptical reasoning should not be treated as a minor variant of stable sceptical reasoning: the paper's result places it two polynomial-hierarchy levels higher than AEL stability semantics. *(pp.22-25)*
 
 ## Relevance to Project
 This is directly relevant to implementing ABA, default reasoning, and structured argumentation in the project. It identifies which semantics and formalisms are expected to require which polynomial-hierarchy oracles, and it warns that admissible/preferred ABA semantics do not automatically provide cheaper reasoning. For implementation, the main reusable abstraction is a separation between derivability, assumption-set closure/attack checks, and semantic verification.
 
 ## Open Questions
-- [ ] The paper's final AEL classification and conclusion are on pages 22-30 and still need to be incorporated into this file after image reading completes.
+- [ ] How should the project represent solver capabilities for `Pi^p_4`-complete AEL preferred-sceptical reasoning without pretending the existing stable-extension path is sufficient? *(pp.22-25)*
+- [ ] How do the paper's admissible/preferred AEL semantics relate operationally to parsimonious and moderately grounded AEL semantics? The authors identify this comparison as outside their scope. *(p.24)*
 
 ## Related Work Worth Reading
 - Bondarenko et al. [1] for the abstract assumption-based framework used as the foundation. *(pp.1-6)*
 - Dung [8] for admissibility and preferred-extension semantics generalized by ABA. *(pp.1, 5-6)*
 - Sacca [28] for `DATALOG not` expressiveness results underlying the LP hardness results. *(pp.3, 16)*
+- Dimopoulos, Nebel, and Toni [4, 5], the earlier IJCAI 1999 and KR 2000 papers combined and fully proved in this article. *(pp.3, 27)*
+- Eiter and Gottlob [9] on parsimonious and moderately grounded AEL expansions. *(pp.24, 28)*
