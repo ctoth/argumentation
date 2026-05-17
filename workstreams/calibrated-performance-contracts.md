@@ -143,7 +143,7 @@ Goal: complete the infrastructure slice cleanly.
 
 - [x] Re-run the calibration CLI.
 - [x] Re-run the performance contract tests.
-- [ ] Promote the minimal source/test/workstream diff to `main` if gates pass.
+- [x] Promote the minimal source/test/workstream diff to `main` if gates pass.
 - [x] Keep generated calibration artifacts uncommitted unless explicitly
   requested.
 
@@ -171,4 +171,5 @@ contract test helper are committed, verified, and promoted to `main`, or a
 blocker is recorded with the exact unfinished phase.
 
 Status: implementation and verification passed on
-`experiment/calibrated-performance-contracts`; promotion to `main` remains.
+`experiment/calibrated-performance-contracts`; promoted to `main` by
+fast-forward merge.
