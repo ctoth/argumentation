@@ -68,6 +68,7 @@ def main() -> int:
     parser.add_argument("--reply-max-defense-nodes", type=int, default=5000)
     parser.add_argument("--reply-min-defense-material", type=int, default=300)
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
+    parser.add_argument("--no-smt-fork", action="store_false", dest="smt_fork")
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
     parser.add_argument("--internal-uci-match", action="store_true")
@@ -79,7 +80,7 @@ def main() -> int:
     parser.add_argument("--match-tc", default="1+0.01")
     parser.add_argument("--stockfish-path")
     parser.add_argument("--stockfish-elo", type=int, default=1320)
-    parser.set_defaults(smt_mate=True, positional_reasons=True)
+    parser.set_defaults(smt_mate=True, smt_fork=True, positional_reasons=True)
     args = parser.parse_args()
 
     started = time.perf_counter()
@@ -520,6 +521,10 @@ def experiment_matrix_cases(preset: str) -> list[dict[str, Any]]:
             "overrides": {"selector_mode": "argument", "dialectic_depth": 2, "smt_mate": False},
         },
         {
+            "name": "argument_d2_no_fork",
+            "overrides": {"selector_mode": "argument", "dialectic_depth": 2, "smt_fork": False},
+        },
+        {
             "name": "argument_d2_search1",
             "overrides": {
                 "selector_mode": "argument",
@@ -529,11 +534,25 @@ def experiment_matrix_cases(preset: str) -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "argument_d2_search1_no_fork",
+            "overrides": {
+                "selector_mode": "argument",
+                "dialectic_depth": 2,
+                "search_depth": 1,
+                "search_backend": "alphabeta",
+                "smt_fork": False,
+            },
+        },
+        {
             "name": "argument_mate_theme_depth",
             "overrides": {"selector_mode": "argument", "dialectic_depth_from_mate_theme": True},
         },
         {"name": "optimizer_static", "overrides": {"selector_mode": "optimizer", "dialectic_depth": 0}},
         {"name": "optimizer_d2", "overrides": {"selector_mode": "optimizer", "dialectic_depth": 2}},
+        {
+            "name": "optimizer_d2_no_fork",
+            "overrides": {"selector_mode": "optimizer", "dialectic_depth": 2, "smt_fork": False},
+        },
         {
             "name": "optimizer_d2_no_positional",
             "overrides": {"selector_mode": "optimizer", "dialectic_depth": 2, "positional_reasons": False},
@@ -620,6 +639,7 @@ def score_board(
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            smt_fork=getattr(args, "smt_fork", True),
             selector_mode=args.selector_mode,
             positional_reasons=getattr(args, "positional_reasons", True),
             reply_analysis=reply_analysis_settings(args),
@@ -760,6 +780,7 @@ def settings(args: argparse.Namespace) -> dict[str, Any]:
         "search_depth": args.search_depth,
         "search_backend": args.search_backend,
         "smt_mate": args.smt_mate,
+        "smt_fork": getattr(args, "smt_fork", True),
         "selector_mode": args.selector_mode,
         "positional_reasons": getattr(args, "positional_reasons", True),
         "reply_analysis": {

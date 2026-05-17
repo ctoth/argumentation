@@ -42,6 +42,7 @@ def probe_moves(
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
+    smt_fork: bool = True,
     positional_reasons: bool = True,
     reply_analysis: ReplyAnalysisSettings | None = None,
 ) -> list[MoveProbe]:
@@ -49,7 +50,7 @@ def probe_moves(
         dialectic_depth=dialectic_depth,
         search=SearchSettings(depth=search_depth, backend=search_backend),
         reply_analysis=reply_analysis or ReplyAnalysisSettings(),
-        smt=SmtSettings(mate_in_one=smt_mate),
+        smt=SmtSettings(mate_in_one=smt_mate, fork=smt_fork),
         positional_reasons=positional_reasons,
     )
     return probe_moves_with_settings(board, settings)

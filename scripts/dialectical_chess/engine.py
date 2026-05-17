@@ -22,6 +22,7 @@ class EngineSettings:
     search_depth: int = 0
     search_backend: str = "negamax"
     smt_mate: bool = True
+    smt_fork: bool = True
     selector_mode: str = "argument"
     positional_reasons: bool = True
     reply_analysis: ReplyAnalysisSettings = ReplyAnalysisSettings()
@@ -62,6 +63,7 @@ class DialecticalChessEngine:
                 search_depth=self.settings.search_depth,
                 search_backend=self.settings.search_backend,
                 smt_mate=self.settings.smt_mate,
+                smt_fork=self.settings.smt_fork,
                 positional_reasons=self.settings.positional_reasons,
                 reply_analysis=self.settings.reply_analysis,
             )

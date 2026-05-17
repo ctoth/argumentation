@@ -48,12 +48,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
+    parser.add_argument("--no-smt-fork", action="store_false", dest="smt_fork")
     parser.add_argument("--no-positional-reasons", action="store_false", dest="positional_reasons")
     parser.add_argument("--reply-max-replies", type=int, default=128)
     parser.add_argument("--reply-max-defense-nodes", type=int, default=5000)
     parser.add_argument("--reply-min-defense-material", type=int, default=300)
     parser.add_argument("--size", type=int, default=480)
-    parser.set_defaults(smt_mate=True, positional_reasons=True)
+    parser.set_defaults(smt_mate=True, smt_fork=True, positional_reasons=True)
     args = parser.parse_args(argv)
 
     if args.uci:
@@ -64,6 +65,7 @@ def main(argv: list[str] | None = None) -> int:
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            smt_fork=args.smt_fork,
             selector_mode=args.selector_mode,
             positional_reasons=args.positional_reasons,
             reply_analysis=reply_analysis_settings(args),
@@ -78,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            smt_fork=args.smt_fork,
             selector_mode=args.selector_mode,
             positional_reasons=args.positional_reasons,
             reply_analysis=reply_analysis_settings(args),
