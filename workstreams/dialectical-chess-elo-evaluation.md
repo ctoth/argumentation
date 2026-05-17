@@ -14,9 +14,14 @@ available.
 - The smoke match completed two games between the engine and its no-SMT
   ablation with no crashes or illegal moves.
 - That smoke produced `0/0/2` and no meaningful Elo.
-- There is no committed weak baseline engine yet.
-- There is no committed opening set for rating matches yet.
-- There is no statistically meaningful SPRT or fixed-game match result yet.
+- `scripts/dialectical_chess_random_uci.py` is a committed deterministic weak
+  legal baseline.
+- `scripts/dialectical_chess_openings.epd` is a committed small opening set.
+- First fixed-game relative matches have been run:
+  - default vs random baseline: 20 games, `13/7/0`, +269.37 +/- 89.78 Elo
+    relative to the committed random baseline;
+  - default vs no-SMT ablation: 20 games, `5/10/5`, 0.00 +/- 0.00 Elo under
+    this exact setup.
 
 ## Evaluation Rules
 
@@ -60,6 +65,8 @@ Observed result:
 
 ### Phase 1: Committed Weak Baseline
 
+Status: complete.
+
 Goal: add a deliberately weak legal UCI baseline so relative Elo can be measured
 without relying on a local third-party engine.
 
@@ -81,6 +88,8 @@ Acceptance criteria:
 
 ### Phase 2: Opening Set
 
+Status: complete.
+
 Goal: avoid measuring only one deterministic start-position line.
 
 Tasks:
@@ -95,6 +104,9 @@ Acceptance criteria:
 - Match output identifies games from varied starting positions.
 
 ### Phase 3: Fixed-Game Relative Rating
+
+Status: complete for the first 20-game random-baseline run. More games are
+needed for a tighter interval.
 
 Goal: produce the first meaningful relative-strength estimate.
 
@@ -117,7 +129,31 @@ Acceptance criteria:
 - Result is reported as relative Elo versus the committed weak baseline, not
   absolute Elo.
 
+Observed first run:
+
+- Command:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline random `
+  --match-games 20 `
+  --match-max-plies 80 `
+  --match-tc 1+0.01
+```
+
+- Runner: `fast-chess`.
+- Openings: `scripts/dialectical_chess_openings.epd`.
+- Games: 20.
+- W/D/L: 13/7/0 from the dialectical engine's perspective.
+- Score: 16.5/20, 82.50%.
+- Reported relative Elo: +269.37 +/- 89.78.
+- Interpretation: the engine is clearly stronger than this deterministic weak
+  baseline under this setup. This is not an absolute Elo.
+
 ### Phase 4: Ablation Rating
+
+Status: complete for the first no-SMT fixed-game run.
 
 Goal: measure whether SMT and dialectical depth help.
 
@@ -131,6 +167,29 @@ Acceptance criteria:
 
 - Same openings and time control across variants.
 - Report says whether the result is inconclusive when confidence is wide.
+
+Observed no-SMT run:
+
+- Command:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline nosmt `
+  --match-games 20 `
+  --match-max-plies 80 `
+  --match-tc 1+0.01
+```
+
+- Runner: `fast-chess`.
+- Openings: `scripts/dialectical_chess_openings.epd`.
+- Games: 20.
+- W/D/L: 5/10/5.
+- Score: 10.0/20, 50.00%.
+- Reported relative Elo: 0.00 +/- 0.00.
+- Interpretation: this run found no playing-strength difference between
+  default SMT and `--no-smt-mate`; because all wins/losses paired symmetrically,
+  this is a narrow statement about this setup, not proof that SMT never matters.
 
 ### Phase 5: SPRT
 
@@ -170,5 +229,6 @@ Acceptance criteria:
 - Opening set exists and is committed.
 - External `fast-chess` match against the weak baseline completes.
 - At least one fixed-game relative rating run is recorded.
+- At least one ablation rating run is recorded.
 - Workstream documentation distinguishes smoke, relative Elo, SPRT, and
   absolute-ish calibration.
