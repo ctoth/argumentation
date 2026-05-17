@@ -1,0 +1,110 @@
+[
+  {
+    "target_id": "T1",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_0.aba",
+    "gate_role": "preferred all-timeout"
+  },
+  {
+    "target_id": "T2",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_0.aba",
+    "gate_role": "stable all-timeout"
+  },
+  {
+    "target_id": "T3",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_1.aba",
+    "gate_role": "preferred all-timeout"
+  },
+  {
+    "target_id": "T4",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_1.aba",
+    "gate_role": "stable all-timeout"
+  },
+  {
+    "target_id": "T5",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_3.aba",
+    "gate_role": "preferred all-timeout"
+  },
+  {
+    "target_id": "T6",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_6.aba",
+    "gate_role": "preferred all-timeout"
+  },
+  {
+    "target_id": "T7",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_6.aba",
+    "gate_role": "stable all-timeout"
+  },
+  {
+    "target_id": "T8",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_9.aba",
+    "gate_role": "preferred all-timeout"
+  },
+  {
+    "target_id": "T9",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_9.aba",
+    "gate_role": "stable all-timeout"
+  },
+  {
+    "target_id": "C1",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_3.aba",
+    "gate_role": "control solved by sat"
+  },
+  {
+    "target_id": "C2",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-PR",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_7.aba",
+    "gate_role": "control solved by asp"
+  },
+  {
+    "target_id": "C3",
+    "year": 2025,
+    "track": "aba",
+    "subtrack": "SE-ST",
+    "instance_kind": "aba",
+    "instance": "ABAs/aba_2000_0.1_5_5_7.aba",
+    "gate_role": "control solved by auto"
+  }
+]
