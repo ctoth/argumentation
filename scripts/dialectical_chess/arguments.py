@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-SELECTOR_MODES = frozenset({"argument", "score", "grounded", "support", "categoriser"})
+SELECTOR_MODES = frozenset({"argument", "score", "grounded", "support", "categoriser", "optimizer"})
 
 
 @dataclass(frozen=True)
@@ -26,6 +26,7 @@ class MoveProbe:
     search_score: int | None = None
     search_line: tuple[str, ...] = ()
     smt_witnesses: tuple[str, ...] = ()
+    optimizer_trace: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,10 @@ def choose_move(
         return sorted(probes, key=lambda probe: support_selection_key(probe, graph))[0]
     if selector_mode == "categoriser":
         return sorted(probes, key=lambda probe: categoriser_selection_key(probe, graph))[0]
+    if selector_mode == "optimizer":
+        from dialectical_chess.optimizer import choose_optimized_move
+
+        return choose_optimized_move(probes, graph)
     return sorted(
         grounded_candidates(probes, graph),
         key=lambda probe: selection_key(probe, graph),
