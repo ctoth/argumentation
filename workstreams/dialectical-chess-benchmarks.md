@@ -58,7 +58,7 @@ Use these families explicitly:
 - **Lichess puzzle database**.
   - Metric: first-move hit rate, full-line hit rate when move sequence is used,
     rating-bucket hit rate, ms/position.
-- **UCI matches with cutechess-cli or fastchess**.
+- **UCI matches with cutechess-cli, fastchess, or fast-chess**.
   - Metric: W/D/L, Elo estimate, nodes/time settings, crashes, illegal moves.
   - Use SPRT only once the engine can finish games under time control.
 
@@ -222,9 +222,8 @@ uv run .\scripts\dialectical_chess_bench.py `
 
 ### Phase 5: UCI Match Harness
 
-Status: complete for internal UCI subprocess smoke. Standard external match
-runner execution is blocked locally because neither `cutechess-cli` nor
-`fastchess` is on PATH.
+Status: complete for internal UCI subprocess smoke and an external `fast-chess`
+smoke match.
 
 Goal: compare playing behavior against baseline engines.
 
@@ -262,7 +261,8 @@ Acceptance criteria:
 
 ### Phase 6: SPRT / Regression Testing
 
-Status: blocked until `cutechess-cli` or `fastchess` is installed locally.
+Status: executable with `fast-chess`; only a tiny fixed match has been run so
+far, not a statistically meaningful SPRT run.
 
 Goal: test whether a change improves playing strength.
 
@@ -273,7 +273,8 @@ Prerequisites:
 
 Tasks:
 
-- Run `cutechess-cli` or `fastchess` SPRT against previous engine commit.
+- Run `cutechess-cli`, `fastchess`, or `fast-chess` SPRT against previous
+  engine commit.
 - Use small Elo bounds first, e.g. `elo0=0 elo1=10`, only after runtime is
   stable.
 - Record exact command and engine commits.
@@ -314,8 +315,7 @@ Template path:
 - Lichess puzzle sample mode exists and passes on the committed CSV sample.
 - UCI match harness completes an internal subprocess smoke with no illegal
   moves or crashes.
-- Standard external UCI match execution is blocked on missing `cutechess-cli`
-  or `fastchess`.
+- External `fast-chess` execution completes a two-game bounded smoke match.
 - Benchmark docs distinguish legality, tactical accuracy, throughput, and
   playing strength.
 
