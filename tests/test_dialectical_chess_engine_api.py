@@ -43,6 +43,7 @@ def test_engine_settings_are_plain_serializable(
         "search_backend": search_backend,
         "smt_mate": smt_mate,
         "selector_mode": "argument",
+        "positional_reasons": True,
     }
 
 
@@ -58,7 +59,7 @@ def test_engine_selects_mate_in_one() -> None:
 
     assert decision.move_uci == "a1a8"
     assert decision.selected is not None
-    assert decision.selected.score == 2_001_000
+    assert decision.selected.score == 2_001_025
     assert "procedural:mate_in_one" in decision.selected.reasons
     assert "smt:mate_in_one" not in decision.selected.reasons
 
@@ -107,6 +108,7 @@ def test_benchmark_adapter_scores_through_engine(monkeypatch) -> None:
         search_backend="negamax",
         smt_mate=True,
         selector_mode="argument",
+        positional_reasons=True,
     )
 
     result = bench.score_board(object(), {"a1a8"}, args)

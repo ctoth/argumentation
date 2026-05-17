@@ -21,6 +21,7 @@ def run_uci(
     search_backend: str = "negamax",
     smt_mate: bool = True,
     selector_mode: str = "argument",
+    positional_reasons: bool = True,
 ) -> int:
     settings = EngineSettings(
         dialectic_depth=dialectic_depth,
@@ -28,6 +29,7 @@ def run_uci(
         search_backend=search_backend,
         smt_mate=smt_mate,
         selector_mode=selector_mode,
+        positional_reasons=positional_reasons,
     )
     board = owned_board_from_fen(START_FEN)
     while True:
@@ -107,6 +109,7 @@ def choose_uci_move(
     search_backend: str = "negamax",
     smt_mate: bool = True,
     selector_mode: str = "argument",
+    positional_reasons: bool = True,
     output_stream: TextIO | None = None,
 ) -> str:
     settings = settings or EngineSettings(
@@ -115,6 +118,7 @@ def choose_uci_move(
         search_backend=search_backend,
         smt_mate=smt_mate,
         selector_mode=selector_mode,
+        positional_reasons=positional_reasons,
     )
     try:
         decision = DialecticalChessEngine(settings).choose_move(board)
@@ -126,6 +130,7 @@ def choose_uci_move(
         return "0000"
     if output_stream is not None:
         _uci_write(output_stream, f"info string selector_mode={settings.selector_mode}")
+        _uci_write(output_stream, f"info string positional_reasons={settings.positional_reasons}")
         _uci_write(output_stream, f"info score cp {decision.selected.score} pv {decision.move_uci}")
     return decision.move_uci
 

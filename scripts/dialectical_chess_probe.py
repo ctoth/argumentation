@@ -18,7 +18,7 @@ from pathlib import Path
 import chess
 
 from dialectical_chess.adapters import build_pgn, build_svg, final_board, load_game
-from dialectical_chess.arguments import build_argument_payload
+from dialectical_chess.arguments import SELECTOR_MODES, build_argument_payload
 from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.probe import owned_board_from_fen
 from dialectical_chess.uci import run_uci
@@ -45,8 +45,11 @@ def main(argv: list[str] | None = None) -> int:
         choices=("negamax", "alphabeta"),
         default="negamax",
     )
+    parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
+    parser.add_argument("--no-positional-reasons", action="store_false", dest="positional_reasons")
     parser.add_argument("--size", type=int, default=480)
+    parser.set_defaults(smt_mate=True, positional_reasons=True)
     args = parser.parse_args(argv)
 
     if args.uci:
@@ -57,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            selector_mode=args.selector_mode,
+            positional_reasons=args.positional_reasons,
         )
 
     game = load_game(args.pgn_in) if args.pgn_in else None
@@ -68,6 +73,8 @@ def main(argv: list[str] | None = None) -> int:
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            selector_mode=args.selector_mode,
+            positional_reasons=args.positional_reasons,
         )
     )
     analysis = engine.analyze(board)

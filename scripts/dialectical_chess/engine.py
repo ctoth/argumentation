@@ -22,6 +22,7 @@ class EngineSettings:
     search_backend: str = "negamax"
     smt_mate: bool = True
     selector_mode: str = "argument"
+    positional_reasons: bool = True
 
     def __post_init__(self) -> None:
         if self.selector_mode not in SELECTOR_MODES:
@@ -59,6 +60,7 @@ class DialecticalChessEngine:
                 search_depth=self.settings.search_depth,
                 search_backend=self.settings.search_backend,
                 smt_mate=self.settings.smt_mate,
+                positional_reasons=self.settings.positional_reasons,
             )
         )
         graph = build_root_argument_graph(list(probes))

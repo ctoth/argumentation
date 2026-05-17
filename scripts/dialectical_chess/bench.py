@@ -55,6 +55,7 @@ def main() -> int:
     parser.add_argument("--search-backend", choices=("negamax", "alphabeta"), default="negamax")
     parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
     parser.add_argument("--selector-mode-ablation", action="store_true")
+    parser.add_argument("--no-positional-reasons", action="store_false", dest="positional_reasons")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
@@ -67,7 +68,7 @@ def main() -> int:
     parser.add_argument("--match-tc", default="1+0.01")
     parser.add_argument("--stockfish-path")
     parser.add_argument("--stockfish-elo", type=int, default=1320)
-    parser.set_defaults(smt_mate=True)
+    parser.set_defaults(smt_mate=True, positional_reasons=True)
     args = parser.parse_args()
 
     started = time.perf_counter()
@@ -293,6 +294,7 @@ def score_board(
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
             selector_mode=args.selector_mode,
+            positional_reasons=getattr(args, "positional_reasons", True),
         )
     ).choose_move(board)
     selected = decision.selected
@@ -411,5 +413,6 @@ def settings(args: argparse.Namespace) -> dict[str, Any]:
         "search_backend": args.search_backend,
         "smt_mate": args.smt_mate,
         "selector_mode": args.selector_mode,
+        "positional_reasons": getattr(args, "positional_reasons", True),
         "movegen": "owned",
     }
