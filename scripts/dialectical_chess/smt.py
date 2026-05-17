@@ -7,8 +7,6 @@ from typing import Any
 
 from dialectical_chess.board import (
     BISHOP_DELTAS,
-    KING_DELTAS,
-    KNIGHT_DELTAS,
     ROOK_DELTAS,
     file_of,
     piece_color,
