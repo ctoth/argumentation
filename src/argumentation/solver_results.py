@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -57,11 +58,13 @@ class SolverProtocolError:
 @dataclass(frozen=True)
 class ExtensionEnumerationSuccess:
     extensions: tuple[frozenset[object], ...]
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
 class SingleExtensionSuccess:
     extension: frozenset[object] | None
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -69,3 +72,4 @@ class AcceptanceSuccess:
     answer: bool
     witness: frozenset[object] | None = None
     counterexample: frozenset[object] | None = None
+    metadata: dict[str, Any] | None = None
