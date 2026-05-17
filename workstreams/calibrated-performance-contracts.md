@@ -126,6 +126,7 @@ Goal: add first contracts for known solver classes.
 Execution status:
 
 - Added `tests\test_performance_contracts.py`.
+- Phase 4 combined gate passed: `55 passed, 1 skipped in 3.70s`.
 
 Gate:
 
