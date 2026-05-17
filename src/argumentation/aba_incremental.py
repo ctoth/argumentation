@@ -318,8 +318,50 @@ class AbaIncrementalSolver:
             # subsets is still in ctl; loop back to Line 2.
 
     def find_preferred_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
-        extensions = self.enumerate_preferred(telemetry=telemetry, limit=1)
-        return extensions[0] if extensions else None
+        return self.find_preferred_extension_greedy(telemetry=telemetry)
+
+    def find_preferred_extension_greedy(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> AssumptionSet | None:
+        """Construct one preferred set by greedily growing complete supersets.
+
+        The same grounded ``pi_com`` control is reused for every constrained
+        complete-set query. A fixed point has no complete strict superset
+        containing any outside assumption, so it is subset-maximal complete.
+        """
+        ctl = self._new_control()
+        current = self._complete_extension_requiring(ctl, frozenset(), telemetry=telemetry)
+        if current is None:
+            return None
+        all_assumptions = frozenset(self.framework.assumptions)
+        while True:
+            grew = False
+            for assumption in sorted(all_assumptions - current, key=repr):
+                required = frozenset((*current, assumption))
+                superset = self._complete_extension_requiring(
+                    ctl, required, telemetry=telemetry
+                )
+                if superset is not None:
+                    if not current < superset:
+                        raise RuntimeError("greedy preferred growth did not produce a strict superset")
+                    current = superset
+                    grew = True
+                    break
+            if not grew:
+                return current
+
+    def _complete_extension_requiring(
+        self,
+        ctl,
+        required: AssumptionSet,
+        *,
+        telemetry: IncrementalTelemetry | None,
+    ) -> AssumptionSet | None:
+        assumptions = [(self._symbol_in(a), True) for a in sorted(required, key=repr)]
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+            telemetry.inner_iterations += bool(required)
+        return self._solve_one(ctl, assumptions=assumptions)
 
     def enumerate_preferred(
         self, *, telemetry: IncrementalTelemetry | None = None, limit: int | None = None

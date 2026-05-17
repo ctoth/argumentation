@@ -292,6 +292,13 @@ def _solve_multishot(
             extension = solver.find_preferred_extension(telemetry=telemetry)
         else:  # pragma: no cover - dispatcher gates this
             raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+        algorithm_metadata: dict[str, str] = {"algorithm": "first-model-witness"}
+        if semantics == "preferred":
+            algorithm_metadata = {
+                "algorithm": "L21-complete-greedy-preferred-growth",
+                "maximality_paper": aba_incremental.EGLY_PREFERRED_MAXIMALITY_CITATION,
+                "maximality_paper_pages": aba_incremental.EGLY_PREFERRED_MAXIMALITY_PAGE_CITATIONS,
+            }
         extensions = tuple() if extension is None else (extension,)
         return _task_result(
             framework,
@@ -302,7 +309,7 @@ def _solve_multishot(
             query=query,
             extensions=extensions,
             metadata=metadata_base
-            | {"algorithm": "first-model-witness"}
+            | algorithm_metadata
             | _incremental_telemetry_metadata(telemetry),
         )
 
