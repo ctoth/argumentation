@@ -17,11 +17,17 @@ workstream.
 This workstream is incomplete unless production code exposes the target
 architecture itself:
 
-- explicit `in`, `out`, and `undec` labelling variables or a documented
-  one-to-one equivalent internal representation;
-- complete-labelling constraints over the ABA structure;
-- preferred maximality by paper-backed grow/block, subset blocking,
-  counterexample search, or an explicitly cited equivalent;
+- explicit Boolean labelling variables named or surfaced as
+  `prefsat_in[assumption]`, `prefsat_out[assumption]`, and
+  `prefsat_undec[assumption]` for every assumption in the SAT solver universe;
+- exactly-one labelling constraints for every assumption:
+  `prefsat_in[a] xor prefsat_out[a] xor prefsat_undec[a]`;
+- complete-labelling constraints over the ABA attack/defence relation:
+  every `in` assumption is defended, every `out` assumption is attacked by an
+  `in` assumption, and every defended undecided assumption can be forced `in`
+  by a maximality check;
+- preferred maximality through a SAT grow/block loop with subset-blocking
+  clauses over the `prefsat_in[...]` variables;
 - no eager minimal-support materialization for dense flat ABA rows;
 - no filename, path, generator, year, ICCMA directory, or manifest-id routing;
 - no wrapper that merely forwards preferred SAT to the old support-aware CEGAR
@@ -30,8 +36,47 @@ architecture itself:
 
 Passing semantic preferred tests is not sufficient. Passing route tests is not
 sufficient. Passing broad regression tests is not sufficient. Completion
-requires the target architecture plus at least one benchmark-backed hard-row
-improvement or an explicit failed-hypothesis record.
+requires the target architecture plus at least one primary preferred hard row
+with `status == "solved"` and `validation.status == "valid"` under 30 seconds,
+or an explicit failed-hypothesis record.
+
+An implementation that uses different internal names must expose an adapter in
+`src/argumentation/aba_sat.py` that returns these exact architecture fields for
+tests. Without that adapter, the implementation fails Phase 1.
+
+## Required Telemetry Fields
+
+The implementation must emit these integer telemetry keys for every preferred
+SAT solve attempt:
+
+- `prefsat_labelling_variables`
+- `prefsat_exactly_one_clauses`
+- `prefsat_complete_clauses`
+- `prefsat_support_materializations`
+- `prefsat_solver_checks`
+- `prefsat_candidate_models`
+- `prefsat_candidate_blocks`
+- `prefsat_rejected_supersets`
+- `prefsat_max_in_count_seen`
+- `prefsat_final_in_count`
+
+The no-eager-support contract is literal:
+`prefsat_support_materializations == 0` for dense flat ABA route candidates.
+
+The small-family operational contract is numeric:
+for generated flat ABA frameworks with at most 8 assumptions, at most 16 rules,
+and rule bodies of size at most 3,
+`prefsat_solver_checks <= 2 * prefsat_candidate_blocks + 4`,
+`prefsat_candidate_models <= prefsat_candidate_blocks + 2`, and
+`prefsat_candidate_blocks <= len(assumptions) + 2`.
+
+The clause-growth contract is numeric:
+`prefsat_exactly_one_clauses == len(assumptions)`,
+`prefsat_labelling_variables == 3 * len(assumptions)`, and
+`prefsat_complete_clauses <= 24 * (len(assumptions) + len(rules) + attack_edge_count)`.
+If `attack_edge_count` is not already computable without exponential
+translation, Phase 3 must add a reusable structural counter before production
+implementation.
 
 ## Control Surface
 
@@ -51,7 +96,7 @@ Read page images directly before writing paper-derived production code or
 tests. Notes can guide the reread; they are not a substitute.
 
 - Cerutti, Dunne, Giacomin, and Vallati 2013: complete-labelling SAT,
-  preferred maximality, candidate improvement, and subset blocking.
+  preferred maximality, candidate grow steps, and subset-blocking clauses.
 - Cerutti, Vallati, and Giacomin 2015: ArgSemSAT implementation surface for
   ICCMA-style complete, preferred, grounded, and stable tasks.
 - Niskanen and Jarvisalo 2020: persistent SAT solver state, assumptions,
@@ -83,11 +128,11 @@ Primary preferred hard rows:
 
 | Target | Instance | Subtrack | Required signal |
 |---|---|---|---|
-| T1 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-PR` | preferred hard-row improvement |
-| T3 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-PR` | preferred hard-row improvement |
-| T5 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-PR` | preferred hard-row improvement |
-| T6 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-PR` | preferred hard-row improvement |
-| T8 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-PR` | preferred hard-row improvement |
+| T1 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-PR` | `sat` or `auto` solved under 30s with validation status `valid` |
+| T3 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-PR` | `sat` or `auto` solved under 30s with validation status `valid` |
+| T5 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-PR` | `sat` or `auto` solved under 30s with validation status `valid` |
+| T6 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-PR` | `sat` or `auto` solved under 30s with validation status `valid` |
+| T8 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-PR` | `sat` or `auto` solved under 30s with validation status `valid` |
 
 Controls:
 
@@ -147,15 +192,24 @@ Expected result: every listed phase matches a phase heading in order.
 
 Goal: make the real target architecture a testable requirement.
 
-- [ ] Write an architecture contract section in the tests or a source-adjacent
-  module that names the required `in/out/undec` labelling surface.
-- [ ] Add a test that fails if preferred SAT delegates directly to the old
-  support-aware CEGAR maximality route.
-- [ ] Add a test that fails if the route is ASP optimization, greedy growth, or
-  filename/path/generator/ICCMA-based.
-- [ ] Add a test or explicit code invariant that dense flat ABA rows do not
-  eagerly materialize all minimal supports before invoking the SAT search.
-- [ ] Cite the page-image paths that justify each architecture requirement.
+- [ ] Add `tests/test_aba_real_prefsat_contract.py`.
+- [ ] Add `test_real_prefsat_exposes_three_valued_labelling_surface`, asserting
+  the architecture fields `prefsat_in`, `prefsat_out`, and `prefsat_undec`
+  exist and contain one entry per assumption.
+- [ ] Add `test_real_prefsat_rejects_old_cegar_forwarding`, monkeypatching the
+  old support-aware CEGAR preferred entrypoint and asserting the real PrefSat
+  route does not call it.
+- [ ] Add `test_real_prefsat_rejects_asp_and_greedy_substitutes`, asserting the
+  route metadata has `backend == "sat"` and
+  `algorithm == "complete-labelling-prefsat"`.
+- [ ] Add `test_real_prefsat_route_ignores_filename_and_manifest_identity`,
+  asserting route decisions are identical when only path, year, target id, and
+  generator-like text change.
+- [ ] Add `test_dense_flat_real_prefsat_does_not_materialize_minimal_supports`,
+  asserting `prefsat_support_materializations == 0`.
+- [ ] Store page-image citations in a test constant named
+  `REAL_PREFSAT_PAGE_IMAGES` and assert it contains every page listed in this
+  workstream's minimum reread set.
 
 Gate:
 
@@ -163,8 +217,10 @@ Gate:
 uv run pytest -q --timeout=240 tests\test_aba_route_properties.py tests\test_performance_contracts.py
 ```
 
-Expected result: architecture-lock tests exist and fail only for missing real
-PrefSat implementation, not for unrelated code.
+Expected result: these named tests exist. Before implementation, tests that
+require the real PrefSat surface may fail with `NotImplementedError` or an
+explicit missing-route assertion. They must not be skipped, xfailed, or written
+as semantic-only tests.
 
 ## Phase 2: Paper-Image Reread
 
@@ -178,7 +234,10 @@ Goal: code from the page images, not memory or previous branch shape.
   state, assumptions, preprocessing, or iterative calls.
 - [ ] Reread the Lehtonen page images for the ABA input surface and direct ABA
   solving constraints.
-- [ ] Record the exact page-image paths in the tests that encode each claim.
+- [ ] Record the exact page-image paths in `REAL_PREFSAT_PAGE_IMAGES`.
+- [ ] For each paper-derived assertion in
+  `tests/test_aba_real_prefsat_contract.py`, include the page-image path in the
+  assertion message or parametrization id.
 
 Gate:
 
@@ -186,20 +245,32 @@ Gate:
 git diff -- tests src workstreams
 ```
 
-Expected result: paper-cited tests/contracts are present before production
-solver implementation.
+Expected result: `tests/test_aba_real_prefsat_contract.py` is the only changed
+test file in this phase, and no production solver implementation has been
+added yet.
 
 ## Phase 3: Operational Contracts Before Code
 
 Goal: make performance learning executable before implementation.
 
-- [ ] Add small Hypothesis families where complete-labelling PrefSat must make
-  bounded candidate/blocking progress.
-- [ ] Add a clause-growth or support-materialization contract that prevents the
-  eager minimal-support explosion seen in failed branches.
-- [ ] Add telemetry for SAT calls, candidate blocks, model candidates, and
-  rejected supersets.
-- [ ] Add residual-reduction checks for grow/block loops.
+- [ ] Add a Hypothesis strategy named `small_flat_aba_for_real_prefsat` covering
+  at most 8 assumptions, at most 16 rules, body size at most 3, cycles,
+  contrary chains, empty bodies, unused literals, and multiple complete
+  extensions.
+- [ ] Add a contract asserting
+  `prefsat_solver_checks <= 2 * prefsat_candidate_blocks + 4`,
+  `prefsat_candidate_models <= prefsat_candidate_blocks + 2`, and
+  `prefsat_candidate_blocks <= len(assumptions) + 2` on that family.
+- [ ] Add a clause-growth contract asserting
+  `prefsat_labelling_variables == 3 * len(assumptions)`,
+  `prefsat_exactly_one_clauses == len(assumptions)`, and
+  `prefsat_complete_clauses <= 24 * (len(assumptions) + len(rules) + attack_edge_count)`.
+- [ ] Add a dense-flat contract asserting
+  `prefsat_support_materializations == 0`.
+- [ ] Add residual-reduction checks asserting every accepted grow/block
+  iteration either increases `prefsat_max_in_count_seen` or increments
+  `prefsat_candidate_blocks`; two consecutive iterations with neither change
+  fail the test.
 - [ ] Keep wall-clock checks calibrated or benchmark-only; do not make brittle
   uncalibrated time assertions.
 
@@ -209,15 +280,16 @@ Gate:
 uv run pytest -q --timeout=240 tests\test_performance_contracts.py tests\test_aba_route_properties.py
 ```
 
-Expected result: operational contracts constrain the implementation path before
-new preferred SAT production code exists.
+Expected result: all required telemetry field names are asserted by tests
+before new preferred SAT production code exists.
 
 ## Phase 4: Experiment Branch
 
 Goal: isolate speculative solver implementation.
 
 - [ ] Confirm tracked files are clean.
-- [ ] Create a dedicated experiment branch from `main`.
+- [ ] Create the dedicated experiment branch
+  `experiment/aba-real-complete-labelling-prefsat` from `main`.
 - [ ] Do not create worktrees, temporary clones, shadow repositories, or
   alternate checkouts.
 - [ ] Leave unrelated untracked diagnostics alone.
@@ -229,7 +301,8 @@ git branch --show-current
 git status --short --untracked-files=no
 ```
 
-Expected result: clean tracked files on a dedicated experiment branch.
+Expected result: clean tracked files on
+`experiment/aba-real-complete-labelling-prefsat`.
 
 ## Phase 5: Deletion-First Implementation
 
@@ -237,13 +310,16 @@ Goal: replace the overlapping failed production surface with real
 complete-labelling PrefSat.
 
 - [ ] Delete or disconnect the old preferred SAT production path that overlaps
-  this route before adding compatibility wrappers.
-- [ ] Implement explicit three-valued labelling variables or a documented
-  one-to-one equivalent.
+  this route before adding compatibility wrappers. The first implementation
+  commit must remove that call edge, and tests/search failures become the work
+  queue.
+- [ ] Implement explicit three-valued labelling variables exposed as
+  `prefsat_in`, `prefsat_out`, and `prefsat_undec`.
 - [ ] Implement complete-labelling constraints directly over the ABA structure
   without exponential AF translation.
-- [ ] Implement preferred maximality through paper-backed grow/block, subset
-  blocking, counterexample search, or an explicitly cited equivalent.
+- [ ] Implement preferred maximality through a SAT grow/block loop over
+  `prefsat_in[...]` variables, adding one subset-blocking clause per rejected
+  candidate.
 - [ ] Use persistent solver state and assumptions only where justified by the
   reread Niskanen/Jarvisalo pages.
 - [ ] Return the existing public ABA solver result shape.
@@ -255,8 +331,9 @@ Gate:
 uv run pytest -q --timeout=240 tests\test_aba_incremental_paper_properties.py tests\test_aba_multishot.py tests\test_aba_route_properties.py tests\test_performance_contracts.py
 ```
 
-Expected result: semantic, architecture, and operational contracts pass without
-reviving any rejected substitute path.
+Expected result: semantic, architecture, and operational contracts pass; `rg`
+confirms the real preferred route does not call the rejected old CEGAR
+preferred entrypoint.
 
 ## Phase 6: Property and Regression Gate
 
@@ -266,7 +343,8 @@ Goal: prove the implementation is correct before benchmark claims.
   brute-force oracle on generated small flat ABA frameworks.
 - [ ] Check hand-built examples for maximality blocking and complete-labelling
   corner cases.
-- [ ] Preserve C2 and C3 solved behavior in targeted status runs.
+- [ ] Preserve C2 and C3 solved behavior in targeted status runs using:
+  `uv run tools\run_aba_hard_bucket.py --target-id C2 --target-id C3 --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-real-prefsat-controls.json --output-csv data\iccma\2025\runs\aba-real-prefsat-controls.csv`.
 - [ ] Do not claim C1 is fixed unless the current branch actually solves it.
 
 Gate:
@@ -284,10 +362,16 @@ Goal: prove the real PrefSat path changes the measured hard class.
 
 - [ ] Run T1/T3/T5/T6/T8 and C1/C2/C3 with `--no-profile` under the declared
   budget.
-- [ ] Validate every newly solved preferred answer with the existing answer
-  checker surface.
-- [ ] If no primary preferred target improves, profile one representative
-  changed SAT timeout with py-spy before recording failure.
+- [ ] Validate every newly solved preferred answer through
+  `tools/aba_shape_benchmark.py::validate_result`, as recorded in each
+  hard-bucket JSON row's `validation` field.
+- [ ] A primary hard row counts as solved only if its row has
+  `status == "solved"` and `validation.status == "valid"` for backend `sat` or
+  `auto`.
+- [ ] If `validation.status` is `not_checked`, that row does not count as a
+  win; add or fix validation before promotion.
+- [ ] If no primary preferred target counts as solved, profile T1 with the
+  exact profiling command below before recording failure.
 - [ ] Record whether time is in Python, SAT solving, parsing, validation, model
   construction, or answer checking.
 
@@ -297,9 +381,16 @@ Gate:
 uv run tools\run_aba_hard_bucket.py --target-id T1 --target-id T3 --target-id T5 --target-id T6 --target-id T8 --target-id C1 --target-id C2 --target-id C3 --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-real-prefsat-targeted.json --output-csv data\iccma\2025\runs\aba-real-prefsat-targeted.csv
 ```
 
-Expected result: at least one primary preferred hard row improves under budget,
-C2/C3 remain solved, and any generated diagnostics remain uncommitted unless
-explicitly promoted.
+Profile command if no primary row counts as solved:
+
+```powershell
+uv run tools\run_aba_hard_bucket.py --target-id T1 --backend sat --subtrack SE-PR --timeout-seconds 30 --profile-duration-seconds 25 --profile-format speedscope --profile-dir data\iccma\2025\profiles\aba-real-prefsat --output-json data\iccma\2025\runs\aba-real-prefsat-t1-profile.json --output-csv data\iccma\2025\runs\aba-real-prefsat-t1-profile.csv
+```
+
+Expected result: at least one primary preferred hard row has `status ==
+"solved"` and `validation.status == "valid"` under 30 seconds for backend
+`sat` or `auto`, C2/C3 remain solved, and generated diagnostics remain
+uncommitted unless explicitly promoted.
 
 ## Phase 8: Promotion or Failed-Hypothesis Record
 
@@ -318,7 +409,8 @@ If gates fail:
 
 - [ ] Do not promote the experiment branch.
 - [ ] Record the exact failed paper claim, contract, target row, profiler
-  attribution, and next hypothesis.
+  attribution, and next hypothesis in
+  `reports/aba-real-prefsat-failure.md`.
 - [ ] Make clear whether true complete-labelling PrefSat failed, or whether the
   implementation still did not meet the architecture lock.
 
@@ -337,8 +429,9 @@ hypothesis record that cannot be confused with a completed substitute.
 This workstream is complete only when one of these is true:
 
 - the real complete-labelling PrefSat architecture is implemented, at least one
-  primary preferred hard row improves under the benchmark budget, C2/C3 are
-  preserved, and the minimal diff is promoted to `main`; or
+  primary preferred hard row has `status == "solved"` and
+  `validation.status == "valid"` under 30 seconds for backend `sat` or `auto`,
+  C2/C3 are preserved, and the minimal diff is promoted to `main`; or
 - a failed-hypothesis record proves that the implementation satisfied the
   architecture lock and still failed, with profiler evidence and the next
   concrete hypothesis.
