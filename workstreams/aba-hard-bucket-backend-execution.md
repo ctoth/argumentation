@@ -249,6 +249,20 @@ Pass condition:
 If this gate fails, leave the experiment branch unmerged and record the failed
 gate result. Do not create revert noise on `main`.
 
+Phase 4 result:
+
+- Property gate passed on 2026-05-17:
+  `uv run pytest -q --timeout=240 tests\test_aba_incremental_paper_properties.py tests\test_aba_multishot.py tests\test_aba_shape_benchmark.py`
+  with 1050 passing tests.
+- Benchmark gate failed on 2026-05-17:
+  `uv run tools\aba_shape_benchmark.py --timeouts tests\manifests\aba-hard-bucket-targets.json --year 2025 --instance-kind aba --timeout-seconds 30 --output-json data\iccma\2025\runs\aba-hard-bucket-phase4-direct-stable.json --output-csv data\iccma\2025\runs\aba-hard-bucket-phase4-direct-stable.csv --backend auto --backend asp --backend sat --subtrack SE-PR --subtrack SE-ST`.
+- Result: T1-T9 all remained all-timeout; C2 and C3 solved; C1 remained
+  all-timeout. Level 1 was not reached.
+- Because this workstream was explicitly forced to execute directly on `main`,
+  there is no failed experiment branch to leave unmerged for this slice.
+  Continue with the next paper-gated hypothesis rather than claiming Phase 4
+  succeeded.
+
 ## Phase 5: SCC-Conditioned Experiment
 
 Goal: test the Baroni/Giacomin directionality hypothesis on the giant cyclic
