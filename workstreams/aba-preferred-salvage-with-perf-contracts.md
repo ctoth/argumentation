@@ -90,12 +90,22 @@ Expected result: clean tracked files on the experiment branch.
 
 Goal: encode the performance learning before reading old branch diffs.
 
-- [ ] Add a preferred no-attack operational contract with bounded solver calls.
-- [ ] Add a preferred dense-monolithic known-failure contract that marks the
+- [x] Add a preferred no-attack operational contract with bounded solver calls.
+- [x] Add a preferred dense-monolithic known-failure contract that marks the
   current large/dense preferred shape as lacking a production route.
-- [ ] Add a contract proving failed preferred SAT/ASP route candidates are not
+- [x] Add a contract proving failed preferred SAT/ASP route candidates are not
   marked production merely because they are semantically valid candidates.
-- [ ] Keep timed wall-clock checks opt-in/calibrated only.
+- [x] Keep timed wall-clock checks opt-in/calibrated only.
+
+Execution status:
+
+- Reused the existing no-attack preferred bounded solver-call contract in
+  `tests\test_performance_contracts.py`.
+- Added large/dense preferred route guardrails in
+  `tests\test_aba_route_properties.py`: preferred candidates may exist, but no
+  production route or evidence id is allowed for the failed dense monolithic
+  shape.
+- Phase 2 gate passed: `18 passed, 1 skipped in 2.42s`.
 
 Gate:
 
