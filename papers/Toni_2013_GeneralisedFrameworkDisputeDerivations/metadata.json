@@ -1,0 +1,16 @@
+{
+  "title": "A generalised framework for dispute derivations in assumption-based argumentation",
+  "authors": [
+    "Francesca Toni"
+  ],
+  "year": "2013",
+  "doi": "10.1016/j.artint.2012.09.010",
+  "abstract": "Assumption-based argumentation is a general-purpose argumentation framework with well-understood theoretical foundations and viable computational mechanisms (in the form of dispute derivations), as well as several applications. However, the existing computational mechanisms have several limitations, hindering their deployment in practice: (i) they are defined in terms of implicit parameters, that nonetheless need to be instantiated at implementation time; (ii) they are variations (for computing different semantics) of one another, but still require different implementation efforts; (iii) they reduce the problem of computing arguments to the problem of computing assumptions supporting these arguments, even though applications of argumentation require a justification of claims in terms of explicit arguments and attacks between them. In this context, the contribution of this paper is two-fold. Firstly, we provide a unified view of the existing (GB-, AB- and IB-)dispute derivations (for computation under the grounded, admissible and ideal semantics, respectively), by obtaining them as special instances of a single notion of X-dispute derivations that, in addition, renders explicit the implicit parameters in the original dispute derivations. Thus, X-dispute derivations address issues (i) and (ii). Secondly, we define structured X-dispute derivations, extending X-dispute derivations by computing explicitly the underlying arguments and attacks, in addition to assumptions. Thus, structured X-dispute derivations also address issue (iii). We prove soundness and completeness results for appropriate instances of (structured) X-dispute derivations, w.r.t. the grounded, admissible and ideal semantics, thus laying the necessary theoretical foundations for deployability thereof.",
+  "url": "https://www.semanticscholar.org/paper/e962d882d2533ae5d8479859bb0b8ce1269ddc73",
+  "pdf_url": "https://doi.org/10.1016/j.artint.2012.09.010",
+  "bibtex": "@Article{Toni2013AGF,\n author = {Francesca Toni},\n booktitle = {Artificial Intelligence},\n journal = {Artif. Intell.},\n pages = {1-43},\n title = {A generalised framework for dispute derivations in assumption-based argumentation},\n volume = {195},\n year = {2013}\n}\n",
+  "venue": "Artificial Intelligence",
+  "venue_type": "journal",
+  "volume": "195",
+  "pages": "1-43"
+}
