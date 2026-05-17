@@ -582,7 +582,7 @@ def build_worker_command(job: dict[str, Any], job_path: Path) -> list[str]:
     if not profile_path:
         return [sys.executable, __file__, "_worker", str(job_path)]
     Path(profile_path).parent.mkdir(parents=True, exist_ok=True)
-    return [
+    command = [
         "uv",
         "tool",
         "run",
@@ -593,12 +593,12 @@ def build_worker_command(job: dict[str, Any], job_path: Path) -> list[str]:
         str(job.get("profile_format") or "speedscope"),
         "--output",
         str(profile_path),
-        "--",
-        sys.executable,
-        __file__,
-        "_worker",
-        str(job_path),
     ]
+    profile_duration = job.get("profile_duration_seconds")
+    if profile_duration is not None:
+        command.extend(["--duration", str(profile_duration)])
+    command.extend(["--", sys.executable, __file__, "_worker", str(job_path)])
+    return command
 
 
 def should_profile_worker(config: RunConfig, task: dict[str, Any]) -> bool:
