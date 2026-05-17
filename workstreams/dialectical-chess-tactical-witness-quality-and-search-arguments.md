@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: proposed.
+Status: executed.
 
 Branch: `main`.
 
@@ -16,7 +16,7 @@ Improve the next tactical layer after positional gating:
 - ablate whether fork witnesses, search arguments, or their combination beat the
   current fixed-slice baseline.
 
-Current relevant baseline from the positional gating workstream:
+Input baseline from the positional gating workstream:
 
 | Case | Solved |
 | --- | ---: |
@@ -246,6 +246,8 @@ uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py --expe
 Timeout:
 
 - start with `300s`, based on the prior measured fixed matrix runtime.
+- actual rerun budget used here was `360s`, because the core matrix expanded
+  from 18 rows to 21 rows after adding no-fork ablations.
 
 Acceptance criteria:
 
@@ -274,3 +276,113 @@ Completion definition:
 - fixed matrix rerun recorded;
 - every intentional edit committed;
 - generated diagnostics left uncommitted.
+
+## Execution Results
+
+Workflow actually used: this workstream, executed on `main` without worktrees.
+
+Commits produced:
+
+- `c6c6fb1 Add tactical witness chess workstream`
+- `5708495 Add failing SMT fork control tests`
+- `442e44e Add SMT fork engine controls`
+- `91cd804 Add failing tactical witness diagnostic test`
+- `64d7513 Add tactical witness comparison benchmark`
+- `6266829 Add tactical witness summary script`
+- `ba63782 Add failing tactical quality tests`
+- `f186edb Qualify fork and search chess evidence`
+
+Focused verification:
+
+```powershell
+uv run --with chess --with z3-solver pytest .\tests\test_dialectical_chess_engine_api.py .\tests\test_dialectical_chess_evidence_ablation.py .\tests\test_dialectical_chess_cleanup.py .\tests\test_dialectical_chess_loss_mining.py -q
+```
+
+Result: `48 passed in 2.79s`.
+
+Tactical witness diagnostic:
+
+```powershell
+uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py --compare-tactical-witness --lichess-puzzles .\scratch\lichess_db_puzzle.csv --rating-min 1200 --rating-max 1600 --limit 100 --selector-mode argument --dialectic-depth 2 --progress-every 10 --json-out .\scratch\tactical_witness_delta_argument_d2_qualified.json 1>$null
+uv run .\scripts\dialectical_chess_tactical_witness_summary.py .\scratch\tactical_witness_delta_argument_d2_qualified.json --markdown-out .\scratch\tactical_witness_delta_argument_d2_qualified.md
+```
+
+Variant totals:
+
+| Variant | Solved |
+| --- | ---: |
+| `fork_on` | 24/100 |
+| `fork_off` | 22/100 |
+| `search1` | 26/100 |
+| `search1_no_fork` | 26/100 |
+
+Delta totals:
+
+| Pair | Changed | Left-only success | Right-only success |
+| --- | ---: | ---: | ---: |
+| `fork_on_vs_fork_off` | 22 | 5 | 3 |
+| `fork_on_vs_search1` | 19 | 2 | 4 |
+| `search1_vs_search1_no_fork` | 20 | 4 | 4 |
+| `fork_off_vs_search1_no_fork` | 19 | 1 | 5 |
+
+Fixed matrix:
+
+```powershell
+uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py --experiment-matrix --lichess-puzzles .\scratch\lichess_db_puzzle.csv --rating-min 1200 --rating-max 1600 --limit 100 --matrix-preset core --progress-every 25 --json-out .\scratch\lichess_1200_1600_matrix_core_100_tactical_witness.json 1>$null
+uv run .\scripts\dialectical_chess_matrix_summary.py .\scratch\lichess_1200_1600_matrix_core_100_tactical_witness.json --markdown-out .\scratch\lichess_1200_1600_matrix_core_100_tactical_witness.md
+```
+
+Runtime: `286884.619 ms`.
+
+Top fixed-matrix rows:
+
+| Case | Solved | Elapsed ms |
+| --- | ---: | ---: |
+| `argument_d2_search1_no_fork` | 26/100 | 14082.93 |
+| `argument_d2_search1` | 26/100 | 17398.90 |
+| `argument_d2_no_smt` | 24/100 | 11794.14 |
+| `argument_d2` | 24/100 | 12725.21 |
+| `argument_d2_no_positional` | 23/100 | 10870.14 |
+| `grounded_d2` | 23/100 | 12381.17 |
+| `argument_d2_no_fork` | 22/100 | 12134.62 |
+| `argument_mate_theme_depth` | 22/100 | 14693.56 |
+| `optimizer_d2_no_fork` | 22/100 | 19433.79 |
+
+Sample shape:
+
+- total puzzles: `100`
+- line move counts: `{'2': 9, '4': 63, '6': 26, '8': 2}`
+- mate theme counts: `{'mateIn1': 9, 'mateIn2': 10, 'mateIn3': 3}`
+
+## Interpretation
+
+The baseline moved from `23/100` to `26/100` on the same fixed
+1200-1600 Lichess slice. That is a real kept gain for this slice.
+
+Fork witness quality helped the non-search argument engine: `argument_d2`
+increased from `22/100` in the positional-gating baseline to `24/100`.
+The no-fork ablation solved `22/100`, so the qualified SMT fork witness is now
+net-positive in static argument selection.
+
+Search arguments helped more than fork quality alone: both
+`argument_d2_search1` and `argument_d2_search1_no_fork` solved `26/100`.
+The no-fork search row was faster on this run, so shallow search support is
+currently carrying the top-line improvement more cleanly than fork witnesses in
+the searched setting.
+
+The optimizer path did not benefit in this slice: `optimizer_d2` solved
+`20/100`, and `optimizer_d2_no_fork` solved `22/100`. The tactical argument
+selector remains the stronger path for this benchmark.
+
+## Recommendation
+
+Keep the qualified SMT fork witness, because it improves the non-search
+argument engine and gives useful typed traces. For the next strength workstream,
+prioritize search-as-arguments over more scalar optimization:
+
+- mine the `search1`/`search1_no_fork` tie cases where different moves have the
+  same shallow score;
+- turn principal variation evidence into attackable claims about threats,
+  recaptures, and forced replies instead of one `search_support` label;
+- use the changed-decision records as regression tests before changing
+  selection semantics again.
