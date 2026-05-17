@@ -143,3 +143,20 @@ def test_smt_fork_witness_finds_knight_fork() -> None:
     fork_probe = next(probe for probe in probe_moves(board) if probe.uci == "b5c7")
     assert "smt:fork:2:500" in fork_probe.reasons
     assert "fork" in fork_probe.smt_witnesses
+
+
+def test_positional_reasons_cover_quiet_opening_development() -> None:
+    board = owned_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    probes = {probe.uci: probe for probe in probe_moves(board)}
+
+    assert "development:e2e4:center_pawn" in probes["e2e4"].reasons
+    assert "center_control:e2e4:1" in probes["e2e4"].reasons
+    assert "objection:no_immediate_tactical_warrant" not in probes["e2e4"].objections
+    assert "development:g1f3:minor_piece" in probes["g1f3"].reasons
+
+
+def test_positional_reasons_cover_castling_king_safety() -> None:
+    board = owned_board_from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
+    probes = {probe.uci: probe for probe in probe_moves(board)}
+
+    assert "king_safety:e1g1:castle" in probes["e1g1"].reasons
