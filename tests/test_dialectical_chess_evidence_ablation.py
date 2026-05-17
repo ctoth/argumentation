@@ -386,6 +386,49 @@ def test_smt_fork_witness_returns_all_satisfying_forks() -> None:
     assert {"b5c7", "b5d6"} <= witnesses
 
 
+def test_fork_probe_reasons_include_quality_labels() -> None:
+    board = owned_board_from_fen("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1")
+
+    fork_probe = next(probe for probe in probe_moves(board) if probe.uci == "b5c7")
+
+    assert "smt:fork:2:500" in fork_probe.reasons
+    assert "smt:fork:targets:2:value:500" in fork_probe.reasons
+    assert "smt:fork:piece:n" in fork_probe.reasons
+    assert "smt:fork:net:500" in fork_probe.reasons
+
+
+def test_argument_d2_rejects_mined_noisy_fork_when_capture_is_better() -> None:
+    board = owned_board_from_fen("3r1rk1/p4pp1/b1p4p/8/BPPq4/P2P3P/2Q3P1/RNB4K b - - 2 27")
+
+    decision = DialecticalChessEngine(
+        EngineSettings(
+            selector_mode="argument",
+            dialectic_depth=2,
+            smt_fork=True,
+        )
+    ).choose_move(board)
+
+    assert decision.move_uci == "d4a1"
+
+
+def test_search_probe_reasons_include_structured_support_and_refutation() -> None:
+    board = owned_board_from_fen("2Q2bk1/5p1p/p5p1/2p3P1/2r1B3/7P/qPQ2P2/2K4R b - - 0 32")
+    probes = {
+        probe.uci: probe
+        for probe in probe_moves(
+            board,
+            search_depth=1,
+            search_backend="alphabeta",
+            smt_fork=False,
+        )
+    }
+
+    assert "search_support:alphabeta:100" in probes["c4c2"].reasons
+    assert "search_line:c4c2" in probes["c4c2"].reasons
+    assert "search_refutes:alphabeta:-700" in probes["a2b2"].objections
+    assert "search_line:a2b2" in probes["a2b2"].objections
+
+
 def test_engine_settings_can_disable_smt_fork_witnesses() -> None:
     from dialectical_chess.engine import DialecticalChessEngine
 
