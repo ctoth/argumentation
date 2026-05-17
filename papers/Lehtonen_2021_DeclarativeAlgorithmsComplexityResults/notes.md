@@ -264,3 +264,27 @@ This is directly relevant to an argumentation backend because it supplies formal
 - Dimopoulos et al. (2002), Dunne (2009), and Dvorak & Dunne (2018) for established ABA complexity. *(p.268, p.276-p.277)*
 - Cyras and Toni / Bao et al. work on ABA+ preferences. *(p.266, p.274-p.275)*
 - Craven and Toni dispute-derivation systems and ABA2AF/ABAPLUS translation-based systems for implementation comparison. *(p.267)*
+
+## Collection Cross-References
+
+### Already in Collection
+- [An abstract, argumentation-theoretic approach to default reasoning](../Bondarenko_1997_AbstractArgumentation-TheoreticApproachDefault/notes.md) - foundational ABA semantics, grounded fixpoint machinery, and structured default-reasoning embedding used as this paper's formal substrate.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - the main earlier complexity baseline for ABA/default-reasoning semantics; Lehtonen et al. refine the solver-facing complexity picture for flat ABA and ABA+.
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) - proof-procedure counterpart to this paper's direct ASP encodings, especially for grounded/admissible/ideal reasoning.
+- [Computing ideal sceptical argumentation](../Dung_2007_ComputingIdealScepticalArgumentation/notes.md) - source for ideal and dispute-derivation completeness conditions that this paper operationalizes via corrected direct encodings.
+
+### New Leads (Not Yet in Collection)
+- Cyras and Toni / Bao et al. on ABA+ preferences - needed for the preference-semantics side of ABA+ beyond the direct ASP implementation line.
+- Dunne (2009) and Dvorak & Dunne (2018) on ABA and argumentation complexity - useful for completing the complexity provenance around the polynomial-hierarchy boundaries.
+- Craven and Toni benchmark/system papers for ABAGRAPH, ABA2AF, and ABAPLUS - needed to compare modern routing choices against older translation/proof-procedure systems.
+
+### Cited By (in Collection)
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - cites this paper as the direct ASP comparison target for ABA reasoning.
+- [Complexity Results and Algorithms for Preferential Argumentative Reasoning in ASPIC+](../Lehtonen_2024_PreferentialASPIC/notes.md) - cites this paper as the ABA complexity/algorithm predecessor to later ASPIC+ preference work.
+- [Argumentative Reasoning in ASPIC+ under Incomplete Information](../Odekerken_2023_ArgumentationReasoningASPICIncompleteInformation/notes.md) - cites this paper as the ABA/ASP complexity background for structured argumentative reasoning.
+- [Grounding Rule-Based Argumentation with Datalog](../Diller_2025_GroundingRule-BasedArgumentationDatalog/notes.md) - cites this paper as a principal ASP-based computational comparator.
+
+### Conceptual Links (not citation-based)
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - complementary backend strategy: this paper gives direct ASP encodings that perform well broadly, while Popescu and Wallner isolate a bounded-treewidth route for structurally sparse or counting-heavy ABA instances.
+- [Answer-set Programming Encodings for Argumentation Frameworks](../Egly_2010_Answer-setProgrammingEncodingsArgumentation/notes.md) - shared declarative-solver pattern: Egly et al. encode Dung AF semantics in ASP; Lehtonen et al. avoid AF blow-up by encoding ABA derivability and semantics directly.
+- [Grounding Rule-Based Argumentation with Datalog](../Diller_2025_GroundingRule-BasedArgumentationDatalog/notes.md) - complementary pipeline layer: Diller handles first-order/rule-based grounding before propositional solver execution, while Lehtonen supplies the direct propositional ABA/ABA+ solving substrate.

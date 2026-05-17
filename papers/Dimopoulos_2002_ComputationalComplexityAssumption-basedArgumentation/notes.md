@@ -209,3 +209,28 @@ This is directly relevant to implementing ABA, default reasoning, and structured
 - Sacca [28] for `DATALOG not` expressiveness results underlying the LP hardness results. *(pp.3, 16)*
 - Dimopoulos, Nebel, and Toni [4, 5], the earlier IJCAI 1999 and KR 2000 papers combined and fully proved in this article. *(pp.3, 27)*
 - Eiter and Gottlob [9] on parsimonious and moderately grounded AEL expansions. *(pp.24, 28)*
+
+## Collection Cross-References
+
+### Already in Collection
+- [An abstract, argumentation-theoretic approach to default reasoning](../Bondarenko_1997_AbstractArgumentation-TheoreticApproachDefault/notes.md) - the ABA framework whose default-reasoning instantiations this paper analyzes for complexity.
+- [Acceptability of Arguments and its Fundamental Role in Nonmonotonic Reasoning, Logic Programming and n-Person Games](../Dung_1995_AcceptabilityArguments/notes.md) - source of admissible and preferred extension semantics generalized into the ABA setting.
+- [Computing ideal sceptical argumentation](../Dung_2007_ComputingIdealScepticalArgumentation/notes.md) - later ideal/dispute-procedure paper that cites this complexity baseline for ABA.
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) - proof-procedure counterpart to this paper's semantic complexity boundaries.
+
+### New Leads (Not Yet in Collection)
+- Dimopoulos, Nebel, and Toni (1999/2000) conference versions - useful if exact proof provenance for preferred-vs-stable hardness is needed.
+- Sacca on `DATALOG not` expressiveness and possible/definite M-stable semantics - relevant to the logic-programming hardness lineage.
+- Eiter and Gottlob on parsimonious and moderately grounded AEL expansions - needed to compare this paper's AEL preferred-semantics complexity with other AEL semantics.
+
+### Cited By (in Collection)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - cites this paper as established ABA complexity background for direct ASP algorithms.
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - cites this paper for ABA reasoning hardness before moving to treewidth-parameterized algorithms.
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) - cites this paper as complexity context for ABA proof procedures.
+- [A Tutorial on Assumption-Based Argumentation](../Toni_2014_TutorialAssumption-basedArgumentation/notes.md) - points to this paper for the complexity story omitted from the tutorial.
+- [Computing ideal sceptical argumentation](../Dung_2007_ComputingIdealScepticalArgumentation/notes.md) - cites this paper as an ABA complexity reference.
+
+### Conceptual Links (not citation-based)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - modern solver-design continuation: Lehtonen et al. turn ABA complexity boundaries into direct ASP encodings and benchmarked backend choices.
+- [Reasoning in Assumption-Based Argumentation Using Tree-Decompositions](../Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md) - structural-parameter response to this paper's worst-case hardness results.
+- [A generalised framework for dispute derivations in assumption-based argumentation](../Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md) - proof-procedure route that can exploit local query structure even where worst-case admissible/preferred reasoning remains high in the polynomial hierarchy.

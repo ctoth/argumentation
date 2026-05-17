@@ -247,3 +247,24 @@ This is directly relevant to implementation work on structured argumentation bec
 - Fichte et al. 2021 on decomposition-guided reductions for argumentation and treewidth, relevant for QBF/SAT-style alternatives. *(p.207)*
 - Lampis, Mengel, Mitsou, and Ordyniak 2018 on QBF as an alternative to Courcelle's theorem. *(p.208)*
 - Dewoprabowo et al. 2022 on practical counting of Dung extensions by dynamic programming. *(p.206)*
+
+## Collection Cross-References
+
+### Already in Collection
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - the direct ASP-based ABA baseline and comparison target for this paper's tree-decomposition route.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - older complexity boundary paper for ABA/default-reasoning semantics.
+- [An abstract, argumentation-theoretic approach to default reasoning](../Bondarenko_1997_AbstractArgumentation-TheoreticApproachDefault/notes.md) - foundational ABA formalism used by the tree-decomposition encoding.
+- [Decomposition-Guided Reductions for Argumentation and Treewidth](../Fichte_2021_Decomposition-GuidedReductionsArgumentationTreewidth/notes.md) - adjacent treewidth-preserving SAT/QBF route for abstract argumentation.
+
+### New Leads (Not Yet in Collection)
+- Samer and Szeider (2010) on propositional model counting via tree-decompositions - the model-counting DP substrate behind several bounded-width argumentation algorithms.
+- D-FLAT and htd implementation papers - needed if we want a production-quality tree-decomposition backend rather than only a structural heuristic.
+
+### Cited By (in Collection)
+- [Algorithmic Approaches to Probabilistic Argumentation under the Constellation Approach](../Popescu_2024_AlgorithmicProbabilisticArgumentationConstellation/notes.md) - cites this paper as the ABA tree-decomposition predecessor to later probabilistic AF algorithms.
+- [Advancing Algorithmic Approaches to Probabilistic Argumentation](../Popescu_2024_ProbabilisticArgumentationConstellation/notes.md) - cites this line as part of the bounded-treewidth dynamic-programming toolkit for argumentation.
+
+### Conceptual Links (not citation-based)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - complementary routing class: Lehtonen's direct ASP route is a strong general default, while Popescu and Wallner create a shape-sensitive route when low treewidth makes DP attractive.
+- [Advancing Algorithmic Approaches to Probabilistic Argumentation](../Popescu_2024_ProbabilisticArgumentationConstellation/notes.md) - same authors and same decomposition idea, but applied to probabilistic abstract argumentation rather than flat finite ABA.
+- [Decomposition-Guided Reductions for Argumentation and Treewidth](../Fichte_2021_Decomposition-GuidedReductionsArgumentationTreewidth/notes.md) - both exploit bounded treewidth; Fichte preserves treewidth through reductions to SAT/QBF, while this paper executes dynamic programming directly over ABA structure.

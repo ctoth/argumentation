@@ -345,3 +345,25 @@ The reference list spans pp.42-43 and includes 46 entries. Key references for fo
 ## Related Work Worth Reading
 - Dung et al. and Bondarenko et al. on ABA foundations and dispute derivations are repeatedly used as the base references for ABA semantics, dispute trees, and GB/AB/IB proof procedures. *(p.1-p.6)*
 - Prior structured AB-dispute derivations are the immediate precursor to structured X-dispute derivations. *(p.2, p.16)*
+
+## Collection Cross-References
+
+### Already in Collection
+- [An abstract, argumentation-theoretic approach to default reasoning](../Bondarenko_1997_AbstractArgumentation-TheoreticApproachDefault/notes.md) - the foundational ABA framework that supplies the assumptions, contraries, attacks, and semantics that X-dispute derivations operationalize.
+- [Computing ideal sceptical argumentation](../Dung_2007_ComputingIdealScepticalArgumentation/notes.md) - source for IB-dispute derivations and ideal sceptical proof procedures generalized here.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - complexity counterpart showing why local proof procedures do not eliminate worst-case hardness for admissible/preferred reasoning.
+- [A Tutorial on Assumption-Based Argumentation](../Toni_2014_TutorialAssumption-basedArgumentation/notes.md) - later tutorial that positions this paper as the extended dispute-derivation reference.
+
+### New Leads (Not Yet in Collection)
+- Bryant et al., South et al., and Efstathiou and Hunter implementation/proof-tree papers - useful for comparing structured X-dispute derivations against other ABA engines.
+- Garcia and Toni on computing arguments and attacks in ABA - directly relevant to implementation of the `Args`/`Att` structures in structured X-dispute derivations.
+- Kakas and Toni proof procedures for logic-programming acceptability semantics - needed to understand the logic-programming lineage behind the parameter choices.
+
+### Cited By (in Collection)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - cites this paper as the proof-procedure/system lineage against which direct ASP encodings are compared.
+- [A Tutorial on Assumption-Based Argumentation](../Toni_2014_TutorialAssumption-basedArgumentation/notes.md) - cites this paper as the extended account of GB/AB/IB and structured dispute derivations.
+
+### Conceptual Links (not citation-based)
+- [Declarative Algorithms and Complexity Results for Assumption-Based Argumentation](../Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md) - complementary implementation families: Toni gives proof-carrying query procedures; Lehtonen gives direct global ASP encodings and benchmarks.
+- [On the Computational Complexity of Assumption-Based Argumentation for Default Reasoning](../Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md) - explains the worst-case complexity pressure that motivates modular proof procedures and routing heuristics.
+- [Computing ideal sceptical argumentation](../Dung_2007_ComputingIdealScepticalArgumentation/notes.md) - Toni's generalized X-dispute framework subsumes and extends the GB/AB/IB-style derivation ideas used for ideal sceptical reasoning.
