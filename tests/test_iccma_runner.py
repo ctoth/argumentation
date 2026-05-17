@@ -253,7 +253,7 @@ def test_build_worker_command_wraps_profiled_worker_with_py_spy(tmp_path) -> Non
     )
 
     assert command[:6] == ["uv", "tool", "run", "py-spy", "record", "--subprocesses"]
-    assert command[command.index("--duration") + 1] == "25.0"
+    assert command[command.index("--duration") + 1] == "25"
     assert "--output" in command
     assert str(profile_path) in command
     assert Path(command[-3]).name == "iccma2025_run_native.py"
