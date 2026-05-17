@@ -319,12 +319,20 @@ before new preferred SAT production code exists.
 
 Goal: isolate speculative solver implementation.
 
-- [ ] Confirm tracked files are clean.
-- [ ] Create the dedicated experiment branch
+- [x] Confirm tracked files are clean.
+- [x] Create the dedicated experiment branch
   `experiment/aba-real-complete-labelling-prefsat` from `main`.
-- [ ] Do not create worktrees, temporary clones, shadow repositories, or
+- [x] Do not create worktrees, temporary clones, shadow repositories, or
   alternate checkouts.
-- [ ] Leave unrelated untracked diagnostics alone.
+- [x] Leave unrelated untracked diagnostics alone.
+
+Execution status:
+
+- Created and switched to `experiment/aba-real-complete-labelling-prefsat`.
+- Tracked status was clean after branch creation.
+- No worktrees, temporary clones, shadow repositories, or alternate checkouts
+  were created.
+- Next unchecked item is Phase 5: Deletion-First Implementation.
 
 Gate:
 
