@@ -19,12 +19,14 @@ if str(SCRIPTS) not in sys.path:
     search_depth=st.integers(min_value=0, max_value=3),
     search_backend=st.sampled_from(("negamax", "alphabeta")),
     smt_mate=st.booleans(),
+    smt_fork=st.booleans(),
 )
 def test_engine_settings_are_plain_serializable(
     dialectic_depth: int,
     search_depth: int,
     search_backend: str,
     smt_mate: bool,
+    smt_fork: bool,
 ) -> None:
     from dataclasses import asdict
 
@@ -35,6 +37,7 @@ def test_engine_settings_are_plain_serializable(
         search_depth=search_depth,
         search_backend=search_backend,
         smt_mate=smt_mate,
+        smt_fork=smt_fork,
     )
 
     assert asdict(settings) == {
@@ -42,6 +45,7 @@ def test_engine_settings_are_plain_serializable(
         "search_depth": search_depth,
         "search_backend": search_backend,
         "smt_mate": smt_mate,
+        "smt_fork": smt_fork,
         "selector_mode": "argument",
         "positional_reasons": True,
         "reply_analysis": {

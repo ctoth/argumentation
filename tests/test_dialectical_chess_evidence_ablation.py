@@ -245,12 +245,14 @@ def test_bench_settings_report_selector_mode() -> None:
         search_depth=2,
         search_backend="alphabeta",
         smt_mate=False,
+        smt_fork=False,
         selector_mode="support",
         positional_reasons=False,
     )
 
     assert bench_settings(args)["selector_mode"] == "support"
     assert bench_settings(args)["positional_reasons"] is False
+    assert bench_settings(args)["smt_fork"] is False
 
 
 def test_ablation_selector_modes_are_explicitly_gated() -> None:
@@ -347,6 +349,17 @@ def test_smt_fork_witness_returns_all_satisfying_forks() -> None:
     witnesses = smt_fork_moves(board)
 
     assert {"b5c7", "b5d6"} <= witnesses
+
+
+def test_engine_settings_can_disable_smt_fork_witnesses() -> None:
+    from dialectical_chess.engine import DialecticalChessEngine
+
+    board = owned_board_from_fen("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1")
+    analysis = DialecticalChessEngine(EngineSettings(smt_fork=False)).analyze(board)
+    probe = next(probe for probe in analysis.probes if probe.uci == "b5c7")
+
+    assert "smt:fork:2:500" not in probe.reasons
+    assert "fork" not in probe.smt_witnesses
 
 
 def test_positional_reasons_cover_quiet_opening_development() -> None:
@@ -494,4 +507,16 @@ def test_core_experiment_matrix_includes_optimizer_rows() -> None:
         "optimizer_d2",
         "optimizer_d2_no_positional",
         "optimizer_mate_theme_depth",
+    } <= names
+
+
+def test_core_experiment_matrix_includes_no_fork_rows() -> None:
+    from dialectical_chess.bench import experiment_matrix_cases
+
+    names = {case["name"] for case in experiment_matrix_cases("core")}
+
+    assert {
+        "argument_d2_no_fork",
+        "argument_d2_search1_no_fork",
+        "optimizer_d2_no_fork",
     } <= names
