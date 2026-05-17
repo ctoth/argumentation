@@ -229,12 +229,12 @@ Generator constraints:
 
 Properties to write first:
 
-- [ ] generated frameworks parse back into equivalent framework objects;
-- [ ] generated rule order is not semantically meaningful;
-- [ ] generated atom renaming maps are bijective;
-- [ ] generated flat frameworks contain no assumptions in rule bodies when the
+- [x] generated frameworks parse back into equivalent framework objects;
+- [x] generated rule order is not semantically meaningful;
+- [x] generated atom renaming maps are bijective;
+- [x] generated flat frameworks contain no assumptions in rule bodies when the
   flat generator says they are flat;
-- [ ] generated p-acyclic frameworks satisfy the paper definition, not a weaker
+- [x] generated p-acyclic frameworks satisfy the paper definition, not a weaker
   "no cycles anywhere" shortcut.
 
 Gate:
