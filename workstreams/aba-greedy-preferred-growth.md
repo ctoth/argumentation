@@ -60,8 +60,8 @@ Controls:
 
 Goal: make this checklist mechanically executable.
 
-- [ ] Run the order check after every edit to this workstream.
-- [ ] Before each later phase, reread this file and identify the next unchecked
+- [x] Run the order check after every edit to this workstream.
+- [x] Before each later phase, reread this file and identify the next unchecked
   item.
 
 Gate:
@@ -94,14 +94,22 @@ Expected result: clean tracked files on `experiment/aba-greedy-preferred-growth`
 
 Goal: write the semantic contract before source changes.
 
-- [ ] Test that greedy preferred growth returns a native preferred extension on
+- [x] Test that greedy preferred growth returns a native preferred extension on
   generated small flat ABA frameworks.
-- [ ] Test that no returned greedy witness has a strict admissible or complete
+- [x] Test that no returned greedy witness has a strict admissible or complete
   superset.
-- [ ] Test that the no-attack case grows to all assumptions.
-- [ ] Test that preferred single-extension production does not enumerate every
+- [x] Test that the no-attack case grows to all assumptions.
+- [x] Test that preferred single-extension production does not enumerate every
   preferred set.
-- [ ] Test metadata cites Lehtonen and Egly page-image evidence.
+- [x] Test metadata cites Lehtonen and Egly page-image evidence.
+
+Execution status:
+
+- Initial gate failed for the intended missing behavior:
+  `find_preferred_extension_greedy` was absent and production still used the
+  previous preferred enumeration witness.
+- After Phase 3 implementation, the Phase 2 gate passed:
+  `8 passed in 1.43s`.
 
 Gate:
 
@@ -115,14 +123,24 @@ Expected result: new properties fail only for the missing greedy backend.
 
 Goal: implement one constructive preferred witness path.
 
-- [ ] Add a reusable complete-superset query over the already-grounded
+- [x] Add a reusable complete-superset query over the already-grounded
   Lehtonen `pi_com` control.
-- [ ] Start from one complete extension and greedily adopt satisfiable strict
+- [x] Start from one complete extension and greedily adopt satisfiable strict
   complete supersets until no outside assumption can be added.
-- [ ] Route preferred single-extension through this path.
-- [ ] Preserve public result shape and structural routing.
-- [ ] Do not use filename, generator, ICCMA-year, row-order, or path-text
+- [x] Route preferred single-extension through this path.
+- [x] Preserve public result shape and structural routing.
+- [x] Do not use filename, generator, ICCMA-year, row-order, or path-text
   predicates.
+
+Execution status:
+
+- `find_preferred_extension` now calls `find_preferred_extension_greedy`.
+- The implementation reuses one grounded `pi_com` control and calls clingo with
+  transient `in(a)` assumptions for the current set plus one outside assumption.
+- Preferred single-extension metadata now reports
+  `L21-complete-greedy-preferred-growth`, with Lehtonen and Egly page-image
+  provenance.
+- Full gate passed: `1060 passed in 118.72s`.
 
 Gate:
 
