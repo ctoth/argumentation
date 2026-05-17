@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from argumentation import aba as aba_semantics
 from argumentation.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
@@ -17,7 +18,7 @@ from argumentation.aspic import Literal
 class ABAEncoding:
     facts: tuple[str, ...]
     signature: str
-    metadata: dict[str, str]
+    metadata: dict[str, Any]
     assumption_by_id: dict[str, Literal] = field(default_factory=dict)
     literal_by_id: dict[str, Literal] = field(default_factory=dict)
 
@@ -261,9 +262,11 @@ def _solve_multishot(
             reason=str(exc),
         )
 
+    telemetry = aba_incremental.IncrementalTelemetry()
+
     # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
     if semantics == "preferred" and task == "skeptical" and query is not None:
-        answer, counterexample = solver.is_skeptically_accepted_preferred(query)
+        answer, counterexample = solver.is_skeptically_accepted_preferred(query, telemetry=telemetry)
         return ABAQueryResult(
             status="success",
             semantics=semantics,
@@ -271,7 +274,9 @@ def _solve_multishot(
             extensions=tuple() if counterexample is None else (counterexample,),
             accepted_assumptions=counterexample or frozenset(),
             encoding=encoding,
-            metadata=metadata_base | {"task": task, "algorithm": "L21-TPLP-Alg1"},
+            metadata=metadata_base
+            | {"task": task, "algorithm": "L21-TPLP-Alg1"}
+            | _incremental_telemetry_metadata(telemetry),
             answer=answer,
             counterexample=counterexample,
         )
@@ -280,11 +285,11 @@ def _solve_multishot(
         if semantics == "grounded":
             extension = solver.grounded_extension()
         elif semantics == "complete":
-            extension = solver.find_complete_extension()
+            extension = solver.find_complete_extension(telemetry=telemetry)
         elif semantics == "stable":
-            extension = solver.find_stable_extension()
+            extension = solver.find_stable_extension(telemetry=telemetry)
         elif semantics == "preferred":
-            extension = solver.find_preferred_extension()
+            extension = solver.find_preferred_extension(telemetry=telemetry)
         else:  # pragma: no cover - dispatcher gates this
             raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
         extensions = tuple() if extension is None else (extension,)
@@ -296,17 +301,19 @@ def _solve_multishot(
             task=task,
             query=query,
             extensions=extensions,
-            metadata=metadata_base | {"algorithm": "first-model-witness"},
+            metadata=metadata_base
+            | {"algorithm": "first-model-witness"}
+            | _incremental_telemetry_metadata(telemetry),
         )
 
     if semantics == "grounded":
         extensions = (solver.grounded_extension(),)
     elif semantics == "complete":
-        extensions = solver.enumerate_complete()
+        extensions = solver.enumerate_complete(telemetry=telemetry)
     elif semantics == "stable":
-        extensions = solver.enumerate_stable()
+        extensions = solver.enumerate_stable(telemetry=telemetry)
     elif semantics == "preferred":
-        extensions = solver.enumerate_preferred()
+        extensions = solver.enumerate_preferred(telemetry=telemetry)
     else:  # pragma: no cover - dispatcher gates this
         raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
 
@@ -318,8 +325,17 @@ def _solve_multishot(
         task=task,
         query=query,
         extensions=extensions,
-        metadata=metadata_base,
+        metadata=metadata_base | _incremental_telemetry_metadata(telemetry),
     )
+
+
+def _incremental_telemetry_metadata(telemetry) -> dict[str, int]:
+    return {
+        "refinement_clauses": telemetry.refinement_clauses,
+        "outer_iterations": telemetry.outer_iterations,
+        "inner_iterations": telemetry.inner_iterations,
+        "solver_calls": telemetry.solver_calls,
+    }
 
 
 def _solve_simplified(
@@ -432,7 +448,7 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
             extensions=tuple() if counterexample is None else (counterexample,),
             accepted_assumptions=counterexample or frozenset(),
             encoding=encoding,
-            metadata=dict(metadata),
+            metadata=dict(metadata) | _incremental_telemetry_metadata(telemetry),
             answer=answer,
             counterexample=counterexample,
         )
@@ -447,9 +463,10 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
             encoding=encoding,
             reason=str(exc),
         )
+    telemetry = aba_incremental.IncrementalTelemetry()
 
     def _some_preferred() -> AssumptionSet | None:
-        residual_pref = residual_solver.find_preferred_extension()
+        residual_pref = residual_solver.find_preferred_extension(telemetry=telemetry)
         return None if residual_pref is None else simplification.lift(residual_pref)
 
     if query in simplification.fixed_in:
@@ -462,7 +479,7 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
     if query not in residual.language:
         return _result(False, _some_preferred())
 
-    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(query)
+    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(query, telemetry=telemetry)
     if answer:
         return _result(True, None)
     counterexample = None if residual_counterexample is None else simplification.lift(residual_counterexample)
@@ -478,7 +495,7 @@ def _task_result(
     task: str,
     query: Literal | None,
     extensions: tuple[AssumptionSet, ...],
-    metadata: dict[str, str],
+    metadata: dict[str, Any],
 ) -> ABAQueryResult:
     if task == "enum":
         return ABAQueryResult(
