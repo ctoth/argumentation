@@ -224,6 +224,9 @@ Acceptance criteria:
 
 ### Phase 6: External Anchor
 
+Status: Stockfish 18 detected and smoke-tested at its minimum exposed UCI Elo.
+No absolute Elo has been established.
+
 Goal: estimate an absolute-ish Elo only when an anchor engine is installed and
 configured to a known weak level.
 
@@ -238,6 +241,34 @@ Acceptance criteria:
 
 - Absolute-ish number is labeled with the anchor engine and configuration.
 - If no anchor exists, say Elo is unknown rather than inventing one.
+
+Observed anchor smoke:
+
+- Detected executable:
+  `C:\Users\Q\AppData\Local\Microsoft\WinGet\Links\stockfish.exe`.
+- UCI identity: Stockfish 18.
+- Weak-level configuration:
+  - `option.UCI_LimitStrength=true`;
+  - `option.UCI_Elo=1320`;
+  - `option.Threads=1`;
+  - `option.Hash=16`.
+- Command:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline stockfish `
+  --match-games 2 `
+  --match-max-plies 6 `
+  --match-tc 10+0.1
+```
+
+- Runner: `fast-chess`.
+- Result: 2 draws by adjudication against `StockfishElo1320`.
+- Failures: 0 timeouts, 0 crashes, 0 losses-on-time.
+- Interpretation: Stockfish anchoring is wired and executable. This is not an
+  Elo estimate because the match is only two games and ends by shallow
+  adjudication.
 
 ## Completion Criteria
 
