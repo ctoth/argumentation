@@ -363,6 +363,16 @@ def experiment_matrix_cases(preset: str) -> list[dict[str, Any]]:
             "name": "argument_mate_theme_depth",
             "overrides": {"selector_mode": "argument", "dialectic_depth_from_mate_theme": True},
         },
+        {"name": "optimizer_static", "overrides": {"selector_mode": "optimizer", "dialectic_depth": 0}},
+        {"name": "optimizer_d2", "overrides": {"selector_mode": "optimizer", "dialectic_depth": 2}},
+        {
+            "name": "optimizer_d2_no_positional",
+            "overrides": {"selector_mode": "optimizer", "dialectic_depth": 2, "positional_reasons": False},
+        },
+        {
+            "name": "optimizer_mate_theme_depth",
+            "overrides": {"selector_mode": "optimizer", "dialectic_depth_from_mate_theme": True},
+        },
     ]
 
 
