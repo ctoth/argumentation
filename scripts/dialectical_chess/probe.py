@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from dialectical_chess.arguments import MoveProbe
-from dialectical_chess.board import OwnedBoard
+from dialectical_chess.board import OwnedBoard, file_of, piece_color, rank_of, square_index
 from dialectical_chess.search import (
     OWNED_PIECE_VALUE,
     SearchSettings,
@@ -16,7 +16,12 @@ from dialectical_chess.search import (
     owned_is_checkmate,
     root_search_result,
 )
-from dialectical_chess.smt import SmtSettings, smt_fork_moves, smt_mate_in_one_moves
+from dialectical_chess.smt import (
+    SmtSettings,
+    moved_piece_attacks_square,
+    smt_fork_moves,
+    smt_mate_in_one_moves,
+)
 
 
 @dataclass(frozen=True)
@@ -24,6 +29,7 @@ class ProbeSettings:
     dialectic_depth: int = 1
     search: SearchSettings = field(default_factory=SearchSettings)
     smt: SmtSettings = field(default_factory=SmtSettings)
+    positional_reasons: bool = True
 
 
 def probe_moves(
@@ -33,11 +39,13 @@ def probe_moves(
     search_depth: int = 0,
     search_backend: str = "negamax",
     smt_mate: bool = True,
+    positional_reasons: bool = True,
 ) -> list[MoveProbe]:
     settings = ProbeSettings(
         dialectic_depth=dialectic_depth,
         search=SearchSettings(depth=search_depth, backend=search_backend),
         smt=SmtSettings(mate_in_one=smt_mate),
+        positional_reasons=positional_reasons,
     )
     return probe_moves_with_settings(board, settings)
 
@@ -79,6 +87,11 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
         if promotion_value:
             score += promotion_value
             reasons.append(f"material:promotion:{promotion_value}")
+        if settings.positional_reasons:
+            positional = positional_reason_labels(board, move, child)
+            if positional:
+                score += 25 * len(positional)
+                reasons.extend(positional)
         smt_witnesses: list[str] = []
         if move.uci() in smt_mate_moves:
             score += 1_000_000
@@ -132,3 +145,70 @@ def ensure_owned_board(board: Any) -> OwnedBoard:
 
 def owned_board_from_fen(fen: str) -> OwnedBoard:
     return OwnedBoard.from_fen(fen)
+
+
+def positional_reason_labels(board: OwnedBoard, move: Any, child: OwnedBoard) -> tuple[str, ...]:
+    piece = board.piece_at(move.from_square)
+    if piece is None:
+        return ()
+    labels: list[str] = []
+    move_text = move.uci()
+    kind = piece.lower()
+    color = piece_color(piece)
+    from_rank = rank_of(move.from_square)
+    to_rank = rank_of(move.to_square)
+
+    if kind == "p" and file_of(move.from_square) in {3, 4} and abs(to_rank - from_rank) == 2:
+        labels.append(f"development:{move_text}:center_pawn")
+    if kind in {"n", "b"} and from_rank == (0 if color == "w" else 7):
+        labels.append(f"development:{move_text}:minor_piece")
+    if move.kind == "castle":
+        labels.append(f"king_safety:{move_text}:castle")
+
+    center_count = moved_piece_center_control(child, move.to_square, piece)
+    if center_count:
+        labels.append(f"center_control:{move_text}:{center_count}")
+    if kind in {"r", "q"} and controls_open_file(child, move.to_square):
+        labels.append(f"file_control:{move_text}:open_file")
+    if kind == "n" and is_supported_outpost(child, move.to_square, color):
+        labels.append(f"outpost:{move_text}:supported")
+    return tuple(labels)
+
+
+def moved_piece_center_control(board: OwnedBoard, source_square: int, piece: str) -> int:
+    return sum(
+        1
+        for target in (
+            square_index("d4"),
+            square_index("e4"),
+            square_index("d5"),
+            square_index("e5"),
+        )
+        if moved_piece_attacks_square(board, source_square, target, piece)
+    )
+
+
+def controls_open_file(board: OwnedBoard, square: int) -> bool:
+    file_index = file_of(square)
+    return all(
+        piece is None or piece.lower() != "p"
+        for index, piece in enumerate(board.squares)
+        if file_of(index) == file_index
+    )
+
+
+def is_supported_outpost(board: OwnedBoard, square: int, color: str) -> bool:
+    rank = rank_of(square)
+    if color == "w" and rank < 3:
+        return False
+    if color == "b" and rank > 4:
+        return False
+    support_rank = rank - 1 if color == "w" else rank + 1
+    support_piece = "P" if color == "w" else "p"
+    for file_delta in (-1, 1):
+        support_file = file_of(square) + file_delta
+        if 0 <= support_file < 8:
+            support_square = support_rank * 8 + support_file
+            if 0 <= support_square < 64 and board.piece_at(support_square) == support_piece:
+                return True
+    return False
