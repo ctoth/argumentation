@@ -136,16 +136,34 @@ uv run pytest -q tests\test_aba_hard_bucket_manifest.py tests\test_aba_route_pro
 
 Goal: know what is slow on the exact hard rows before changing algorithms.
 
-- [ ] Integrate a stable profiler launcher path for hard-row commands.
-- [ ] Prefer `uvx py-spy` or a checked tool dependency. Do not rely on an ad
+- [x] Integrate a stable profiler launcher path for hard-row commands.
+- [x] Prefer `uvx py-spy` or a checked tool dependency. Do not rely on an ad
   hoc cache path.
-- [ ] Capture wall time, backend status, solver metadata, refinement counts,
+- [x] Capture wall time, backend status, solver metadata, refinement counts,
   solver-call counts, and Python-side profiling output for at least T1, T2,
   T3, T4, and C1-C3.
-- [ ] If `py-spy` fails with an unfamiliar error, search the exact error before
+- [x] If `py-spy` fails with an unfamiliar error, search the exact error before
   changing approach.
-- [ ] Record findings in an uncommitted diagnostic artifact unless explicitly
+- [x] Record findings in an uncommitted diagnostic artifact unless explicitly
   asked to promote it.
+
+Phase 2 finding:
+
+- Diagnostic artifact:
+  `data/iccma/2025/runs/aba-hard-bucket-phase2-profile-findings.md`
+  (intentionally uncommitted).
+- T1-T4 status evidence: all timed out across `auto`, `asp`, and `sat` in
+  `data/iccma/2025/runs/aba-hard-bucket-phase2-profile.json`.
+- T1/T2 bounded profiles show the hard ASP rows spend nearly the whole sampled
+  window in clingo C calls under `_solve_multishot`, not Python frame
+  extraction.
+- C1 did not preserve under the profiled 30s status run: `sat` timed out; its
+  bounded profile spends nearly the whole sampled window in
+  `Z3_solver_check_assumptions`.
+- Next code hypothesis: reduce the encoded first-solver problem for ASP
+  preferred/stable single-extension, and separately repair or reroute the C1
+  SAT stable witness path from `_sat_ranked_stable_extension`, using structural
+  features only.
 
 Before launching the profiling command, state a timeout derived from the 30s
 per-row budget plus modest harness overhead. Do not manually stop it unless it
