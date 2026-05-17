@@ -245,7 +245,11 @@ def _solve_multishot(
     """
     from argumentation import aba_incremental
 
-    metadata_base = {"encoding": encoding.metadata["encoding"], "solver": "clingo_multishot"}
+    metadata_base = {
+        "encoding": encoding.metadata["encoding"],
+        "solver": "clingo_multishot",
+        **aba_incremental.lehtonen_incremental_asp_metadata(),
+    }
     try:
         solver = aba_incremental.AbaIncrementalSolver(framework, encoding=encoding)
     except RuntimeError as exc:
@@ -411,8 +415,14 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
     original = simplification.original
     residual = simplification.residual
     encoding = encode_aba_theory(original)
-    metadata = {"encoding": encoding.metadata["encoding"], "solver": "clingo_multishot",
-                "task": "skeptical", "algorithm": "L21-TPLP-Alg1", "preprocessing": "grounded_reduct_aba"}
+    metadata = {
+        "encoding": encoding.metadata["encoding"],
+        "solver": "clingo_multishot",
+        "task": "skeptical",
+        "algorithm": "L21-TPLP-Alg1",
+        "preprocessing": "grounded_reduct_aba",
+        **aba_incremental.lehtonen_incremental_asp_metadata(),
+    }
 
     def _result(answer: bool, counterexample: AssumptionSet | None) -> ABAQueryResult:
         return ABAQueryResult(
