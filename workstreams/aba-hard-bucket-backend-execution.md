@@ -118,12 +118,12 @@ execution.
 
 Goal: make T1-T9 and C1-C3 executable without hand-copying command lines.
 
-- [ ] Add a text-source manifest for T1-T9 and C1-C3 under `tests/manifests/`.
-- [ ] Add a small tool or option that runs exactly that manifest against
+- [x] Add a text-source manifest for T1-T9 and C1-C3 under `tests/manifests/`.
+- [x] Add a small tool or option that runs exactly that manifest against
   `auto`, `asp`, and `sat` with `--timeout-seconds 30`.
-- [ ] Add tests proving the manifest contains exactly 12 rows and no duplicate
+- [x] Add tests proving the manifest contains exactly 12 rows and no duplicate
   `(instance, subtrack)` pairs.
-- [ ] Add tests proving production backend selection cannot inspect manifest
+- [x] Add tests proving production backend selection cannot inspect manifest
   row paths or generator names.
 
 Gate:
