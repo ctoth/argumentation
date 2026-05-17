@@ -295,6 +295,34 @@ uv run .\scripts\dialectical_chess_bench.py `
   bounded sample, but the confidence interval is wide and the max-ply cap still
   makes this a calibration smoke rather than a stable absolute rating.
 
+Observed full-game sample:
+
+- Command:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline stockfish `
+  --match-games 10 `
+  --match-max-plies 400 `
+  --match-tc 30+0.2
+```
+
+- Runner: `fast-chess`.
+- Baseline: Stockfish 18 with `UCI_LimitStrength=true`, `UCI_Elo=1320`,
+  `Threads=1`, `Hash=16`.
+- Games: 10.
+- Effective cap: `fast-chess -maxmoves 200`, high enough that every game ended
+  by mate before adjudication.
+- W/D/L from the dialectical engine's perspective: 0/0/10.
+- Score: 0.0/10, 0.00%.
+- Reported relative Elo: `-inf +/- nan`.
+- Failures: 0 timeouts, 0 crashes, 0 losses-on-time.
+- Runtime: about 7 minutes 10 seconds.
+- Interpretation: the capped/adjudicated samples were misleading. In full-game
+  play, the current engine loses every game to Stockfish 1320 by mate under
+  this setup.
+
 ## Completion Criteria
 
 - Weak baseline exists and is committed.
