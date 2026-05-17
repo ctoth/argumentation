@@ -65,7 +65,7 @@ class ReplyAnalysisCache:
             self.checkmate_hits += 1
             return self._checkmates[board]
         self.checkmate_misses += 1
-        result = len(self.legal_moves(board)) == 0 and board.in_check(board.turn)
+        result = board.in_check(board.turn) and len(self.legal_moves(board)) == 0
         self._checkmates[board] = result
         return result
 
@@ -213,12 +213,13 @@ def bounded_reply_attacks(
             reply_piece_value = (
                 OWNED_PIECE_VALUE.get(reply_piece.lower(), 0) if reply_piece else 0
             )
-            reply_is_mate = cache.is_checkmate(reply_child)
+            reply_gives_check = reply_child.in_check(reply_child.turn)
+            reply_is_mate = reply_gives_check and cache.is_checkmate(reply_child)
             relevant_for_defense = (
                 reply_is_mate
                 or reply_captures_moved_piece
                 or reply_piece_value >= settings.min_defense_material
-                or reply_child.in_check(reply_child.turn)
+                or reply_gives_check
             )
             defended = (
                 reply_depth > 1
