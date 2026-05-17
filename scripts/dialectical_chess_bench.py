@@ -29,6 +29,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROBE_PATH = SCRIPT_DIR / "dialectical_chess_probe.py"
 OWNED_PATH = SCRIPT_DIR / "dialectical_chess_owned.py"
+RANDOM_BASELINE_PATH = SCRIPT_DIR / "dialectical_chess_random_uci.py"
+OPENINGS_PATH = SCRIPT_DIR / "dialectical_chess_openings.epd"
 BUILT_IN_EPD = '7k/6pp/8/8/8/8/6PP/R5K1 w - - bm Ra8#; id "mate-in-one-smoke";'
 BM_RE = re.compile(r"\bbm\s+([^;]+);")
 AM_RE = re.compile(r"\bam\s+([^;]+);")
@@ -59,6 +61,8 @@ def main() -> int:
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
     parser.add_argument("--internal-uci-match", action="store_true")
+    parser.add_argument("--match-baseline", choices=("nosmt", "random"), default="nosmt")
+    parser.add_argument("--match-openings", type=Path, default=OPENINGS_PATH)
     parser.add_argument("--match-games", type=int, default=2)
     parser.add_argument("--match-max-plies", type=int, default=40)
     parser.add_argument("--match-tc", default="1+0.01")
@@ -245,6 +249,9 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         str(args.match_games),
         "-repeat",
     ]
+    baseline_name, baseline_args = fastchess_baseline(args.match_baseline, uv_executable)
+    games_per_round = 2 if args.match_games > 1 else 1
+    rounds = max(1, (args.match_games + games_per_round - 1) // games_per_round)
     fastchess_args = [
         "-engine",
         "name=Dialectical",
@@ -253,17 +260,18 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
         "proto=uci",
         f"dir={ROOT}",
         "-engine",
-        "name=DialecticalNoSMT",
-        f"cmd={uv_executable}",
-        "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen --no-smt-mate",
-        "proto=uci",
-        f"dir={ROOT}",
+        f"name={baseline_name}",
+        *baseline_args,
         "-each",
         f"tc={args.match_tc}",
         "-rounds",
-        "1",
+        str(rounds),
         "-games",
-        str(args.match_games),
+        str(games_per_round),
+        "-openings",
+        f"file={args.match_openings}",
+        "format=epd",
+        "order=sequential",
         "-maxmoves",
         str(max(1, args.match_max_plies // 2)),
         "-concurrency",
@@ -283,17 +291,50 @@ def run_uci_match(args: argparse.Namespace) -> dict[str, Any]:
             "suggested_command": "fast-chess " + " ".join(fastchess_args),
         }
     if not args.run_uci_match:
-        return {"ok": True, "mode": "uci_match", "runner": runner, "command": command}
+        return {
+            "ok": True,
+            "mode": "uci_match",
+            "runner": runner,
+            "baseline": args.match_baseline,
+            "requested_games": args.match_games,
+            "command": command,
+        }
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
     return {
         "ok": completed.returncode == 0,
         "mode": "uci_match",
         "runner": runner,
+        "baseline": args.match_baseline,
+        "requested_games": args.match_games,
         "command": command,
         "returncode": completed.returncode,
         "stdout": completed.stdout,
         "stderr": completed.stderr,
     }
+
+
+def fastchess_baseline(baseline: str, uv_executable: str) -> tuple[str, list[str]]:
+    if baseline == "nosmt":
+        return (
+            "DialecticalNoSMT",
+            [
+                f"cmd={uv_executable}",
+                "args=run .\\scripts\\dialectical_chess_probe.py --uci --owned-movegen --no-smt-mate",
+                "proto=uci",
+                f"dir={ROOT}",
+            ],
+        )
+    if baseline == "random":
+        return (
+            "DialecticalRandom",
+            [
+                f"cmd={uv_executable}",
+                "args=run .\\scripts\\dialectical_chess_random_uci.py",
+                "proto=uci",
+                f"dir={ROOT}",
+            ],
+        )
+    raise ValueError(f"unknown match baseline: {baseline}")
 
 
 def run_internal_uci_match(args: argparse.Namespace) -> dict[str, Any]:
