@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from tools import aba_shape_benchmark
@@ -14,10 +15,11 @@ DEFAULT_BACKENDS = ("auto", "asp", "sat")
 DEFAULT_SUBTRACKS = ("SE-PR", "SE-ST")
 
 
-def benchmark_args(args: argparse.Namespace) -> list[str]:
+def benchmark_args(args: argparse.Namespace, *, manifest: Path | None = None) -> list[str]:
+    manifest_path = args.manifest if manifest is None else manifest
     command = [
         "--timeouts",
-        str(args.manifest),
+        str(manifest_path),
         "--year",
         str(args.year),
         "--instance-kind",
@@ -46,6 +48,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--year", type=int, default=2025)
+    parser.add_argument(
+        "--target-id",
+        action="append",
+        default=[],
+        help="Diagnostic filter for manifest target/control ids; defaults to the full manifest.",
+    )
     parser.add_argument("--subtrack", action="append", default=list(DEFAULT_SUBTRACKS))
     parser.add_argument("--backend", action="append", default=list(DEFAULT_BACKENDS))
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
@@ -60,9 +68,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def selected_manifest(args: argparse.Namespace) -> Path:
+    if not args.target_id:
+        return args.manifest
+    requested = set(args.target_id)
+    rows = json.loads(args.manifest.read_text(encoding="utf-8"))
+    selected = [row for row in rows if row.get("target_id") in requested]
+    found = {row.get("target_id") for row in selected}
+    missing = sorted(requested - found)
+    if missing:
+        raise SystemExit(f"unknown hard-bucket target id(s): {', '.join(missing)}")
+    args.output_json.parent.mkdir(parents=True, exist_ok=True)
+    manifest = args.output_json.with_suffix(".manifest.json")
+    manifest.write_text(json.dumps(selected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    return aba_shape_benchmark.main(benchmark_args(args))
+    return aba_shape_benchmark.main(benchmark_args(args, manifest=selected_manifest(args)))
 
 
 if __name__ == "__main__":
