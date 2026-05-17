@@ -45,6 +45,38 @@ large/medium/dense bucket, and the same structural region has stable rows that
 are either all-timeout or solver-sensitive. This says maximality checking and
 large cyclic dependency structure are the next target, not filename routing.
 
+## Distinct Row Targets
+
+The next backend slice targets rows, not a coarse label. The primary target set
+is the nine all-timeout rows from the rerun:
+
+| Target | Instance | Subtrack | Purpose |
+|---|---|---|---|
+| T1 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-PR` | preferred all-timeout |
+| T2 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-ST` | stable all-timeout |
+| T3 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-PR` | preferred all-timeout |
+| T4 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-ST` | stable all-timeout |
+| T5 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-PR` | preferred all-timeout |
+| T6 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-PR` | preferred all-timeout |
+| T7 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-ST` | stable all-timeout |
+| T8 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-PR` | preferred all-timeout |
+| T9 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-ST` | stable all-timeout |
+
+The nearby controls are mandatory because they live in the same coarse bucket
+but current backends still solve them:
+
+| Control | Instance | Subtrack | Baseline result |
+|---|---|---|---|
+| C1 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-ST` | solved by `sat` |
+| C2 | `ABAs/aba_2000_0.1_5_5_7.aba` | `SE-PR` | solved by `asp` |
+| C3 | `ABAs/aba_2000_0.1_5_5_7.aba` | `SE-ST` | solved by `auto` |
+
+The first backend gate is deliberately small: solve at least one of T1-T9 under
+the same 30-second budget while preserving C1-C3. The second gate is to solve a
+preferred/stable pair on the same instance, preferably `5_5_0` or `5_5_1`. The
+third gate is to generalize across at least three distinct instances, so a
+single accidental row improvement does not masquerade as a backend.
+
 ## Explicit Non-Fit Signals
 
 - Popescu-style low-width dynamic programming is not the immediate fit:
@@ -76,3 +108,56 @@ The acceptance gate for this backend slice is concrete:
 - no currently solved row regresses;
 - the selection predicate uses only shape fields and solver class;
 - route promotion remains blocked until a rerun has zero counterexamples.
+
+## Paper Stack
+
+The hard-bucket backend work should cite distinct papers for distinct jobs:
+
+- Lehtonen, Wallner, and Jarvisalo 2021,
+  `papers/Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/notes.md`:
+  primary ABA source for direct ASP encodings, the `assumption/head/body/
+  contrary` fact surface, stable constraints, preferred maximality through
+  ASPRIN-style subset optimization, and the warning that direct ABA avoids AF
+  translation blow-up.
+- Egly, Gaggl, and Woltran 2010,
+  `papers/Egly_2010_Answer-setProgrammingEncodingsArgumentation/notes.md`:
+  ASPARTIX source for modular ASP encodings, saturation for preferred/semi-
+  stable maximality, fixed-query/input-fact separation, and splitting-theorem
+  proof discipline.
+- Baroni and Giacomin 2005,
+  `../propstore/papers/Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/notes.md`:
+  SCC-recursive directionality source. This is the paper to justify solving or
+  conditioning the giant cyclic SCC differently from acyclic upstream/downstream
+  structure.
+- Cerutti, Dunne, Giacomin, and Vallati 2013,
+  `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/notes.md`:
+  preferred-extension search source for complete-labelling SAT, iterative
+  maximality growth, blocking, and the empirical fact that encoding details
+  materially change preferred performance.
+- Cerutti, Vallati, and Giacomin 2015,
+  `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/notes.md`:
+  ICCMA-system source for complete-labelling SAT as an implementation surface
+  over complete, preferred, grounded, and stable tasks.
+- Niskanen and Jarvisalo 2020,
+  `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/notes.md`:
+  practical SAT-system source for persistent solver state, assumptions,
+  iterative calls, unit-propagation grounded preprocessing, and ICCMA-proven
+  solver engineering.
+- Popescu and Wallner 2023,
+  `papers/Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/notes.md`:
+  ABA-specific tree-decomposition source. It is not the immediate hard-row fit
+  while the width proxy is 21-25, but it defines the `tau_ABA` structure and the
+  witness/counterwitness state we should measure against.
+- Fichte, Hecher, Mahmood, and Meier 2021,
+  `../propstore/papers/Fichte_2021_Decomposition-GuidedReductionsArgumentationTreewidth/notes.md`:
+  decomposition-guided SAT/QBF source. Use it when we have a real decomposition
+  artifact, not as a slogan for dense hard rows.
+- Dimopoulos, Nebel, and Toni 2002,
+  `papers/Dimopoulos_2002_ComputationalComplexityAssumption-basedArgumentation/notes.md`:
+  complexity and framework-class source, especially for not conflating flat,
+  normal, simple, and general ABA behavior.
+- Toni 2013 and Dung, Mancarella, and Toni 2007,
+  `papers/Toni_2013_GeneralisedFrameworkDisputeDerivations/notes.md` and
+  `papers/Dung_2007_ComputingIdealScepticalArgumentation/notes.md`: dispute
+  derivation sources. They are controls for p-acyclic or query-shaped future
+  routes, not the first attack on these cyclic hard rows.
