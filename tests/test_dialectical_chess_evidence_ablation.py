@@ -352,3 +352,16 @@ def test_experiment_matrix_runs_named_lichess_cases() -> None:
         "argument_mate_theme_depth",
     ]
     assert payload["sample"]["total"] == 2
+
+
+def test_core_experiment_matrix_includes_optimizer_rows() -> None:
+    from dialectical_chess.bench import experiment_matrix_cases
+
+    names = {case["name"] for case in experiment_matrix_cases("core")}
+
+    assert {
+        "optimizer_static",
+        "optimizer_d2",
+        "optimizer_d2_no_positional",
+        "optimizer_mate_theme_depth",
+    } <= names
