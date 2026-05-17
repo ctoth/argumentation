@@ -51,7 +51,7 @@ vocabulary.
 
 ### Phase 0: Baseline and Fixture Inventory
 
-Status: pending.
+Status: complete, with external-data blocker.
 
 Tasks:
 
@@ -65,9 +65,19 @@ Acceptance criteria:
 
 - Workstream has exact input-suite paths or an explicit missing-data blocker.
 
+Result:
+
+- Committed smoke EPD: `scripts/dialectical_chess_smoke.epd`.
+- Committed Lichess-shaped sample: `scripts/dialectical_chess_puzzles_sample.csv`.
+- Generated full-game loss-mining diagnostics exist under `scratch/`, but are
+  diagnostic artifacts and were not promoted.
+- No real external Lichess puzzle CSV is present in the repository. Strength
+  claims against the requested 1200-1600/themed Lichess buckets are blocked
+  until a real CSV path is supplied.
+
 ### Phase 1: Selector and Ranking Modes
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -87,9 +97,18 @@ Acceptance criteria:
 - Tests prove at least two modes can choose different moves on a synthetic
   position/probe set.
 
+Result:
+
+- `EngineSettings.selector_mode` supports `argument`, `score`, `grounded`,
+  `support`, and `categoriser`.
+- Default is explicitly `argument`.
+- Benchmark JSON includes `selector_mode`.
+- UCI emits `info string selector_mode=...`.
+- Tests prove `argument` and `score` can choose different synthetic probes.
+
 ### Phase 2: Ranking Ablation Harness
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -102,9 +121,28 @@ Acceptance criteria:
 - A single command compares selector modes on an EPD or Lichess CSV suite.
 - Output identifies where modes disagree.
 
+Result:
+
+- `--selector-mode-ablation` expands ablation over all selector modes.
+- Ablation rows report hit rate, avoid rate, elapsed ms, and
+  `selected_move_deltas_vs_first`.
+- Lichess-shaped output reports solved/total by rating bucket and theme.
+- Smoke command:
+
+```powershell
+uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py `
+  --ablation `
+  --epd .\scripts\dialectical_chess_smoke.epd `
+  --selector-mode-ablation
+```
+
+- Smoke result: all selector/depth/backend/SMT rows scored `2/3`, avoid-rate
+  `1.0`, and selected-move deltas `0`. This suite is too small and too
+  tactical to show categoriser value.
+
 ### Phase 3: Real Lichess Evaluation
 
-Status: pending.
+Status: blocked for real data; committed sample verified.
 
 Tasks:
 
@@ -120,9 +158,26 @@ Acceptance criteria:
 - Results include total positions per bucket/theme.
 - Claims are labeled sample-based unless the full dataset was run.
 
+Result:
+
+- Real requested evaluation is blocked: no external Lichess puzzle CSV was
+  found in the repo.
+- Committed sample command:
+
+```powershell
+uv run --with chess --with z3-solver .\scripts\dialectical_chess_bench.py `
+  --lichess-puzzles .\scripts\dialectical_chess_puzzles_sample.csv `
+  --selector-mode argument
+```
+
+- Sample result: `2/2`, hit-rate `1.0`.
+- Buckets: `800-999`: `1/1`; `1200-1399`: `1/1`.
+- Themes: `hangingPiece`: `1/1`; `mate`: `1/1`; `mateIn1`: `1/1`.
+- This is sample plumbing evidence only, not a strength claim.
+
 ### Phase 4: SMT Honesty Gate
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -139,9 +194,17 @@ Acceptance criteria:
 - No output implies Z3 discovered a move unless Z3 actually solved a constrained
   move/position problem.
 
+Result:
+
+- Mate-in-one witness labeling is now `procedural:mate_in_one` with witness
+  `procedural_mate_in_one`.
+- Tests prove the existing mate witness equals procedural legal-move mate
+  enumeration.
+- The old `smt:mate_in_one` strength implication is gone.
+
 ### Phase 5: First Real SMT Witness
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -159,9 +222,17 @@ Acceptance criteria:
   mate enumeration.
 - Solver result is independently verified before becoming an argument.
 
+Result:
+
+- Added `smt_fork_moves`.
+- It uses Z3 to choose a legal move satisfying fork target constraints, then
+  verifies the move through the owned board before exposing it.
+- Test fixture: `r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1`.
+- Witness: `b5c7`, exposed as `smt:fork:2:500`.
+
 ### Phase 6: Positional Reason Vocabulary
 
-Status: pending.
+Status: complete.
 
 Tasks:
 
@@ -181,9 +252,22 @@ Acceptance criteria:
 - Quiet opening/middlegame positions produce non-empty support reasons.
 - Argument traces show conflicting positional reasons.
 
+Result:
+
+- Added positional reason families: `development`, `center_control`,
+  `king_safety`, `pawn_structure`, `file_control`, `outpost`, and
+  `piece_activity`.
+- Example opening traces:
+  - `development:e2e4:center_pawn`
+  - `center_control:e2e4:1`
+  - `development:g1f3:minor_piece`
+  - `piece_activity:g1f3:mobility_gain:5`
+- Example castling trace: `king_safety:e1g1:castle`.
+- Example structure trace: `pawn_structure:e4e5:passed_pawn`.
+
 ### Phase 7: Positional Reason Ablation
 
-Status: pending.
+Status: complete on committed smoke/sample suites; blocked for real verdict.
 
 Tasks:
 
@@ -197,9 +281,24 @@ Acceptance criteria:
 - We can answer whether categoriser ranking adds value once the graph is less
   sparse.
 
+Result:
+
+- Positional reasons are controlled by `EngineSettings.positional_reasons` and
+  `--no-positional-reasons`.
+- UCI emits `info string positional_reasons=...`.
+- Sample positional-on command scored `2/2`; positional-off command also scored
+  `2/2`.
+- Difference on sample is trace/score quality:
+  - with positional reasons, `d1d2` has material, center-control,
+    piece-activity, and file-control reasons, score `975`;
+  - without positional reasons, `d1d2` only has material, score `900`.
+- Categoriser ranking verdict on available committed suites: neutral. The
+  smoke/sample suites show no selected-move deltas, so they do not answer the
+  real categoriser-value question.
+
 ### Phase 8: Report and Next Workstream Link
 
-Status: pending.
+Status: complete for this workstream.
 
 Tasks:
 
@@ -218,6 +317,17 @@ Acceptance criteria:
 
 - Every major claim has a command and input suite.
 - Next strength workstream has explicit data to target.
+
+Result:
+
+- Commands and input suites are recorded above.
+- Next strength workstream targets:
+  - refutation filtering for noisy positional reasons;
+  - search witnesses that produce structured arguments instead of scalar-only
+    scores;
+  - king-safety defeaters for castling/open-file tradeoffs;
+  - ADF acceptance for richer non-binary evidence combination;
+  - a real Lichess CSV run once the dataset path is supplied.
 
 ## Commands
 
@@ -247,3 +357,28 @@ uv run --with chess --with z3-solver pytest `
 - Quiet positions get positional arguments.
 - Categoriser ranking has an evidence-backed verdict: useful, neutral, or not
   yet meaningful.
+
+Completion evidence:
+
+- Chess-focused tests:
+
+```powershell
+uv run --with chess --with z3-solver pytest `
+  .\tests\test_dialectical_chess_engine_api.py `
+  .\tests\test_dialectical_chess_evidence_ablation.py `
+  .\tests\test_dialectical_chess_cleanup.py `
+  .\tests\test_dialectical_chess_loss_mining.py
+```
+
+Result: `26 passed`.
+
+- Full repository suite was run once during this workstream:
+
+```powershell
+uv run --with chess --with z3-solver pytest .\tests --timeout=120
+```
+
+Result: `2758 passed`, `2 skipped`, `1 failed`. The failure was
+`tests/test_solver_availability.py::test_sat_backend_acceptance_matches_native_backend`
+with a SAT/native preferred-semantics witness mismatch outside the chess-owned
+paths.
