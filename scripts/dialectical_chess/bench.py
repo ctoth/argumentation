@@ -15,6 +15,7 @@ import chess
 
 from dialectical_chess.arguments import build_root_argument_graph, choose_move
 from dialectical_chess.board import PERFT_FIXTURES, OwnedBoard, owned_perft
+from dialectical_chess.loss_mining import mine_loss_turning_points, reviewed_epd_lines
 from dialectical_chess.matches import run_internal_uci_match, run_uci_match
 from dialectical_chess.probe import probe_moves
 
@@ -36,6 +37,10 @@ def main() -> int:
     parser.add_argument("--lichess-puzzles", type=Path)
     parser.add_argument("--perft", action="store_true")
     parser.add_argument("--ablation", action="store_true")
+    parser.add_argument("--mine-loss-pgn", type=Path)
+    parser.add_argument("--loss-epd-out", type=Path)
+    parser.add_argument("--loss-engine-name", default="Dialectical")
+    parser.add_argument("--loss-mate-depth", type=int, default=1)
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--limit", type=int)
     parser.add_argument("--fail-fast", action="store_true")
@@ -56,6 +61,7 @@ def main() -> int:
     parser.add_argument("--match-openings", type=Path, default=OPENINGS_PATH)
     parser.add_argument("--match-games", type=int, default=2)
     parser.add_argument("--match-max-plies", type=int, default=40)
+    parser.add_argument("--match-pgn-out", type=Path)
     parser.add_argument("--match-tc", default="1+0.01")
     parser.add_argument("--stockfish-path")
     parser.add_argument("--stockfish-elo", type=int, default=1320)
@@ -65,6 +71,8 @@ def main() -> int:
     started = time.perf_counter()
     if args.perft:
         payload = run_perft()
+    elif args.mine_loss_pgn:
+        payload = run_loss_mining(args)
     elif args.lichess_puzzles:
         payload = run_lichess(args)
     elif args.ablation:
@@ -86,6 +94,29 @@ def main() -> int:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(text + "\n", encoding="utf-8")
     return 0 if payload.get("ok", True) else 1
+
+
+def run_loss_mining(args: argparse.Namespace) -> dict[str, Any]:
+    pgn_text = args.mine_loss_pgn.read_text(encoding="utf-8")
+    points = mine_loss_turning_points(
+        pgn_text,
+        engine_name=args.loss_engine_name,
+        mate_depth=args.loss_mate_depth,
+    )
+    epd_lines = reviewed_epd_lines(points)
+    if args.loss_epd_out:
+        args.loss_epd_out.parent.mkdir(parents=True, exist_ok=True)
+        args.loss_epd_out.write_text("\n".join(epd_lines) + ("\n" if epd_lines else ""), encoding="utf-8")
+    return {
+        "ok": True,
+        "mode": "loss_mining",
+        "pgn": str(args.mine_loss_pgn),
+        "engine_name": args.loss_engine_name,
+        "mate_depth": args.loss_mate_depth,
+        "turning_points": [point.__dict__ for point in points],
+        "epd_lines": epd_lines,
+        "loss_epd_out": None if args.loss_epd_out is None else str(args.loss_epd_out),
+    }
 
 
 def run_epd(args: argparse.Namespace) -> dict[str, Any]:
