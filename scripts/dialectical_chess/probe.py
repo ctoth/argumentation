@@ -16,7 +16,7 @@ from dialectical_chess.search import (
     owned_is_checkmate,
     root_search_result,
 )
-from dialectical_chess.smt import SmtSettings, smt_mate_in_one_moves
+from dialectical_chess.smt import SmtSettings, smt_fork_moves, smt_mate_in_one_moves
 
 
 @dataclass(frozen=True)
@@ -52,6 +52,7 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
     smt_mate_moves = (
         smt_mate_in_one_moves(board) if settings.smt.mate_in_one else frozenset()
     )
+    smt_fork_move_set = smt_fork_moves(board) if settings.smt.fork else frozenset()
     probes = []
     for move in legal_moves:
         san = move.uci()
@@ -83,6 +84,10 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
             score += 1_000_000
             reasons.append("procedural:mate_in_one")
             smt_witnesses.append("procedural_mate_in_one")
+        if move.uci() in smt_fork_move_set:
+            score += 500
+            reasons.append("smt:fork:2:500")
+            smt_witnesses.append("fork")
         search_result = root_search_result(board, move, settings=settings.search)
         if search_result is not None:
             if search_result.score > 0:
