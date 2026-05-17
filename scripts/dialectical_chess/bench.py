@@ -13,6 +13,7 @@ from typing import Any
 
 import chess
 
+from dialectical_chess.arguments import SELECTOR_MODES
 from dialectical_chess.board import PERFT_FIXTURES, OwnedBoard, owned_perft
 from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.loss_mining import mine_loss_turning_points, reviewed_epd_lines
@@ -52,6 +53,8 @@ def main() -> int:
     parser.add_argument("--dialectic-depth", type=int, default=1)
     parser.add_argument("--search-depth", type=int, default=0)
     parser.add_argument("--search-backend", choices=("negamax", "alphabeta"), default="negamax")
+    parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
+    parser.add_argument("--selector-mode-ablation", action="store_true")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
@@ -141,6 +144,7 @@ def run_epd(args: argparse.Namespace) -> dict[str, Any]:
                 raise
             results.append({"line": index, "error": str(exc), "correct": False})
     solved = sum(1 for result in results if result.get("correct"))
+    avoided = sum(1 for result in results if result.get("avoided"))
     return {
         "ok": all("error" not in result for result in results),
         "mode": "epd",
@@ -148,6 +152,8 @@ def run_epd(args: argparse.Namespace) -> dict[str, Any]:
         "total": len(results),
         "solved": solved,
         "hit_rate": solved / len(results) if results else 0.0,
+        "avoided": avoided,
+        "avoid_rate": avoided / len(results) if results else 0.0,
         "settings": settings(args),
         "positions": results,
     }
@@ -156,27 +162,41 @@ def run_epd(args: argparse.Namespace) -> dict[str, Any]:
 def run_ablation(args: argparse.Namespace) -> dict[str, Any]:
     base_epd = args.epd
     runs = []
+    baseline_moves: list[str | None] | None = None
     for smt_mate in (True, False):
         for dialectic_depth in (0, 1, 2):
             for search_depth in (0, 1, 2, 3):
                 for backend in ("negamax", "alphabeta"):
-                    case_args = argparse.Namespace(**vars(args))
-                    case_args.epd = base_epd
-                    case_args.smt_mate = smt_mate
-                    case_args.dialectic_depth = dialectic_depth
-                    case_args.search_depth = search_depth
-                    case_args.search_backend = backend
-                    started = time.perf_counter()
-                    payload = run_epd(case_args)
-                    runs.append(
-                        {
-                            "settings": settings(case_args),
-                            "total": payload["total"],
-                            "solved": payload["solved"],
-                            "hit_rate": payload["hit_rate"],
-                            "elapsed_ms": (time.perf_counter() - started) * 1000.0,
-                        }
-                    )
+                    for selector_mode in ablation_selector_modes(args):
+                        case_args = argparse.Namespace(**vars(args))
+                        case_args.epd = base_epd
+                        case_args.smt_mate = smt_mate
+                        case_args.dialectic_depth = dialectic_depth
+                        case_args.search_depth = search_depth
+                        case_args.search_backend = backend
+                        case_args.selector_mode = selector_mode
+                        started = time.perf_counter()
+                        payload = run_epd(case_args)
+                        selected_moves = [
+                            position.get("selected_uci")
+                            for position in payload["positions"]
+                        ]
+                        if baseline_moves is None:
+                            baseline_moves = selected_moves
+                        runs.append(
+                            {
+                                "settings": settings(case_args),
+                                "total": payload["total"],
+                                "solved": payload["solved"],
+                                "hit_rate": payload["hit_rate"],
+                                "avoid_rate": payload["avoid_rate"],
+                                "selected_move_deltas_vs_first": sum(
+                                    left != right
+                                    for left, right in zip(selected_moves, baseline_moves, strict=False)
+                                ),
+                                "elapsed_ms": (time.perf_counter() - started) * 1000.0,
+                            }
+                        )
     return {"ok": True, "mode": "ablation", "suite": str(base_epd) if base_epd else "built-in-smoke", "runs": runs}
 
 
@@ -267,6 +287,7 @@ def score_board(
             search_depth=args.search_depth,
             search_backend=args.search_backend,
             smt_mate=args.smt_mate,
+            selector_mode=args.selector_mode,
         )
     ).choose_move(board)
     selected = decision.selected
@@ -372,11 +393,18 @@ def rating_bucket(rating: int) -> str:
     return f"{low}-{low + 199}"
 
 
+def ablation_selector_modes(args: argparse.Namespace) -> tuple[str, ...]:
+    if args.selector_mode_ablation:
+        return tuple(sorted(SELECTOR_MODES))
+    return (args.selector_mode,)
+
+
 def settings(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "dialectic_depth": args.dialectic_depth,
         "search_depth": args.search_depth,
         "search_backend": args.search_backend,
         "smt_mate": args.smt_mate,
+        "selector_mode": args.selector_mode,
         "movegen": "owned",
     }
