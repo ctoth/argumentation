@@ -26,6 +26,8 @@ from dialectical_chess.bench import (  # noqa: E402
 )
 from dialectical_chess.probe import owned_board_from_fen  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
+from dialectical_chess.search import owned_is_checkmate  # noqa: E402
+from dialectical_chess.smt import smt_mate_in_one_moves  # noqa: E402
 from dialectical_chess.uci import choose_uci_move  # noqa: E402
 
 
@@ -120,3 +122,14 @@ def test_lichess_summary_reports_rating_bucket_totals() -> None:
 
     assert payload["by_rating_bucket"]["800-999"]["total"] == 1
     assert payload["by_rating_bucket"]["1200-1399"]["total"] == 1
+
+
+def test_mate_in_one_smt_scaffold_matches_procedural_checker() -> None:
+    board = owned_board_from_fen("7k/6pp/8/8/8/8/6PP/R5K1 w - - 0 1")
+    procedural_moves = frozenset(
+        move.uci()
+        for move in board.legal_moves()
+        if owned_is_checkmate(board.apply(move))
+    )
+
+    assert smt_mate_in_one_moves(board) == procedural_moves

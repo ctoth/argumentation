@@ -59,7 +59,8 @@ def test_engine_selects_mate_in_one() -> None:
     assert decision.move_uci == "a1a8"
     assert decision.selected is not None
     assert decision.selected.score == 2_001_000
-    assert "smt:mate_in_one" in decision.selected.reasons
+    assert "procedural:mate_in_one" in decision.selected.reasons
+    assert "smt:mate_in_one" not in decision.selected.reasons
 
 
 def test_engine_returns_null_decision_for_no_legal_moves() -> None:
@@ -105,6 +106,7 @@ def test_benchmark_adapter_scores_through_engine(monkeypatch) -> None:
         search_depth=0,
         search_backend="negamax",
         smt_mate=True,
+        selector_mode="argument",
     )
 
     result = bench.score_board(object(), {"a1a8"}, args)
