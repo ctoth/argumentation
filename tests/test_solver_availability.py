@@ -615,11 +615,35 @@ def test_sat_backend_acceptance_matches_native_backend(
         assert isinstance(sat_result, AcceptanceSolverSuccess)
         assert isinstance(native_result, AcceptanceSolverSuccess)
         assert sat_result.answer is native_result.answer
-        if semantics == "preferred" and task == "skeptical":
-            assert sat_result.witness is None
-            assert sat_result.counterexample is None
+        _assert_dung_acceptance_witness_is_semantic(
+            framework,
+            semantics,
+            task,
+            query,
+            sat_result,
+        )
+
+
+def _assert_dung_acceptance_witness_is_semantic(
+    framework: ArgumentationFramework,
+    semantics: str,
+    task: str,
+    query: str,
+    result: AcceptanceSolverSuccess,
+) -> None:
+    extensions = set(NATIVE_EXTENSION_ORACLES[semantics](framework))
+    if task == "credulous":
+        if result.answer:
+            assert result.witness in extensions
+            assert result.witness is not None and query in result.witness
         else:
-            assert sat_result == native_result
+            assert result.witness is None
+        return
+    if result.answer:
+        assert result.counterexample is None
+    elif result.counterexample is not None:
+        assert result.counterexample in extensions
+        assert query not in result.counterexample
 
 
 def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
