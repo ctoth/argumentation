@@ -168,6 +168,11 @@ def positional_reason_labels(board: OwnedBoard, move: Any, child: OwnedBoard) ->
     center_count = moved_piece_center_control(child, move.to_square, piece)
     if center_count:
         labels.append(f"center_control:{move_text}:{center_count}")
+    activity_gain = moved_piece_activity_gain(board, child, move.from_square, move.to_square, piece)
+    if activity_gain > 0:
+        labels.append(f"piece_activity:{move_text}:mobility_gain:{activity_gain}")
+    if kind == "p" and is_passed_pawn(child, move.to_square, color):
+        labels.append(f"pawn_structure:{move_text}:passed_pawn")
     if kind in {"r", "q"} and controls_open_file(child, move.to_square):
         labels.append(f"file_control:{move_text}:open_file")
     if kind == "n" and is_supported_outpost(child, move.to_square, color):
@@ -195,6 +200,38 @@ def controls_open_file(board: OwnedBoard, square: int) -> bool:
         for index, piece in enumerate(board.squares)
         if file_of(index) == file_index
     )
+
+
+def moved_piece_activity_gain(
+    before: OwnedBoard,
+    after: OwnedBoard,
+    from_square: int,
+    to_square: int,
+    piece: str,
+) -> int:
+    before_activity = moved_piece_activity(before, from_square, piece)
+    after_activity = moved_piece_activity(after, to_square, piece)
+    return after_activity - before_activity
+
+
+def moved_piece_activity(board: OwnedBoard, square: int, piece: str) -> int:
+    return sum(
+        1
+        for target in range(64)
+        if target != square and moved_piece_attacks_square(board, square, target, piece)
+    )
+
+
+def is_passed_pawn(board: OwnedBoard, square: int, color: str) -> bool:
+    opponent_pawn = "p" if color == "w" else "P"
+    start_rank = rank_of(square) + (1 if color == "w" else -1)
+    stop_rank = 8 if color == "w" else -1
+    step = 1 if color == "w" else -1
+    for file_index in range(max(0, file_of(square) - 1), min(7, file_of(square) + 1) + 1):
+        for rank_index in range(start_rank, stop_rank, step):
+            if board.piece_at(rank_index * 8 + file_index) == opponent_pawn:
+                return False
+    return True
 
 
 def is_supported_outpost(board: OwnedBoard, square: int, color: str) -> bool:
