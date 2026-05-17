@@ -292,41 +292,50 @@ def _strongly_connected_components(
     nodes: set[Literal],
     edges: dict[Literal, set[Literal]],
 ) -> list[frozenset[Literal]]:
-    index = 0
-    stack: list[Literal] = []
-    on_stack: set[Literal] = set()
-    indices: dict[Literal, int] = {}
-    lowlinks: dict[Literal, int] = {}
+    all_nodes = set(nodes)
+    reverse_edges: dict[Literal, set[Literal]] = {node: set() for node in all_nodes}
+    for source, successors in edges.items():
+        all_nodes.add(source)
+        reverse_edges.setdefault(source, set())
+        for successor in successors:
+            all_nodes.add(successor)
+            reverse_edges.setdefault(successor, set()).add(source)
+
+    seen: set[Literal] = set()
+    finish_order: list[Literal] = []
+    for seed in sorted(all_nodes, key=repr):
+        if seed in seen:
+            continue
+        stack: list[tuple[Literal, bool]] = [(seed, False)]
+        while stack:
+            node, expanded = stack.pop()
+            if expanded:
+                finish_order.append(node)
+                continue
+            if node in seen:
+                continue
+            seen.add(node)
+            stack.append((node, True))
+            for successor in sorted(edges.get(node, ()), key=repr, reverse=True):
+                if successor not in seen:
+                    stack.append((successor, False))
+
     components: list[frozenset[Literal]] = []
-
-    def strongconnect(node: Literal) -> None:
-        nonlocal index
-        indices[node] = index
-        lowlinks[node] = index
-        index += 1
-        stack.append(node)
-        on_stack.add(node)
-
-        for successor in edges.get(node, ()):
-            if successor not in indices:
-                strongconnect(successor)
-                lowlinks[node] = min(lowlinks[node], lowlinks[successor])
-            elif successor in on_stack:
-                lowlinks[node] = min(lowlinks[node], indices[successor])
-
-        if lowlinks[node] == indices[node]:
-            component: set[Literal] = set()
-            while True:
-                successor = stack.pop()
-                on_stack.remove(successor)
-                component.add(successor)
-                if successor == node:
-                    break
-            components.append(frozenset(component))
-
-    for node in sorted(nodes, key=repr):
-        if node not in indices:
-            strongconnect(node)
+    assigned: set[Literal] = set()
+    for seed in reversed(finish_order):
+        if seed in assigned:
+            continue
+        component: set[Literal] = set()
+        stack = [seed]
+        assigned.add(seed)
+        while stack:
+            node = stack.pop()
+            component.add(node)
+            for predecessor in sorted(reverse_edges.get(node, ()), key=repr, reverse=True):
+                if predecessor not in assigned:
+                    assigned.add(predecessor)
+                    stack.append(predecessor)
+        components.append(frozenset(component))
     return components
 
 

@@ -190,6 +190,27 @@ def test_compute_aba_shape_skips_expensive_grounded_reduct() -> None:
     assert shape.residual_rules == shape.rules
 
 
+def test_compute_aba_shape_handles_long_dependency_chain_iteratively() -> None:
+    assumption = lit("a")
+    chain = tuple(lit(f"x{index}") for index in range(1200))
+    framework = ABAFramework(
+        language=frozenset((assumption, *chain)),
+        rules=frozenset(
+            Rule((chain[index],), chain[index + 1], "strict")
+            for index in range(len(chain) - 1)
+        )
+        | frozenset({Rule((assumption,), chain[0], "strict")}),
+        assumptions=frozenset({assumption}),
+        contrary={assumption: chain[-1]},
+    )
+
+    shape = compute_aba_shape(framework)
+
+    assert shape.dependency_scc_count == len(chain)
+    assert shape.dependency_scc_max_size == 1
+    assert shape.p_acyclic is True
+
+
 def test_validate_result_skips_expensive_python_validation() -> None:
     assumptions = frozenset(lit(f"a{index}") for index in range(40))
     contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
