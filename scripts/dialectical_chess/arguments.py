@@ -24,6 +24,7 @@ TACTICAL_REASON_PREFIXES = (
     "procedural:",
     "smt:",
     "search:",
+    "search_support:",
 )
 POSITIONAL_SCORE_BONUS = 25
 
@@ -257,6 +258,11 @@ def is_positional_reason(reason: str) -> bool:
 
 
 def is_tactical_reason(reason: str) -> bool:
+    if reason.startswith("smt:fork:"):
+        parts = reason.split(":")
+        return len(parts) == 4 and parts[2].isdigit() and parts[3].lstrip("-").isdigit()
+    if reason.startswith("search_line:"):
+        return False
     return reason.startswith(TACTICAL_REASON_PREFIXES)
 
 

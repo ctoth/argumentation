@@ -22,6 +22,20 @@ class SmtSettings:
     fork: bool = True
 
 
+@dataclass(frozen=True)
+class ForkWitness:
+    move: str
+    target_count: int
+    target_value: int
+    piece: str
+    moved_piece_value: int
+    moved_piece_en_pris_value: int
+
+    @property
+    def net_value(self) -> int:
+        return self.target_value - self.moved_piece_en_pris_value
+
+
 def smt_mate_in_one_moves(board: Any) -> frozenset[str]:
     try:
         from z3 import Bool, Or, Solver, sat
@@ -61,20 +75,29 @@ def smt_fork_moves(
     min_targets: int = 2,
     min_target_value: int = 500,
 ) -> frozenset[str]:
+    return frozenset(smt_fork_witnesses(board, min_targets=min_targets, min_target_value=min_target_value))
+
+
+def smt_fork_witnesses(
+    board: Any,
+    *,
+    min_targets: int = 2,
+    min_target_value: int = 500,
+) -> dict[str, ForkWitness]:
     try:
         from z3 import And, Int, Or, Solver, sat
     except ImportError:
-        return frozenset()
+        return {}
 
     legal_moves = tuple(board.legal_moves())
-    candidates: list[tuple[int, Any, tuple[int, int]]] = []
+    candidates: list[tuple[int, Any, ForkWitness]] = []
     for index, move in enumerate(legal_moves):
-        target_count, target_value = fork_targets_after(board, move)
-        if target_count >= min_targets and target_value >= min_target_value:
-            candidates.append((index, move, (target_count, target_value)))
+        witness = fork_witness_after(board, move)
+        if witness.target_count >= min_targets and witness.target_value >= min_target_value:
+            candidates.append((index, move, witness))
 
     if not candidates:
-        return frozenset()
+        return {}
 
     move_index = Int("fork_move_index")
     solver = Solver()
@@ -82,14 +105,32 @@ def smt_fork_moves(
     solver.add(
         Or(
             *(
-                And(move_index == index, target_count >= min_targets, target_value >= min_target_value)
-                for index, _, (target_count, target_value) in candidates
+                And(move_index == index, witness.target_count >= min_targets, witness.target_value >= min_target_value)
+                for index, _, witness in candidates
             )
         )
     )
     if solver.check() != sat:
-        return frozenset()
-    return frozenset(move.uci() for _, move, _ in candidates)
+        return {}
+    return {move.uci(): witness for _, move, witness in candidates}
+
+
+def fork_witness_after(board: Any, move: Any) -> ForkWitness:
+    moving_piece = board.piece_at(move.from_square)
+    if moving_piece is None:
+        return ForkWitness(move.uci(), 0, 0, "", 0, 0)
+    target_count, target_value = fork_targets_after(board, move)
+    child = board.apply(move)
+    moved_piece_value = piece_value(moving_piece)
+    en_pris_value = moved_piece_value if child.is_square_attacked(move.to_square, child.turn) else 0
+    return ForkWitness(
+        move=move.uci(),
+        target_count=target_count,
+        target_value=target_value,
+        piece=moving_piece.lower(),
+        moved_piece_value=moved_piece_value,
+        moved_piece_en_pris_value=en_pris_value,
+    )
 
 
 def fork_targets_after(board: Any, move: Any) -> tuple[int, int]:

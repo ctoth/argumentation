@@ -21,7 +21,7 @@ from dialectical_chess.search import (
 from dialectical_chess.smt import (
     SmtSettings,
     moved_piece_attacks_square,
-    smt_fork_moves,
+    smt_fork_witnesses,
     smt_mate_in_one_moves,
 )
 
@@ -66,7 +66,8 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
     smt_mate_moves = (
         smt_mate_in_one_moves(board) if settings.smt.mate_in_one else frozenset()
     )
-    smt_fork_move_set = smt_fork_moves(board) if settings.smt.fork else frozenset()
+    smt_fork_witness_map = smt_fork_witnesses(board) if settings.smt.fork else {}
+    smt_fork_move_set = frozenset(smt_fork_witness_map)
     reply_cache = ReplyAnalysisCache()
     probes = []
     for move in legal_moves:
@@ -105,15 +106,22 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
             reasons.append("procedural:mate_in_one")
             smt_witnesses.append("procedural_mate_in_one")
         if move.uci() in smt_fork_move_set:
-            score += 500
-            reasons.append("smt:fork:2:500")
+            fork_reasons, fork_objections, fork_score = fork_witness_labels(smt_fork_witness_map[move.uci()], gives_check)
+            score += fork_score
+            reasons.extend(fork_reasons)
+            objections.extend(fork_objections)
             smt_witnesses.append("fork")
         search_result = root_search_result(board, move, settings=settings.search)
         if search_result is not None:
+            search_line_label = "search_line:" + "-".join(search_result.line)
             if search_result.score > 0:
                 reasons.append(f"search:{settings.search.backend}:{search_result.score}")
+                reasons.append(f"search_support:{settings.search.backend}:{search_result.score}")
+                reasons.append(search_line_label)
             elif search_result.score < 0:
                 objections.append(f"search:{settings.search.backend}:{search_result.score}")
+                objections.append(f"search_refutes:{settings.search.backend}:{search_result.score}")
+                objections.append(search_line_label)
             score += search_result.score
         reply_attacks = bounded_reply_attacks(
             board,
@@ -144,6 +152,25 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
             )
         )
     return sorted(probes, key=lambda probe: (-probe.score, probe.uci))
+
+
+def fork_witness_labels(witness: Any, gives_check: bool) -> tuple[tuple[str, ...], tuple[str, ...], int]:
+    labels = [
+        f"smt:fork:targets:{witness.target_count}:value:{witness.target_value}",
+        f"smt:fork:piece:{witness.piece}",
+        f"smt:fork:net:{witness.net_value}",
+    ]
+    if gives_check:
+        labels.append("smt:fork:gives_check")
+    if witness.piece in {"q", "r"} and not gives_check:
+        objections = (f"smt:fork:high_value_piece:{witness.piece}",)
+        return tuple(labels), objections, 0
+    if witness.moved_piece_en_pris_value:
+        objections = (f"smt:fork:moved_piece_en_pris:{witness.moved_piece_en_pris_value}",)
+        if witness.net_value <= 0 and not gives_check:
+            return tuple(labels), objections, 0
+    compatibility = f"smt:fork:{witness.target_count}:{witness.target_value}"
+    return (compatibility, *labels), (), max(0, witness.net_value)
 
 
 def ensure_owned_board(board: Any) -> OwnedBoard:
