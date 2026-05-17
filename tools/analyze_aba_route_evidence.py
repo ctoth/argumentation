@@ -22,6 +22,7 @@ STRUCTURAL_SIGNATURE_FIELDS = (
     "assumption_incidence_width_proxy",
     "rule_body_overlap_max",
     "rule_body_overlap_avg",
+    "closure_growth_sample",
     "stable_obstruction_count",
     "tau_aba_primal_width_proxy",
 )
