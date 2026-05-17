@@ -119,10 +119,19 @@ Expected result: contracts pass before any old research is imported.
 
 Goal: inventory failed experiments for reusable assets only.
 
-- [ ] Inspect each failed branch's commits and touched paths.
-- [ ] Record which tests, tools, citations, and failure records are useful.
-- [ ] Record which production solver paths are rejected.
-- [ ] Write the inventory in `reports\aba-preferred-salvage-inventory.md`.
+- [x] Inspect each failed branch's commits and touched paths.
+- [x] Record which tests, tools, citations, and failure records are useful.
+- [x] Record which production solver paths are rejected.
+- [x] Write the inventory in `reports\aba-preferred-salvage-inventory.md`.
+
+Execution status:
+
+- Wrote `reports\aba-preferred-salvage-inventory.md` with branch-by-branch
+  salvage and reject decisions.
+- Rejected all failed preferred production solver paths from the inspected
+  branches.
+- Salvaged only operational learning: failure records, contract implications,
+  page citations, and already-promoted runner/guardrail assets.
 
 Gate:
 
