@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.aba_shape_benchmark import build_jobs_from_manifest
+from tools.aba_shape_benchmark import benchmark_profile_path, build_jobs_from_manifest
 from tools.run_aba_hard_bucket import benchmark_args, parse_args
 
 
@@ -68,8 +68,47 @@ def test_hard_bucket_runner_defaults_to_exact_manifest_backend_matrix() -> None:
     assert command[command.index("--timeouts") + 1] == str(MANIFEST)
     assert command[command.index("--timeout-seconds") + 1] == "30.0"
     assert command[command.index("--instance-kind") + 1] == "aba"
+    assert command[command.index("--profile-format") + 1] == "speedscope"
+    assert "aba-hard-bucket-targets" in command[command.index("--profile-dir") + 1]
     assert _values_after(command, "--backend") == ["auto", "asp", "sat"]
     assert _values_after(command, "--subtrack") == ["SE-PR", "SE-ST"]
+
+
+def test_hard_bucket_profile_paths_are_stable_and_backend_specific(tmp_path: Path) -> None:
+    jobs = build_jobs_from_manifest(
+        _rows(),
+        data_root=tmp_path,
+        years={2025},
+        subtracks={"SE-PR", "SE-ST"},
+        instance_kind="aba",
+    )
+    job = jobs[0]
+
+    first = benchmark_profile_path(
+        tmp_path / "profiles",
+        job,
+        backend="asp",
+        profile_format="speedscope",
+    )
+    second = benchmark_profile_path(
+        tmp_path / "profiles",
+        job,
+        backend="asp",
+        profile_format="speedscope",
+    )
+    other_backend = benchmark_profile_path(
+        tmp_path / "profiles",
+        job,
+        backend="sat",
+        profile_format="speedscope",
+    )
+
+    assert first == second
+    assert first != other_backend
+    assert first is not None
+    assert first.parent == tmp_path / "profiles"
+    assert first.name.startswith("aba-SE-PR-asp-")
+    assert first.name.endswith(".speedscope.json")
 
 
 def _values_after(command: list[str], flag: str) -> list[str]:
