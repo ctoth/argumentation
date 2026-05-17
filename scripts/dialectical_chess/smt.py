@@ -89,8 +89,7 @@ def smt_fork_moves(
     )
     if solver.check() != sat:
         return frozenset()
-    selected_index = solver.model().eval(move_index, model_completion=True).as_long()
-    return frozenset(move.uci() for index, move, _ in candidates if index == selected_index)
+    return frozenset(move.uci() for _, move, _ in candidates)
 
 
 def fork_targets_after(board: Any, move: Any) -> tuple[int, int]:

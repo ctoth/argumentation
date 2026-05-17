@@ -341,6 +341,14 @@ def test_smt_fork_witness_finds_knight_fork() -> None:
     assert "fork" in fork_probe.smt_witnesses
 
 
+def test_smt_fork_witness_returns_all_satisfying_forks() -> None:
+    board = owned_board_from_fen("r3k3/5r2/8/1N6/8/8/8/4K3 w - - 0 1")
+
+    witnesses = smt_fork_moves(board)
+
+    assert {"b5c7", "b5d6"} <= witnesses
+
+
 def test_positional_reasons_cover_quiet_opening_development() -> None:
     board = owned_board_from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     probes = {probe.uci: probe for probe in probe_moves(board)}

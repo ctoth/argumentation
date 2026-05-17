@@ -101,7 +101,7 @@ def score_selection_key(probe: MoveProbe) -> tuple[int, str]:
 def selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[float, int, int, int, int, int, str]:
+) -> tuple[Any, ...]:
     move_arg = graph.move_arguments[probe.uci]
     ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
     move_rank = float(ranking_scores.get(move_arg, 0.0))
@@ -123,16 +123,17 @@ def selection_key(
             -move_rank,
             -accepted_tactical,
             unresolved_attacks,
-            -accepted_defenses,
             -accepted_positional,
+            -accepted_defenses,
             -effective_score(probe, mode),
             probe.uci,
         )
     return (
         -accepted_tactical,
         unresolved_attacks,
-        -accepted_defenses,
+        -material_or_promotion_gain(probe),
         -effective_score(probe, mode),
+        -accepted_defenses,
         -move_rank,
         -accepted_positional,
         probe.uci,
@@ -142,7 +143,7 @@ def selection_key(
 def support_selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[int, int, int, int, int, str]:
+) -> tuple[Any, ...]:
     mode = positional_support_mode(graph)
     accepted_tactical = accepted_tactical_support_count(probe, graph)
     accepted_positional = effective_positional_support_count(probe, graph, mode)
@@ -152,16 +153,17 @@ def support_selection_key(
         return (
             -accepted_tactical,
             unresolved_attacks,
-            -accepted_defenses,
             -accepted_positional,
+            -accepted_defenses,
             -effective_score(probe, mode),
             probe.uci,
         )
     return (
         -accepted_tactical,
         unresolved_attacks,
-        -accepted_defenses,
+        -material_or_promotion_gain(probe),
         -effective_score(probe, mode),
+        -accepted_defenses,
         -accepted_positional,
         probe.uci,
     )
@@ -170,7 +172,7 @@ def support_selection_key(
 def categoriser_selection_key(
     probe: MoveProbe,
     graph: RootArgumentGraph,
-) -> tuple[float, int, int, int, int, str]:
+) -> tuple[Any, ...]:
     move_arg = graph.move_arguments[probe.uci]
     ranking_scores = graph.ranking.get("scores", {}) if graph.ranking.get("available") else {}
     move_rank = float(ranking_scores.get(move_arg, 0.0))
@@ -187,6 +189,7 @@ def categoriser_selection_key(
     return (
         -accepted_tactical_support_count(probe, graph),
         unresolved_attack_count(probe, graph),
+        -material_or_promotion_gain(probe),
         -effective_score(probe, mode),
         -move_rank,
         -effective_positional_support_count(probe, graph, mode),
@@ -243,6 +246,10 @@ def effective_score(probe: MoveProbe, mode: str) -> int:
 
 def positional_reason_count(probe: MoveProbe) -> int:
     return sum(1 for reason in probe.reasons if is_positional_reason(reason))
+
+
+def material_or_promotion_gain(probe: MoveProbe) -> int:
+    return probe.captured_value + probe.promotion_value
 
 
 def is_positional_reason(reason: str) -> bool:
