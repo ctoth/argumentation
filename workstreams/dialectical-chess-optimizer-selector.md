@@ -67,7 +67,8 @@ Interpretation:
 - Keep legal move generation procedural in the chess sidecar.
 - Add a generic `argumentation.optimization` module first.
 - Keep chess-specific scoring outside `src\argumentation`.
-- Use TDD: tests for the generic optimizer before chess integration.
+- Use Hypothesis-first TDD: read paper page images, extract semantic
+  properties, write cited property tests, then write implementation code.
 - Use `uv run`, not bare Python.
 - Keep generated benchmark JSON/profile artifacts under `scratch` uncommitted.
 - Preserve existing selector modes while adding `optimizer`.
@@ -166,6 +167,12 @@ Status: pending.
 
 Tasks:
 
+- Reread the relevant paper page images before writing tests:
+  - Dung conflict-free/admissibility/defense pages;
+  - Dunne weighted-attack budget pages if budget objectives are included;
+  - Bjørner/Sebastiani objective-combination pages for lexicographic OMT.
+- Extract implementation properties from those pages into test names and
+  docstrings.
 - Add tests for `argumentation.optimization`.
 - Test conflict-free optimization with candidate arguments.
 - Test admissibility rejects undefended selected arguments.
@@ -173,10 +180,24 @@ Tasks:
 - Test deterministic tie-breaking.
 - Test unavailable Z3 produces explicit unavailable status, not a silent
   fallback.
+- Add Hypothesis strategies for small AFs:
+  - 0-8 arguments;
+  - arbitrary defeat relations over those arguments;
+  - non-empty candidate subsets;
+  - integer feature values over bounded ranges.
+- Add property tests, each citing the paper source/page-image basis in a
+  docstring or adjacent comment:
+  - selected set is conflict-free under `conflict_free` policy;
+  - selected set is admissible under `admissible` policy;
+  - selected candidate is exactly one of the declared candidates;
+  - lexicographic dominance property holds for generated two-objective cases;
+  - deterministic tie-break is stable under input order permutations.
 
 Acceptance criteria:
 
 - Tests fail because `argumentation.optimization` does not exist yet.
+- The failing tests cite the paper property they encode.
+- No implementation code is written before the red tests exist.
 
 ## Phase 1: Generic Optimizer Implementation
 
@@ -190,12 +211,15 @@ Tasks:
 - Implement exactly-one candidate selection.
 - Implement lexicographic objectives using Z3 `Optimize`.
 - Return objective values and selected candidate.
+- After each implementation slice, rerun the cited property tests before moving
+  to chess integration.
 
 Acceptance criteria:
 
 - Generic optimizer tests pass.
 - No chess imports exist under `src\argumentation`.
 - The API accepts any `ArgumentationFramework`, not only chess graphs.
+- Hypothesis tests pass with the committed example database ignored/uncommitted.
 
 ## Phase 2: Chess Adapter
 
