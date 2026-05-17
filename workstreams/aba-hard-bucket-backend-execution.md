@@ -1,0 +1,343 @@
+# ABA Hard-Bucket Backend Execution Workstream
+
+## Goal
+
+Turn the ABA hard-bucket work item into an executable backend program that
+measurably improves the exact all-timeout rows without filename heuristics or
+ICCMA-specific routing.
+
+The outcome is not another note. The outcome is one of:
+
+- a source-backed backend change that solves at least one current all-timeout
+  target row under the same 30-second budget while preserving controls; or
+- a failed experiment branch with a recorded gate failure and profiler evidence
+  precise enough to choose the next backend hypothesis.
+
+Run speculative implementation slices on experiment branches. Promote only a
+passing minimal diff back to `main`.
+
+## Control Surface
+
+This workstream is controlled by:
+
+- [ABA hard-bucket backend work item](aba-hard-bucket-backend-work-item.md)
+- `data/iccma/2025/runs/aba-shape-cap200-paper-features-rerun.json`
+- `data/iccma/2025/runs/aba-route-evidence-rerun-analysis.json`
+
+Generated diagnostics remain uncommitted unless explicitly requested.
+
+## Required Target Rows
+
+Primary targets:
+
+| Target | Instance | Subtrack | Gate role |
+|---|---|---|---|
+| T1 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-PR` | preferred all-timeout |
+| T2 | `ABAs/aba_2000_0.1_5_5_0.aba` | `SE-ST` | stable all-timeout |
+| T3 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-PR` | preferred all-timeout |
+| T4 | `ABAs/aba_2000_0.1_5_5_1.aba` | `SE-ST` | stable all-timeout |
+| T5 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-PR` | preferred all-timeout |
+| T6 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-PR` | preferred all-timeout |
+| T7 | `ABAs/aba_2000_0.1_5_5_6.aba` | `SE-ST` | stable all-timeout |
+| T8 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-PR` | preferred all-timeout |
+| T9 | `ABAs/aba_2000_0.1_5_5_9.aba` | `SE-ST` | stable all-timeout |
+
+Control rows:
+
+| Control | Instance | Subtrack | Must preserve |
+|---|---|---|---|
+| C1 | `ABAs/aba_2000_0.1_5_5_3.aba` | `SE-ST` | solved by `sat` |
+| C2 | `ABAs/aba_2000_0.1_5_5_7.aba` | `SE-PR` | solved by `asp` |
+| C3 | `ABAs/aba_2000_0.1_5_5_7.aba` | `SE-ST` | solved by `auto` |
+
+No benchmark command may select rows by this filename family in production
+logic. Filenames are allowed only in manifests and diagnostics naming the
+benchmark rows.
+
+## Paper-Image Rule
+
+Before coding any new backend idea, read the relevant paper page images
+directly and record the cited page numbers in the test or metadata surface.
+Notes files may guide where to look, but they are not enough for a new
+implementation claim.
+
+Required page-image anchors for the first implementation hypothesis:
+
+- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000005.png`: ABA(F)
+  fact surface and Algorithm 1.
+- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000006.png`: `pi_com`
+  Listing 1 and `constr(out(I))` refinement behavior.
+- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000012.png`: Clingo
+  incremental Python interface and empirical setup.
+- Baroni/Giacomin SCC-recursive pages must be read from page images before any
+  SCC-conditioned backend is implemented. If page images are absent, retrieve or
+  generate them first; do not claim SCC-recursive implementation support from
+  text notes alone.
+- Egly/Gaggl/Woltran saturation pages must be read from page images before any
+  saturation rewrite is implemented.
+- Cerutti/PrefSat or Niskanen/mu-toksia pages must be read from page images
+  before any SAT/maximality backend is implemented.
+
+## Dependency-Sorted Execution Order
+
+1. Phase 0: Workstream Order Guard.
+2. Phase 1: Hard-Row Manifest and Reproducer.
+3. Phase 2: Baseline Profiling Harness.
+4. Phase 3: Backend Invariant Properties.
+5. Phase 4: First Hypothesis, Lehtonen Incremental ASP Tightening.
+6. Phase 5: SCC-Conditioned Experiment.
+7. Phase 6: Preferred Maximality Experiment.
+8. Phase 7: Hard-Row Benchmark Gate.
+9. Phase 8: Promotion or Failed-Experiment Record.
+
+Every phase has a gate. Do not substitute passing unit tests for a benchmark
+gate, and do not substitute a benchmark run for paper-cited implementation
+properties.
+
+## Phase 0: Workstream Order Guard
+
+Goal: make the checklist executable before implementation.
+
+- [ ] Run or add an order check proving each dependency appears before its
+  dependent phase.
+- [ ] Verify tracked files are clean before creating any experiment branch.
+- [ ] Create an experiment branch from the clean tracked-file base.
+
+Gate:
+
+```powershell
+git status --short --untracked-files=no
+git branch --show-current
+```
+
+Expected result: clean tracked files, on a dedicated experiment branch.
+
+## Phase 1: Hard-Row Manifest and Reproducer
+
+Goal: make T1-T9 and C1-C3 executable without hand-copying command lines.
+
+- [ ] Add a text-source manifest for T1-T9 and C1-C3 under `tests/manifests/`.
+- [ ] Add a small tool or option that runs exactly that manifest against
+  `auto`, `asp`, and `sat` with `--timeout-seconds 30`.
+- [ ] Add tests proving the manifest contains exactly 12 rows and no duplicate
+  `(instance, subtrack)` pairs.
+- [ ] Add tests proving production backend selection cannot inspect manifest
+  row paths or generator names.
+
+Gate:
+
+```powershell
+uv run pytest -q tests\test_aba_hard_bucket_manifest.py tests\test_aba_route_properties.py
+```
+
+## Phase 2: Baseline Profiling Harness
+
+Goal: know what is slow on the exact hard rows before changing algorithms.
+
+- [ ] Integrate a stable profiler launcher path for hard-row commands.
+- [ ] Prefer `uvx py-spy` or a checked tool dependency. Do not rely on an ad
+  hoc cache path.
+- [ ] Capture wall time, backend status, solver metadata, refinement counts,
+  solver-call counts, and Python-side profiling output for at least T1, T2,
+  T3, T4, and C1-C3.
+- [ ] If `py-spy` fails with an unfamiliar error, search the exact error before
+  changing approach.
+- [ ] Record findings in an uncommitted diagnostic artifact unless explicitly
+  asked to promote it.
+
+Before launching the profiling command, state a timeout derived from the 30s
+per-row budget plus modest harness overhead. Do not manually stop it unless it
+exits, hits the configured timeout, the user asks to stop, or it causes concrete
+external harm.
+
+Gate:
+
+- a profiler artifact exists for at least one all-timeout preferred row;
+- a profiler artifact exists for at least one all-timeout stable row;
+- a profiler artifact exists for every control row;
+- the next code hypothesis names the specific hot path it intends to reduce.
+
+## Phase 3: Backend Invariant Properties
+
+Goal: write properties before changing the backend.
+
+Required properties:
+
+- [ ] ABA(F) fact emission remains structural and page-cited to Lehtonen p.5.
+- [ ] `constr(out(I))` blocks exactly a candidate and its subsets, page-cited
+  to Lehtonen pp.5-6.
+- [ ] incremental backend metadata carries the page-image source used for the
+  algorithm.
+- [ ] any SCC-conditioned optimization preserves complete, stable, and preferred
+  answers on generated small frameworks.
+- [ ] any maximality optimization returns only subset-maximal admissible or
+  complete candidates on generated small frameworks.
+- [ ] no new production predicate reads path text, filename, parent directory,
+  ICCMA year, row order, or generator name.
+
+Gate:
+
+```powershell
+uv run pytest -q tests\test_aba_incremental_paper_properties.py tests\test_aba_route_properties.py
+```
+
+## Phase 4: First Hypothesis, Lehtonen Incremental ASP Tightening
+
+Goal: reduce Python and grounding overhead in the existing direct ASP path.
+
+Hypothesis:
+
+The current multishot path is correct but may still spend too much time in
+Python-side model extraction, per-refinement grounding, or repeated complete-set
+search. The first implementation should tighten that path before adding a new
+solver family.
+
+Possible implementation moves, selected only after Phase 2 profiling:
+
+- reduce model-symbol scanning to shown atoms or direct `in/1` extraction;
+- batch or intern refinement parts to reduce Python/clingo overhead;
+- expose telemetry in benchmark output so hard-row runs show refinement clauses,
+  inner iterations, outer iterations, solver calls, and selected algorithm;
+- add a single-extension stable path that avoids unnecessary complete/preferred
+  machinery if profiling shows stable rows are burning in the wrong path;
+- avoid materializing support facts for `asp`/`clingo` paths.
+
+Gate:
+
+```powershell
+uv run pytest -q tests\test_aba_incremental_paper_properties.py tests\test_aba_multishot.py tests\test_aba_shape_benchmark.py
+```
+
+Then run the hard-row manifest with the same 30-second solver budget.
+
+Pass condition:
+
+- at least one of T1-T9 solves under the same 30-second budget; and
+- C1-C3 remain solved; and
+- no correctness regression appears in witness validation.
+
+If this gate fails, leave the experiment branch unmerged and record the failed
+gate result. Do not create revert noise on `main`.
+
+## Phase 5: SCC-Conditioned Experiment
+
+Goal: test the Baroni/Giacomin directionality hypothesis on the giant cyclic
+dependency component.
+
+Precondition:
+
+- read the relevant SCC-recursive paper pages from page images;
+- add page-cited Hypothesis properties before implementation.
+
+Hypothesis:
+
+The hard rows have one giant cyclic SCC plus smaller surrounding structure.
+Conditioning or simplifying upstream/downstream acyclic structure before the
+preferred/stable core search may reduce the candidate space without changing
+semantics.
+
+Required properties:
+
+- SCC-conditioned solving agrees with the unconditioned reference on generated
+small frameworks.
+- Adding unrelated non-ancestor structure does not change the conditioned answer
+for a component-local query.
+- The optimization key is graph structure, not filename or benchmark row.
+
+Gate:
+
+Run the hard-row manifest. Pass condition is the Phase 4 pass condition plus
+at least one solved preferred/stable pair on the same instance if Phase 4 already
+solved a single isolated row.
+
+## Phase 6: Preferred Maximality Experiment
+
+Goal: attack preferred maximality directly if profiling shows DS-PR/SE-PR burns
+there.
+
+Precondition:
+
+- read relevant Egly saturation pages or Cerutti/Niskanen SAT/maximality pages
+  from page images;
+- add page-cited Hypothesis properties before implementation.
+
+Candidate directions:
+
+- ASP saturation rewrite for maximality checks;
+- SAT complete-labelling maximality growth or persistent SAT assumptions;
+- hybrid ASP candidate generation plus SAT maximality verification.
+
+Required properties:
+
+- every returned preferred witness is admissible;
+- no returned preferred witness has a strict admissible superset;
+- skeptical preferred answers match brute-force on generated small frameworks;
+- route selection remains structural and backend-availability based.
+
+Gate:
+
+Run the hard-row manifest. Pass condition:
+
+- at least one preferred all-timeout row T1/T3/T5/T6/T8 solves under 30s; and
+- C1-C3 remain solved; and
+- no stable row regresses.
+
+## Phase 7: Hard-Row Benchmark Gate
+
+Goal: decide whether the experiment is a real improvement.
+
+Run exactly the T1-T9 plus C1-C3 manifest against `auto`, `asp`, and `sat`.
+
+Required reporting fields:
+
+- `(target_id, instance, subtrack)`;
+- backend;
+- status;
+- wall time;
+- witness validation;
+- selected algorithm;
+- paper/page metadata;
+- telemetry counts where available;
+- profiler artifact id if profiling was active.
+
+Pass levels:
+
+- Level 1: at least one T row solved under 30s, C1-C3 preserved.
+- Level 2: one preferred/stable pair on the same instance solved under 30s,
+  C1-C3 preserved.
+- Level 3: at least three distinct target instances improved or solved,
+  C1-C3 preserved.
+
+Only Level 1 is required for first promotion. Level 2 and Level 3 define the
+next iterations.
+
+## Phase 8: Promotion or Failed-Experiment Record
+
+If the gate passes:
+
+- [ ] minimize the diff;
+- [ ] rerun the targeted property and benchmark gates;
+- [ ] switch to `main`;
+- [ ] promote by clean merge or minimal commit;
+- [ ] leave generated diagnostics uncommitted unless explicitly requested.
+
+If the gate fails:
+
+- [ ] keep the failed experiment branch;
+- [ ] record the exact failed gate and profiler conclusion in this workstream
+  or a linked report;
+- [ ] do not merge the failed backend code to `main`;
+- [ ] choose the next hypothesis from the profiler evidence.
+
+## Definition of Done
+
+This workstream is complete only when one of these is true:
+
+- Level 1 hard-row gate passes and the minimal source diff is promoted to
+  `main`; or
+- the active experiment fails its gate and records enough profiler evidence to
+  select the next backend hypothesis without guessing.
+
+Passing unit tests alone is not completion. Page citations alone are not
+completion. A benchmark run without a kept backend improvement is not
+completion.
