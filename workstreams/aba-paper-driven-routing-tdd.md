@@ -282,20 +282,20 @@ papers say they mean.
 
 Properties:
 
-- [ ] Stable assumption set is closed, conflict-free, and attacks every
+- [x] Stable assumption set is closed, conflict-free, and attacks every
   assumption outside it.
-- [ ] Admissible assumption set is closed, conflict-free, and counterattacks
+- [x] Admissible assumption set is closed, conflict-free, and counterattacks
   every attacker.
-- [ ] Preferred sets are maximal admissible sets.
-- [ ] Every preferred set is admissible.
-- [ ] In flat frameworks, the empty assumption set is admissible.
-- [ ] In normal frameworks, preferred and stable sets coincide on exhaustive
+- [x] Preferred sets are maximal admissible sets.
+- [x] Every preferred set is admissible.
+- [x] In flat frameworks, the empty assumption set is admissible.
+- [x] In normal frameworks, preferred and stable sets coincide on exhaustive
   small cases.
-- [ ] Grounded iteration reaches a fixpoint in at most `assumption_count`
+- [x] Grounded iteration reaches a fixpoint in at most `assumption_count`
   iterations for ordinary ABA.
-- [ ] P-acyclic finite frameworks generated for dispute tests do not require a
+- [x] P-acyclic finite frameworks generated for dispute tests do not require a
   cyclic support proof for any derived atom.
-- [ ] Stable obstruction count is zero for every enumerated stable set and
+- [x] Stable obstruction count is zero for every enumerated stable set and
   positive for generated impossible-stable witnesses.
 
 Gate:
