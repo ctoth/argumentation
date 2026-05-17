@@ -45,6 +45,11 @@ LEHTONEN_INCREMENTAL_ASP_PAGE_CITATIONS = (
     "p.6: pi_com Listing 1 and constr(out(I)) refinement; "
     "p.12: incremental Python interface of Clingo"
 )
+EGLY_PREFERRED_MAXIMALITY_CITATION = "Egly_2010_Answer-setProgrammingEncodingsArgumentation"
+EGLY_PREFERRED_MAXIMALITY_PAGE_CITATIONS = (
+    "p.164: preferred extensions require an additional maximality test; "
+    "p.165: strict admissible supersets witness non-preferred candidates"
+)
 
 
 def lehtonen_incremental_asp_metadata() -> dict[str, str]:
