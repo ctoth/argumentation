@@ -13,8 +13,8 @@ The outcome is not another note. The outcome is one of:
 - a failed experiment branch with a recorded gate failure and profiler evidence
   precise enough to choose the next backend hypothesis.
 
-Run speculative implementation slices on experiment branches. Promote only a
-passing minimal diff back to `main`.
+This execution runs directly on `main` because the user explicitly requested
+full execution on `main` on 2026-05-17.
 
 ## Control Surface
 
@@ -98,10 +98,11 @@ properties.
 
 Goal: make the checklist executable before implementation.
 
-- [ ] Run or add an order check proving each dependency appears before its
+- [x] Run or add an order check proving each dependency appears before its
   dependent phase.
-- [ ] Verify tracked files are clean before creating any experiment branch.
-- [ ] Create an experiment branch from the clean tracked-file base.
+- [x] Verify tracked files are clean before implementation.
+- [x] Record explicit user override to execute this workstream directly on
+  `main` instead of creating an experiment branch.
 
 Gate:
 
@@ -110,7 +111,8 @@ git status --short --untracked-files=no
 git branch --show-current
 ```
 
-Expected result: clean tracked files, on a dedicated experiment branch.
+Expected result: clean tracked files, on `main` for this user-directed
+execution.
 
 ## Phase 1: Hard-Row Manifest and Reproducer
 
