@@ -13,6 +13,7 @@ DEFAULT_MANIFEST = Path("tests") / "manifests" / "aba-hard-bucket-targets.json"
 DEFAULT_OUTPUT_JSON = Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.json"
 DEFAULT_OUTPUT_CSV = Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.csv"
 DEFAULT_PROFILE_DIR = Path("data") / "iccma" / "2025" / "profiles" / "aba-hard-bucket-targets"
+DEFAULT_PROFILE_DURATION_SECONDS = 25.0
 DEFAULT_BACKENDS = ("auto", "asp", "sat")
 DEFAULT_SUBTRACKS = ("SE-PR", "SE-ST")
 
@@ -36,6 +37,8 @@ def benchmark_args(args: argparse.Namespace, *, manifest: Path | None = None) ->
         str(args.profile_dir),
         "--profile-format",
         str(args.profile_format),
+        "--profile-duration-seconds",
+        str(args.profile_duration_seconds),
     ]
     for subtrack in args.subtrack:
         command.extend(["--subtrack", subtrack])
@@ -62,6 +65,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-json", type=Path, default=DEFAULT_OUTPUT_JSON)
     parser.add_argument("--output-csv", type=Path, default=DEFAULT_OUTPUT_CSV)
     parser.add_argument("--profile-dir", type=Path, default=DEFAULT_PROFILE_DIR)
+    parser.add_argument(
+        "--profile-duration-seconds",
+        type=float,
+        default=DEFAULT_PROFILE_DURATION_SECONDS,
+    )
     parser.add_argument(
         "--profile-format",
         choices=["flamegraph", "raw", "speedscope", "chrometrace"],
