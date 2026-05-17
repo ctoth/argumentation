@@ -34,6 +34,9 @@ path.
 - It runs Lichess-format puzzle CSVs.
 - It runs an internal UCI subprocess match smoke and detects standard external
   runners.
+- External UCI match payloads include timeout/crash/loss-on-time counts and
+  return `ok: false` when those failures are present, even if the runner process
+  exits with code 0.
 - It runs owned perft benchmarks.
 
 ## Benchmark Sources
@@ -222,8 +225,8 @@ uv run .\scripts\dialectical_chess_bench.py `
 
 ### Phase 5: UCI Match Harness
 
-Status: complete for internal UCI subprocess smoke and an external `fast-chess`
-smoke match.
+Status: complete for internal UCI subprocess smoke, external command emission,
+external `fast-chess` execution, and timeout/crash failure detection.
 
 Goal: compare playing behavior against baseline engines.
 
@@ -257,7 +260,40 @@ Acceptance criteria:
 
 - Match completes without illegal moves or crashes.
 - Report includes W/D/L and crashes/time forfeits.
+- Runner-reported timeouts, crashes, and loss-on-time results make the JSON
+  payload fail with `ok: false`.
 - SPRT is not used until ordinary fixed-game matches complete reliably.
+
+Current smoke commands:
+
+```powershell
+uv run .\scripts\dialectical_chess_bench.py `
+  --internal-uci-match `
+  --match-games 2 `
+  --match-max-plies 6
+
+uv run .\scripts\dialectical_chess_bench.py `
+  --uci-match-command `
+  --match-baseline random `
+  --match-games 2 `
+  --match-max-plies 6
+
+uv run .\scripts\dialectical_chess_bench.py `
+  --run-uci-match `
+  --match-baseline random `
+  --match-games 2 `
+  --match-max-plies 6 `
+  --match-tc 10+0.1
+```
+
+Observed current smoke:
+
+- Internal UCI match: 2 games, 6 plies each, 2 adjudicated draws, 0 crashes, 0
+  illegal moves.
+- External `fast-chess` at `1+0.01`: fails honestly with 1 timeout and 1
+  loss-on-time in a two-game smoke.
+- External `fast-chess` at `10+0.1`: completes the two-game random-baseline
+  smoke with 0 timeouts, 0 crashes, 0 losses-on-time, and 2 adjudicated draws.
 
 ### Phase 6: SPRT / Regression Testing
 
