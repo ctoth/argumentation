@@ -607,7 +607,7 @@ def _solve_asp_aba_single_extension(
     )
     if result.status == "success":
         extension = result.extensions[0] if result.extensions else None
-        return SingleExtensionSolverSuccess(extension=extension)
+        return SingleExtensionSolverSuccess(extension=extension, metadata=dict(result.metadata))
     return _aba_asp_failure(result)
 
 
@@ -634,6 +634,7 @@ def _solve_asp_aba_acceptance(
             counterexample=(
                 result.counterexample if task == "skeptical" and not result.answer else None
             ),
+            metadata=dict(result.metadata),
         )
     return _aba_asp_failure(result)
 
