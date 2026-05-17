@@ -176,9 +176,14 @@ complete-labelling PrefSat implementation.
 
 Goal: make this checklist mechanically executable before using it.
 
-- [ ] Run the order check after every edit to this workstream.
-- [ ] Before each later phase, reread this file and identify the next unchecked
+- [x] Run the order check after every edit to this workstream.
+- [x] Before each later phase, reread this file and identify the next unchecked
   item.
+
+Execution status:
+
+- Phase order gate passed.
+- Next unchecked item is Phase 1: Architecture Lock.
 
 Gate:
 
