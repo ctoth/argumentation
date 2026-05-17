@@ -7,6 +7,7 @@ from typing import TextIO
 from dialectical_chess.board import START_FEN
 from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.probe import owned_board_from_fen
+from dialectical_chess.search import ReplyAnalysisSettings
 
 
 UciSettings = EngineSettings
@@ -22,6 +23,7 @@ def run_uci(
     smt_mate: bool = True,
     selector_mode: str = "argument",
     positional_reasons: bool = True,
+    reply_analysis: ReplyAnalysisSettings | None = None,
 ) -> int:
     settings = EngineSettings(
         dialectic_depth=dialectic_depth,
@@ -30,6 +32,7 @@ def run_uci(
         smt_mate=smt_mate,
         selector_mode=selector_mode,
         positional_reasons=positional_reasons,
+        reply_analysis=reply_analysis or ReplyAnalysisSettings(),
     )
     board = owned_board_from_fen(START_FEN)
     while True:
@@ -110,6 +113,7 @@ def choose_uci_move(
     smt_mate: bool = True,
     selector_mode: str = "argument",
     positional_reasons: bool = True,
+    reply_analysis: ReplyAnalysisSettings | None = None,
     output_stream: TextIO | None = None,
 ) -> str:
     settings = settings or EngineSettings(
@@ -119,6 +123,7 @@ def choose_uci_move(
         smt_mate=smt_mate,
         selector_mode=selector_mode,
         positional_reasons=positional_reasons,
+        reply_analysis=reply_analysis or ReplyAnalysisSettings(),
     )
     try:
         decision = DialecticalChessEngine(settings).choose_move(board)
@@ -131,6 +136,7 @@ def choose_uci_move(
     if output_stream is not None:
         _uci_write(output_stream, f"info string selector_mode={settings.selector_mode}")
         _uci_write(output_stream, f"info string positional_reasons={settings.positional_reasons}")
+        _uci_write(output_stream, f"info string reply_analysis={settings.reply_analysis}")
         _uci_write(output_stream, f"info score cp {decision.selected.score} pv {decision.move_uci}")
     return decision.move_uci
 

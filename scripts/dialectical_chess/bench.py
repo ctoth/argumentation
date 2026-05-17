@@ -19,6 +19,7 @@ from dialectical_chess.board import PERFT_FIXTURES, OwnedBoard, owned_perft
 from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.loss_mining import mine_loss_turning_points, reviewed_epd_lines
 from dialectical_chess.matches import run_internal_uci_match, run_uci_match
+from dialectical_chess.search import ReplyAnalysisSettings
 
 
 SCRIPT_DIR = Path(__file__).resolve().parents[1]
@@ -58,6 +59,9 @@ def main() -> int:
     parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
     parser.add_argument("--selector-mode-ablation", action="store_true")
     parser.add_argument("--no-positional-reasons", action="store_false", dest="positional_reasons")
+    parser.add_argument("--reply-max-replies", type=int, default=128)
+    parser.add_argument("--reply-max-defense-nodes", type=int, default=5000)
+    parser.add_argument("--reply-min-defense-material", type=int, default=300)
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
     parser.add_argument("--uci-match-command", action="store_true")
     parser.add_argument("--run-uci-match", action="store_true")
@@ -299,6 +303,7 @@ def score_board(
             smt_mate=args.smt_mate,
             selector_mode=args.selector_mode,
             positional_reasons=getattr(args, "positional_reasons", True),
+            reply_analysis=reply_analysis_settings(args),
         )
     ).choose_move(board)
     selected = decision.selected
@@ -412,6 +417,16 @@ def report_progress(mode: str, completed: int, total: int, args: argparse.Namesp
         print(f"progress {mode} {completed}/{total}", file=sys.stderr, flush=True)
 
 
+def reply_analysis_settings(args: argparse.Namespace) -> ReplyAnalysisSettings:
+    max_replies = getattr(args, "reply_max_replies", 128)
+    max_defense_nodes = getattr(args, "reply_max_defense_nodes", 5000)
+    return ReplyAnalysisSettings(
+        max_replies=None if max_replies < 0 else max_replies,
+        max_defense_nodes=None if max_defense_nodes < 0 else max_defense_nodes,
+        min_defense_material=getattr(args, "reply_min_defense_material", 300),
+    )
+
+
 def ablation_selector_modes(args: argparse.Namespace) -> tuple[str, ...]:
     if args.selector_mode_ablation:
         return tuple(sorted(SELECTOR_MODES))
@@ -426,5 +441,10 @@ def settings(args: argparse.Namespace) -> dict[str, Any]:
         "smt_mate": args.smt_mate,
         "selector_mode": args.selector_mode,
         "positional_reasons": getattr(args, "positional_reasons", True),
+        "reply_analysis": {
+            "max_replies": reply_analysis_settings(args).max_replies,
+            "max_defense_nodes": reply_analysis_settings(args).max_defense_nodes,
+            "min_defense_material": reply_analysis_settings(args).min_defense_material,
+        },
         "movegen": "owned",
     }

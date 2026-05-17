@@ -9,6 +9,8 @@ from dialectical_chess.arguments import MoveProbe
 from dialectical_chess.board import OwnedBoard, file_of, piece_color, rank_of, square_index
 from dialectical_chess.search import (
     OWNED_PIECE_VALUE,
+    ReplyAnalysisCache,
+    ReplyAnalysisSettings,
     SearchSettings,
     bounded_reply_attacks,
     owned_capture_value,
@@ -28,6 +30,7 @@ from dialectical_chess.smt import (
 class ProbeSettings:
     dialectic_depth: int = 1
     search: SearchSettings = field(default_factory=SearchSettings)
+    reply_analysis: ReplyAnalysisSettings = field(default_factory=ReplyAnalysisSettings)
     smt: SmtSettings = field(default_factory=SmtSettings)
     positional_reasons: bool = True
 
@@ -40,10 +43,12 @@ def probe_moves(
     search_backend: str = "negamax",
     smt_mate: bool = True,
     positional_reasons: bool = True,
+    reply_analysis: ReplyAnalysisSettings | None = None,
 ) -> list[MoveProbe]:
     settings = ProbeSettings(
         dialectic_depth=dialectic_depth,
         search=SearchSettings(depth=search_depth, backend=search_backend),
+        reply_analysis=reply_analysis or ReplyAnalysisSettings(),
         smt=SmtSettings(mate_in_one=smt_mate),
         positional_reasons=positional_reasons,
     )
@@ -61,6 +66,7 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
         smt_mate_in_one_moves(board) if settings.smt.mate_in_one else frozenset()
     )
     smt_fork_move_set = smt_fork_moves(board) if settings.smt.fork else frozenset()
+    reply_cache = ReplyAnalysisCache()
     probes = []
     for move in legal_moves:
         san = move.uci()
@@ -112,6 +118,8 @@ def probe_moves_with_settings(board: Any, settings: ProbeSettings) -> list[MoveP
             board,
             move,
             reply_depth=settings.dialectic_depth,
+            settings=settings.reply_analysis,
+            cache=reply_cache,
         )
         if not reasons:
             objections.append("objection:no_immediate_tactical_warrant")

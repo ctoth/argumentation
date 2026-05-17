@@ -21,6 +21,7 @@ from dialectical_chess.adapters import build_pgn, build_svg, final_board, load_g
 from dialectical_chess.arguments import SELECTOR_MODES, build_argument_payload
 from dialectical_chess.engine import DialecticalChessEngine, EngineSettings
 from dialectical_chess.probe import owned_board_from_fen
+from dialectical_chess.search import ReplyAnalysisSettings
 from dialectical_chess.uci import run_uci
 
 
@@ -48,6 +49,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--selector-mode", choices=sorted(SELECTOR_MODES), default="argument")
     parser.add_argument("--no-smt-mate", action="store_false", dest="smt_mate")
     parser.add_argument("--no-positional-reasons", action="store_false", dest="positional_reasons")
+    parser.add_argument("--reply-max-replies", type=int, default=128)
+    parser.add_argument("--reply-max-defense-nodes", type=int, default=5000)
+    parser.add_argument("--reply-min-defense-material", type=int, default=300)
     parser.add_argument("--size", type=int, default=480)
     parser.set_defaults(smt_mate=True, positional_reasons=True)
     args = parser.parse_args(argv)
@@ -62,6 +66,7 @@ def main(argv: list[str] | None = None) -> int:
             smt_mate=args.smt_mate,
             selector_mode=args.selector_mode,
             positional_reasons=args.positional_reasons,
+            reply_analysis=reply_analysis_settings(args),
         )
 
     game = load_game(args.pgn_in) if args.pgn_in else None
@@ -75,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
             smt_mate=args.smt_mate,
             selector_mode=args.selector_mode,
             positional_reasons=args.positional_reasons,
+            reply_analysis=reply_analysis_settings(args),
         )
     )
     analysis = engine.analyze(board)
@@ -111,6 +117,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"reasons: {', '.join(selected.reasons)}")
 
     return 0
+
+
+def reply_analysis_settings(args: argparse.Namespace) -> ReplyAnalysisSettings:
+    max_replies = args.reply_max_replies
+    max_defense_nodes = args.reply_max_defense_nodes
+    return ReplyAnalysisSettings(
+        max_replies=None if max_replies < 0 else max_replies,
+        max_defense_nodes=None if max_defense_nodes < 0 else max_defense_nodes,
+        min_defense_material=args.reply_min_defense_material,
+    )
 
 
 if __name__ == "__main__":

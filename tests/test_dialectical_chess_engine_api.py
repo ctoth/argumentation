@@ -44,6 +44,11 @@ def test_engine_settings_are_plain_serializable(
         "smt_mate": smt_mate,
         "selector_mode": "argument",
         "positional_reasons": True,
+        "reply_analysis": {
+            "max_replies": 128,
+            "max_defense_nodes": 5000,
+            "min_defense_material": 300,
+        },
     }
 
 

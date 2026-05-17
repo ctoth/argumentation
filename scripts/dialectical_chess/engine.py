@@ -13,6 +13,7 @@ from dialectical_chess.arguments import (
     choose_move,
 )
 from dialectical_chess.probe import probe_moves
+from dialectical_chess.search import ReplyAnalysisSettings
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class EngineSettings:
     smt_mate: bool = True
     selector_mode: str = "argument"
     positional_reasons: bool = True
+    reply_analysis: ReplyAnalysisSettings = ReplyAnalysisSettings()
 
     def __post_init__(self) -> None:
         if self.selector_mode not in SELECTOR_MODES:
@@ -61,6 +63,7 @@ class DialecticalChessEngine:
                 search_backend=self.settings.search_backend,
                 smt_mate=self.settings.smt_mate,
                 positional_reasons=self.settings.positional_reasons,
+                reply_analysis=self.settings.reply_analysis,
             )
         )
         graph = build_root_argument_graph(list(probes))
