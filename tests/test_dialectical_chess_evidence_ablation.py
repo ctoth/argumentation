@@ -30,6 +30,7 @@ from dialectical_chess.bench import (  # noqa: E402
 )
 from dialectical_chess.probe import owned_board_from_fen, probe_moves  # noqa: E402
 from dialectical_chess.engine import EngineSettings  # noqa: E402
+from dialectical_chess.engine import DialecticalChessEngine  # noqa: E402
 from dialectical_chess.search import (  # noqa: E402
     ReplyAnalysisCache,
     ReplyAnalysisSettings,
@@ -103,6 +104,113 @@ def test_optimizer_selector_prefers_unrefuted_move_over_higher_score() -> None:
 
     assert selected.uci == quiet.uci
     assert selected.optimizer_trace["status"] == "optimal"
+
+
+def test_argument_selector_prefers_tactical_support_over_positional_count() -> None:
+    """Mined positional deltas show shallow support counts can bury tactical moves."""
+    positional = quiet_probe(
+        "d4d1",
+        75,
+        (
+            "center_control:d4d1:2",
+            "piece_activity:d4d1:mobility_gain:1",
+            "file_control:d4d1:open_file",
+        ),
+    )
+    tactical = MoveProbe(
+        uci="e5f6",
+        san="e5f6",
+        score=500,
+        is_checkmate=False,
+        gives_check=False,
+        is_capture=True,
+        captured_value=500,
+        promotion_value=0,
+        reasons=("material:capture:500",),
+        objections=(),
+    )
+    probes = [positional, tactical]
+    graph = build_root_argument_graph(probes)
+
+    selected = choose_move(probes, graph, selector_mode="argument")
+
+    assert selected.uci == "e5f6"
+
+
+@pytest.mark.parametrize(
+    ("puzzle_id", "fen", "expected_uci"),
+    [
+        (
+            "000Zo",
+            "4r3/1k6/pp3r2/1b2P2p/3R1p2/P1R2P2/1P4PP/6K1 w - - 0 35",
+            "e5f6",
+        ),
+        (
+            "00B3B",
+            "2K5/3P4/5b2/p1B5/P7/3k4/6p1/8 w - - 7 77",
+            "d7d8q",
+        ),
+    ],
+)
+def test_argument_d2_solves_mined_positional_regressions(
+    puzzle_id: str,
+    fen: str,
+    expected_uci: str,
+) -> None:
+    assert puzzle_id
+    board = owned_board_from_fen(fen)
+
+    decision = DialecticalChessEngine(
+        EngineSettings(
+            selector_mode="argument",
+            dialectic_depth=2,
+            positional_reasons=True,
+        )
+    ).choose_move(board)
+
+    assert decision.move_uci == expected_uci
+
+
+@pytest.mark.parametrize(
+    ("puzzle_id", "fen", "expected_uci"),
+    [
+        (
+            "002IE",
+            "r3brk1/5pp1/p1nqpn1p/P2pN3/2pP4/2P1PN2/5PPP/RB1QK2R b KQ - 4 16",
+            "c6e5",
+        ),
+        (
+            "00H1C",
+            "r3r3/1kpRnqpp/p4p2/Qp2P2P/1N6/4Pb2/PPP3P1/2K2R2 b - - 0 22",
+            "e7c6",
+        ),
+    ],
+)
+def test_optimizer_d2_solves_mined_positional_regressions(
+    puzzle_id: str,
+    fen: str,
+    expected_uci: str,
+) -> None:
+    assert puzzle_id
+    board = owned_board_from_fen(fen)
+
+    decision = DialecticalChessEngine(
+        EngineSettings(
+            selector_mode="optimizer",
+            dialectic_depth=2,
+            positional_reasons=True,
+        )
+    ).choose_move(board)
+
+    assert decision.move_uci == expected_uci
+    assert decision.selected is not None
+    assert decision.selected.optimizer_trace["status"] == "optimal"
+    assert "positional_support_effective" in decision.selected.optimizer_trace["objective_values"]
+    assert decision.selected.optimizer_trace["positional_support_mode"] in {
+        "quiet",
+        "tactical_gated",
+        "disabled",
+    }
 
 
 @given(st.sampled_from(SELECTOR_MODES))
