@@ -230,7 +230,7 @@ def test_compute_aba_shape_uses_bounded_rule_body_overlap_memory() -> None:
     assert shape.rule_body_overlap_avg == 1.0
 
 
-def test_validate_result_skips_expensive_python_validation() -> None:
+def test_validate_result_uses_bounded_large_python_validation() -> None:
     assumptions = frozenset(lit(f"a{index}") for index in range(40))
     contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
     language = assumptions | frozenset(contraries.values()) | frozenset({lit("x")})
@@ -245,9 +245,8 @@ def test_validate_result_skips_expensive_python_validation() -> None:
     result = validate_result(framework, "SE-PR", {"status": "solved", "witness": "a0"})
 
     assert result == {
-        "status": "not_checked",
-        "reason": "validation_cost>1000",
-        "check": "skipped_cost",
+        "status": "valid",
+        "check": "preferred_large_conflict_free_necessary",
     }
 
 

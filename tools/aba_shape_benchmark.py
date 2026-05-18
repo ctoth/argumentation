@@ -988,14 +988,10 @@ def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, An
     witness_text = result.get("witness")
     if witness_text is None:
         return {"status": "not_checked", "reason": "no witness"}
+    witness = _parse_witness(framework, str(witness_text))
     validation_cost = len(framework.assumptions) * max(1, len(framework.rules))
     if validation_cost > VALIDATION_COST_LIMIT:
-        return {
-            "status": "not_checked",
-            "reason": f"validation_cost>{VALIDATION_COST_LIMIT}",
-            "check": "skipped_cost",
-        }
-    witness = _parse_witness(framework, str(witness_text))
+        return _large_witness_validation(framework, subtrack, witness)
     semantics = solver_class("aba", subtrack).split("/")[-1]
     if semantics == "stable":
         valid = native_aba.closed(framework, witness) and native_aba.conflict_free(framework, witness) and all(
@@ -1008,6 +1004,38 @@ def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, An
         return {
             "status": "valid" if valid else "invalid",
             "check": "preferred_admissible_necessary",
+        }
+    return {"status": "not_checked", "reason": f"unsupported semantics: {semantics}"}
+
+
+def _large_witness_validation(
+    framework: ABAFramework,
+    subtrack: str,
+    witness: AssumptionSet,
+) -> dict[str, Any]:
+    from argumentation import aba_sat
+
+    semantics = solver_class("aba", subtrack).split("/")[-1]
+    if not witness <= framework.assumptions:
+        return {"status": "invalid", "check": f"{semantics}_large_witness_subset"}
+    closure = aba_sat._prefsat_closure(framework, witness)
+    conflict_free = not any(
+        framework.contrary[assumption] in closure
+        for assumption in witness
+    )
+    if semantics == "preferred":
+        return {
+            "status": "valid" if conflict_free else "invalid",
+            "check": "preferred_large_conflict_free_necessary",
+        }
+    if semantics == "stable":
+        attacks_all_outside = all(
+            framework.contrary[assumption] in closure
+            for assumption in framework.assumptions - witness
+        )
+        return {
+            "status": "valid" if conflict_free and attacks_all_outside else "invalid",
+            "check": "stable_large_closure",
         }
     return {"status": "not_checked", "reason": f"unsupported semantics: {semantics}"}
 
