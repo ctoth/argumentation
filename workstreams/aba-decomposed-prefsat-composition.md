@@ -470,17 +470,24 @@ Expected result: all decomposed PrefSat contract tests pass.
 
 Goal: route by argument shape and measured decomposition effect, not identity.
 
-- [ ] Add shape metadata for decomposition planning:
+- [x] Add shape metadata for decomposition planning:
   `decomp_component_count`, `decomp_max_component_assumptions`, and
   `decomp_no_reduction_reason`.
-- [ ] Add a production route entry with backend `sat`, predicate
+- [x] Add a production route entry with backend `sat`, predicate
   `decomposed_prefsat_reduced_product`, and evidence id
   `aba-decomposed-prefsat-composition-2026-05-18`.
-- [ ] The production route entry appears only when the solver class is
+- [x] The production route entry appears only when the solver class is
   `aba/single-extension/preferred`, the framework is flat, and
   `decomp_no_reduction_reason == "reduced"`.
-- [ ] Filename, path, year, generator name, and manifest id must not affect the
+- [x] Filename, path, year, generator name, and manifest id must not affect the
   route entry.
+
+Execution status:
+
+- Added decomposition shape fields to `compute_aba_shape`.
+- Added the `decomposed_prefsat_reduced_product` production SAT route.
+- Phase 7 gate passed: 26 passed, 1 skipped in 131.76s.
+- Next unchecked item is Phase 8: Property and Regression Gate.
 
 Gate:
 
