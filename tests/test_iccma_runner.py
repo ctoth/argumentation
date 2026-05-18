@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import lzma
+from io import StringIO
 from pathlib import Path
 
 from tools.iccma_data import classify_file
@@ -295,3 +296,39 @@ def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
     )
 
     assert parsed == {"answer": "false", "status": "solved"}
+
+
+def test_run_child_reports_profile_duration_without_worker_json(tmp_path, monkeypatch) -> None:
+    profile_path = tmp_path / "profiles" / "row.speedscope.json"
+
+    class CompletedProfileProcess:
+        stdout = StringIO("py-spy> Sampling process 100 times a second for 1 seconds...\n")
+        stderr = StringIO("")
+
+        def wait(self, timeout):
+            profile_path.parent.mkdir(parents=True, exist_ok=True)
+            profile_path.write_text("{}", encoding="utf-8")
+            return 0
+
+        def kill(self):
+            raise AssertionError("profiled worker should not need timeout kill")
+
+    monkeypatch.setattr(
+        "tools.iccma2025_run_native.subprocess.Popen",
+        lambda *args, **kwargs: CompletedProfileProcess(),
+    )
+
+    result = run_child(
+        {
+            "profile_path": str(profile_path),
+            "profile_duration_seconds": 1,
+        },
+        timeout_seconds=2.0,
+    )
+
+    assert result == {
+        "status": "profiled",
+        "reason": "profile_duration_elapsed",
+        "error": None,
+        "profile_path": str(profile_path),
+    }

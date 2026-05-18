@@ -45,9 +45,9 @@ def benchmark_args(args: argparse.Namespace, *, manifest: Path | None = None) ->
                 str(args.profile_duration_seconds),
             ]
         )
-    for subtrack in args.subtrack:
+    for subtrack in selected_subtracks(args):
         command.extend(["--subtrack", subtrack])
-    for backend in args.backend:
+    for backend in selected_backends(args):
         command.extend(["--backend", backend])
     return command
 
@@ -64,8 +64,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=[],
         help="Diagnostic filter for manifest target/control ids; defaults to the full manifest.",
     )
-    parser.add_argument("--subtrack", action="append", default=list(DEFAULT_SUBTRACKS))
-    parser.add_argument("--backend", action="append", default=list(DEFAULT_BACKENDS))
+    parser.add_argument("--subtrack", action="append", default=None)
+    parser.add_argument("--backend", action="append", default=None)
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
     parser.add_argument("--output-json", type=Path, default=DEFAULT_OUTPUT_JSON)
     parser.add_argument("--output-csv", type=Path, default=DEFAULT_OUTPUT_CSV)
@@ -86,6 +86,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Disable py-spy profiling for benchmark gates that only need status.",
     )
     return parser.parse_args(argv)
+
+
+def selected_subtracks(args: argparse.Namespace) -> tuple[str, ...]:
+    if args.subtrack is None:
+        return DEFAULT_SUBTRACKS
+    return tuple(args.subtrack)
+
+
+def selected_backends(args: argparse.Namespace) -> tuple[str, ...]:
+    if args.backend is None:
+        return DEFAULT_BACKENDS
+    return tuple(args.backend)
 
 
 def selected_manifest(args: argparse.Namespace) -> Path:

@@ -75,6 +75,14 @@ def test_hard_bucket_runner_defaults_to_exact_manifest_backend_matrix() -> None:
     assert _values_after(command, "--subtrack") == ["SE-PR", "SE-ST"]
 
 
+def test_hard_bucket_runner_explicit_backend_and_subtrack_replace_defaults() -> None:
+    args = parse_args(["--backend", "sat", "--subtrack", "SE-PR"])
+    command = benchmark_args(args)
+
+    assert _values_after(command, "--backend") == ["sat"]
+    assert _values_after(command, "--subtrack") == ["SE-PR"]
+
+
 def test_hard_bucket_profile_paths_are_stable_and_backend_specific(tmp_path: Path) -> None:
     jobs = build_jobs_from_manifest(
         _rows(),

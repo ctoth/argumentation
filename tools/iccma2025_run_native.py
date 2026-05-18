@@ -552,6 +552,9 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
     parsed_stdout = parse_worker_stdout(stdout)
     if parsed_stdout is not None:
         return parsed_stdout
+    profiled = profile_duration_result(job)
+    if profiled is not None:
+        return profiled
     try:
         return json.loads(stdout)
     except json.JSONDecodeError as exc:
@@ -575,6 +578,20 @@ def parse_worker_stdout(stdout: str) -> dict[str, Any] | None:
         if isinstance(parsed, dict):
             return parsed
     return None
+
+
+def profile_duration_result(job: dict[str, Any]) -> dict[str, Any] | None:
+    profile_path = job.get("profile_path")
+    if not profile_path or job.get("profile_duration_seconds") is None:
+        return None
+    if not Path(profile_path).exists():
+        return None
+    return {
+        "status": "profiled",
+        "reason": "profile_duration_elapsed",
+        "error": None,
+        "profile_path": str(profile_path),
+    }
 
 
 def build_worker_command(job: dict[str, Any], job_path: Path) -> list[str]:
