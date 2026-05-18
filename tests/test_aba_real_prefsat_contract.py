@@ -7,7 +7,6 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import aba as native_aba
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
@@ -119,7 +118,7 @@ def test_real_prefsat_labels_mutual_attack_witness_decisively() -> None:
     selected = next(iter(result.extension))
     rejected = next(iter(framework.assumptions - result.extension))
 
-    assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.extension in aba_sat.support_extensions(framework, "preferred")
     assert result.prefsat_in[selected]
     assert result.prefsat_out[rejected]
     assert not result.prefsat_undec[selected]
@@ -192,7 +191,7 @@ def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
     telemetry = result.telemetry
     attack_edge_count = aba_sat.real_prefsat_attack_edge_count(framework)
 
-    assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.extension in aba_sat.support_extensions(framework, "preferred")
     assert telemetry["prefsat_support_materializations"] == 0
     assert telemetry["prefsat_labelling_variables"] == 3 * len(framework.assumptions)
     assert telemetry["prefsat_exactly_one_clauses"] == len(framework.assumptions)
@@ -211,7 +210,7 @@ def test_real_prefsat_page_image_contract_is_complete() -> None:
 def test_real_prefsat_matches_preferred_oracle(framework: ABAFramework) -> None:
     result = aba_sat.real_prefsat_extension(framework)
 
-    assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.extension in aba_sat.support_extensions(framework, "preferred")
 
 
 @given(small_flat_aba_for_real_prefsat())
