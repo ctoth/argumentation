@@ -432,20 +432,33 @@ used as evidence.
 
 Goal: prove the real PrefSat path changes the measured hard class.
 
-- [ ] Run T1/T3/T5/T6/T8 and C1/C2/C3 with `--no-profile` under the declared
+- [x] Run T1/T3/T5/T6/T8 and C1/C2/C3 with `--no-profile` under the declared
   budget.
-- [ ] Validate every newly solved preferred answer through
+- [x] Validate every newly solved preferred answer through
   `tools/aba_shape_benchmark.py::validate_result`, as recorded in each
   hard-bucket JSON row's `validation` field.
-- [ ] A primary hard row counts as solved only if its row has
+- [x] A primary hard row counts as solved only if its row has
   `status == "solved"` and `validation.status == "valid"` for backend `sat` or
   `auto`.
-- [ ] If `validation.status` is `not_checked`, that row does not count as a
+- [x] If `validation.status` is `not_checked`, that row does not count as a
   win; add or fix validation before promotion.
-- [ ] If no primary preferred target counts as solved, profile T1 with the
+- [x] If no primary preferred target counts as solved, profile T1 with the
   exact profiling command below before recording failure.
-- [ ] Record whether time is in Python, SAT solving, parsing, validation, model
+- [x] Record whether time is in Python, SAT solving, parsing, validation, model
   construction, or answer checking.
+
+Execution status:
+
+- Phase 7 failed the hard-row gate. T1/T3/T5/T6/T8 all timed out for `auto`,
+  `asp`, and `sat`; no primary preferred row had `status == "solved"` with
+  `validation.status == "valid"` for backend `sat` or `auto`.
+- C1/C2/C3 control behavior was preserved by existing production routes.
+- The required T1 profile ran after the no-primary-solved result. The py-spy
+  wrapper contaminated worker JSON with py-spy status text, but wrote usable
+  speedscope artifacts. The T1 `sat` profile showed 2498 samples over 24.98
+  seconds, with dominant leaf time in `Z3_solver_check_assumptions` inside
+  `real_prefsat_extension` / `_solve_admissible` /
+  `_unanswered_attack_support`.
 
 Gate:
 
@@ -479,12 +492,18 @@ If gates pass:
 
 If gates fail:
 
-- [ ] Do not promote the experiment branch.
-- [ ] Record the exact failed paper claim, contract, target row, profiler
+- [x] Do not promote the experiment branch.
+- [x] Record the exact failed paper claim, contract, target row, profiler
   attribution, and next hypothesis in
   `reports/aba-real-prefsat-failure.md`.
-- [ ] Make clear whether true complete-labelling PrefSat failed, or whether the
+- [x] Make clear whether true complete-labelling PrefSat failed, or whether the
   implementation still did not meet the architecture lock.
+
+Execution status:
+
+- Failed-hypothesis path selected; pass-only promotion tasks intentionally
+  remain unchecked.
+- Failure record committed in `reports/aba-real-prefsat-failure.md`.
 
 Gate:
 
