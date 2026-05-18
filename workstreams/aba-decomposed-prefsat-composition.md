@@ -578,12 +578,20 @@ Goal: finish with either a real win or a precise failure.
 
 If gates pass:
 
-- [ ] Minimize the final diff to source, tests, and deliberate documentation.
-- [ ] Re-run Phase 8 and Phase 9 gates.
+- [x] Minimize the final diff to source, tests, and deliberate documentation.
+- [x] Re-run Phase 8 and Phase 9 gates.
 - [ ] Promote the minimal final diff to `main` with a clean commit or
   fast-forward merge.
-- [ ] Keep generated diagnostics uncommitted. Commit them only when the user
+- [x] Keep generated diagnostics uncommitted. Commit them only when the user
   explicitly requests artifact promotion.
+
+Execution status:
+
+- Final Phase 8 rerun passed: 1088 passed, 1 skipped in 117.27s.
+- Final Phase 9 rerun completed: T8 SAT solved with validation `valid`; C1,
+  C2, and C3 remained solved by the portfolio.
+- Generated hard-row JSON/CSV diagnostics are untracked/ignored and uncommitted.
+- Current branch before promotion is `experiment/aba-decomposed-prefsat-composition`.
 
 If gates fail:
 
