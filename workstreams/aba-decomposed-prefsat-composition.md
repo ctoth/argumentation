@@ -594,13 +594,13 @@ Execution status:
 - Current branch before promotion is `experiment/aba-decomposed-prefsat-composition`.
 - Promoted to `main` by fast-forward merge.
 
-If gates fail:
+If gates fail (not taken; gates passed):
 
-- [ ] Do not promote the experiment branch.
-- [ ] Record the exact failed paper claim, contract, target row, decomposition
+- Do not promote the experiment branch.
+- Record the exact failed paper claim, contract, target row, decomposition
   telemetry, profiler attribution, and next hypothesis in
   `reports/aba-decomposed-prefsat-failure.md`.
-- [ ] State whether the exact independent-product certificate failed to reduce
+- State whether the exact independent-product certificate failed to reduce
   the hard rows, or whether it reduced them and PrefSat/SAT checks still
   dominated.
 
