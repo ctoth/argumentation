@@ -301,24 +301,31 @@ source edits.
 
 Goal: make cheating and non-operational substitutes fail before implementation.
 
-- [ ] Add `tests/test_aba_decomposed_prefsat_contract.py`.
-- [ ] Add `layered_independent_aba_for_decomposition` Hypothesis strategy with
+- [x] Add `tests/test_aba_decomposed_prefsat_contract.py`.
+- [x] Add `layered_independent_aba_for_decomposition` Hypothesis strategy with
   2 to 5 independent residual components, at most 8 assumptions total, and at
   most 18 rules total.
-- [ ] Add `single_component_aba_for_no_reduction` Hypothesis strategy with one
+- [x] Add `single_component_aba_for_no_reduction` Hypothesis strategy with one
   connected proof/contrary incidence component.
-- [ ] Add `test_decomposed_prefsat_matches_preferred_oracle_on_small_products`.
-- [ ] Add `test_decomposition_reports_required_telemetry`.
-- [ ] Add `test_reduced_product_never_calls_full_instance_prefsat`, monkeypatching
+- [x] Add `test_decomposed_prefsat_matches_preferred_oracle_on_small_products`.
+- [x] Add `test_decomposition_reports_required_telemetry`.
+- [x] Add `test_reduced_product_never_calls_full_instance_prefsat`, monkeypatching
   `aba_sat.real_prefsat_extension` to fail when called with the original
   framework identity and asserting component calls still happen.
-- [ ] Add `test_no_reduction_calls_real_prefsat_once_and_reports_reason`.
-- [ ] Add `test_decomposition_never_calls_aba_to_dung`, monkeypatching
+- [x] Add `test_no_reduction_calls_real_prefsat_once_and_reports_reason`.
+- [x] Add `test_decomposition_never_calls_aba_to_dung`, monkeypatching
   `argumentation.aba.aba_to_dung` to fail.
-- [ ] Add `test_lifted_answer_validates_against_original_framework`.
-- [ ] Add `test_decomposed_route_ignores_filename_manifest_year_and_path`.
-- [ ] Add operational assertions for the telemetry numeric invariants listed
+- [x] Add `test_lifted_answer_validates_against_original_framework`.
+- [x] Add `test_decomposed_route_ignores_filename_manifest_year_and_path`.
+- [x] Add operational assertions for the telemetry numeric invariants listed
   above.
+
+Execution status:
+
+- Phase 2 contract tests were committed before source implementation.
+- Phase 2 gate failed before implementation because `argumentation.aba_decomposition`
+  does not exist yet: 6 failed, 2 passed.
+- Next unchecked item is Phase 3: Experiment Branch.
 
 Gate:
 
