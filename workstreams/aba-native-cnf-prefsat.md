@@ -29,9 +29,9 @@ Before source implementation, reread page images directly:
 - `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-010.png`
 - `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-002.png`
 - `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-003.png`
-- `papers/Thimm_2021_FudgeLight-weightSolverAbstract/pngs/page-003.png`
-- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-060.png`
-- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-061.png`
+- `papers/Thimm_2021_FudgeLight-weightSolverAbstract/pngs/page-002.png`
+- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-006.png`
+- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-007.png`
 - `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/pngs/page-003.png`
 
 ## Owned Paths
@@ -108,4 +108,3 @@ uv run pytest -q tests\test_aba_decomposed_prefsat_contract.py tests\test_aba_sh
 uv run tools\run_aba_hard_bucket.py --target-id T8 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t8.json --output-csv data\iccma\2025\runs\aba-native-cnf-t8.csv
 uv run tools\run_aba_hard_bucket.py --target-id T1 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t1.json --output-csv data\iccma\2025\runs\aba-native-cnf-t1.csv
 ```
-
