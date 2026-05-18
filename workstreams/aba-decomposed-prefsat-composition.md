@@ -528,17 +528,32 @@ Expected result: all listed tests pass and old production paths stay deleted.
 Goal: prove the composition changes the measured hard class or record that it
 does not.
 
-- [ ] Run T1/T3/T5/T6/T8 and C1/C2/C3 with `--no-profile` under the declared
+- [x] Run T1/T3/T5/T6/T8 and C1/C2/C3 with `--no-profile` under the declared
   budget.
-- [ ] A primary hard row counts as solved only if its row has
+- [x] A primary hard row counts as solved only if its row has
   `status == "solved"` and `validation.status == "valid"` for backend `sat` or
   `auto`.
-- [ ] C1/C2/C3 must remain solved by the production portfolio.
-- [ ] If no primary preferred target counts as solved, profile T1 with backend
+- [x] C1/C2/C3 must remain solved by the production portfolio.
+- [x] If no primary preferred target counts as solved, profile T1 with backend
   `sat` before recording failure.
-- [ ] Record whether time is in decomposition planning, residual simplification,
+- [x] Record whether time is in decomposition planning, residual simplification,
   component PrefSat solving, SAT checks, parsing, validation, model
   construction, or answer checking.
+
+Execution status:
+
+- Phase 9 hard-row command completed and regenerated diagnostic JSON/CSV as
+  untracked/ignored artifacts.
+- T1/T3/T5/T6 timed out across auto/ASP/SAT.
+- T8 solved on SAT in 28.08s with `validation.status == "valid"`.
+- C1, C2, and C3 remained solved by the portfolio.
+- T1 profiling was not required because T8 is a counted primary preferred solve.
+- The timeout rows reached backend execution after bounded shape computation; the
+  observed timeout budget is therefore in backend solving rather than parsing or
+  shape/decomposition metadata. Exact decomposition routing did not claim a
+  reduced-product route for these hard rows (`decomp_no_reduction_reason ==
+  "component_plan_not_exact"` in shape metadata).
+- Next unchecked item is Phase 10: Promotion or Failed-Hypothesis Record.
 
 Gate:
 
