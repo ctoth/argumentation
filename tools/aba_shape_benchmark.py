@@ -231,7 +231,9 @@ def _grounded_shape_fields(
 
 
 def _decomposition_shape_fields(framework: ABAFramework) -> dict[str, Any]:
-    plan = plan_decomposed_prefsat(framework)
+    plan = plan_decomposed_prefsat(
+        simplify_aba(framework, semantics="preferred").residual
+    )
     return {
         "decomp_component_count": plan.component_count,
         "decomp_max_component_assumptions": plan.max_component_assumptions,
