@@ -33,6 +33,31 @@ Before implementing any tactic below:
 - The hard rows report `decomp_no_reduction_reason ==
   "component_plan_not_exact"` when shape planning is bounded.
 
+## 2026-05-18 T1 Execution Notes
+
+Workflow actually used: item 1 py-spy backend attribution, then
+hypothesis-first PrefSat backend slices selected from the measured hot path.
+
+- Fixed the hard-bucket profiler gate so explicit `--backend sat --subtrack
+  SE-PR` replaces defaults, and py-spy duration captures report `profiled`
+  instead of `worker_bad_json`.
+- Initial T1 SAT/SE-PR profile: dominant time was
+  `_unanswered_attack_support` under `Z3_solver_check_assumptions`.
+- Kept exact improvements:
+  - reuse attacker support solver per target;
+  - batch target checks through one attacker query;
+  - replace Z3 attacker support with exact Horn closure;
+  - replace object-set Horn closure/shrink with indexed bitset propagation.
+- After bitset propagation, T1 still timed out under the 30s solver cap. The
+  profile moved from attacker Z3/object closure to main PrefSat Z3 checking:
+  `_solve_admissible` / `Z3_solver_check_assumptions` dominated, with bitset
+  shrink secondary.
+- Tried optimizer-first candidate selection. It was rejected and reverted:
+  `Z3_optimize_check` consumed the profile window and T1 still timed out.
+- Current routing truth: attacker detection is no longer the main blocker for
+  T1; the next useful slice must reduce or replace the main complete-labelling
+  Z3 check, or route dense flat preferred rows away from this Z3 formulation.
+
 ## Paper Inventory
 
 Already in this repo or sibling collections:
