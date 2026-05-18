@@ -272,13 +272,21 @@ Expected result: every listed phase matches a phase heading in order.
 
 Goal: verify the cited paper pages exist before coding from them.
 
-- [ ] Create missing page-image outputs for the exact paper titles in the Paper
+- [x] Create missing page-image outputs for the exact paper titles in the Paper
   Stack.
-- [ ] Verify every required page-image output path in this workstream exists.
-- [ ] Read the listed page images directly.
-- [ ] Add `DECOMPOSED_PREFSAT_PAGE_IMAGES` to
+- [x] Verify every required page-image output path in this workstream exists.
+- [x] Read the listed page images directly.
+- [x] Add `DECOMPOSED_PREFSAT_PAGE_IMAGES` to
   `tests/test_aba_decomposed_prefsat_contract.py` and assert every listed path
   exists.
+
+Execution status:
+
+- Existing `pngs/page-*.png` page images were found with filesystem inventory,
+  including ignored/generated files.
+- Required page images were read directly.
+- Page-image contract gate passed.
+- Next unchecked item is Phase 2: Hypothesis Contracts Before Code.
 
 Gate:
 
