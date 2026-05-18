@@ -186,35 +186,29 @@ tests. Notes can guide rereading; they do not replace page images.
   assumptions.
 - Lehtonen, Wallner, and Jarvisalo 2021: direct ABA facts and the warning
   against exponential AF translation.
-- Baroni, Giacomin, and Guida 2005: SCC-recursive directionality and why
-  component recursion requires an exact conditioning certificate.
 - Egly, Gaggl, and Woltran 2010: fixed input/query separation and
   maximality/saturation discipline.
 
 Required page-image outputs before implementation:
 
-- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/page-images/page-008.ppm`
-- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/page-images/page-009.ppm`
-- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/page-images/page-010.ppm`
-- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/page-images/page-002.ppm`
-- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/page-images/page-003.ppm`
-- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/page-images/page-001.ppm`
-- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/page-images/page-002.ppm`
-- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/page-images/page-003.ppm`
-- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000005.ppm`
-- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000006.ppm`
-- `papers/Lehtonen_2021_IncrementalASP_ABA_pngs/page-000012.ppm`
-- `papers/Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/page-images/page-174.ppm`
-- `papers/Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/page-images/page-177.ppm`
-- `papers/Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/page-images/page-180.ppm`
-- `papers/Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/page-images/page-190.ppm`
-- `papers/Egly_2010_Answer-setProgrammingEncodingsArgumentation/page-images/page-166.ppm`
-- `papers/Egly_2010_Answer-setProgrammingEncodingsArgumentation/page-images/page-167.ppm`
+- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-008.png`
+- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-009.png`
+- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-010.png`
+- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-002.png`
+- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-003.png`
+- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/pngs/page-001.png`
+- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/pngs/page-002.png`
+- `../propstore/papers/Niskanen_2020_ToksiaEfficientAbstractArgumentation/pngs/page-003.png`
+- `papers/Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/pngs/page-005.png`
+- `papers/Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/pngs/page-006.png`
+- `papers/Lehtonen_2021_DeclarativeAlgorithmsComplexityResults/pngs/page-012.png`
+- `papers/Egly_2010_Answer-setProgrammingEncodingsArgumentation/pngs/page-019.png`
+- `papers/Egly_2010_Answer-setProgrammingEncodingsArgumentation/pngs/page-020.png`
 
-Phase 1 owns creating the missing page-image outputs above for the exact paper
-titles listed in the Paper Stack. Source implementation cannot start until
-those files exist and have been read directly. Do not replace page-image reading
-with text extraction.
+Phase 1 owns creating missing `pngs/page-*.png` outputs above for the exact
+paper titles listed in the Paper Stack. Source implementation cannot start
+until those files exist and have been read directly. Do not replace page-image
+reading with text extraction.
 
 ## Target Rows
 
