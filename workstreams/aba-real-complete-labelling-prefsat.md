@@ -357,21 +357,34 @@ Expected result: clean tracked files on
 Goal: replace the overlapping failed production surface with real
 complete-labelling PrefSat.
 
-- [ ] Delete or disconnect the old preferred SAT production path that overlaps
+- [x] Delete or disconnect the old preferred SAT production path that overlaps
   this route before adding compatibility wrappers. The first implementation
   commit must remove that call edge, and tests/search failures become the work
   queue.
-- [ ] Implement explicit three-valued labelling variables exposed as
+- [x] Implement explicit three-valued labelling variables exposed as
   `prefsat_in`, `prefsat_out`, and `prefsat_undec`.
-- [ ] Implement complete-labelling constraints directly over the ABA structure
+- [x] Implement complete-labelling constraints directly over the ABA structure
   without exponential AF translation.
-- [ ] Implement preferred maximality through a SAT grow/block loop over
+- [x] Implement preferred maximality through a SAT grow/block loop over
   `prefsat_in[...]` variables, adding one subset-blocking clause per rejected
   candidate.
-- [ ] Use persistent solver state and assumptions only where justified by the
+- [x] Use persistent solver state and assumptions only where justified by the
   reread Niskanen/Jarvisalo pages.
-- [ ] Return the existing public ABA solver result shape.
-- [ ] Keep implementation telemetry wired to the Phase 3 contracts.
+- [x] Return the existing public ABA solver result shape.
+- [x] Keep implementation telemetry wired to the Phase 3 contracts.
+
+Execution status:
+
+- Implemented `real_prefsat_extension` and `RealPrefSatResult` in
+  `src\argumentation\aba_sat.py`.
+- Implemented explicit `prefsat_in`, `prefsat_out`, and `prefsat_undec`
+  labels, direct closure constraints over the ABA rules, SAT attacker
+  counterexample checks, and grow/block maximality.
+- Disconnected the old preferred CEGAR production return edge.
+- Strengthened real PrefSat behavior contracts passed:
+  `13 passed in 131.40s`.
+- Phase 5 gate passed: `1046 passed, 1 skipped in 105.48s`.
+- Next unchecked item is Phase 6: Property and Regression Gate.
 
 Gate:
 
