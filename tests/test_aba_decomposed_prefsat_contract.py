@@ -262,6 +262,10 @@ def _assert_decomposition_telemetry(
         assert telemetry["decomp_full_instance_prefsat_calls"] == 0
         assert telemetry["decomp_prefsat_component_calls"] == telemetry["decomp_component_count"]
         assert telemetry["decomp_max_component_assumptions"] < len(framework.assumptions)
+    elif telemetry["decomp_no_reduction_reason"] == "empty_residual":
+        assert telemetry["decomp_full_instance_prefsat_calls"] == 0
+        assert telemetry["decomp_prefsat_component_calls"] == 0
+        assert telemetry["decomp_component_count"] == 0
     else:
         assert telemetry["decomp_full_instance_prefsat_calls"] == 1
     assert telemetry["decomp_validation_success"] == 1
