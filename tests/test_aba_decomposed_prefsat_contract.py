@@ -133,7 +133,7 @@ def test_decomposed_prefsat_matches_preferred_oracle_on_small_products(
 
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 
-    assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.extension in aba_sat.support_extensions(framework, "preferred")
 
 
 @given(layered_independent_aba_for_decomposition())
