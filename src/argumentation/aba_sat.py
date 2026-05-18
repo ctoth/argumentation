@@ -610,7 +610,6 @@ class _RealPrefSatSolver:
         }
         self.progress_events: list[dict[str, int]] = []
         self._pending_refinements: list = []
-        self._attacker_oracle: _PrefSatAttackerSupportOracle | None = None
         self.derived = self._add_closure_constraints("prefsat", self.solver, self.prefsat_in)
         self._add_labelling_constraints()
 
@@ -723,14 +722,13 @@ class _RealPrefSatSolver:
             for assumption in self.assumptions
             if self.framework.contrary[assumption] in closure
         )
-        if self._attacker_oracle is None:
-            self._attacker_oracle = _PrefSatAttackerSupportOracle(
-                self.z3,
-                self.framework,
-                self.assumptions,
-                self.telemetry,
-            )
-        return self._attacker_oracle.unanswered_counterexample(candidate, counterattacked)
+        available = self.framework.assumptions - counterattacked
+        attacker_closure = _prefsat_closure(self.framework, available)
+        for target in sorted(candidate, key=repr):
+            conclusion = self.framework.contrary[target]
+            if conclusion in attacker_closure:
+                return target, _shrink_attack_support(self.framework, available, conclusion)
+        return None
 
     def _defense_refinement_clause(self, counterexample):
         target, attack_support = counterexample
@@ -798,75 +796,6 @@ class _RealPrefSatSolver:
                 ),
             },
         )
-
-
-class _PrefSatAttackerSupportOracle:
-    def __init__(
-        self,
-        z3,
-        framework: ABAFramework,
-        assumptions: tuple[Literal, ...],
-        telemetry: dict[str, int],
-    ) -> None:
-        telemetry["prefsat_attacker_solver_builds"] += 1
-        self.z3 = z3
-        self.framework = framework
-        self.assumptions = assumptions
-        self.telemetry = telemetry
-        self.solver = z3.Solver()
-        self.attacker_vars = {
-            assumption: z3.Bool(f"prefsat_attacker_{_literal_key(assumption)}")
-            for assumption in assumptions
-        }
-        self.attacker_derived, _ = _prefsat_add_closure_constraints(
-            z3,
-            self.solver,
-            framework,
-            self.attacker_vars,
-            prefix="prefsat_attacker",
-        )
-
-    def unanswered_counterexample(
-        self,
-        targets: AssumptionSet,
-        counterattacked: AssumptionSet,
-    ) -> tuple[Literal, AssumptionSet] | None:
-        ordered_targets = tuple(sorted(targets, key=repr))
-        if not ordered_targets:
-            return None
-        z3 = self.z3
-        self.telemetry["prefsat_attacker_solver_checks"] += 1
-        self.solver.push()
-        try:
-            for assumption in sorted(counterattacked, key=repr):
-                self.solver.add(z3.Not(self.attacker_vars[assumption]))
-            self.solver.add(
-                z3.Or(
-                    *(
-                        self.attacker_derived[self.framework.contrary[target]]
-                        for target in ordered_targets
-                    )
-                )
-            )
-            if self.solver.check() != z3.sat:
-                return None
-            model = self.solver.model()
-            support = frozenset(
-                assumption
-                for assumption, variable in self.attacker_vars.items()
-                if z3.is_true(model.evaluate(variable, model_completion=True))
-            )
-            for target in ordered_targets:
-                if z3.is_true(
-                    model.evaluate(
-                        self.attacker_derived[self.framework.contrary[target]],
-                        model_completion=True,
-                    )
-                ):
-                    return target, support
-            raise RuntimeError("attacker oracle model satisfied no requested target")
-        finally:
-            self.solver.pop()
 
 
 class _AdmissibleCegarSolver:

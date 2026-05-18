@@ -200,15 +200,8 @@ def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
     assert telemetry["prefsat_complete_clauses"] <= 24 * (
         len(framework.assumptions) + len(framework.rules) + attack_edge_count
     )
-    assert telemetry["prefsat_attacker_solver_builds"] <= len(framework.assumptions), (
-        REAL_PREFSAT_PAGE_IMAGES[4]
-    )
-    assert telemetry["prefsat_attacker_solver_checks"] >= telemetry["prefsat_attacker_solver_builds"]
-    assert telemetry["prefsat_attacker_solver_checks"] <= telemetry["prefsat_candidate_models"]
-    assert telemetry["prefsat_attacker_solver_builds"] <= min(
-        1,
-        telemetry["prefsat_attacker_solver_checks"],
-    )
+    assert telemetry["prefsat_attacker_solver_builds"] == 0, REAL_PREFSAT_PAGE_IMAGES[4]
+    assert telemetry["prefsat_attacker_solver_checks"] == 0
 
 
 def test_real_prefsat_page_image_contract_is_complete() -> None:
@@ -240,13 +233,8 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     assert telemetry["prefsat_complete_clauses"] <= 24 * (
         len(framework.assumptions) + len(framework.rules) + attack_edge_count
     )
-    assert telemetry["prefsat_attacker_solver_builds"] <= len(framework.assumptions)
-    assert telemetry["prefsat_attacker_solver_checks"] >= telemetry["prefsat_attacker_solver_builds"]
-    assert telemetry["prefsat_attacker_solver_checks"] <= telemetry["prefsat_candidate_models"]
-    assert telemetry["prefsat_attacker_solver_builds"] <= min(
-        1,
-        telemetry["prefsat_attacker_solver_checks"],
-    )
+    assert telemetry["prefsat_attacker_solver_builds"] == 0
+    assert telemetry["prefsat_attacker_solver_checks"] == 0
 
 
 @given(small_flat_aba_for_real_prefsat())
