@@ -305,6 +305,14 @@ Execution status:
 - Phase 3 gate passed: `18 passed, 1 skipped in 2.29s`.
 - No production solver implementation diff existed before Phase 4.
 - Next unchecked item is Phase 4: Experiment Branch.
+- After resetting the invalid approximation, strengthened
+  `tests/test_aba_real_prefsat_contract.py` with behavior/trace properties
+  instead of source-code call assertions:
+  - mutual-attack witnesses must expose decisive `in/out/undec` labels;
+  - odd attack cycles must preserve all-undecided complete labelling;
+  - support-pressure families must stay within structural telemetry bounds;
+  - generated results must match observable closure labels.
+- Strengthened contract collection passed: `13 tests collected in 1.07s`.
 
 Gate:
 
