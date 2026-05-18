@@ -367,13 +367,22 @@ tests committed separately from source.
 Goal: remove the direct full-instance preferred no-query path before adding the
 new path.
 
-- [ ] Delete the direct preferred no-query `real_prefsat_extension(...).extension`
+- [x] Delete the direct preferred no-query `real_prefsat_extension(...).extension`
   return in `sat_support_extension`.
-- [ ] Replace it with `decomposed_prefsat_extension(...).extension`.
-- [ ] Do not change `_sat_preferred_extension_satisfying`.
-- [ ] Add a temporary import or local lazy import only for
+- [x] Replace it with `decomposed_prefsat_extension(...).extension`.
+- [x] Do not change `_sat_preferred_extension_satisfying`.
+- [x] Add a temporary import or local lazy import only for
   `decomposed_prefsat_extension`; do not add a wrapper function in
   `aba_sat.py`.
+
+Execution status:
+
+- Preferred no-query SAT support now calls `decomposed_prefsat_extension`.
+- `rg -n -F "return real_prefsat_extension(" src\argumentation\aba_sat.py`
+  returned no matches.
+- `_sat_preferred_cegar_extension` and `aba_to_dung` searches showed only
+  pre-existing definitions, not a new production edge.
+- Next unchecked item is Phase 5: Exact Decomposition Planner.
 
 Old-path search gate:
 
