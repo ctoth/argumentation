@@ -400,13 +400,24 @@ preferred entrypoint.
 
 Goal: prove the implementation is correct before benchmark claims.
 
-- [ ] Compare preferred witnesses and skeptical preferred answers against the
+- [x] Compare preferred witnesses and skeptical preferred answers against the
   brute-force oracle on generated small flat ABA frameworks.
-- [ ] Check hand-built examples for maximality blocking and complete-labelling
+- [x] Check hand-built examples for maximality blocking and complete-labelling
   corner cases.
-- [ ] Preserve C2 and C3 solved behavior in targeted status runs using:
+- [x] Preserve C2 and C3 solved behavior in targeted status runs using:
   `uv run tools\run_aba_hard_bucket.py --target-id C2 --target-id C3 --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-real-prefsat-controls.json --output-csv data\iccma\2025\runs\aba-real-prefsat-controls.csv`.
-- [ ] Do not claim C1 is fixed unless the current branch actually solves it.
+- [x] Do not claim C1 is fixed unless the current branch actually solves it.
+
+Execution status:
+
+- Strengthened real PrefSat generated properties and hand-built examples passed
+  in `tests\test_aba_real_prefsat_contract.py`.
+- C2/C3 control command completed. C2 preferred stayed solved via `auto` and
+  `asp`; C3 stable stayed solved via `asp`. The new `sat` path timed out for
+  both controls and is not counted as a control win.
+- No C1 fix is claimed in this phase.
+- Phase 6 gate passed: `1067 passed, 1 skipped in 106.58s`.
+- Next unchecked item is Phase 7: Targeted Hard-Row Gate.
 
 Gate:
 
