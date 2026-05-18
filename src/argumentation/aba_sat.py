@@ -609,6 +609,7 @@ class _RealPrefSatSolver:
             "prefsat_attacker_solver_checks": 0,
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
+            "prefsat_attacker_bitset_rule_firings": 0,
         }
         self.progress_events: list[dict[str, int]] = []
         self._pending_refinements: list = []
@@ -809,12 +810,18 @@ class _BitsetHornClosure:
         self,
         literal_bits: dict[Literal, int],
         assumption_bits: dict[Literal, int],
-        rules: tuple[tuple[int, int], ...],
+        waiting: dict[int, tuple[int, ...]],
+        remaining_counts: tuple[int, ...],
+        consequents: tuple[int, ...],
+        zero_consequents: tuple[int, ...],
         telemetry: dict[str, int],
     ) -> None:
         self.literal_bits = literal_bits
         self.assumption_bits = assumption_bits
-        self.rules = rules
+        self.waiting = waiting
+        self.remaining_counts = remaining_counts
+        self.consequents = consequents
+        self.zero_consequents = zero_consequents
         self.telemetry = telemetry
         self._closure_cache: dict[int, int] = {}
 
@@ -837,14 +844,37 @@ class _BitsetHornClosure:
             assumption: literal_bits[assumption]
             for assumption in sorted(framework.assumptions, key=repr)
         }
-        rules = tuple(
-            (
-                sum(literal_bits[antecedent] for antecedent in frozenset(rule.antecedents)),
-                literal_bits[rule.consequent],
+        waiting_lists: dict[int, list[int]] = defaultdict(list)
+        remaining_counts: list[int] = []
+        consequents: list[int] = []
+        zero_consequents: list[int] = []
+        for rule in sorted(framework.rules, key=repr):
+            antecedent_bits = tuple(
+                literal_bits[antecedent]
+                for antecedent in frozenset(rule.antecedents)
             )
-            for rule in sorted(framework.rules, key=repr)
+            consequent = literal_bits[rule.consequent]
+            if antecedent_bits:
+                rule_index = len(remaining_counts)
+                remaining_counts.append(len(antecedent_bits))
+                consequents.append(consequent)
+                for bit in antecedent_bits:
+                    waiting_lists[bit].append(rule_index)
+            else:
+                zero_consequents.append(consequent)
+        waiting = {
+            bit: tuple(indices)
+            for bit, indices in waiting_lists.items()
+        }
+        return cls(
+            literal_bits,
+            assumption_bits,
+            waiting,
+            tuple(remaining_counts),
+            tuple(consequents),
+            tuple(zero_consequents),
+            telemetry,
         )
-        return cls(literal_bits, assumption_bits, rules, telemetry)
 
     def closure_mask(self, assumptions: AssumptionSet) -> int:
         return self._closure_from_seed(self._assumption_mask(assumptions))
@@ -882,15 +912,33 @@ class _BitsetHornClosure:
             return cached
         self.telemetry["prefsat_attacker_bitset_closure_checks"] += 1
         closure = seed
-        changed = True
-        while changed:
-            changed = False
-            for antecedents, consequent in self.rules:
-                if not closure & consequent and antecedents & ~closure == 0:
-                    closure |= consequent
-                    changed = True
+        remaining = list(self.remaining_counts)
+        queue = self._bits(seed)
+        for consequent in self.zero_consequents:
+            if not closure & consequent:
+                closure |= consequent
+                queue.append(consequent)
+        while queue:
+            bit = queue.pop()
+            for rule_index in self.waiting.get(bit, ()):
+                remaining[rule_index] -= 1
+                self.telemetry["prefsat_attacker_bitset_rule_firings"] += 1
+                if remaining[rule_index] == 0:
+                    consequent = self.consequents[rule_index]
+                    if not closure & consequent:
+                        closure |= consequent
+                        queue.append(consequent)
         self._closure_cache[seed] = closure
         return closure
+
+    def _bits(self, mask: int) -> list[int]:
+        bits: list[int] = []
+        remaining = mask
+        while remaining:
+            bit = remaining & -remaining
+            bits.append(bit)
+            remaining ^= bit
+        return bits
 
 
 class _AdmissibleCegarSolver:

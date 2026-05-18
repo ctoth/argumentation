@@ -44,6 +44,7 @@ REQUIRED_TELEMETRY_FIELDS = (
     "prefsat_attacker_solver_checks",
     "prefsat_attacker_bitset_closure_checks",
     "prefsat_attacker_bitset_shrink_checks",
+    "prefsat_attacker_bitset_rule_firings",
 )
 
 
@@ -207,6 +208,10 @@ def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
     assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
         telemetry["prefsat_attacker_bitset_shrink_checks"]
     )
+    assert telemetry["prefsat_attacker_bitset_rule_firings"] <= (
+        telemetry["prefsat_attacker_bitset_closure_checks"]
+        * max(1, _rule_antecedent_count(framework))
+    )
 
 
 def test_real_prefsat_page_image_contract_is_complete() -> None:
@@ -242,6 +247,10 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     assert telemetry["prefsat_attacker_solver_checks"] == 0
     assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
         telemetry["prefsat_attacker_bitset_shrink_checks"]
+    )
+    assert telemetry["prefsat_attacker_bitset_rule_firings"] <= (
+        telemetry["prefsat_attacker_bitset_closure_checks"]
+        * max(1, _rule_antecedent_count(framework))
     )
 
 
@@ -400,3 +409,7 @@ def _closure(framework: ABAFramework, extension: frozenset[Literal]) -> frozense
                     derived.add(rule.consequent)
                     changed = True
     return frozenset(derived)
+
+
+def _rule_antecedent_count(framework: ABAFramework) -> int:
+    return sum(len(frozenset(rule.antecedents)) for rule in framework.rules)
