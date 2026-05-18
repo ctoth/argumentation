@@ -461,7 +461,9 @@ def sat_support_extension(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
     if semantics == "preferred" and require_derived is None and require_not_derived is None:
-        return real_prefsat_extension(
+        from argumentation.aba_decomposition import decomposed_prefsat_extension
+
+        return decomposed_prefsat_extension(
             framework,
             require_assumptions=require_assumptions,
         ).extension
