@@ -340,10 +340,17 @@ surfaces do not exist or still route directly to full-instance PrefSat.
 
 Goal: isolate this benchmark-driven implementation slice.
 
-- [ ] Confirm tracked files are clean with
+- [x] Confirm tracked files are clean with
   `git status --short --untracked-files=no`.
-- [ ] Create an experiment branch from the clean tracked-file base.
-- [ ] Commit Phase 2 tests before source implementation.
+- [x] Create an experiment branch from the clean tracked-file base.
+- [x] Commit Phase 2 tests before source implementation.
+
+Execution status:
+
+- Tracked files were clean before branch creation.
+- Created `experiment/aba-decomposed-prefsat-composition` from the clean tracked
+  base.
+- Next unchecked item is Phase 4: Deletion-First Route Change.
 
 Gate:
 
