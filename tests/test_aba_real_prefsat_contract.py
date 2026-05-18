@@ -112,17 +112,18 @@ def test_real_prefsat_exposes_three_valued_labelling_surface() -> None:
         assert sum(bool(label) for label in labels) == 1, REAL_PREFSAT_PAGE_IMAGES[1]
 
 
-def test_real_prefsat_rejects_old_cegar_forwarding(monkeypatch) -> None:
+def test_real_prefsat_labels_mutual_attack_witness_decisively() -> None:
     framework = _two_choice_framework()
 
-    def forbidden(*args: Any, **kwargs: Any) -> None:
-        raise AssertionError("real PrefSat must not call old support-aware CEGAR")
-
-    monkeypatch.setattr(aba_sat, "_sat_preferred_cegar_extension", forbidden)
-
     result = aba_sat.real_prefsat_extension(framework)
+    selected = next(iter(result.extension))
+    rejected = next(iter(framework.assumptions - result.extension))
 
     assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.prefsat_in[selected]
+    assert result.prefsat_out[rejected]
+    assert not result.prefsat_undec[selected]
+    assert not result.prefsat_undec[rejected]
     assert result.route_metadata["algorithm"] == "complete-labelling-prefsat"
 
 
@@ -168,6 +169,38 @@ def test_dense_flat_real_prefsat_does_not_materialize_minimal_supports() -> None
     assert result.telemetry["prefsat_support_materializations"] == 0, REAL_PREFSAT_PAGE_IMAGES[8]
 
 
+@given(st.integers(min_value=3, max_value=9).filter(lambda size: size % 2 == 1))
+@settings(max_examples=4, deadline=None)
+def test_real_prefsat_preserves_undecided_odd_cycle_labelling(size: int) -> None:
+    framework = _odd_cycle_framework(size)
+
+    result = aba_sat.real_prefsat_extension(framework)
+
+    assert result.extension == frozenset()
+    assert not any(result.prefsat_in.values())
+    assert not any(result.prefsat_out.values())
+    assert all(result.prefsat_undec.values())
+    assert result.telemetry["prefsat_final_in_count"] == 0
+
+
+@given(st.integers(min_value=3, max_value=8))
+@settings(max_examples=6, deadline=None)
+def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
+    framework = _support_pressure_framework(size)
+
+    result = aba_sat.real_prefsat_extension(framework)
+    telemetry = result.telemetry
+    attack_edge_count = aba_sat.real_prefsat_attack_edge_count(framework)
+
+    assert result.extension in native_aba.preferred_extensions(framework)
+    assert telemetry["prefsat_support_materializations"] == 0
+    assert telemetry["prefsat_labelling_variables"] == 3 * len(framework.assumptions)
+    assert telemetry["prefsat_exactly_one_clauses"] == len(framework.assumptions)
+    assert telemetry["prefsat_complete_clauses"] <= 24 * (
+        len(framework.assumptions) + len(framework.rules) + attack_edge_count
+    )
+
+
 def test_real_prefsat_page_image_contract_is_complete() -> None:
     assert len(REAL_PREFSAT_PAGE_IMAGES) == 11
     assert all(path.endswith(".png") for path in REAL_PREFSAT_PAGE_IMAGES)
@@ -197,6 +230,27 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     assert telemetry["prefsat_complete_clauses"] <= 24 * (
         len(framework.assumptions) + len(framework.rules) + attack_edge_count
     )
+
+
+@given(small_flat_aba_for_real_prefsat())
+@settings(max_examples=40, deadline=None)
+def test_real_prefsat_labelling_matches_closure_observations(framework: ABAFramework) -> None:
+    result = aba_sat.real_prefsat_extension(framework)
+    closure = _closure(framework, result.extension)
+
+    for assumption in framework.assumptions:
+        labels = (
+            result.prefsat_in[assumption],
+            result.prefsat_out[assumption],
+            result.prefsat_undec[assumption],
+        )
+        assert sum(bool(label) for label in labels) == 1
+        assert result.prefsat_in[assumption] is (assumption in result.extension)
+        assert result.prefsat_out[assumption] is (framework.contrary[assumption] in closure)
+        assert result.prefsat_undec[assumption] is (
+            assumption not in result.extension
+            and framework.contrary[assumption] not in closure
+        )
 
 
 @given(small_flat_aba_for_real_prefsat())
@@ -286,3 +340,50 @@ def _dense_flat_framework(size: int) -> ABAFramework:
         contrary={assumption: atoms[index] for index, assumption in enumerate(assumptions)},
         rules=rules,
     )
+
+
+def _odd_cycle_framework(size: int) -> ABAFramework:
+    assumptions = tuple(lit(f"a{index}") for index in range(size))
+    contraries = tuple(lit(f"c{index}") for index in range(size))
+    rules = frozenset(
+        Rule((assumptions[index],), contraries[(index + 1) % size], "strict")
+        for index in range(size)
+    )
+    return ABAFramework(
+        language=frozenset((*assumptions, *contraries)),
+        assumptions=frozenset(assumptions),
+        contrary={assumption: contraries[index] for index, assumption in enumerate(assumptions)},
+        rules=rules,
+    )
+
+
+def _support_pressure_framework(size: int) -> ABAFramework:
+    assumptions = tuple(lit(f"a{index}") for index in range(size))
+    contraries = tuple(lit(f"c{index}") for index in range(size))
+    helper = tuple(lit(f"h{index}") for index in range(size))
+    rules = []
+    for index, assumption in enumerate(assumptions):
+        next_assumption = assumptions[(index + 1) % size]
+        previous_assumption = assumptions[(index - 1) % size]
+        rules.append(Rule((assumption,), helper[index], "strict"))
+        rules.append(Rule((helper[index], next_assumption), contraries[index], "strict"))
+        rules.append(Rule((previous_assumption, next_assumption), contraries[index], "strict"))
+    return ABAFramework(
+        language=frozenset((*assumptions, *contraries, *helper)),
+        assumptions=frozenset(assumptions),
+        contrary={assumption: contraries[index] for index, assumption in enumerate(assumptions)},
+        rules=frozenset(rules),
+    )
+
+
+def _closure(framework: ABAFramework, extension: frozenset[Literal]) -> frozenset[Literal]:
+    derived = set(extension)
+    changed = True
+    while changed:
+        changed = False
+        for rule in framework.rules:
+            if all(antecedent in derived for antecedent in rule.antecedents):
+                if rule.consequent not in derived:
+                    derived.add(rule.consequent)
+                    changed = True
+    return frozenset(derived)
