@@ -1,13 +1,25 @@
-"""Task-directed SAT solving for flat ABA stable semantics."""
+"""Task-directed SAT solving for flat ABA stable and support semantics."""
 
 from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
 import importlib
+from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aspic import Literal, Rule
+
+
+@dataclass(frozen=True)
+class RealPrefSatResult:
+    extension: AssumptionSet
+    prefsat_in: dict[Literal, bool]
+    prefsat_out: dict[Literal, bool]
+    prefsat_undec: dict[Literal, bool]
+    telemetry: dict[str, int]
+    progress_events: tuple[dict[str, int], ...]
+    route_metadata: dict[str, Any]
 
 
 def _aba_simplification(framework: ABAFramework, semantics: str):
@@ -54,6 +66,29 @@ def support_extensions(
             key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
         )
     )
+
+
+def real_prefsat_attack_edge_count(framework: ABAFramework) -> int:
+    """Count singleton-closure attack edges without enumerating supports."""
+    count = 0
+    for source in framework.assumptions:
+        closure = _prefsat_closure(framework, frozenset({source}))
+        count += sum(
+            1
+            for target in framework.assumptions
+            if framework.contrary[target] in closure
+        )
+    return count
+
+
+def real_prefsat_extension(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet = frozenset(),
+) -> RealPrefSatResult:
+    solver = _RealPrefSatSolver(framework)
+    extension = solver.preferred_extension(require_assumptions=require_assumptions)
+    return solver.result(extension)
 
 
 @dataclass(frozen=True)
@@ -435,9 +470,10 @@ def sat_support_extension(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
     if semantics == "preferred" and require_derived is None and require_not_derived is None:
-        return AssumptionKernel.from_framework(framework).preferred_extension(
+        return real_prefsat_extension(
+            framework,
             require_assumptions=require_assumptions,
-        )
+        ).extension
     if semantics == "preferred" and (
         require_derived is not None or require_not_derived is not None
     ):
@@ -549,6 +585,253 @@ def _sat_preferred_extension_satisfying(
         else:
             solver.add(z3.BoolVal(False))
     return None
+
+
+class _RealPrefSatSolver:
+    def __init__(self, framework: ABAFramework) -> None:
+        self.z3 = _load_z3()
+        self.framework = framework
+        self.assumptions = tuple(sorted(framework.assumptions, key=repr))
+        self.literals = tuple(sorted(framework.language, key=repr))
+        self.solver = self.z3.Solver()
+        self.prefsat_in = {
+            assumption: self.z3.Bool(f"prefsat_in_{_literal_key(assumption)}")
+            for assumption in self.assumptions
+        }
+        self.prefsat_out = {
+            assumption: self.z3.Bool(f"prefsat_out_{_literal_key(assumption)}")
+            for assumption in self.assumptions
+        }
+        self.prefsat_undec = {
+            assumption: self.z3.Bool(f"prefsat_undec_{_literal_key(assumption)}")
+            for assumption in self.assumptions
+        }
+        self.telemetry = {
+            "prefsat_labelling_variables": 3 * len(self.assumptions),
+            "prefsat_exactly_one_clauses": 0,
+            "prefsat_complete_clauses": 0,
+            "prefsat_support_materializations": 0,
+            "prefsat_solver_checks": 0,
+            "prefsat_candidate_models": 0,
+            "prefsat_candidate_blocks": 0,
+            "prefsat_rejected_supersets": 0,
+            "prefsat_max_in_count_seen": 0,
+            "prefsat_final_in_count": 0,
+        }
+        self.progress_events: list[dict[str, int]] = []
+        self._pending_refinements: list = []
+        self.derived = self._add_closure_constraints("prefsat", self.solver, self.prefsat_in)
+        self._add_labelling_constraints()
+
+    def _add_closure_constraints(self, prefix: str, solver, variables):
+        derived, clause_count = _prefsat_add_closure_constraints(
+            self.z3,
+            solver,
+            self.framework,
+            variables,
+            prefix=prefix,
+        )
+        self.telemetry["prefsat_complete_clauses"] += clause_count
+        return derived
+
+    def _add_labelling_constraints(self) -> None:
+        z3 = self.z3
+        for assumption in self.assumptions:
+            in_var = self.prefsat_in[assumption]
+            out_var = self.prefsat_out[assumption]
+            undec_var = self.prefsat_undec[assumption]
+            attacked_by_in = self.derived[self.framework.contrary[assumption]]
+            self.solver.add(z3.Or(in_var, out_var, undec_var))
+            self.solver.add(z3.AtMost(in_var, out_var, undec_var, 1))
+            self.solver.add(out_var == attacked_by_in)
+            self.solver.add(undec_var == z3.And(z3.Not(in_var), z3.Not(out_var)))
+            self.solver.add(z3.Implies(in_var, z3.Not(attacked_by_in)))
+            self.telemetry["prefsat_exactly_one_clauses"] += 1
+            self.telemetry["prefsat_complete_clauses"] += 4
+
+    def preferred_extension(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+    ) -> AssumptionSet:
+        current = self._solve_admissible(require_in=require_assumptions)
+        if current is None:
+            self.telemetry["prefsat_final_in_count"] = 0
+            return frozenset()
+        while True:
+            outside = self.framework.assumptions - current
+            if not outside:
+                self.telemetry["prefsat_final_in_count"] = len(current)
+                return current
+            larger = self._solve_admissible(require_in=current, require_any_in=outside)
+            if larger is None:
+                self.telemetry["prefsat_final_in_count"] = len(current)
+                return current
+            if not current < larger:
+                raise RuntimeError("real ABA PrefSat grow step did not produce a strict superset")
+            self.telemetry["prefsat_candidate_blocks"] += 1
+            self._record_progress()
+            current = larger
+
+    def _solve_admissible(
+        self,
+        *,
+        require_in: AssumptionSet = frozenset(),
+        require_any_in: AssumptionSet = frozenset(),
+    ) -> AssumptionSet | None:
+        z3 = self.z3
+        self.solver.push()
+        try:
+            for clause in self._pending_refinements:
+                self.solver.add(clause)
+            for assumption in sorted(require_in, key=repr):
+                self.solver.add(self.prefsat_in[assumption])
+            if require_any_in:
+                self.solver.add(
+                    z3.Or(
+                        *(
+                            self.prefsat_in[assumption]
+                            for assumption in sorted(require_any_in, key=repr)
+                        )
+                    )
+                )
+            while True:
+                self.telemetry["prefsat_solver_checks"] += 1
+                if self.solver.check() != z3.sat:
+                    self._record_progress()
+                    return None
+                self.telemetry["prefsat_candidate_models"] += 1
+                candidate = self._model_extension()
+                closure = self._model_closure()
+                self.telemetry["prefsat_max_in_count_seen"] = max(
+                    self.telemetry["prefsat_max_in_count_seen"],
+                    len(candidate),
+                )
+                counterexample = self._attacker_counterexample(candidate, closure)
+                if counterexample is None:
+                    self._record_progress()
+                    return candidate
+                clause = self._defense_refinement_clause(counterexample)
+                self._pending_refinements.append(clause)
+                self.solver.add(clause)
+                self.telemetry["prefsat_candidate_blocks"] += 1
+                self.telemetry["prefsat_rejected_supersets"] += 1
+                self._record_progress()
+        finally:
+            self.solver.pop()
+
+    def _attacker_counterexample(
+        self,
+        candidate: AssumptionSet,
+        closure: frozenset[Literal],
+    ) -> tuple[Literal, AssumptionSet] | None:
+        counterattacked = frozenset(
+            assumption
+            for assumption in self.assumptions
+            if self.framework.contrary[assumption] in closure
+        )
+        for target in sorted(candidate, key=repr):
+            support = self._unanswered_attack_support(target, counterattacked)
+            if support is not None:
+                return target, support
+        return None
+
+    def _unanswered_attack_support(
+        self,
+        target: Literal,
+        counterattacked: AssumptionSet,
+    ) -> AssumptionSet | None:
+        z3 = self.z3
+        solver = z3.Solver()
+        attacker_vars = {
+            assumption: z3.Bool(f"prefsat_attacker_{_literal_key(target)}_{_literal_key(assumption)}")
+            for assumption in self.assumptions
+        }
+        attacker_derived, _ = _prefsat_add_closure_constraints(
+            z3,
+            solver,
+            self.framework,
+            attacker_vars,
+            prefix=f"prefsat_attacker_{_literal_key(target)}",
+        )
+        solver.add(attacker_derived[self.framework.contrary[target]])
+        for assumption in sorted(counterattacked, key=repr):
+            solver.add(z3.Not(attacker_vars[assumption]))
+        if solver.check() != z3.sat:
+            return None
+        model = solver.model()
+        return frozenset(
+            assumption
+            for assumption, variable in attacker_vars.items()
+            if z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+
+    def _defense_refinement_clause(self, counterexample):
+        target, attack_support = counterexample
+        if not attack_support:
+            return self.z3.Not(self.prefsat_in[target])
+        return self.z3.Or(
+            self.z3.Not(self.prefsat_in[target]),
+            *(
+                self.derived[self.framework.contrary[attacker]]
+                for attacker in sorted(attack_support, key=repr)
+            ),
+        )
+
+    def _model_extension(self) -> AssumptionSet:
+        model = self.solver.model()
+        z3 = self.z3
+        return frozenset(
+            assumption
+            for assumption, variable in self.prefsat_in.items()
+            if z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+
+    def _model_closure(self) -> frozenset[Literal]:
+        model = self.solver.model()
+        z3 = self.z3
+        return frozenset(
+            literal
+            for literal, variable in self.derived.items()
+            if z3.is_true(model.evaluate(variable, model_completion=True))
+        )
+
+    def _record_progress(self) -> None:
+        self.progress_events.append(
+            {
+                "prefsat_max_in_count_seen": self.telemetry["prefsat_max_in_count_seen"],
+                "prefsat_candidate_blocks": self.telemetry["prefsat_candidate_blocks"],
+            }
+        )
+
+    def result(self, extension: AssumptionSet) -> RealPrefSatResult:
+        closure = _prefsat_closure(self.framework, extension)
+        prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
+        prefsat_out = {
+            assumption: self.framework.contrary[assumption] in closure
+            for assumption in self.assumptions
+        }
+        prefsat_undec = {
+            assumption: not prefsat_in[assumption] and not prefsat_out[assumption]
+            for assumption in self.assumptions
+        }
+        return RealPrefSatResult(
+            extension=extension,
+            prefsat_in=prefsat_in,
+            prefsat_out=prefsat_out,
+            prefsat_undec=prefsat_undec,
+            telemetry=dict(self.telemetry),
+            progress_events=tuple(self.progress_events),
+            route_metadata={
+                "backend": "sat",
+                "algorithm": "complete-labelling-prefsat",
+                "rejected_substitutes": (
+                    "old-support-aware-cegar",
+                    "asp-optimization",
+                    "greedy-growth",
+                ),
+            },
+        )
 
 
 class _AdmissibleCegarSolver:
@@ -865,6 +1148,85 @@ def _add_ranked_closure_constraints(z3, solver, framework, variables):
             )
         )
     return derived
+
+
+def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix: str):
+    literals = tuple(sorted(framework.language, key=repr))
+    rank_bound = len(literals)
+    derived = {
+        literal: z3.Bool(f"{prefix}_derived_{_literal_key(literal)}")
+        for literal in literals
+    }
+    ranks = {
+        literal: z3.Int(f"{prefix}_rank_{_literal_key(literal)}")
+        for literal in literals
+    }
+    rules_by_consequent = _rules_by_consequent(framework, literals)
+    clause_count = 0
+
+    for literal in literals:
+        solver.add(ranks[literal] >= 0, ranks[literal] <= rank_bound)
+        clause_count += 1
+
+    for assumption in sorted(framework.assumptions, key=repr):
+        solver.add(derived[assumption] == variables[assumption])
+        solver.add(z3.Implies(variables[assumption], ranks[assumption] == 0))
+        clause_count += 2
+
+    for rule in sorted(framework.rules, key=repr):
+        antecedents = tuple(rule.antecedents)
+        if not antecedents:
+            solver.add(derived[rule.consequent])
+        else:
+            solver.add(
+                z3.Implies(
+                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
+                    derived[rule.consequent],
+                )
+            )
+        clause_count += 1
+
+    for literal in literals:
+        if literal in framework.assumptions:
+            continue
+        support_terms = []
+        for rule in rules_by_consequent[literal]:
+            antecedents = tuple(rule.antecedents)
+            if not antecedents:
+                support_terms.append(z3.BoolVal(True))
+                continue
+            support_terms.append(
+                z3.And(
+                    *(
+                        z3.And(
+                            derived[antecedent],
+                            ranks[antecedent] < ranks[literal],
+                        )
+                        for antecedent in antecedents
+                    )
+                )
+            )
+        solver.add(
+            z3.Implies(
+                derived[literal],
+                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
+            )
+        )
+        clause_count += 1
+    return derived, clause_count
+
+
+def _prefsat_closure(framework: ABAFramework, extension: AssumptionSet) -> frozenset[Literal]:
+    derived = set(extension)
+    changed = True
+    while changed:
+        changed = False
+        for rule in framework.rules:
+            if all(antecedent in derived for antecedent in rule.antecedents):
+                if rule.consequent not in derived:
+                    derived.add(rule.consequent)
+                    changed = True
+    return frozenset(derived)
 
 
 def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
@@ -1278,6 +1640,9 @@ def _load_clingo():
 
 __all__ = [
     "AssumptionKernel",
+    "RealPrefSatResult",
+    "real_prefsat_attack_edge_count",
+    "real_prefsat_extension",
     "sat_stable_extension",
     "sat_support_acceptance",
     "sat_support_extension",
