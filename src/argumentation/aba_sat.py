@@ -441,15 +441,6 @@ def sat_support_extension(
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
     if (
-        semantics == "preferred"
-        and require_derived is None
-        and require_not_derived is None
-        and not require_assumptions
-    ):
-        stable = sat_stable_extension(framework, simplify=False)
-        if stable is not None:
-            return stable
-    if (
         simplify
         and require_derived is None
         and require_not_derived is None
