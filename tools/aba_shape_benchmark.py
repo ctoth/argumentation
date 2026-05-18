@@ -143,7 +143,11 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     language_literals = len(framework.language)
     rules = len(framework.rules)
     grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
-    decomposition = _decomposition_shape_fields(framework)
+    decomposition = _decomposition_shape_fields(
+        framework,
+        assumptions=assumptions,
+        rules=rules,
+    )
     dependency = _dependency_shape(framework)
     rule_density = _ratio(rules, assumptions)
     rule_body_overlap = _rule_body_overlap(framework)
@@ -230,7 +234,18 @@ def _grounded_shape_fields(
     }
 
 
-def _decomposition_shape_fields(framework: ABAFramework) -> dict[str, Any]:
+def _decomposition_shape_fields(
+    framework: ABAFramework,
+    *,
+    assumptions: int,
+    rules: int,
+) -> dict[str, Any]:
+    if assumptions * rules > GROUNDED_SHAPE_COST_LIMIT:
+        return {
+            "decomp_component_count": 0,
+            "decomp_max_component_assumptions": assumptions,
+            "decomp_no_reduction_reason": "component_plan_not_exact",
+        }
     plan = plan_decomposed_prefsat(
         simplify_aba(framework, semantics="preferred").residual
     )
