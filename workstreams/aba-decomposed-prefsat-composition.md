@@ -580,7 +580,7 @@ If gates pass:
 
 - [x] Minimize the final diff to source, tests, and deliberate documentation.
 - [x] Re-run Phase 8 and Phase 9 gates.
-- [ ] Promote the minimal final diff to `main` with a clean commit or
+- [x] Promote the minimal final diff to `main` with a clean commit or
   fast-forward merge.
 - [x] Keep generated diagnostics uncommitted. Commit them only when the user
   explicitly requests artifact promotion.
@@ -592,6 +592,7 @@ Execution status:
   C2, and C3 remained solved by the portfolio.
 - Generated hard-row JSON/CSV diagnostics are untracked/ignored and uncommitted.
 - Current branch before promotion is `experiment/aba-decomposed-prefsat-composition`.
+- Promoted to `main` by fast-forward merge.
 
 If gates fail:
 
