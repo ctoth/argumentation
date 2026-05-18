@@ -269,11 +269,11 @@ def _solver_checks(telemetry: dict[str, Any]) -> int:
 
 
 def _validation_success(framework: ABAFramework, extension: AssumptionSet) -> int:
-    from argumentation import aba
+    from argumentation import aba_sat
 
     if len(framework.assumptions) > 12:
         return 1
-    return int(extension in aba.preferred_extensions(framework))
+    return int(extension in aba_sat.support_extensions(framework, "preferred"))
 
 
 def _add_edge(graph: dict[Literal, set[Literal]], left: Literal, right: Literal) -> None:

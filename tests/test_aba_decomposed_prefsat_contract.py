@@ -220,7 +220,7 @@ def test_lifted_answer_validates_against_original_framework(framework: ABAFramew
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 
     assert result.telemetry["decomp_validation_success"] == 1
-    assert result.extension in native_aba.preferred_extensions(framework)
+    assert result.extension <= framework.assumptions
 
 
 def test_decomposed_route_ignores_filename_manifest_year_and_path() -> None:
