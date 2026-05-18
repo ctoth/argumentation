@@ -610,6 +610,8 @@ class _RealPrefSatSolver:
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
             "prefsat_attacker_bitset_rule_firings": 0,
+            "prefsat_optimization_rounds": 0,
+            "prefsat_growth_steps": 0,
         }
         self.progress_events: list[dict[str, int]] = []
         self._pending_refinements: list = []
@@ -651,40 +653,34 @@ class _RealPrefSatSolver:
         *,
         require_assumptions: AssumptionSet = frozenset(),
     ) -> AssumptionSet:
-        current = self._solve_admissible(require_in=require_assumptions)
+        current = self._solve_admissible(
+            require_in=require_assumptions,
+            maximize=True,
+        )
         if current is None:
             self.telemetry["prefsat_final_in_count"] = 0
             return frozenset()
-        while True:
-            outside = self.framework.assumptions - current
-            if not outside:
-                self.telemetry["prefsat_final_in_count"] = len(current)
-                return current
-            larger = self._solve_admissible(require_in=current, require_any_in=outside)
-            if larger is None:
-                self.telemetry["prefsat_final_in_count"] = len(current)
-                return current
-            if not current < larger:
-                raise RuntimeError("real ABA PrefSat grow step did not produce a strict superset")
-            self.telemetry["prefsat_candidate_blocks"] += 1
-            self._record_progress()
-            current = larger
+        self.telemetry["prefsat_final_in_count"] = len(current)
+        return current
 
     def _solve_admissible(
         self,
         *,
         require_in: AssumptionSet = frozenset(),
         require_any_in: AssumptionSet = frozenset(),
+        maximize: bool = False,
     ) -> AssumptionSet | None:
         z3 = self.z3
-        self.solver.push()
+        solver = self._optimizer_solver() if maximize else self.solver
+        if not maximize:
+            solver.push()
         try:
             for clause in self._pending_refinements:
-                self.solver.add(clause)
+                solver.add(clause)
             for assumption in sorted(require_in, key=repr):
-                self.solver.add(self.prefsat_in[assumption])
+                solver.add(self.prefsat_in[assumption])
             if require_any_in:
-                self.solver.add(
+                solver.add(
                     z3.Or(
                         *(
                             self.prefsat_in[assumption]
@@ -694,12 +690,15 @@ class _RealPrefSatSolver:
                 )
             while True:
                 self.telemetry["prefsat_solver_checks"] += 1
-                if self.solver.check() != z3.sat:
+                if maximize:
+                    self.telemetry["prefsat_optimization_rounds"] += 1
+                if solver.check() != z3.sat:
                     self._record_progress()
                     return None
                 self.telemetry["prefsat_candidate_models"] += 1
-                candidate = self._model_extension()
-                closure = self._model_closure()
+                model = solver.model()
+                candidate = self._model_extension(model)
+                closure = self._model_closure(model)
                 self.telemetry["prefsat_max_in_count_seen"] = max(
                     self.telemetry["prefsat_max_in_count_seen"],
                     len(candidate),
@@ -710,12 +709,28 @@ class _RealPrefSatSolver:
                     return candidate
                 clause = self._defense_refinement_clause(counterexample)
                 self._pending_refinements.append(clause)
-                self.solver.add(clause)
+                solver.add(clause)
                 self.telemetry["prefsat_candidate_blocks"] += 1
                 self.telemetry["prefsat_rejected_supersets"] += 1
                 self._record_progress()
         finally:
-            self.solver.pop()
+            if not maximize:
+                solver.pop()
+
+    def _optimizer_solver(self):
+        z3 = self.z3
+        optimizer = z3.Optimize()
+        for assertion in self.solver.assertions():
+            optimizer.add(assertion)
+        optimizer.maximize(
+            z3.Sum(
+                *(
+                    z3.If(self.prefsat_in[assumption], 1, 0)
+                    for assumption in self.assumptions
+                )
+            )
+        )
+        return optimizer
 
     def _attacker_counterexample(
         self,
@@ -749,8 +764,7 @@ class _RealPrefSatSolver:
             ),
         )
 
-    def _model_extension(self) -> AssumptionSet:
-        model = self.solver.model()
+    def _model_extension(self, model) -> AssumptionSet:
         z3 = self.z3
         return frozenset(
             assumption
@@ -758,8 +772,7 @@ class _RealPrefSatSolver:
             if z3.is_true(model.evaluate(variable, model_completion=True))
         )
 
-    def _model_closure(self) -> frozenset[Literal]:
-        model = self.solver.model()
+    def _model_closure(self, model) -> frozenset[Literal]:
         z3 = self.z3
         return frozenset(
             literal
