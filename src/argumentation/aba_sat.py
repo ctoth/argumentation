@@ -607,9 +607,15 @@ class _RealPrefSatSolver:
             "prefsat_final_in_count": 0,
             "prefsat_attacker_solver_builds": 0,
             "prefsat_attacker_solver_checks": 0,
+            "prefsat_attacker_bitset_closure_checks": 0,
+            "prefsat_attacker_bitset_shrink_checks": 0,
         }
         self.progress_events: list[dict[str, int]] = []
         self._pending_refinements: list = []
+        self._attacker_closure = _BitsetHornClosure.from_framework(
+            framework,
+            self.telemetry,
+        )
         self.derived = self._add_closure_constraints("prefsat", self.solver, self.prefsat_in)
         self._add_labelling_constraints()
 
@@ -723,11 +729,11 @@ class _RealPrefSatSolver:
             if self.framework.contrary[assumption] in closure
         )
         available = self.framework.assumptions - counterattacked
-        attacker_closure = _prefsat_closure(self.framework, available)
+        attacker_closure = self._attacker_closure.closure_mask(available)
         for target in sorted(candidate, key=repr):
             conclusion = self.framework.contrary[target]
-            if conclusion in attacker_closure:
-                return target, _shrink_attack_support(self.framework, available, conclusion)
+            if self._attacker_closure.contains(attacker_closure, conclusion):
+                return target, self._attacker_closure.shrink_support(available, conclusion)
         return None
 
     def _defense_refinement_clause(self, counterexample):
@@ -796,6 +802,95 @@ class _RealPrefSatSolver:
                 ),
             },
         )
+
+
+class _BitsetHornClosure:
+    def __init__(
+        self,
+        literal_bits: dict[Literal, int],
+        assumption_bits: dict[Literal, int],
+        rules: tuple[tuple[int, int], ...],
+        telemetry: dict[str, int],
+    ) -> None:
+        self.literal_bits = literal_bits
+        self.assumption_bits = assumption_bits
+        self.rules = rules
+        self.telemetry = telemetry
+        self._closure_cache: dict[int, int] = {}
+
+    @classmethod
+    def from_framework(
+        cls,
+        framework: ABAFramework,
+        telemetry: dict[str, int],
+    ) -> _BitsetHornClosure:
+        literals = sorted(
+            set(framework.language)
+            | set(framework.assumptions)
+            | set(framework.contrary.values())
+            | {rule.consequent for rule in framework.rules}
+            | {antecedent for rule in framework.rules for antecedent in rule.antecedents},
+            key=repr,
+        )
+        literal_bits = {literal: 1 << index for index, literal in enumerate(literals)}
+        assumption_bits = {
+            assumption: literal_bits[assumption]
+            for assumption in sorted(framework.assumptions, key=repr)
+        }
+        rules = tuple(
+            (
+                sum(literal_bits[antecedent] for antecedent in frozenset(rule.antecedents)),
+                literal_bits[rule.consequent],
+            )
+            for rule in sorted(framework.rules, key=repr)
+        )
+        return cls(literal_bits, assumption_bits, rules, telemetry)
+
+    def closure_mask(self, assumptions: AssumptionSet) -> int:
+        return self._closure_from_seed(self._assumption_mask(assumptions))
+
+    def contains(self, closure: int, literal: Literal) -> bool:
+        return bool(closure & self.literal_bits[literal])
+
+    def shrink_support(
+        self,
+        support: AssumptionSet,
+        conclusion: Literal,
+    ) -> AssumptionSet:
+        self.telemetry["prefsat_attacker_bitset_shrink_checks"] += 1
+        current = self._assumption_mask(support)
+        conclusion_bit = self.literal_bits[conclusion]
+        for assumption in sorted(support, key=repr):
+            reduced = current & ~self.assumption_bits[assumption]
+            if self._closure_from_seed(reduced) & conclusion_bit:
+                current = reduced
+        return frozenset(
+            assumption
+            for assumption, bit in self.assumption_bits.items()
+            if current & bit
+        )
+
+    def _assumption_mask(self, assumptions: AssumptionSet) -> int:
+        mask = 0
+        for assumption in assumptions:
+            mask |= self.assumption_bits[assumption]
+        return mask
+
+    def _closure_from_seed(self, seed: int) -> int:
+        cached = self._closure_cache.get(seed)
+        if cached is not None:
+            return cached
+        self.telemetry["prefsat_attacker_bitset_closure_checks"] += 1
+        closure = seed
+        changed = True
+        while changed:
+            changed = False
+            for antecedents, consequent in self.rules:
+                if not closure & consequent and antecedents & ~closure == 0:
+                    closure |= consequent
+                    changed = True
+        self._closure_cache[seed] = closure
+        return closure
 
 
 class _AdmissibleCegarSolver:

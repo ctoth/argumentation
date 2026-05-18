@@ -42,6 +42,8 @@ REQUIRED_TELEMETRY_FIELDS = (
     "prefsat_final_in_count",
     "prefsat_attacker_solver_builds",
     "prefsat_attacker_solver_checks",
+    "prefsat_attacker_bitset_closure_checks",
+    "prefsat_attacker_bitset_shrink_checks",
 )
 
 
@@ -202,6 +204,9 @@ def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
     )
     assert telemetry["prefsat_attacker_solver_builds"] == 0, REAL_PREFSAT_PAGE_IMAGES[4]
     assert telemetry["prefsat_attacker_solver_checks"] == 0
+    assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
+        telemetry["prefsat_attacker_bitset_shrink_checks"]
+    )
 
 
 def test_real_prefsat_page_image_contract_is_complete() -> None:
@@ -235,6 +240,9 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     )
     assert telemetry["prefsat_attacker_solver_builds"] == 0
     assert telemetry["prefsat_attacker_solver_checks"] == 0
+    assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
+        telemetry["prefsat_attacker_bitset_shrink_checks"]
+    )
 
 
 @given(small_flat_aba_for_real_prefsat())
