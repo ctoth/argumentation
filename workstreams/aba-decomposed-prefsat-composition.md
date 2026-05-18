@@ -435,21 +435,28 @@ Phase 6 is implemented.
 Goal: solve exact product components with real PrefSat and lift to the original
 framework.
 
-- [ ] Implement `decomposed_prefsat_extension`.
-- [ ] Apply `simplify_aba(framework, semantics="preferred")` before planning.
-- [ ] For `empty_residual`, return `fixed_in` and validate it against the
+- [x] Implement `decomposed_prefsat_extension`.
+- [x] Apply `simplify_aba(framework, semantics="preferred")` before planning.
+- [x] For `empty_residual`, return `fixed_in` and validate it against the
   original framework.
-- [ ] For `single_component` and `component_plan_not_exact`, call
+- [x] For `single_component` and `component_plan_not_exact`, call
   `real_prefsat_extension` exactly once on the residual, lift through
   `AbaSimplification.lift`, and validate against the original framework.
-- [ ] For `reduced`, call `real_prefsat_extension` once per component job, union
+- [x] For `reduced`, call `real_prefsat_extension` once per component job, union
   component extensions, lift through `AbaSimplification.lift`, and validate
   against the original framework.
-- [ ] Validation uses `argumentation.aba.preferred_extensions` only in tests and
+- [x] Validation uses `argumentation.aba.preferred_extensions` only in tests and
   small validation gates. Production validation in hard-bucket runs remains
   `tools/aba_shape_benchmark.py::validate_result`.
-- [ ] Aggregate `prefsat_solver_checks` from component results into
+- [x] Aggregate `prefsat_solver_checks` from component results into
   `decomp_solver_checks`.
+
+Execution status:
+
+- Implemented composition, simplification, lifting, component solving, and
+  solver-check aggregation.
+- Full decomposed PrefSat contract gate passed: 8 passed in 172.58s.
+- Next unchecked item is Phase 7: Shape Routing Integration.
 
 Gate:
 
