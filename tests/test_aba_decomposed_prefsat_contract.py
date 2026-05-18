@@ -60,7 +60,7 @@ def lit(name: str) -> Literal:
 
 @st.composite
 def layered_independent_aba_for_decomposition(draw) -> ABAFramework:
-    component_count = draw(st.integers(min_value=2, max_value=4))
+    component_count = draw(st.integers(min_value=2, max_value=5))
     two_assumption_components = draw(
         st.sets(
             st.integers(min_value=0, max_value=component_count - 1),
