@@ -483,11 +483,6 @@ def sat_support_extension(
             require_not_derived=require_not_derived,
             require_assumptions=require_assumptions,
         )
-    if semantics == "preferred":
-        return _sat_preferred_cegar_extension(
-            framework,
-            require_assumptions=require_assumptions,
-        )
 
     z3 = _load_z3()
     variables = {
