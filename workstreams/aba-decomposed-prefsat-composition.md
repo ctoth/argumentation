@@ -400,20 +400,26 @@ composition path.
 
 Goal: implement the exact independent-product certificate and nothing broader.
 
-- [ ] Add `src/argumentation/aba_decomposition.py`.
-- [ ] Implement the proof/contrary incidence graph exactly as specified above.
-- [ ] Implement connected component extraction deterministically by `repr`.
-- [ ] Implement `plan_decomposed_prefsat`.
-- [ ] For an empty residual, return `decomp_no_reduction_reason ==
+- [x] Add `src/argumentation/aba_decomposition.py`.
+- [x] Implement the proof/contrary incidence graph exactly as specified above.
+- [x] Implement connected component extraction deterministically by `repr`.
+- [x] Implement `plan_decomposed_prefsat`.
+- [x] For an empty residual, return `decomp_no_reduction_reason ==
   "empty_residual"` and no component jobs.
-- [ ] For one exact component equal to the residual, return
+- [x] For one exact component equal to the residual, return
   `decomp_no_reduction_reason == "single_component"`.
-- [ ] For multiple exact components, return `decomp_no_reduction_reason ==
+- [x] For multiple exact components, return `decomp_no_reduction_reason ==
   "reduced"` and component jobs whose assumption/rule sets partition the
   residual.
-- [ ] If any rule or contrary crosses components, return
+- [x] If any rule or contrary crosses components, return
   `decomp_no_reduction_reason == "component_plan_not_exact"` and no component
   jobs.
+
+Execution status:
+
+- Added the exact incidence-graph planner in `src/argumentation/aba_decomposition.py`.
+- Phase 5 gate passed: 4 passed, 4 deselected in 208.33s.
+- Next unchecked item is Phase 6: Decomposed PrefSat Composition.
 
 Gate:
 
