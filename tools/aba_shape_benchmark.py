@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from argumentation import aba as native_aba
 from argumentation.aba import ABAFramework, AssumptionSet
+from argumentation.aba_decomposition import plan_decomposed_prefsat
 from argumentation.aba_preprocessing import simplify_aba
 from argumentation.aspic import GroundAtom, Literal
 from argumentation.iccma import parse_aba
@@ -52,6 +53,9 @@ ROUTE_REQUIRED_FIELDS = frozenset(
         "dependency_scc_max_size",
         "contrary_target_in_degree_max",
         "closure_growth_sample",
+        "decomp_component_count",
+        "decomp_max_component_assumptions",
+        "decomp_no_reduction_reason",
     }
 )
 
@@ -82,6 +86,9 @@ class AbaShape:
     grounded_fixed_out: int
     residual_assumptions: int
     residual_rules: int
+    decomp_component_count: int
+    decomp_max_component_assumptions: int
+    decomp_no_reduction_reason: str
     preprocessing_collapsed: bool
     grounded_shape_status: str
     rule_density: float
@@ -136,6 +143,7 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     language_literals = len(framework.language)
     rules = len(framework.rules)
     grounded = _grounded_shape_fields(framework, assumptions=assumptions, rules=rules)
+    decomposition = _decomposition_shape_fields(framework)
     dependency = _dependency_shape(framework)
     rule_density = _ratio(rules, assumptions)
     rule_body_overlap = _rule_body_overlap(framework)
@@ -169,6 +177,9 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
         grounded_fixed_out=grounded["grounded_fixed_out"],
         residual_assumptions=grounded["residual_assumptions"],
         residual_rules=grounded["residual_rules"],
+        decomp_component_count=decomposition["decomp_component_count"],
+        decomp_max_component_assumptions=decomposition["decomp_max_component_assumptions"],
+        decomp_no_reduction_reason=decomposition["decomp_no_reduction_reason"],
         preprocessing_collapsed=grounded["preprocessing_collapsed"],
         grounded_shape_status=grounded["grounded_shape_status"],
         rule_density=rule_density,
@@ -216,6 +227,15 @@ def _grounded_shape_fields(
         "residual_rules": len(simplification.residual.rules),
         "preprocessing_collapsed": not simplification.is_trivial,
         "grounded_shape_status": "exact",
+    }
+
+
+def _decomposition_shape_fields(framework: ABAFramework) -> dict[str, Any]:
+    plan = plan_decomposed_prefsat(framework)
+    return {
+        "decomp_component_count": plan.component_count,
+        "decomp_max_component_assumptions": plan.max_component_assumptions,
+        "decomp_no_reduction_reason": plan.no_reduction_reason,
     }
 
 
@@ -529,6 +549,31 @@ def route_candidates_from_shape_data(
                         "assumptions",
                         "rule_density",
                         "stable_obstruction_count",
+                    ],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    if (
+        "sat" in available
+        and solver_class_name == "aba/single-extension/preferred"
+        and bool(shape_data["is_flat"])
+        and str(shape_data["decomp_no_reduction_reason"]) == "reduced"
+    ):
+        candidates.append(
+            RouteCandidate(
+                backend="sat",
+                predicate="decomposed_prefsat_reduced_product",
+                production=True,
+                evidence_id="aba-decomposed-prefsat-composition-2026-05-18",
+                reason={
+                    "paper": "Cerutti_2013_ComputingPreferredExtensionsAbstract; Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers; Niskanen_2020_ToksiaEfficientAbstractArgumentation",
+                    "fields": [
+                        "is_flat",
+                        "decomp_component_count",
+                        "decomp_max_component_assumptions",
+                        "decomp_no_reduction_reason",
                     ],
                     "solver_class": solver_class_name,
                     "timeout_budget_class": timeout_budget_class,

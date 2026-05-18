@@ -245,6 +245,13 @@ def test_decomposed_route_ignores_filename_manifest_year_and_path() -> None:
         manifest_identity="local",
     )
 
+    assert any(
+        candidate[0] == "sat"
+        and candidate[1] == "decomposed_prefsat_reduced_product"
+        and candidate[2] is True
+        and candidate[3] == "aba-decomposed-prefsat-composition-2026-05-18"
+        for candidate in _decomposed_route_signature(left)
+    )
     assert _decomposed_route_signature(left) == _decomposed_route_signature(right)
 
 

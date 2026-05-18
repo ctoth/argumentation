@@ -247,6 +247,9 @@ def _large_dense_stable_shape_data() -> dict[str, Any]:
         "dependency_scc_max_size": 8,
         "contrary_target_in_degree_max": 1,
         "closure_growth_sample": 0.75,
+        "decomp_component_count": 1,
+        "decomp_max_component_assumptions": 151,
+        "decomp_no_reduction_reason": "single_component",
         "assumptions": 151,
     }
 
@@ -262,6 +265,9 @@ def _large_dense_preferred_shape_data() -> dict[str, Any]:
         "dependency_scc_max_size": 8,
         "contrary_target_in_degree_max": 1,
         "closure_growth_sample": 0.75,
+        "decomp_component_count": 1,
+        "decomp_max_component_assumptions": 151,
+        "decomp_no_reduction_reason": "single_component",
         "assumptions": 151,
     }
 
