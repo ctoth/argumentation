@@ -502,10 +502,18 @@ pass together.
 
 Goal: prove the new path preserves existing behavior before timing evidence.
 
-- [ ] Run the decomposed PrefSat contract tests.
-- [ ] Run the real PrefSat contract tests.
-- [ ] Run the ABA regression and routing tests.
-- [ ] Run old-path search gates again.
+- [x] Run the decomposed PrefSat contract tests.
+- [x] Run the real PrefSat contract tests.
+- [x] Run the ABA regression and routing tests.
+- [x] Run old-path search gates again.
+
+Execution status:
+
+- Phase 8 pytest gate passed: 1088 passed, 1 skipped in 218.48s.
+- `return real_prefsat_extension(` has no matches in `src/argumentation/aba_sat.py`.
+- `_sat_preferred_cegar_extension` and `aba_to_dung` searches show only
+  pre-existing definitions, not new production calls.
+- Next unchecked item is Phase 9: Targeted Hard-Row Gate.
 
 Gate:
 
