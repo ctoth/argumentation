@@ -1,6 +1,6 @@
 # ABA Native CNF PrefSat Workstream
 
-Status: executable.
+Status: completed on `exp/native-cnf-prefsat`.
 
 Workflow actually requested: continue the main PySAT-native path while a
 separate worker repairs `pypblib`.
@@ -108,3 +108,21 @@ uv run pytest -q tests\test_aba_decomposed_prefsat_contract.py tests\test_aba_sh
 uv run tools\run_aba_hard_bucket.py --target-id T8 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t8.json --output-csv data\iccma\2025\runs\aba-native-cnf-t8.csv
 uv run tools\run_aba_hard_bucket.py --target-id T1 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t1.json --output-csv data\iccma\2025\runs\aba-native-cnf-t1.csv
 ```
+
+## Completion Evidence
+
+- Added plain `python-sat`; `uv run pytest --version` returned `pytest 9.0.3`.
+- Added native CNF PrefSat Hypothesis contracts before production implementation;
+  they failed on the missing `native_cnf_prefsat_extension` API before the
+  backend was added.
+- Reread the listed paper page PNGs directly before source implementation.
+- Added a PySAT native-CNF preferred path with deterministic native telemetry and
+  `native_cnf_z3_main_checks == 0`.
+- Routed dense flat preferred ABA rows to the native CNF path through a shared
+  shape predicate, not filename, year, target id, or parent directory.
+- `uv run tools\run_aba_hard_bucket.py --target-id T8 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t8.json --output-csv data\iccma\2025\runs\aba-native-cnf-t8.csv`
+  solved T8.
+- `uv run tools\run_aba_hard_bucket.py --target-id T1 --backend sat --subtrack SE-PR --timeout-seconds 30 --no-profile --output-json data\iccma\2025\runs\aba-native-cnf-t1.json --output-csv data\iccma\2025\runs\aba-native-cnf-t1.csv`
+  solved T1 after profile-driven Python reductions.
+- `uv run pytest -q tests\test_aba_native_cnf_prefsat.py tests\test_aba_real_prefsat_contract.py tests\test_aba_decomposed_prefsat_contract.py tests\test_aba_shape_benchmark.py tests\test_aba_route_properties.py tests\test_aba_hard_bucket_manifest.py tests\test_iccma_runner.py tests\test_speedscope_hot_frames.py`
+  passed: 80 tests in 8.36s.
