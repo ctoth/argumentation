@@ -28,6 +28,7 @@ REQUIRED_NATIVE_CNF_TELEMETRY = (
     "native_cnf_candidate_models",
     "native_cnf_candidate_blocks",
     "native_cnf_z3_main_checks",
+    "native_cnf_closure_materializations",
 )
 
 
@@ -137,6 +138,7 @@ def test_native_cnf_prefsat_reports_operational_contract(framework: ABAFramework
     assert telemetry["native_cnf_candidate_models"] <= telemetry["native_cnf_solver_checks"]
     assert telemetry["native_cnf_candidate_blocks"] <= len(framework.assumptions) + 2
     assert telemetry["native_cnf_z3_main_checks"] == 0
+    assert telemetry["native_cnf_closure_materializations"] == 0
 
 
 @given(small_flat_aba_for_real_prefsat())
