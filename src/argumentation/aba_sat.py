@@ -795,10 +795,11 @@ class _NativeCnfPrefSatSolver:
         )
 
     def _closure(self, extension: AssumptionSet) -> frozenset[Literal]:
+        closure = self._attacker_closure.closure_mask(extension)
         return frozenset(
             literal
             for literal, bit in self._attacker_closure.literal_bits.items()
-            if self._attacker_closure.closure_mask(extension) & bit
+            if closure & bit
         )
 
     def _record_progress(self) -> None:
