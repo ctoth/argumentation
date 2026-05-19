@@ -460,6 +460,12 @@ def sat_support_extension(
     """Return one complete/preferred ABA extension using support-aware SAT."""
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
+    if semantics == "preferred" and require_derived is None and require_not_derived is None:
+        if should_use_native_cnf_prefsat(framework):
+            return native_cnf_prefsat_extension(
+                framework,
+                require_assumptions=require_assumptions,
+            ).extension
     if (
         simplify
         and require_derived is None
