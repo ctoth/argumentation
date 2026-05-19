@@ -100,7 +100,12 @@ def decomposed_prefsat_extension(
         return AbaDecomposedPrefSatResult(extension=extension, telemetry=telemetry)
 
     if plan.no_reduction_reason != "reduced":
-        result = aba_sat.real_prefsat_extension(
+        prefsat = (
+            aba_sat.native_cnf_prefsat_extension
+            if aba_sat.should_use_native_cnf_prefsat(residual)
+            else aba_sat.real_prefsat_extension
+        )
+        result = prefsat(
             residual,
             require_assumptions=residual_required,
         )

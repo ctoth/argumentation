@@ -206,7 +206,7 @@ def test_large_dense_stable_route_ignores_locator_fields() -> None:
     )
 
 
-def test_large_dense_preferred_has_no_production_route_without_evidence() -> None:
+def test_large_dense_preferred_native_cnf_route_is_production_sat() -> None:
     candidates = route_candidates_from_shape_data(
         _large_dense_preferred_shape_data(),
         SOLVER_CLASS,
@@ -214,9 +214,13 @@ def test_large_dense_preferred_has_no_production_route_without_evidence() -> Non
         timeout_budget_class="30s",
     )
 
-    assert candidates
-    assert all(not candidate.production for candidate in candidates)
-    assert all(candidate.evidence_id is None for candidate in candidates)
+    assert any(
+        candidate.backend == "sat"
+        and candidate.predicate == "native_cnf_dense_prefsat_route"
+        and candidate.production
+        and candidate.evidence_id == "aba-native-cnf-prefsat-2026-05-18"
+        for candidate in candidates
+    )
 
 
 def test_large_dense_preferred_asp_candidate_is_not_production_route() -> None:

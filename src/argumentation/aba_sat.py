@@ -8,6 +8,7 @@ import importlib
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
+from argumentation.aba_route_policy import native_cnf_prefsat_dense_shape
 from argumentation.aspic import Literal, Rule
 
 
@@ -89,6 +90,25 @@ def real_prefsat_extension(
     solver = _RealPrefSatSolver(framework)
     extension = solver.preferred_extension(require_assumptions=require_assumptions)
     return solver.result(extension)
+
+
+def native_cnf_prefsat_extension(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet = frozenset(),
+) -> RealPrefSatResult:
+    solver = _NativeCnfPrefSatSolver(framework)
+    extension = solver.preferred_extension(require_assumptions=require_assumptions)
+    return solver.result(extension)
+
+
+def should_use_native_cnf_prefsat(framework: ABAFramework) -> bool:
+    assumption_count = len(framework.assumptions)
+    return native_cnf_prefsat_dense_shape(
+        is_flat=True,
+        assumptions=assumption_count,
+        rule_density=(len(framework.rules) / assumption_count) if assumption_count else 0.0,
+    )
 
 
 @dataclass(frozen=True)
@@ -573,6 +593,254 @@ def _sat_preferred_extension_satisfying(
         else:
             solver.add(z3.BoolVal(False))
     return None
+
+
+class _NativeCnfPrefSatSolver:
+    def __init__(self, framework: ABAFramework) -> None:
+        solver_class = _load_pysat_solver()
+        self.framework = framework
+        self.assumptions = tuple(sorted(framework.assumptions, key=repr))
+        self._next_var = 1
+        self.in_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.out_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.undec_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.solver = solver_class(name="glucose4")
+        self.telemetry = {
+            "native_cnf_variables": self._next_var - 1,
+            "native_cnf_clauses": 0,
+            "native_cnf_solver_checks": 0,
+            "native_cnf_candidate_models": 0,
+            "native_cnf_candidate_blocks": 0,
+            "native_cnf_z3_main_checks": 0,
+            "prefsat_labelling_variables": 3 * len(self.assumptions),
+            "prefsat_exactly_one_clauses": 0,
+            "prefsat_complete_clauses": 0,
+            "prefsat_support_materializations": 0,
+            "prefsat_solver_checks": 0,
+            "prefsat_candidate_models": 0,
+            "prefsat_candidate_blocks": 0,
+            "prefsat_rejected_supersets": 0,
+            "prefsat_max_in_count_seen": 0,
+            "prefsat_final_in_count": 0,
+            "prefsat_attacker_solver_builds": 0,
+            "prefsat_attacker_solver_checks": 0,
+            "prefsat_attacker_bitset_closure_checks": 0,
+            "prefsat_attacker_bitset_shrink_checks": 0,
+            "prefsat_attacker_bitset_rule_firings": 0,
+        }
+        self.progress_events: list[dict[str, int]] = []
+        self._attacker_closure = _BitsetHornClosure.from_framework(
+            framework,
+            self.telemetry,
+        )
+        self._add_labelling_skeleton()
+        self._add_static_conflict_clauses()
+        self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
+
+    def _new_var(self) -> int:
+        variable = self._next_var
+        self._next_var += 1
+        return variable
+
+    def _add_clause(self, clause: list[int]) -> None:
+        self.solver.add_clause(clause)
+        self.telemetry["native_cnf_clauses"] += 1
+        self.telemetry["prefsat_complete_clauses"] += 1
+
+    def _add_labelling_skeleton(self) -> None:
+        for assumption in self.assumptions:
+            in_var = self.in_vars[assumption]
+            out_var = self.out_vars[assumption]
+            undec_var = self.undec_vars[assumption]
+            self._add_clause([in_var, out_var, undec_var])
+            self._add_clause([-in_var, -out_var])
+            self._add_clause([-in_var, -undec_var])
+            self._add_clause([-out_var, -undec_var])
+            self.telemetry["prefsat_exactly_one_clauses"] += 1
+
+    def _add_static_conflict_clauses(self) -> None:
+        empty_closure = self._closure(frozenset())
+        for target in self.assumptions:
+            if self.framework.contrary[target] in empty_closure:
+                self._add_clause([-self.in_vars[target]])
+        for source in self.assumptions:
+            closure = self._closure(frozenset({source}))
+            for target in self.assumptions:
+                if self.framework.contrary[target] in closure:
+                    if source == target:
+                        self._add_clause([-self.in_vars[target]])
+                    else:
+                        self._add_clause([-self.in_vars[source], -self.in_vars[target]])
+
+    def preferred_extension(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+    ) -> AssumptionSet:
+        current = self._solve_admissible(require_in=require_assumptions)
+        if current is None:
+            self.telemetry["prefsat_final_in_count"] = 0
+            return frozenset()
+        while True:
+            outside = self.framework.assumptions - current
+            if not outside:
+                self.telemetry["prefsat_final_in_count"] = len(current)
+                return current
+            larger = self._solve_admissible(require_in=current, require_any_in=outside)
+            if larger is None:
+                self.telemetry["prefsat_final_in_count"] = len(current)
+                return current
+            if not current < larger:
+                raise RuntimeError("native CNF PrefSat grow step did not produce a strict superset")
+            self._record_progress()
+            current = larger
+
+    def _solve_admissible(
+        self,
+        *,
+        require_in: AssumptionSet = frozenset(),
+        require_any_in: AssumptionSet = frozenset(),
+    ) -> AssumptionSet | None:
+        assumptions = [self.in_vars[assumption] for assumption in sorted(require_in, key=repr)]
+        if require_any_in:
+            guard = self._new_var()
+            self.telemetry["native_cnf_variables"] = self._next_var - 1
+            self._add_clause(
+                [
+                    *(self.in_vars[assumption] for assumption in sorted(require_any_in, key=repr)),
+                    -guard,
+                ]
+            )
+            assumptions.append(guard)
+        while True:
+            self.telemetry["native_cnf_solver_checks"] += 1
+            self.telemetry["prefsat_solver_checks"] += 1
+            if not self.solver.solve(assumptions=assumptions):
+                self._record_progress()
+                return None
+            self.telemetry["native_cnf_candidate_models"] += 1
+            self.telemetry["prefsat_candidate_models"] += 1
+            candidate = self._model_extension()
+            closure = self._closure(candidate)
+            self.telemetry["prefsat_max_in_count_seen"] = max(
+                self.telemetry["prefsat_max_in_count_seen"],
+                len(candidate),
+            )
+            refinement = self._semantic_refinement(candidate, closure)
+            if refinement is None:
+                self._record_progress()
+                return candidate
+            self._add_clause(refinement)
+            self.telemetry["native_cnf_candidate_blocks"] += 1
+            self.telemetry["prefsat_candidate_blocks"] += 1
+            self.telemetry["prefsat_rejected_supersets"] += 1
+            self._record_progress()
+
+    def _semantic_refinement(
+        self,
+        candidate: AssumptionSet,
+        closure: frozenset[Literal],
+    ) -> list[int] | None:
+        for target in sorted(candidate, key=repr):
+            contrary = self.framework.contrary[target]
+            if contrary in closure:
+                attack_support = self._attacker_closure.shrink_support(candidate, contrary)
+                return [
+                    -self.in_vars[target],
+                    *(
+                        -self.in_vars[assumption]
+                        for assumption in sorted(attack_support - {target}, key=repr)
+                    ),
+                ]
+        counterexample = self._attacker_counterexample(candidate, closure)
+        if counterexample is None:
+            return None
+        target, attack_support = counterexample
+        if not attack_support:
+            return [-self.in_vars[target]]
+        outside_candidate = self.framework.assumptions - candidate
+        if outside_candidate:
+            return [
+                -self.in_vars[target],
+                *(self.in_vars[assumption] for assumption in sorted(outside_candidate, key=repr)),
+            ]
+        return [-self.in_vars[target]]
+
+    def _attacker_counterexample(
+        self,
+        candidate: AssumptionSet,
+        closure: frozenset[Literal],
+    ) -> tuple[Literal, AssumptionSet] | None:
+        if not candidate:
+            return None
+        counterattacked = frozenset(
+            assumption
+            for assumption in self.assumptions
+            if self.framework.contrary[assumption] in closure
+        )
+        available = self.framework.assumptions - counterattacked
+        attacker_closure = self._attacker_closure.closure_mask(available)
+        empty_closure = self._attacker_closure.closure_mask(frozenset())
+        for target in sorted(candidate, key=repr):
+            conclusion = self.framework.contrary[target]
+            if self._attacker_closure.contains(attacker_closure, conclusion):
+                if self._attacker_closure.contains(empty_closure, conclusion):
+                    return target, frozenset()
+                return target, available
+        return None
+
+    def _model_extension(self) -> AssumptionSet:
+        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        return frozenset(
+            assumption
+            for assumption, variable in self.in_vars.items()
+            if variable in model
+        )
+
+    def _closure(self, extension: AssumptionSet) -> frozenset[Literal]:
+        closure = self._attacker_closure.closure_mask(extension)
+        return frozenset(
+            literal
+            for literal, bit in self._attacker_closure.literal_bits.items()
+            if closure & bit
+        )
+
+    def _record_progress(self) -> None:
+        event = {
+            "prefsat_max_in_count_seen": self.telemetry["prefsat_max_in_count_seen"],
+            "prefsat_candidate_blocks": self.telemetry["prefsat_candidate_blocks"],
+        }
+        if not self.progress_events or self.progress_events[-1] != event:
+            self.progress_events.append(event)
+
+    def result(self, extension: AssumptionSet) -> RealPrefSatResult:
+        closure = _prefsat_closure(self.framework, extension)
+        prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
+        prefsat_out = {
+            assumption: self.framework.contrary[assumption] in closure
+            for assumption in self.assumptions
+        }
+        prefsat_undec = {
+            assumption: not prefsat_in[assumption] and not prefsat_out[assumption]
+            for assumption in self.assumptions
+        }
+        return RealPrefSatResult(
+            extension=extension,
+            prefsat_in=prefsat_in,
+            prefsat_out=prefsat_out,
+            prefsat_undec=prefsat_undec,
+            telemetry=dict(self.telemetry),
+            progress_events=tuple(self.progress_events),
+            route_metadata={
+                "backend": "sat",
+                "algorithm": "native-cnf-prefsat",
+                "rejected_substitutes": (
+                    "z3-main-complete-labelling",
+                    "asp-optimization",
+                    "greedy-growth",
+                ),
+            },
+        )
 
 
 class _RealPrefSatSolver:
@@ -1738,6 +2006,14 @@ def _load_z3():
     return z3
 
 
+def _load_pysat_solver():
+    try:
+        from pysat.solvers import Solver  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise RuntimeError("native ABA PrefSat solving requires python-sat") from exc
+    return Solver
+
+
 def _load_clingo():
     try:
         return importlib.import_module("clingo")
@@ -1748,6 +2024,7 @@ def _load_clingo():
 __all__ = [
     "AssumptionKernel",
     "RealPrefSatResult",
+    "native_cnf_prefsat_extension",
     "real_prefsat_attack_edge_count",
     "real_prefsat_extension",
     "sat_stable_extension",
