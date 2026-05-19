@@ -780,10 +780,13 @@ class _NativeCnfPrefSatSolver:
         )
         available = self.framework.assumptions - counterattacked
         attacker_closure = self._attacker_closure.closure_mask(available)
+        empty_closure = self._attacker_closure.closure_mask(frozenset())
         for target in sorted(candidate, key=repr):
             conclusion = self.framework.contrary[target]
             if self._attacker_closure.contains(attacker_closure, conclusion):
-                return target, self._attacker_closure.shrink_support(available, conclusion)
+                if self._attacker_closure.contains(empty_closure, conclusion):
+                    return target, frozenset()
+                return target, available
         return None
 
     def _model_extension(self) -> AssumptionSet:
