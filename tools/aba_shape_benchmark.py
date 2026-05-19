@@ -19,6 +19,7 @@ from argumentation import aba as native_aba
 from argumentation.aba import ABAFramework, AssumptionSet
 from argumentation.aba_decomposition import plan_decomposed_prefsat
 from argumentation.aba_preprocessing import simplify_aba
+from argumentation.aba_route_policy import native_cnf_prefsat_dense_shape
 from argumentation.aspic import GroundAtom, Literal
 from argumentation.iccma import parse_aba
 from tools.iccma2025_run_native import TASK_TO_SEMANTICS, run_child as run_native_child
@@ -566,6 +567,34 @@ def route_candidates_from_shape_data(
                         "assumptions",
                         "rule_density",
                         "stable_obstruction_count",
+                    ],
+                    "solver_class": solver_class_name,
+                    "timeout_budget_class": timeout_budget_class,
+                },
+            )
+        )
+    if (
+        "sat" in available
+        and solver_class_name == "aba/single-extension/preferred"
+        and native_cnf_prefsat_dense_shape(
+            is_flat=bool(shape_data["is_flat"]),
+            assumptions=int(shape_data["assumptions"]),
+            rule_density=float(shape_data["rule_density"]),
+        )
+    ):
+        candidates.append(
+            RouteCandidate(
+                backend="sat",
+                predicate="native_cnf_dense_prefsat_route",
+                production=True,
+                evidence_id="aba-native-cnf-prefsat-2026-05-18",
+                reason={
+                    "paper": "Cerutti_2013_ComputingPreferredExtensionsAbstract; Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers; Thimm_2021_FudgeLight-weightSolverAbstract; Dvorak_2014_ComplexitySensitiveDecisionProcedures",
+                    "fields": [
+                        "is_flat",
+                        "assumptions",
+                        "rule_density",
+                        "decomp_no_reduction_reason",
                     ],
                     "solver_class": solver_class_name,
                     "timeout_budget_class": timeout_budget_class,

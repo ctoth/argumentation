@@ -122,11 +122,13 @@ def _dense_flat_framework(size: int, *, rules_per_assumption: int) -> ABAFramewo
     atoms = tuple(lit(f"x{index}") for index in range(size))
     rules = []
     for index in range(size * rules_per_assumption):
+        block = index // size
+        base = index % size
         head = atoms[index % size]
         body = (
-            assumptions[index % size],
-            assumptions[(index + 1) % size],
-            assumptions[(index + 2) % size],
+            assumptions[base],
+            assumptions[(base + block + 1) % size],
+            assumptions[(base + block + 2) % size],
         )
         rules.append(Rule(body, head, "strict"))
     return ABAFramework(

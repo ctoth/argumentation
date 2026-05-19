@@ -8,6 +8,7 @@ import importlib
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
+from argumentation.aba_route_policy import native_cnf_prefsat_dense_shape
 from argumentation.aspic import Literal, Rule
 
 
@@ -99,6 +100,15 @@ def native_cnf_prefsat_extension(
     solver = _NativeCnfPrefSatSolver(framework)
     extension = solver.preferred_extension(require_assumptions=require_assumptions)
     return solver.result(extension)
+
+
+def should_use_native_cnf_prefsat(framework: ABAFramework) -> bool:
+    assumption_count = len(framework.assumptions)
+    return native_cnf_prefsat_dense_shape(
+        is_flat=True,
+        assumptions=assumption_count,
+        rule_density=(len(framework.rules) / assumption_count) if assumption_count else 0.0,
+    )
 
 
 @dataclass(frozen=True)
