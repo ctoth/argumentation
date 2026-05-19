@@ -28,6 +28,7 @@ REQUIRED_NATIVE_CNF_TELEMETRY = (
     "native_cnf_candidate_models",
     "native_cnf_candidate_blocks",
     "native_cnf_z3_main_checks",
+    "native_cnf_closure_materializations",
 )
 
 
@@ -76,6 +77,46 @@ def test_dense_flat_prefsat_dispatches_to_native_cnf(monkeypatch) -> None:
     assert result.component_results[0].route_metadata["algorithm"] == "native-cnf-prefsat"
 
 
+def test_dense_flat_sat_support_extension_bypasses_support_preprocessing(monkeypatch) -> None:
+    framework = _dense_flat_framework(151, rules_per_assumption=26)
+    calls = []
+
+    def native_spy(
+        received: ABAFramework,
+        *,
+        require_assumptions=frozenset(),
+    ) -> aba_sat.RealPrefSatResult:
+        calls.append((received, require_assumptions))
+        return aba_sat.RealPrefSatResult(
+            extension=frozenset(),
+            prefsat_in={assumption: False for assumption in received.assumptions},
+            prefsat_out={assumption: False for assumption in received.assumptions},
+            prefsat_undec={assumption: True for assumption in received.assumptions},
+            telemetry={
+                "native_cnf_variables": 3 * len(received.assumptions),
+                "native_cnf_clauses": len(received.assumptions),
+                "native_cnf_solver_checks": 1,
+                "native_cnf_candidate_models": 1,
+                "native_cnf_candidate_blocks": 0,
+                "native_cnf_z3_main_checks": 0,
+                "prefsat_solver_checks": 1,
+            },
+            progress_events=(),
+            route_metadata={"backend": "sat", "algorithm": "native-cnf-prefsat"},
+        )
+
+    def preprocessing_spy(*args, **kwargs):
+        raise AssertionError("dense native CNF route must not materialize supports in preprocessing")
+
+    monkeypatch.setattr(aba_sat, "native_cnf_prefsat_extension", native_spy)
+    monkeypatch.setattr(aba_sat, "_aba_simplification", preprocessing_spy)
+
+    extension = aba_sat.sat_support_extension(framework, "preferred")
+
+    assert extension == frozenset()
+    assert calls == [(framework, frozenset())]
+
+
 @given(small_flat_aba_for_real_prefsat())
 @settings(max_examples=30, deadline=None)
 def test_native_cnf_prefsat_matches_preferred_oracle(framework: ABAFramework) -> None:
@@ -97,6 +138,7 @@ def test_native_cnf_prefsat_reports_operational_contract(framework: ABAFramework
     assert telemetry["native_cnf_candidate_models"] <= telemetry["native_cnf_solver_checks"]
     assert telemetry["native_cnf_candidate_blocks"] <= len(framework.assumptions) + 2
     assert telemetry["native_cnf_z3_main_checks"] == 0
+    assert telemetry["native_cnf_closure_materializations"] == 0
 
 
 @given(small_flat_aba_for_real_prefsat())
