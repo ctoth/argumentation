@@ -618,6 +618,7 @@ class _NativeCnfPrefSatSolver:
             "native_cnf_candidate_models": 0,
             "native_cnf_candidate_blocks": 0,
             "native_cnf_z3_main_checks": 0,
+            "native_cnf_closure_materializations": 0,
             "prefsat_labelling_variables": 3 * len(self.assumptions),
             "prefsat_exactly_one_clauses": 0,
             "prefsat_complete_clauses": 0,
@@ -639,6 +640,11 @@ class _NativeCnfPrefSatSolver:
             framework,
             self.telemetry,
         )
+        self._contrary_bits = {
+            assumption: self._attacker_closure.literal_bits[framework.contrary[assumption]]
+            for assumption in self.assumptions
+        }
+        self._empty_closure_mask = self._attacker_closure.closure_mask(frozenset())
         self._add_labelling_skeleton()
         self._add_static_conflict_clauses()
         self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
@@ -665,14 +671,13 @@ class _NativeCnfPrefSatSolver:
             self.telemetry["prefsat_exactly_one_clauses"] += 1
 
     def _add_static_conflict_clauses(self) -> None:
-        empty_closure = self._closure(frozenset())
         for target in self.assumptions:
-            if self.framework.contrary[target] in empty_closure:
+            if self._empty_closure_mask & self._contrary_bits[target]:
                 self._add_clause([-self.in_vars[target]])
         for source in self.assumptions:
-            closure = self._closure(frozenset({source}))
+            closure = self._closure_mask(frozenset({source}))
             for target in self.assumptions:
-                if self.framework.contrary[target] in closure:
+                if closure & self._contrary_bits[target]:
                     if source == target:
                         self._add_clause([-self.in_vars[target]])
                     else:
@@ -727,7 +732,7 @@ class _NativeCnfPrefSatSolver:
             self.telemetry["native_cnf_candidate_models"] += 1
             self.telemetry["prefsat_candidate_models"] += 1
             candidate = self._model_extension()
-            closure = self._closure(candidate)
+            closure = self._closure_mask(candidate)
             self.telemetry["prefsat_max_in_count_seen"] = max(
                 self.telemetry["prefsat_max_in_count_seen"],
                 len(candidate),
@@ -745,11 +750,11 @@ class _NativeCnfPrefSatSolver:
     def _semantic_refinement(
         self,
         candidate: AssumptionSet,
-        closure: frozenset[Literal],
+        closure: int,
     ) -> list[int] | None:
         for target in sorted(candidate, key=repr):
-            contrary = self.framework.contrary[target]
-            if contrary in closure:
+            if closure & self._contrary_bits[target]:
+                contrary = self.framework.contrary[target]
                 attack_support = self._attacker_closure.shrink_support(candidate, contrary)
                 return [
                     -self.in_vars[target],
@@ -775,22 +780,21 @@ class _NativeCnfPrefSatSolver:
     def _attacker_counterexample(
         self,
         candidate: AssumptionSet,
-        closure: frozenset[Literal],
+        closure: int,
     ) -> tuple[Literal, AssumptionSet] | None:
         if not candidate:
             return None
         counterattacked = frozenset(
             assumption
             for assumption in self.assumptions
-            if self.framework.contrary[assumption] in closure
+            if closure & self._contrary_bits[assumption]
         )
         available = self.framework.assumptions - counterattacked
         attacker_closure = self._attacker_closure.closure_mask(available)
-        empty_closure = self._attacker_closure.closure_mask(frozenset())
         for target in sorted(candidate, key=repr):
-            conclusion = self.framework.contrary[target]
-            if self._attacker_closure.contains(attacker_closure, conclusion):
-                if self._attacker_closure.contains(empty_closure, conclusion):
+            contrary_bit = self._contrary_bits[target]
+            if attacker_closure & contrary_bit:
+                if self._empty_closure_mask & contrary_bit:
                     return target, frozenset()
                 return target, available
         return None
@@ -803,8 +807,12 @@ class _NativeCnfPrefSatSolver:
             if variable in model
         )
 
+    def _closure_mask(self, extension: AssumptionSet) -> int:
+        return self._attacker_closure.closure_mask(extension)
+
     def _closure(self, extension: AssumptionSet) -> frozenset[Literal]:
-        closure = self._attacker_closure.closure_mask(extension)
+        self.telemetry["native_cnf_closure_materializations"] += 1
+        closure = self._closure_mask(extension)
         return frozenset(
             literal
             for literal, bit in self._attacker_closure.literal_bits.items()
