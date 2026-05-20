@@ -1,0 +1,1585 @@
+{
+  "pairs": [
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "assumptions": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 3000,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 15,
+          "timeout": 17
+        },
+        "closure_probe_max_growth": {
+          "solved": 40,
+          "timeout": 11
+        },
+        "contraries": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 93,
+          "timeout": 117
+        },
+        "rule_dependency_scc_count": {
+          "solved": 5156,
+          "timeout": 9761
+        },
+        "rule_head_fanin_max": {
+          "solved": 4,
+          "timeout": 6
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 5.573,
+          "timeout": 7.397142857142857
+        },
+        "rules": {
+          "solved": 5573,
+          "timeout": 10356
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_head_fanin_max",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.7042,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c5_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "timeout_row": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "assumptions": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2100,
+          "timeout": 4200
+        },
+        "closure_probe_max_growth": {
+          "solved": 28,
+          "timeout": 11
+        },
+        "contraries": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 74,
+          "timeout": 117
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4913,
+          "timeout": 9761
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 7.444285714285714,
+          "timeout": 7.397142857142857
+        },
+        "rules": {
+          "solved": 5211,
+          "timeout": 10356
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumptions",
+        "atoms",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.974481,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "body_literal_fanout_max": 17,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2,
+        "rule_head_fanin_max": 6
+      },
+      "solved_row": "aba|SE-PR|ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "timeout_row": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "assumptions": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2100,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 17,
+          "timeout": 18
+        },
+        "closure_probe_max_growth": {
+          "solved": 28,
+          "timeout": 14
+        },
+        "contraries": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 74,
+          "timeout": 136
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4913,
+          "timeout": 9650
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 7.444285714285714,
+          "timeout": 7.384285714285714
+        },
+        "rules": {
+          "solved": 5211,
+          "timeout": 10338
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 4.006316,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2,
+        "rule_head_fanin_max": 6
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "timeout_row": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "assumption_to_atom_ratio": {
+          "solved": 0.2857142857142857,
+          "timeout": 0.3333333333333333
+        },
+        "assumptions": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2450,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 13,
+          "timeout": 18
+        },
+        "closure_probe_max_growth": {
+          "solved": 39,
+          "timeout": 14
+        },
+        "contraries": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 157,
+          "timeout": 136
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4580,
+          "timeout": 9650
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 7.735714285714286,
+          "timeout": 7.384285714285714
+        },
+        "rules": {
+          "solved": 5415,
+          "timeout": 10338
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumption_to_atom_ratio",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 4.063869,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2,
+        "rule_head_fanin_max": 6
+      },
+      "solved_row": "aba|SE-PR|ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba|solved",
+      "timeout_row": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "assumption_to_atom_ratio": {
+          "solved": 0.2857142857142857,
+          "timeout": 0.3333333333333333
+        },
+        "assumptions": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2450,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 13,
+          "timeout": 15
+        },
+        "closure_probe_max_growth": {
+          "solved": 39,
+          "timeout": 260
+        },
+        "contraries": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 157,
+          "timeout": 143
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4580,
+          "timeout": 8728
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 7.735714285714286,
+          "timeout": 6.813571428571429
+        },
+        "rules": {
+          "solved": 5415,
+          "timeout": 9539
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumption_to_atom_ratio",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 4.063579,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2,
+        "rule_head_fanin_max": 6
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba|solved",
+      "timeout_row": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "assumption_to_atom_ratio": {
+          "solved": 0.25,
+          "timeout": 0.3333333333333333
+        },
+        "assumptions": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2800,
+          "timeout": 4200
+        },
+        "closure_probe_max_growth": {
+          "solved": 56,
+          "timeout": 260
+        },
+        "contraries": {
+          "solved": 700,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 261,
+          "timeout": 143
+        },
+        "rule_dependency_scc_count": {
+          "solved": 5013,
+          "timeout": 8728
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 9.42142857142857,
+          "timeout": 6.813571428571429
+        },
+        "rules": {
+          "solved": 6595,
+          "timeout": 9539
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumption_to_atom_ratio",
+        "assumptions",
+        "atoms",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 4.164459,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2,
+        "rule_head_fanin_max": 6
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "timeout_row": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "assumption_to_atom_ratio": {
+          "solved": 0.36363636363636365,
+          "timeout": 0.3333333333333333
+        },
+        "assumptions": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2750,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 15,
+          "timeout": 16
+        },
+        "closure_probe_max_growth": {
+          "solved": 29,
+          "timeout": 72
+        },
+        "contraries": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 53,
+          "timeout": 116
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4874,
+          "timeout": 8920
+        },
+        "rule_head_fanin_max": {
+          "solved": 4,
+          "timeout": 6
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 5.085,
+          "timeout": 6.781428571428571
+        },
+        "rules": {
+          "solved": 5085,
+          "timeout": 9494
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumption_to_atom_ratio",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_head_fanin_max",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.936987,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2
+      },
+      "solved_row": "aba|SE-PR|ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "timeout_row": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "assumption_to_atom_ratio": {
+          "solved": 0.36363636363636365,
+          "timeout": 0.3333333333333333
+        },
+        "assumptions": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2750,
+          "timeout": 4200
+        },
+        "body_literal_fanout_max": {
+          "solved": 15,
+          "timeout": 16
+        },
+        "closure_probe_max_growth": {
+          "solved": 29,
+          "timeout": 72
+        },
+        "contraries": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 53,
+          "timeout": 116
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4874,
+          "timeout": 8920
+        },
+        "rule_head_fanin_max": {
+          "solved": 4,
+          "timeout": 6
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 5.085,
+          "timeout": 6.781428571428571
+        },
+        "rules": {
+          "solved": 5085,
+          "timeout": 9494
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumption_to_atom_ratio",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_head_fanin_max",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.936987,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "timeout_row": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "assumptions": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2500,
+          "timeout": 3500
+        },
+        "body_literal_fanout_max": {
+          "solved": 19,
+          "timeout": 23
+        },
+        "closure_probe_max_growth": {
+          "solved": 12,
+          "timeout": 64
+        },
+        "contraries": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 26,
+          "timeout": 24
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4595,
+          "timeout": 8943
+        },
+        "rule_head_fanin_max": {
+          "solved": 4,
+          "timeout": 6
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 4.648,
+          "timeout": 6.41
+        },
+        "rules": {
+          "solved": 4648,
+          "timeout": 8974
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_head_fanin_max",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.782659,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_to_atom_ratio": 0.4,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2
+      },
+      "solved_row": "aba|SE-PR|ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "timeout_row": "aba|SE-PR|ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout"
+    },
+    {
+      "decision_features": {
+        "assumption_dependency_scc_count": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "assumptions": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "atoms": {
+          "solved": 2500,
+          "timeout": 3500
+        },
+        "body_literal_fanout_max": {
+          "solved": 19,
+          "timeout": 23
+        },
+        "closure_probe_max_growth": {
+          "solved": 12,
+          "timeout": 64
+        },
+        "contraries": {
+          "solved": 1000,
+          "timeout": 1400
+        },
+        "rule_dependency_max_scc_size": {
+          "solved": 26,
+          "timeout": 24
+        },
+        "rule_dependency_scc_count": {
+          "solved": 4595,
+          "timeout": 8943
+        },
+        "rule_head_fanin_max": {
+          "solved": 4,
+          "timeout": 6
+        },
+        "rule_to_assumption_ratio": {
+          "solved": 4.648,
+          "timeout": 6.41
+        },
+        "rules": {
+          "solved": 4648,
+          "timeout": 8974
+        }
+      },
+      "distinctive_features": [
+        "assumption_dependency_scc_count",
+        "assumptions",
+        "atoms",
+        "body_literal_fanout_max",
+        "closure_probe_max_growth",
+        "contraries",
+        "rule_dependency_max_scc_size",
+        "rule_dependency_scc_count",
+        "rule_head_fanin_max",
+        "rule_to_assumption_ratio",
+        "rules"
+      ],
+      "match_distance": 3.782659,
+      "shared_features": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_to_atom_ratio": 0.4,
+        "closure_probe_count": 16,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "max_rule_body_width": 2
+      },
+      "solved_row": "aba|SE-ST|ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "timeout_row": "aba|SE-ST|ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout"
+    }
+  ],
+  "rows": [
+    {
+      "answer": null,
+      "elapsed_seconds": "2.628766",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2500,
+        "assumptions": 1000,
+        "contraries": 1000,
+        "rules": 4650,
+        "size": 74075
+      },
+      "relative_path": "ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1000,
+        "assumption_to_atom_ratio": 0.4,
+        "assumptions": 1000,
+        "atoms": 2500,
+        "body_literal_fanout_max": 19,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 12,
+        "contraries": 1000,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4123,
+          "2": 525
+        },
+        "rule_dependency_max_scc_size": 26,
+        "rule_dependency_scc_count": 4595,
+        "rule_head_fanin_max": 4,
+        "rule_to_assumption_ratio": 4.648,
+        "rules": 4648
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "2.035221",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2750,
+        "assumptions": 1000,
+        "contraries": 1000,
+        "rules": 5086,
+        "size": 80202
+      },
+      "relative_path": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1000,
+        "assumption_to_atom_ratio": 0.36363636363636365,
+        "assumptions": 1000,
+        "atoms": 2750,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 29,
+        "contraries": 1000,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4321,
+          "2": 764
+        },
+        "rule_dependency_max_scc_size": 53,
+        "rule_dependency_scc_count": 4874,
+        "rule_head_fanin_max": 4,
+        "rule_to_assumption_ratio": 5.085,
+        "rules": 5085
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "14.864991",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2100,
+        "assumptions": 700,
+        "contraries": 700,
+        "rules": 5211,
+        "size": 73829
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 700,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 700,
+        "atoms": 2100,
+        "body_literal_fanout_max": 17,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 28,
+        "contraries": 700,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4506,
+          "2": 705
+        },
+        "rule_dependency_max_scc_size": 74,
+        "rule_dependency_scc_count": 4913,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.444285714285714,
+        "rules": 5211
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "32.812573",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2450,
+        "assumptions": 700,
+        "contraries": 700,
+        "rules": 5416,
+        "size": 78444
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 700,
+        "assumption_to_atom_ratio": 0.2857142857142857,
+        "assumptions": 700,
+        "atoms": 2450,
+        "body_literal_fanout_max": 13,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 39,
+        "contraries": 700,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4361,
+          "2": 1054
+        },
+        "rule_dependency_max_scc_size": 157,
+        "rule_dependency_scc_count": 4580,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.735714285714286,
+        "rules": 5415
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "2.991567",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2500,
+        "assumptions": 1000,
+        "contraries": 1000,
+        "rules": 4650,
+        "size": 74075
+      },
+      "relative_path": "ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1000,
+        "assumption_to_atom_ratio": 0.4,
+        "assumptions": 1000,
+        "atoms": 2500,
+        "body_literal_fanout_max": 19,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 12,
+        "contraries": 1000,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4123,
+          "2": 525
+        },
+        "rule_dependency_max_scc_size": 26,
+        "rule_dependency_scc_count": 4595,
+        "rule_head_fanin_max": 4,
+        "rule_to_assumption_ratio": 4.648,
+        "rules": 4648
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "4.433946",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2750,
+        "assumptions": 1000,
+        "contraries": 1000,
+        "rules": 5086,
+        "size": 80202
+      },
+      "relative_path": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1000,
+        "assumption_to_atom_ratio": 0.36363636363636365,
+        "assumptions": 1000,
+        "atoms": 2750,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 29,
+        "contraries": 1000,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4321,
+          "2": 764
+        },
+        "rule_dependency_max_scc_size": 53,
+        "rule_dependency_scc_count": 4874,
+        "rule_head_fanin_max": 4,
+        "rule_to_assumption_ratio": 5.085,
+        "rules": 5085
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "16.256237",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 3000,
+        "assumptions": 1000,
+        "contraries": 1000,
+        "rules": 5573,
+        "size": 87062
+      },
+      "relative_path": "ABAs/abcgen_c5_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c5_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1000,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1000,
+        "atoms": 3000,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 40,
+        "contraries": 1000,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4566,
+          "2": 1007
+        },
+        "rule_dependency_max_scc_size": 93,
+        "rule_dependency_scc_count": 5156,
+        "rule_head_fanin_max": 4,
+        "rule_to_assumption_ratio": 5.573,
+        "rules": 5573
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "5.273327",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2100,
+        "assumptions": 700,
+        "contraries": 700,
+        "rules": 5211,
+        "size": 73829
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 700,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 700,
+        "atoms": 2100,
+        "body_literal_fanout_max": 17,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 28,
+        "contraries": 700,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4506,
+          "2": 705
+        },
+        "rule_dependency_max_scc_size": 74,
+        "rule_dependency_scc_count": 4913,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.444285714285714,
+        "rules": 5211
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "7.962666",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2450,
+        "assumptions": 700,
+        "contraries": 700,
+        "rules": 5416,
+        "size": 78444
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 700,
+        "assumption_to_atom_ratio": 0.2857142857142857,
+        "assumptions": 700,
+        "atoms": 2450,
+        "body_literal_fanout_max": 13,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 39,
+        "contraries": 700,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 4361,
+          "2": 1054
+        },
+        "rule_dependency_max_scc_size": 157,
+        "rule_dependency_scc_count": 4580,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.735714285714286,
+        "rules": 5415
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "17.418405",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 2800,
+        "assumptions": 700,
+        "contraries": 700,
+        "rules": 6596,
+        "size": 94259
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba|solved",
+      "status": "solved",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 700,
+        "assumption_to_atom_ratio": 0.25,
+        "assumptions": 700,
+        "atoms": 2800,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 56,
+        "contraries": 700,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 5186,
+          "2": 1409
+        },
+        "rule_dependency_max_scc_size": 261,
+        "rule_dependency_scc_count": 5013,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 9.42142857142857,
+        "rules": 6595
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.000435",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 3500,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 8974,
+        "size": 134651
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.4,
+        "assumptions": 1400,
+        "atoms": 3500,
+        "body_literal_fanout_max": 23,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 64,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8227,
+          "2": 747
+        },
+        "rule_dependency_max_scc_size": 24,
+        "rule_dependency_scc_count": 8943,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.41,
+        "rules": 8974
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.016794",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 9539,
+        "size": 144252
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 260,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8125,
+          "2": 1414
+        },
+        "rule_dependency_max_scc_size": 143,
+        "rule_dependency_scc_count": 8728,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.813571428571429,
+        "rules": 9539
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.016030",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 9496,
+        "size": 143662
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 16,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 72,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8100,
+          "2": 1394
+        },
+        "rule_dependency_max_scc_size": 116,
+        "rule_dependency_scc_count": 8920,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.781428571428571,
+        "rules": 9494
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.012140",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 10357,
+        "size": 154203
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 17,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 11,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8924,
+          "2": 1432
+        },
+        "rule_dependency_max_scc_size": 117,
+        "rule_dependency_scc_count": 9761,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.397142857142857,
+        "rules": 10356
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.011005",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 10338,
+        "size": 153735
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-PR|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-PR",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 18,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 14,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8946,
+          "2": 1392
+        },
+        "rule_dependency_max_scc_size": 136,
+        "rule_dependency_scc_count": 9650,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.384285714285714,
+        "rules": 10338
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.021131",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 3500,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 8974,
+        "size": 134651
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.4,
+        "assumptions": 1400,
+        "atoms": 3500,
+        "body_literal_fanout_max": 23,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 64,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8227,
+          "2": 747
+        },
+        "rule_dependency_max_scc_size": 24,
+        "rule_dependency_scc_count": 8943,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.41,
+        "rules": 8974
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.012353",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 9539,
+        "size": 144252
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 15,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 260,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8125,
+          "2": 1414
+        },
+        "rule_dependency_max_scc_size": 143,
+        "rule_dependency_scc_count": 8728,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.813571428571429,
+        "rules": 9539
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.021322",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 9496,
+        "size": 143662
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 16,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 72,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8100,
+          "2": 1394
+        },
+        "rule_dependency_max_scc_size": 116,
+        "rule_dependency_scc_count": 8920,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 6.781428571428571,
+        "rules": 9494
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.014196",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 10357,
+        "size": 154203
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 17,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 11,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8924,
+          "2": 1432
+        },
+        "rule_dependency_max_scc_size": 117,
+        "rule_dependency_scc_count": 9761,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.397142857142857,
+        "rules": 10356
+      },
+      "track": "aba"
+    },
+    {
+      "answer": null,
+      "elapsed_seconds": "40.021526",
+      "instance_kind": "aba",
+      "manifest": {
+        "arguments_or_atoms": 4200,
+        "assumptions": 1400,
+        "contraries": 1400,
+        "rules": 10338,
+        "size": 153735
+      },
+      "relative_path": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "row_id": "aba|SE-ST|ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba|timeout",
+      "status": "timeout",
+      "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+      "subtrack": "SE-ST",
+      "telemetry": {
+        "assumption_dependency_max_scc_size": 1,
+        "assumption_dependency_scc_count": 1400,
+        "assumption_to_atom_ratio": 0.3333333333333333,
+        "assumptions": 1400,
+        "atoms": 4200,
+        "body_literal_fanout_max": 18,
+        "closure_probe_count": 16,
+        "closure_probe_max_growth": 14,
+        "contraries": 1400,
+        "contrary_fanin_max": 1,
+        "contrary_fanout_max": 1,
+        "is_flat": true,
+        "max_rule_body_width": 2,
+        "rule_body_width_histogram": {
+          "1": 8946,
+          "2": 1392
+        },
+        "rule_dependency_max_scc_size": 136,
+        "rule_dependency_scc_count": 9650,
+        "rule_head_fanin_max": 6,
+        "rule_to_assumption_ratio": 7.384285714285714,
+        "rules": 10338
+      },
+      "track": "aba"
+    }
+  ],
+  "selection": {
+    "method": "sparse_assumption_narrow_rule_nearest_match",
+    "numeric_features": [
+      "atoms",
+      "assumptions",
+      "rules",
+      "contraries",
+      "max_rule_body_width",
+      "rule_head_fanin_max",
+      "body_literal_fanout_max",
+      "contrary_fanin_max",
+      "contrary_fanout_max",
+      "assumption_to_atom_ratio",
+      "rule_to_assumption_ratio",
+      "rule_dependency_scc_count",
+      "rule_dependency_max_scc_size",
+      "assumption_dependency_scc_count",
+      "assumption_dependency_max_scc_size",
+      "closure_probe_count",
+      "closure_probe_max_growth"
+    ],
+    "solved_count": 10,
+    "structural_cluster": "sparse_assumption_language|narrow_rule_bodies",
+    "timeout_count": 10
+  },
+  "source_event_log": "data\\iccma\\2025\\runs\\native-cnf-main-all-2025-auto-cap30-events.jsonl",
+  "source_manifest": "data\\iccma\\2025\\manifests\\iccma-2025-manifest.json"
+}
