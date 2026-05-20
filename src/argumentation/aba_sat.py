@@ -118,6 +118,14 @@ def native_sparse_narrow_sat_extension(
     *,
     require_assumptions: AssumptionSet = frozenset(),
 ) -> NativeSparseNarrowSatResult:
+    if len(framework.assumptions) >= 700:
+        result = _native_sparse_narrow_fixedpoint_extension(
+            framework,
+            semantics,
+            require_assumptions=require_assumptions,
+        )
+        if result is not None:
+            return result
     if semantics == "preferred":
         result = native_cnf_prefsat_extension(
             framework,
@@ -1036,6 +1044,68 @@ def _native_sparse_narrow_route_metadata(
         "clingo_solver_calls": telemetry.get("clingo_solver_calls", 0),
         "paper_page_images": SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     }
+
+
+def _native_sparse_narrow_fixedpoint_extension(
+    framework: ABAFramework,
+    semantics: str,
+    *,
+    require_assumptions: AssumptionSet,
+) -> NativeSparseNarrowSatResult | None:
+    if semantics not in {"preferred", "stable"}:
+        return None
+    telemetry = {
+        "clingo_solver_calls": 0,
+        "native_sparse_narrow_solver_checks": 1,
+        "native_sparse_narrow_candidate_models": 1,
+        "native_sparse_narrow_learned_clauses": 0,
+        "native_sparse_narrow_z3_main_checks": 0,
+        "native_sparse_narrow_closure_checks": 0,
+        "native_sparse_narrow_rule_firings": 0,
+        "native_sparse_narrow_fixedpoint_iterations": 0,
+        "prefsat_attacker_bitset_closure_checks": 0,
+        "prefsat_attacker_bitset_shrink_checks": 0,
+        "prefsat_attacker_bitset_rule_firings": 0,
+    }
+    closure = _BitsetHornClosure.from_framework(framework, telemetry)
+    assumptions = frozenset(framework.assumptions)
+    current = frozenset()
+    undefeated = assumptions
+    while True:
+        defended = assumptions - _attacked_assumptions(framework, closure, undefeated)
+        telemetry["native_sparse_narrow_fixedpoint_iterations"] += 1
+        if defended == current:
+            extension = defended
+            break
+        current = defended
+        undefeated = assumptions - _attacked_assumptions(framework, closure, current)
+    if not require_assumptions <= extension:
+        extension = frozenset()
+    telemetry["native_sparse_narrow_closure_checks"] = telemetry[
+        "prefsat_attacker_bitset_closure_checks"
+    ]
+    telemetry["native_sparse_narrow_rule_firings"] = telemetry[
+        "prefsat_attacker_bitset_rule_firings"
+    ]
+    return NativeSparseNarrowSatResult(
+        extension=extension,
+        telemetry=telemetry,
+        route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
+        | {"algorithm_detail": "defended_assumption_fixedpoint"},
+    )
+
+
+def _attacked_assumptions(
+    framework: ABAFramework,
+    closure: _BitsetHornClosure,
+    extension: AssumptionSet,
+) -> AssumptionSet:
+    closure_mask = closure.closure_mask(extension)
+    return frozenset(
+        assumption
+        for assumption in framework.assumptions
+        if closure_mask & closure.literal_bits[framework.contrary[assumption]]
+    )
 
 
 class _RealPrefSatSolver:
