@@ -1043,9 +1043,8 @@ class _NativeSparseNarrowStableSolver:
         )
         components = self._unsupported_components(unsupported_literals)
         return [
-            loop_formula
+            self._loop_formula_for(component)
             for component in components
-            for loop_formula in self._loop_formulas_for(component)
         ]
 
     def _unsupported_components(
@@ -1101,7 +1100,7 @@ class _NativeSparseNarrowStableSolver:
                 strongconnect(literal)
         return components
 
-    def _loop_formulas_for(self, component: frozenset[Literal]) -> list[list[int]]:
+    def _loop_formula_for(self, component: frozenset[Literal]) -> list[int]:
         external_supports: list[int] = []
         for literal in component:
             if literal in self.in_vars:
@@ -1112,11 +1111,11 @@ class _NativeSparseNarrowStableSolver:
             if not any(antecedent in component for antecedent in rule.antecedents):
                 external_supports.append(variable)
         return [
-            [
-                -self.derived_vars[literal],
-                *external_supports,
-            ]
-            for literal in sorted(component, key=repr)
+            *(
+                -self.derived_vars[literal]
+                for literal in sorted(component, key=repr)
+            ),
+            *external_supports,
         ]
 
     def _bits(self, mask: int) -> list[int]:
