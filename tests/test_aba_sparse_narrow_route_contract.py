@@ -62,17 +62,52 @@ def test_sparse_narrow_route_rejects_locator_metadata() -> None:
     assert sparse_narrow_native_sat_shape(framework, locator_metadata=right)
 
 
-@pytest.mark.parametrize("semantics", ("preferred", "stable"))
-def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, semantics: str) -> None:
+def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(monkeypatch) -> None:
+    framework = sparse_narrow_framework(700, rule_ratio=4)
+    monkeypatch.setattr(solver, "_has_clingo", lambda: True)
+
+    def asp_spy(received: ABAFramework, routed_semantics: str, backend: str):
+        assert received == framework
+        assert routed_semantics == "stable"
+        assert backend == "asp"
+        return solver.SingleExtensionSolverSuccess(
+            extension=frozenset(),
+            metadata={
+                "backend": "asp",
+                "semantics": "stable",
+                "solver": "clingo_multishot",
+                "algorithm": "first-model-witness",
+            },
+        )
+
+    def forbidden_native(*args, **kwargs):
+        raise AssertionError("sparse/narrow stable auto route must call clingo")
+
+    monkeypatch.setattr(solver, "_solve_asp_aba_single_extension", asp_spy)
+    monkeypatch.setattr(solver, "native_sparse_narrow_aba_extension", forbidden_native)
+    result = solver.solve_aba_single_extension(
+        framework,
+        semantics="stable",
+        backend="auto",
+    )
+
+    assert result.metadata is not None
+    assert result.metadata["backend"] == "asp"
+    assert result.metadata["semantics"] == "stable"
+    assert result.metadata["solver"] == "clingo_multishot"
+    assert result.metadata["algorithm"] == "first-model-witness"
+
+
+def test_explicit_sat_single_extension_sparse_narrow_stable_uses_native_sat(monkeypatch) -> None:
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
 
     def forbidden_asp(*args, **kwargs):
-        raise AssertionError("sparse/narrow auto route must not call clingo")
+        raise AssertionError("explicit sparse/narrow SAT route must not call clingo")
 
     def native_spy(received: ABAFramework, routed_semantics: str):
         assert received == framework
-        assert routed_semantics == semantics
+        assert routed_semantics == "stable"
         return NativeSparseNarrowSatResult(
             extension=frozenset(),
             telemetry={
@@ -83,7 +118,7 @@ def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, sem
             route_metadata={
                 "backend": "sat",
                 "algorithm": "native_sparse_narrow_sat",
-                "semantics": semantics,
+                "semantics": "stable",
                 "clingo_solver_calls": 0,
                 "paper_page_images": SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
             },
@@ -93,17 +128,57 @@ def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, sem
     monkeypatch.setattr(solver, "native_sparse_narrow_aba_extension", native_spy)
     result = solver.solve_aba_single_extension(
         framework,
-        semantics=semantics,
+        semantics="stable",
+        backend="sat",
+    )
+
+    assert result.metadata is not None
+    assert result.metadata["backend"] == "sat"
+    assert result.metadata["algorithm"] == "native_sparse_narrow_sat"
+    assert result.metadata["semantics"] == "stable"
+    assert result.metadata["clingo_solver_calls"] == 0
+    assert result.metadata["paper_page_images"] == SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES
+    assert not (FORBIDDEN_LOCATOR_KEYS & set(result.metadata))
+
+
+def test_auto_single_extension_sparse_narrow_preferred_keeps_native_sat(monkeypatch) -> None:
+    framework = sparse_narrow_framework(700, rule_ratio=4)
+    monkeypatch.setattr(solver, "_has_clingo", lambda: True)
+
+    def forbidden_asp(*args, **kwargs):
+        raise AssertionError("preferred sparse/narrow auto route is not owned by this workstream")
+
+    def native_spy(received: ABAFramework, routed_semantics: str):
+        assert received == framework
+        assert routed_semantics == "preferred"
+        return NativeSparseNarrowSatResult(
+            extension=frozenset(),
+            telemetry={
+                "clingo_solver_calls": 0,
+                "native_sparse_narrow_solver_checks": 1,
+                "native_sparse_narrow_z3_main_checks": 0,
+            },
+            route_metadata={
+                "backend": "sat",
+                "algorithm": "native_sparse_narrow_sat",
+                "semantics": "preferred",
+                "clingo_solver_calls": 0,
+                "paper_page_images": SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
+            },
+        )
+
+    monkeypatch.setattr(solver, "_solve_asp_aba_single_extension", forbidden_asp)
+    monkeypatch.setattr(solver, "native_sparse_narrow_aba_extension", native_spy)
+    result = solver.solve_aba_single_extension(
+        framework,
+        semantics="preferred",
         backend="auto",
     )
 
     assert result.metadata is not None
     assert result.metadata["backend"] == "sat"
     assert result.metadata["algorithm"] == "native_sparse_narrow_sat"
-    assert result.metadata["semantics"] == semantics
-    assert result.metadata["clingo_solver_calls"] == 0
-    assert result.metadata["paper_page_images"] == SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES
-    assert not (FORBIDDEN_LOCATOR_KEYS & set(result.metadata))
+    assert result.metadata["semantics"] == "preferred"
 
 
 def sparse_narrow_framework(assumptions: int, *, rule_ratio: int) -> ABAFramework:
