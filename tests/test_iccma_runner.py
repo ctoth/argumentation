@@ -18,6 +18,7 @@ from tools.iccma2025_run_native import (
     run_child,
     run_or_skip,
     worker_profile_path,
+    write_csv,
 )
 
 
@@ -396,6 +397,30 @@ def test_run_or_skip_sets_profile_duration_inside_row_timeout(tmp_path, monkeypa
     job = captured["job"]
     assert job["profile_duration_seconds"] == 29.0
     assert job["profile_path"]
+
+
+def test_write_csv_accepts_profiled_rows(tmp_path) -> None:
+    output = tmp_path / "rows.csv"
+
+    write_csv(
+        output,
+        [
+            {
+                "track": "main",
+                "subtrack": "SE-PR",
+                "instance_kind": "aba",
+                "instance": "case.aba",
+                "backend": "auto",
+                "status": "profiled",
+                "reason": "profile_duration_elapsed",
+                "elapsed_seconds": "30.000000",
+                "answer": None,
+                "profile_path": "profiles/case.speedscope.json",
+            }
+        ],
+    )
+
+    assert "profile_path" in output.read_text(encoding="utf-8").splitlines()[0]
 
 
 def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:

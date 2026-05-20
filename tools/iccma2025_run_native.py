@@ -64,6 +64,7 @@ RESULT_FIELDS = [
     "extension_count",
     "witness_size",
     "witness",
+    "profile_path",
     "arguments_or_atoms",
     "attacks",
     "assumptions",
