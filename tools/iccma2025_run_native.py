@@ -379,7 +379,7 @@ def run_or_skip(
         "task": task,
     }
     started = time.perf_counter()
-    result = run_child(job, timeout_seconds=config.timeout_seconds + 10.0)
+    result = run_child(job, timeout_seconds=config.timeout_seconds)
     elapsed = time.perf_counter() - started
     return {
         **base,
