@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 
 from argumentation import solver
 from argumentation.aba import ABAFramework
+from argumentation.aba_sat import NativeSparseNarrowSatResult
 from argumentation.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     sparse_narrow_native_sat_shape,
@@ -69,7 +70,27 @@ def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, sem
     def forbidden_asp(*args, **kwargs):
         raise AssertionError("sparse/narrow auto route must not call clingo")
 
+    def native_spy(received: ABAFramework, routed_semantics: str):
+        assert received == framework
+        assert routed_semantics == semantics
+        return NativeSparseNarrowSatResult(
+            extension=frozenset(),
+            telemetry={
+                "clingo_solver_calls": 0,
+                "native_sparse_narrow_solver_checks": 1,
+                "native_sparse_narrow_z3_main_checks": 0,
+            },
+            route_metadata={
+                "backend": "sat",
+                "algorithm": "native_sparse_narrow_sat",
+                "semantics": semantics,
+                "clingo_solver_calls": 0,
+                "paper_page_images": SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
+            },
+        )
+
     monkeypatch.setattr(solver, "_solve_asp_aba_single_extension", forbidden_asp)
+    monkeypatch.setattr(solver, "native_sparse_narrow_aba_extension", native_spy)
     result = solver.solve_aba_single_extension(
         framework,
         semantics=semantics,
