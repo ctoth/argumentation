@@ -36,7 +36,7 @@ NUMERIC_FEATURES = (
     "closure_probe_count",
     "closure_probe_max_growth",
 )
-TARGET_STRUCTURAL_CLUSTER = "dense_assumption_language|narrow_rule_bodies"
+TARGET_STRUCTURAL_CLUSTER = "sparse_assumption_language|narrow_rule_bodies"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -106,7 +106,7 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
         "selection": {
             "timeout_count": 10,
             "solved_count": 10,
-            "method": "dense_assumption_narrow_rule_nearest_match",
+            "method": "sparse_assumption_narrow_rule_nearest_match",
             "structural_cluster": cluster_key,
             "numeric_features": list(NUMERIC_FEATURES),
         },
