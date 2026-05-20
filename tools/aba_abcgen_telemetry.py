@@ -36,6 +36,7 @@ NUMERIC_FEATURES = (
     "closure_probe_count",
     "closure_probe_max_growth",
 )
+TARGET_STRUCTURAL_CLUSTER = "dense_assumption_language|narrow_rule_bodies"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,7 +76,7 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
             f"{len(timeout_candidates)} timeout and {len(solved_candidates)} solved"
         )
 
-    cluster_key = _dominant_timeout_cluster(timeout_candidates)
+    cluster_key = TARGET_STRUCTURAL_CLUSTER
     cluster_timeouts = [
         candidate for candidate in timeout_candidates
         if candidate["structural_cluster"] == cluster_key
@@ -104,7 +105,7 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
         "selection": {
             "timeout_count": 10,
             "solved_count": 10,
-            "method": "structural_telemetry_nearest_match",
+            "method": "dense_assumption_narrow_rule_nearest_match",
             "structural_cluster": cluster_key,
             "numeric_features": list(NUMERIC_FEATURES),
         },
@@ -190,29 +191,6 @@ def _candidate_from_event(
         },
         "telemetry": telemetry,
     }
-
-
-def _dominant_timeout_cluster(candidates: list[dict[str, Any]]) -> str:
-    counts: dict[str, int] = {}
-    for candidate in candidates:
-        cluster = str(candidate["structural_cluster"])
-        counts[cluster] = counts.get(cluster, 0) + 1
-    return sorted(
-        counts,
-        key=lambda cluster: (
-            -counts[cluster],
-            _cluster_rank(cluster),
-            cluster,
-        ),
-    )[0]
-
-
-def _cluster_rank(cluster: str) -> tuple[int, int]:
-    density, width = cluster.split("|", maxsplit=1)
-    return (
-        0 if density == "dense_assumption_language" else 1,
-        0 if width == "narrow_rule_bodies" else 1,
-    )
 
 
 def _structural_cluster(telemetry: dict[str, object]) -> str:
