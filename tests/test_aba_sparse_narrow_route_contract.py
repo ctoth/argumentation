@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -60,8 +61,7 @@ def test_sparse_narrow_route_rejects_locator_metadata() -> None:
     assert sparse_narrow_native_sat_shape(framework, locator_metadata=right)
 
 
-@given(semantics=st.sampled_from(("preferred", "stable")))
-@settings(max_examples=2, deadline=None)
+@pytest.mark.parametrize("semantics", ("preferred", "stable"))
 def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, semantics: str) -> None:
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
@@ -87,7 +87,7 @@ def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, sem
 
 def sparse_narrow_framework(assumptions: int, *, rule_ratio: int) -> ABAFramework:
     assumption_literals = tuple(lit(f"a{index}") for index in range(assumptions))
-    atom_count = assumptions * 2
+    atom_count = assumptions * 3
     atoms = tuple(lit(f"x{index}") for index in range(atom_count))
     rules = []
     for index in range(assumptions * rule_ratio):
