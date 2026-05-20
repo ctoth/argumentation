@@ -927,11 +927,6 @@ class _NativeSparseNarrowStableSolver:
             for rule in self.rules
             if rule.antecedents
         }
-        self.choice_vars = {
-            rule: self._new_var()
-            for rule in self.rules
-            if rule.antecedents
-        }
         self.solver = solver_class(name="glucose4")
         self.telemetry = {
             "clingo_solver_calls": 0,
@@ -942,7 +937,6 @@ class _NativeSparseNarrowStableSolver:
             "native_sparse_narrow_closure_checks": 0,
             "native_sparse_narrow_rule_firings": 0,
             "native_sparse_narrow_loop_formulas": 0,
-            "native_sparse_narrow_static_rank_vars": 0,
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
             "prefsat_attacker_bitset_rule_firings": 0,
@@ -960,12 +954,6 @@ class _NativeSparseNarrowStableSolver:
         self._support_vars_by_head: dict[Literal, list[int]] = defaultdict(list)
         for rule, variable in self.support_vars.items():
             self._support_vars_by_head[rule.consequent].append(variable)
-        self._choice_vars_by_head: dict[Literal, list[int]] = defaultdict(list)
-        for rule, variable in self.choice_vars.items():
-            self._choice_vars_by_head[rule.consequent].append(variable)
-        self._rank_component: dict[Literal, int] = {}
-        self._rank_bits: dict[Literal, tuple[int, ...]] = {}
-        self._add_rank_variables()
         self._add_completion_clauses()
         self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
 
@@ -978,23 +966,12 @@ class _NativeSparseNarrowStableSolver:
         self.solver.add_clause(clause)
         self.telemetry["native_sparse_narrow_learned_clauses"] += 1
 
-    def _add_rank_variables(self) -> None:
-        components = self._positive_dependency_components()
-        for component_index, component in enumerate(components):
-            if len(component) == 1 and not self._component_has_self_loop(component):
-                continue
-            width = max(1, (len(component) - 1).bit_length())
-            for literal in component:
-                self._rank_component[literal] = component_index
-                self._rank_bits[literal] = tuple(self._new_var() for _ in range(width))
-                self.telemetry["native_sparse_narrow_static_rank_vars"] += width
-
     def _add_completion_clauses(self) -> None:
         for assumption in self.assumptions:
-            selected = self.in_vars[assumption]
-            derived = self.derived_vars[assumption]
-            self._add_clause([-selected, derived])
-            self._add_clause([-derived, selected])
+            self._add_clause([
+                -self.in_vars[assumption],
+                self.derived_vars[assumption],
+            ])
         for rule in self.rules:
             head = self.derived_vars[rule.consequent]
             body = [self.derived_vars[antecedent] for antecedent in rule.antecedents]
@@ -1007,16 +984,12 @@ class _NativeSparseNarrowStableSolver:
             self._add_clause([*[-variable for variable in body], support])
             self._add_clause([-support, head])
             self._add_clause([*[-variable for variable in body], head])
-            choice = self.choice_vars[rule]
-            self._add_clause([-choice, support])
-            self._add_clause([-choice, head])
-            self._add_rank_guards(rule, choice)
         for literal in self.literals:
-            if literal in self.in_vars:
-                continue
             if literal in self._zero_rule_heads:
                 continue
-            support_options = list(self._choice_vars_by_head.get(literal, ()))
+            support_options = list(self._support_vars_by_head.get(literal, ()))
+            if literal in self.in_vars:
+                support_options.append(self.in_vars[literal])
             if support_options:
                 self._add_clause([
                     -self.derived_vars[literal],
@@ -1029,52 +1002,6 @@ class _NativeSparseNarrowStableSolver:
             selected = self.in_vars[assumption]
             self._add_clause([-selected, -contrary])
             self._add_clause([selected, contrary])
-
-    def _add_rank_guards(self, rule: Rule, support: int) -> None:
-        head_component = self._rank_component.get(rule.consequent)
-        if head_component is None:
-            return
-        head_bits = self._rank_bits[rule.consequent]
-        for antecedent in rule.antecedents:
-            if self._rank_component.get(antecedent) != head_component:
-                continue
-            self._add_less_than_guard(support, self._rank_bits[antecedent], head_bits)
-
-    def _add_less_than_guard(
-        self,
-        guard: int,
-        left_bits: tuple[int, ...],
-        right_bits: tuple[int, ...],
-    ) -> None:
-        terms: list[int] = []
-        prefix_equal: int | None = None
-        for left, right in zip(reversed(left_bits), reversed(right_bits)):
-            term = self._new_var()
-            terms.append(term)
-            self._add_clause([-term, -left])
-            self._add_clause([-term, right])
-            if prefix_equal is not None:
-                self._add_clause([-term, prefix_equal])
-            next_equal = self._new_var()
-            self._add_clause([-next_equal, -left, right])
-            self._add_clause([-next_equal, left, -right])
-            if prefix_equal is not None:
-                self._add_clause([-next_equal, prefix_equal])
-            prefix_equal = next_equal
-        self._add_clause([-guard, *terms])
-
-    def _positive_dependency_components(self) -> list[frozenset[Literal]]:
-        adjacency: dict[Literal, list[Literal]] = {literal: [] for literal in self.literals}
-        for rule in self.rules:
-            adjacency[rule.consequent].extend(rule.antecedents)
-        return self._components_from_adjacency(adjacency)
-
-    def _component_has_self_loop(self, component: frozenset[Literal]) -> bool:
-        literal = next(iter(component))
-        return any(
-            rule.consequent == literal and literal in rule.antecedents
-            for rule in self.rules
-        )
 
     def stable_extension(
         self,
@@ -1136,12 +1063,7 @@ class _NativeSparseNarrowStableSolver:
                 for antecedent in rule.antecedents
                 if antecedent in unsupported_literals
             )
-        return self._components_from_adjacency(adjacency)
 
-    def _components_from_adjacency(
-        self,
-        adjacency: dict[Literal, list[Literal]],
-    ) -> list[frozenset[Literal]]:
         index = 0
         stack: list[Literal] = []
         on_stack: set[Literal] = set()
@@ -1173,7 +1095,7 @@ class _NativeSparseNarrowStableSolver:
                     break
             components.append(frozenset(component))
 
-        for literal in sorted(adjacency, key=repr):
+        for literal in sorted(unsupported_literals, key=repr):
             if literal not in indices:
                 strongconnect(literal)
         return components
