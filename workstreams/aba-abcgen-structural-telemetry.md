@@ -174,8 +174,9 @@ closure, and structural graph definitions.
      - semantic-preserving rule order shuffles leave telemetry equal except for
        fields whose values are explicitly ordered histograms;
      - filename/path/year are absent from telemetry;
-     - duplicate syntactic rules are counted as rules but do not create fake
-       new atoms or assumptions;
+     - duplicate syntactic rules do not create fake new atoms or assumptions
+       after parsing, and the parsed-framework API reports the semantic rule
+       count available at that boundary;
      - SCC and histogram summaries are deterministic across repeated calls.
    - Run these properties before adding `src/argumentation/aba_telemetry.py`;
      the missing API is the required first failure.
