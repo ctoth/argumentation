@@ -1079,8 +1079,11 @@ def _native_sparse_narrow_fixedpoint_extension(
             break
         current = defended
         undefeated = assumptions - _attacked_assumptions(framework, closure, current)
-    if not require_assumptions <= extension:
+    required_unsatisfied = not require_assumptions <= extension
+    if required_unsatisfied:
         extension = frozenset()
+    if not required_unsatisfied and not _is_stable_extension(framework, closure, extension):
+        return None
     telemetry["native_sparse_narrow_closure_checks"] = telemetry[
         "prefsat_attacker_bitset_closure_checks"
     ]
@@ -1093,6 +1096,15 @@ def _native_sparse_narrow_fixedpoint_extension(
         route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
         | {"algorithm_detail": "defended_assumption_fixedpoint"},
     )
+
+
+def _is_stable_extension(
+    framework: ABAFramework,
+    closure: _BitsetHornClosure,
+    extension: AssumptionSet,
+) -> bool:
+    attacked = _attacked_assumptions(framework, closure, extension)
+    return not bool(extension & attacked) and (framework.assumptions - extension) <= attacked
 
 
 def _attacked_assumptions(
