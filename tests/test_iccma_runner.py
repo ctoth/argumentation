@@ -416,11 +416,15 @@ def test_write_csv_accepts_profiled_rows(tmp_path) -> None:
                 "elapsed_seconds": "30.000000",
                 "answer": None,
                 "profile_path": "profiles/case.speedscope.json",
+                "solver_metadata": {"native_cnf_solver_checks": 1},
+                "future_diagnostic_field": "ignored",
             }
         ],
     )
 
-    assert "profile_path" in output.read_text(encoding="utf-8").splitlines()[0]
+    header = output.read_text(encoding="utf-8").splitlines()[0]
+    assert "profile_path" in header
+    assert "solver_metadata" in header
 
 
 def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:

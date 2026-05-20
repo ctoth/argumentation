@@ -65,6 +65,7 @@ RESULT_FIELDS = [
     "witness_size",
     "witness",
     "profile_path",
+    "solver_metadata",
     "arguments_or_atoms",
     "attacks",
     "assumptions",
@@ -1177,7 +1178,7 @@ def load_json(path: Path):
 
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=RESULT_FIELDS)
+        writer = csv.DictWriter(handle, fieldnames=RESULT_FIELDS, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
