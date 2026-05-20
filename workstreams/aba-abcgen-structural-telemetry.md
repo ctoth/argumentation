@@ -1,0 +1,211 @@
+# ABA abcgen Structural Telemetry Workstream
+
+Status: executable design.
+
+Workflow actually requested: design the next concrete workstream after the
+full ICCMA 2025 run showed the remaining ABA hard class is dominated by
+`abcgen` timeouts, with a secondary AF `admbuster` timeout-boundary signal.
+
+## Final State
+
+- The repo has a committed, deterministic `abcgen` 10 timeout / 10 solved
+  fixture under `tests/manifests/iccma2025-abcgen-10x10.json`.
+- The 20-row fixture is selected from the ICCMA 2025 manifest and event log by
+  instance kind, subtrack, row status, and measured structural telemetry. No
+  production route or optimizer decision uses filenames, parent directories, or
+  ICCMA year.
+- ABA structural telemetry is available as a reusable source API and CLI for any
+  ABA instance, not only ICCMA:
+  - atoms, assumptions, rules, contraries;
+  - flatness;
+  - rule body width histogram and max body width;
+  - rule head fan-in and body-literal fan-out summaries;
+  - contrary fan-in/fan-out summaries;
+  - assumption-to-atom and rule-to-assumption ratios;
+  - directed rule-dependency SCC count and max SCC size;
+  - assumption dependency SCC count and max SCC size;
+  - closure-growth probes from calibrated assumption samples;
+  - native CNF telemetry when a selected row is solved by native CNF.
+- The telemetry API is invariant under path, filename, ICCMA year, and input
+  ordering where the ABA semantics are unchanged.
+- The runner timeout contract is fixed: a row launched with
+  `--timeout-seconds 30` cannot complete as solved after 30 seconds of worker
+  wall time, and timeout reasons report the configured cap rather than a
+  hidden 40 second boundary.
+- Py-spy profiles are produced only after telemetry selects representative
+  rows. Profiles are diagnostic artifacts and are not committed.
+- Completion produces the structural discriminator and measured hot path needed
+  for the next solver-optimization workstream. It does not add a new optimizer
+  route.
+
+## Current Evidence
+
+- The all-2025 native run was launched with a 30 second solver cap over 7,394
+  rows.
+- The ABA section completed 1,920 rows: 480 solved, 1,280 skipped for missing
+  query-acceptance inputs, and 160 timed out.
+- ABA timeout split: 131 `abcgen` rows and 29 generated `aba_*` rows.
+- The first AF timeout class appears at large `admbuster` rows. For
+  `AFs/admbuster_2500000.af`, multiple rows timed out around 40 seconds even
+  though the configured cap was 30 seconds.
+- The live event log reports solved AF rows above 30 seconds and timeout
+  reasons such as `timeout>40.0`; this is a runner contract issue independent
+  of argumentation theory.
+
+## Paper Page Anchors
+
+Before implementing source code, reread these page images directly:
+
+- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-008.png`
+- `papers/Cerutti_2013_ComputingPreferredExtensionsAbstract/pngs/page-009.png`
+- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-002.png`
+- `papers/Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers/pngs/page-003.png`
+- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-006.png`
+- `papers/Dvorak_2014_ComplexitySensitiveDecisionProcedures/pngs/page-007.png`
+- `papers/deKleer_1986_AssumptionBasedTMS/pngs/page-001.png`
+- `papers/deKleer_1986_AssumptionBasedTMS/pngs/page-002.png`
+- `papers/Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/pngs/page-002.png`
+- `papers/Popescu_2023_ReasoningAssumption-BasedArgumentationTree-Decompositions/pngs/page-003.png`
+
+Use Cerutti for the preferred/stable SAT search shape, Dvorak for
+complexity-sensitive operational signals, de Kleer for cached assumption-set
+and nogood-style representation pressure, and Popescu for ABA dependency,
+closure, and structural graph definitions.
+
+## Owned Paths
+
+- `workstreams/aba-abcgen-structural-telemetry.md`
+- `src/argumentation/aba_telemetry.py`
+- `tools/aba_abcgen_telemetry.py`
+- `tools/iccma2025_run_native.py`
+- `tests/test_aba_structural_telemetry.py`
+- `tests/test_aba_abcgen_telemetry_workstream.py`
+- `tests/test_iccma_runner_timeout_contract.py`
+- `tests/manifests/iccma2025-abcgen-10x10.json`
+
+## Deletion Targets
+
+- Delete no existing production solver path in this workstream.
+- Remove any new production check that branches on `abcgen`, `ABAs/`,
+  `iccma`, raw instance basename, parent directory, or contest year.
+- Do not commit `.ppm` files, py-spy profiles, raw benchmark event logs,
+  regenerated run summaries, or PDF text-extraction output.
+- Do not add optimizer routes, fallback wrappers, or compatibility aliases in
+  this workstream.
+
+## Ordered Phases
+
+1. Branch and baseline gate:
+   - Verify the tracked worktree is clean on `main`.
+   - Create the dedicated experiment branch
+     `exp/aba-abcgen-structural-telemetry`.
+   - Leave unrelated untracked files alone.
+
+2. Paper reread gate:
+   - Reread every page image listed in Paper Page Anchors.
+   - Record the page anchors in the first test file touched by the workstream
+     as comments next to the properties they justify.
+
+3. Timeout-boundary contract:
+   - Add a test-owned helper worker that sleeps longer than a configured small
+     timeout and writes a valid solved-looking JSON result afterward.
+   - Add `tests/test_iccma_runner_timeout_contract.py` proving the runner
+     reports `status == "timeout"` and a reason derived from the configured
+     timeout, not from an internal 40 second cap.
+   - Run the timeout test before editing the runner and record the failing
+     assertion in the commit message or workstream completion evidence.
+   - Fix `tools/iccma2025_run_native.py` so subprocess timeout, profile
+     timeout, event reason, and row elapsed boundary all derive from
+     `RunConfig.timeout_seconds`.
+
+4. Structural telemetry API:
+   - Add `src/argumentation/aba_telemetry.py`.
+   - The API accepts the parsed ABA framework object returned by existing
+     parser code and returns a JSON-serializable dictionary.
+   - The API computes all Final State telemetry fields without invoking Z3,
+     PySAT, ASP, py-spy, or an ICCMA runner subprocess.
+   - Graph/SCC computation uses explicit indexed adjacency lists; it does not
+     infer generator family from filenames.
+
+5. Telemetry property contracts:
+   - Add Hypothesis properties for small ABA frameworks:
+     - semantic-preserving rule order shuffles leave telemetry equal except for
+       fields whose values are explicitly ordered histograms;
+     - filename/path/year are absent from telemetry;
+     - duplicate syntactic rules are counted as rules but do not create fake
+       new atoms or assumptions;
+     - SCC and histogram summaries are deterministic across repeated calls.
+   - Add a focused real-instance contract that parses at least one solved and
+     one timed-out fixture row and produces positive, bounded telemetry.
+
+6. 10x10 fixture builder:
+   - Add `tools/aba_abcgen_telemetry.py`.
+   - Inputs:
+     `--manifest data\iccma\2025\manifests\iccma-2025-manifest.json`,
+     `--event-log data\iccma\2025\runs\native-cnf-main-all-2025-auto-cap30-events.jsonl`,
+     and `--sample-out tests\manifests\iccma2025-abcgen-10x10.json`.
+   - Filter source rows to `kind == "aba"`, event `instance_kind == "aba"`,
+     `status in {"solved", "timeout"}`, and subtracks that actually ran.
+   - Select exactly 10 timeout rows and exactly 10 solved rows.
+   - For each timeout row, record one solved match chosen by nearest structural
+     telemetry vector over manifest counts and API telemetry, not by filename
+     tokens.
+   - Each pair record must include `timeout_row`, `solved_row`,
+     `shared_features`, `distinctive_features`, and `match_distance`.
+   - The builder exits nonzero unless every pair has at least one
+     non-filename `distinctive_features` entry.
+
+7. Runner targeting and profile gate:
+   - Add runner filters `--only-instance` and `--only-subtrack` to
+     `tools/iccma2025_run_native.py`.
+   - Add tests proving the filters select exact rows and do not alter solver
+     behavior for the selected row.
+   - Run py-spy only for four representatives selected from the fixture:
+     two timed-out preferred/stable rows and their two matched solved rows.
+   - Profile commands write under
+     `data\iccma\2025\profiles\abcgen-10x10\`; those profiles remain
+     uncommitted diagnostics.
+
+8. Structural discriminator gate:
+   - Add `tests/test_aba_abcgen_telemetry_workstream.py`.
+   - The test loads the committed 10x10 fixture and verifies:
+     - exact fixture counts: 10 timeout rows, 10 solved rows, 10 pairs;
+     - every row has telemetry;
+     - every pair has a nonempty `distinctive_features` set;
+     - no distinctive feature key is `instance`, `relative_path`, `basename`,
+       `parent`, `archive`, `label`, or `year`;
+     - at least one distinctive feature appears in three or more timeout/solved
+       pairs.
+   - If this gate fails, the workstream is not complete and no optimizer
+     implementation starts.
+
+9. Verification and promotion:
+   - Run the required tests.
+   - Verify no generated diagnostics are staged.
+   - Promote only the source, test, and curated fixture paths listed in Owned
+     Paths to `main` after the branch gates pass.
+
+## Required Commands
+
+```powershell
+uv run pytest -q tests\test_iccma_runner_timeout_contract.py
+uv run pytest -q tests\test_aba_structural_telemetry.py
+uv run tools\aba_abcgen_telemetry.py --manifest data\iccma\2025\manifests\iccma-2025-manifest.json --event-log data\iccma\2025\runs\native-cnf-main-all-2025-auto-cap30-events.jsonl --sample-out tests\manifests\iccma2025-abcgen-10x10.json
+uv run pytest -q tests\test_aba_abcgen_telemetry_workstream.py tests\test_aba_structural_telemetry.py tests\test_iccma_runner_timeout_contract.py
+uv run tools\iccma2025_run_native.py --backend auto --max-af-arguments 100000000 --max-aba-assumptions 100000000 --timeout-seconds 30 --only-instance <fixture-timeout-instance> --only-subtrack <fixture-subtrack> --profile-workers-dir data\iccma\2025\profiles\abcgen-10x10 --profile-worker-subtrack <fixture-subtrack> --label abcgen-profile-one --event-log-path data\iccma\2025\runs\abcgen-profile-one-events.jsonl
+```
+
+## Completion Evidence
+
+- Page images listed above were reread directly before source implementation.
+- The timeout-boundary test failed before the runner fix and passed after it.
+- `tests/manifests/iccma2025-abcgen-10x10.json` contains exactly 10 timeout
+  rows, 10 solved rows, and 10 structurally matched pairs.
+- The structural telemetry properties pass and contain no filename/year route
+  dependency.
+- The discriminator gate finds at least one non-filename structural feature that
+  recurs in three or more timeout/solved pairs.
+- Four py-spy profiles exist under
+  `data\iccma\2025\profiles\abcgen-10x10\` and are not committed.
+- The required pytest commands pass.
+- `git status --short -- <Owned Paths>` is clean after the final commit.
