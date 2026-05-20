@@ -908,8 +908,25 @@ class _NativeSparseNarrowStableSolver:
         solver_class = _load_pysat_solver()
         self.framework = framework
         self.assumptions = tuple(sorted(framework.assumptions, key=repr))
+        self.literals = tuple(
+            sorted(
+                set(framework.language)
+                | set(framework.assumptions)
+                | set(framework.contrary.values())
+                | {rule.consequent for rule in framework.rules}
+                | {antecedent for rule in framework.rules for antecedent in rule.antecedents},
+                key=repr,
+            )
+        )
         self._next_var = 1
         self.in_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.derived_vars = {literal: self._new_var() for literal in self.literals}
+        self.rules = tuple(sorted(framework.rules, key=repr))
+        self.support_vars = {
+            rule: self._new_var()
+            for rule in self.rules
+            if rule.antecedents
+        }
         self.solver = solver_class(name="glucose4")
         self.telemetry = {
             "clingo_solver_calls": 0,
@@ -919,16 +936,25 @@ class _NativeSparseNarrowStableSolver:
             "native_sparse_narrow_z3_main_checks": 0,
             "native_sparse_narrow_closure_checks": 0,
             "native_sparse_narrow_rule_firings": 0,
+            "native_sparse_narrow_loop_formulas": 0,
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
             "prefsat_attacker_bitset_rule_firings": 0,
         }
         self._closure = _BitsetHornClosure.from_framework(framework, self.telemetry)
-        self._contrary_bits = {
-            assumption: self._closure.literal_bits[framework.contrary[assumption]]
-            for assumption in self.assumptions
+        self._literal_by_bit = {
+            bit: literal
+            for literal, bit in self._closure.literal_bits.items()
         }
-        self._add_static_conflict_clauses()
+        self._zero_rule_heads = frozenset(
+            rule.consequent
+            for rule in self.rules
+            if not rule.antecedents
+        )
+        self._support_vars_by_head: dict[Literal, list[int]] = defaultdict(list)
+        for rule, variable in self.support_vars.items():
+            self._support_vars_by_head[rule.consequent].append(variable)
+        self._add_completion_clauses()
         self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
 
     def _new_var(self) -> int:
@@ -940,11 +966,42 @@ class _NativeSparseNarrowStableSolver:
         self.solver.add_clause(clause)
         self.telemetry["native_sparse_narrow_learned_clauses"] += 1
 
-    def _add_static_conflict_clauses(self) -> None:
-        empty_closure = self._closure.closure_mask(frozenset())
-        for target in self.assumptions:
-            if empty_closure & self._contrary_bits[target]:
-                self._add_clause([-self.in_vars[target]])
+    def _add_completion_clauses(self) -> None:
+        for assumption in self.assumptions:
+            self._add_clause([
+                -self.in_vars[assumption],
+                self.derived_vars[assumption],
+            ])
+        for rule in self.rules:
+            head = self.derived_vars[rule.consequent]
+            body = [self.derived_vars[antecedent] for antecedent in rule.antecedents]
+            if not body:
+                self._add_clause([head])
+                continue
+            support = self.support_vars[rule]
+            for variable in body:
+                self._add_clause([-support, variable])
+            self._add_clause([*[-variable for variable in body], support])
+            self._add_clause([-support, head])
+            self._add_clause([*[-variable for variable in body], head])
+        for literal in self.literals:
+            if literal in self._zero_rule_heads:
+                continue
+            support_options = list(self._support_vars_by_head.get(literal, ()))
+            if literal in self.in_vars:
+                support_options.append(self.in_vars[literal])
+            if support_options:
+                self._add_clause([
+                    -self.derived_vars[literal],
+                    *support_options,
+                ])
+            else:
+                self._add_clause([-self.derived_vars[literal]])
+        for assumption in self.assumptions:
+            contrary = self.derived_vars[self.framework.contrary[assumption]]
+            selected = self.in_vars[assumption]
+            self._add_clause([-selected, -contrary])
+            self._add_clause([selected, contrary])
 
     def stable_extension(
         self,
@@ -958,41 +1015,56 @@ class _NativeSparseNarrowStableSolver:
                 return None
             self.telemetry["native_sparse_narrow_candidate_models"] += 1
             extension = self._model_extension()
-            refinement = self._stable_refinement(extension)
-            if refinement is None:
+            loop_formula = self._unsupported_derived_loop_formula(extension)
+            if loop_formula is None:
                 self._sync_closure_telemetry()
                 return extension
-            self._add_clause(refinement)
+            self._add_clause(loop_formula)
+            self.telemetry["native_sparse_narrow_loop_formulas"] += 1
             self._sync_closure_telemetry()
 
-    def _stable_refinement(self, extension: AssumptionSet) -> list[int] | None:
+    def _unsupported_derived_loop_formula(
+        self,
+        extension: AssumptionSet,
+    ) -> list[int] | None:
         closure = self._closure.closure_mask(extension)
-        for target in sorted(extension, key=repr):
-            if closure & self._contrary_bits[target]:
-                support = self._closure.shrink_support(
-                    extension,
-                    self.framework.contrary[target],
-                )
-                return [
-                    -self.in_vars[target],
-                    *(
-                        -self.in_vars[assumption]
-                        for assumption in sorted(support - {target}, key=repr)
-                    ),
-                ]
-        for target in self.assumptions:
-            if target not in extension and not (closure & self._contrary_bits[target]):
-                return [
-                    self.in_vars[target],
-                    *(
-                        self.in_vars[assumption]
-                        for assumption in sorted(
-                            self.framework.assumptions - extension - {target},
-                            key=repr,
-                        )
-                    ),
-                ]
-        return None
+        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        derived = 0
+        for literal, variable in self.derived_vars.items():
+            if variable in model:
+                derived |= self._closure.literal_bits[literal]
+        unsupported = derived & ~closure
+        if not unsupported:
+            return None
+        unsupported_literals = frozenset(
+            self._literal_by_bit[bit]
+            for bit in self._bits(unsupported)
+        )
+        external_supports: list[int] = []
+        for literal in unsupported_literals:
+            if literal in self.in_vars:
+                external_supports.append(self.in_vars[literal])
+        for rule, variable in self.support_vars.items():
+            if rule.consequent not in unsupported_literals:
+                continue
+            if not any(antecedent in unsupported_literals for antecedent in rule.antecedents):
+                external_supports.append(variable)
+        return [
+            *(
+                -self.derived_vars[literal]
+                for literal in sorted(unsupported_literals, key=repr)
+            ),
+            *external_supports,
+        ]
+
+    def _bits(self, mask: int) -> list[int]:
+        bits: list[int] = []
+        remaining = mask
+        while remaining:
+            bit = remaining & -remaining
+            bits.append(bit)
+            remaining ^= bit
+        return bits
 
     def _model_extension(self) -> AssumptionSet:
         model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
