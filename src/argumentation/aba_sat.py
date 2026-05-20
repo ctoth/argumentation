@@ -945,14 +945,6 @@ class _NativeSparseNarrowStableSolver:
         for target in self.assumptions:
             if empty_closure & self._contrary_bits[target]:
                 self._add_clause([-self.in_vars[target]])
-        for source in self.assumptions:
-            closure = self._closure.closure_mask(frozenset({source}))
-            for target in self.assumptions:
-                if closure & self._contrary_bits[target]:
-                    if source == target:
-                        self._add_clause([-self.in_vars[target]])
-                    else:
-                        self._add_clause([-self.in_vars[source], -self.in_vars[target]])
 
     def stable_extension(
         self,
