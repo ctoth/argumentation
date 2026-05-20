@@ -7,6 +7,8 @@ from pathlib import Path
 import sys
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from argumentation.aba_telemetry import (
     STRUCTURAL_TELEMETRY_KEYS,
     aba_structural_telemetry,
