@@ -1015,18 +1015,19 @@ class _NativeSparseNarrowStableSolver:
                 return None
             self.telemetry["native_sparse_narrow_candidate_models"] += 1
             extension = self._model_extension()
-            loop_formula = self._unsupported_derived_loop_formula(extension)
-            if loop_formula is None:
+            loop_formulas = self._unsupported_derived_loop_formulas(extension)
+            if not loop_formulas:
                 self._sync_closure_telemetry()
                 return extension
-            self._add_clause(loop_formula)
-            self.telemetry["native_sparse_narrow_loop_formulas"] += 1
+            for loop_formula in loop_formulas:
+                self._add_clause(loop_formula)
+            self.telemetry["native_sparse_narrow_loop_formulas"] += len(loop_formulas)
             self._sync_closure_telemetry()
 
-    def _unsupported_derived_loop_formula(
+    def _unsupported_derived_loop_formulas(
         self,
         extension: AssumptionSet,
-    ) -> list[int] | None:
+    ) -> list[list[int]]:
         closure = self._closure.closure_mask(extension)
         model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
         derived = 0
@@ -1035,24 +1036,84 @@ class _NativeSparseNarrowStableSolver:
                 derived |= self._closure.literal_bits[literal]
         unsupported = derived & ~closure
         if not unsupported:
-            return None
+            return []
         unsupported_literals = frozenset(
             self._literal_by_bit[bit]
             for bit in self._bits(unsupported)
         )
+        components = self._unsupported_components(unsupported_literals)
+        return [
+            self._loop_formula_for(component)
+            for component in components
+        ]
+
+    def _unsupported_components(
+        self,
+        unsupported_literals: frozenset[Literal],
+    ) -> list[frozenset[Literal]]:
+        adjacency: dict[Literal, list[Literal]] = {
+            literal: []
+            for literal in unsupported_literals
+        }
+        for rule in self.rules:
+            if rule.consequent not in unsupported_literals:
+                continue
+            adjacency[rule.consequent].extend(
+                antecedent
+                for antecedent in rule.antecedents
+                if antecedent in unsupported_literals
+            )
+
+        index = 0
+        stack: list[Literal] = []
+        on_stack: set[Literal] = set()
+        indices: dict[Literal, int] = {}
+        lowlinks: dict[Literal, int] = {}
+        components: list[frozenset[Literal]] = []
+
+        def strongconnect(literal: Literal) -> None:
+            nonlocal index
+            indices[literal] = index
+            lowlinks[literal] = index
+            index += 1
+            stack.append(literal)
+            on_stack.add(literal)
+            for successor in adjacency[literal]:
+                if successor not in indices:
+                    strongconnect(successor)
+                    lowlinks[literal] = min(lowlinks[literal], lowlinks[successor])
+                elif successor in on_stack:
+                    lowlinks[literal] = min(lowlinks[literal], indices[successor])
+            if lowlinks[literal] != indices[literal]:
+                return
+            component: set[Literal] = set()
+            while True:
+                item = stack.pop()
+                on_stack.remove(item)
+                component.add(item)
+                if item == literal:
+                    break
+            components.append(frozenset(component))
+
+        for literal in sorted(unsupported_literals, key=repr):
+            if literal not in indices:
+                strongconnect(literal)
+        return components
+
+    def _loop_formula_for(self, component: frozenset[Literal]) -> list[int]:
         external_supports: list[int] = []
-        for literal in unsupported_literals:
+        for literal in component:
             if literal in self.in_vars:
                 external_supports.append(self.in_vars[literal])
         for rule, variable in self.support_vars.items():
-            if rule.consequent not in unsupported_literals:
+            if rule.consequent not in component:
                 continue
-            if not any(antecedent in unsupported_literals for antecedent in rule.antecedents):
+            if not any(antecedent in component for antecedent in rule.antecedents):
                 external_supports.append(variable)
         return [
             *(
                 -self.derived_vars[literal]
-                for literal in sorted(unsupported_literals, key=repr)
+                for literal in sorted(component, key=repr)
             ),
             *external_supports,
         ]
