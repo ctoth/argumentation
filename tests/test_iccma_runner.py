@@ -358,6 +358,46 @@ def test_worker_profile_path_is_stable_and_filterable(tmp_path) -> None:
     assert path.name.endswith(".raw.txt")
 
 
+def test_run_or_skip_sets_profile_duration_inside_row_timeout(tmp_path, monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def record_run_child(job, *, timeout_seconds):
+        captured["job"] = job
+        captured["timeout_seconds"] = timeout_seconds
+        return {"status": "profiled", "reason": "profile_duration_elapsed"}
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_child", record_run_child)
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=100,
+        max_aba_assumptions=100,
+        timeout_seconds=30.0,
+        progress=False,
+        event_log_path=None,
+        profile_workers_dir=tmp_path / "profiles",
+        profile_workers_format="speedscope",
+        profile_worker_subtracks=frozenset({"SE-PR"}),
+    )
+
+    row = run_or_skip(
+        config,
+        {
+            "kind": "apx",
+            "relative_path": "case.apx",
+            "arguments_or_atoms": 1,
+        },
+        {"track": "main", "subtrack": "SE-PR", "instance_kind": "af"},
+    )
+
+    assert row["status"] == "profiled"
+    assert captured["timeout_seconds"] == 30.0
+    job = captured["job"]
+    assert job["profile_duration_seconds"] == 29.0
+    assert job["profile_path"]
+
+
 def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
     parsed = parse_worker_stdout(
         "py-spy> Sampling process 100 times a second.\n"

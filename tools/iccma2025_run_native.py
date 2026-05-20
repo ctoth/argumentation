@@ -393,6 +393,9 @@ def run_or_skip(
         if should_profile_worker(config, task)
         else None,
         "profile_format": config.profile_workers_format,
+        "profile_duration_seconds": profile_duration_seconds(config)
+        if should_profile_worker(config, task)
+        else None,
         "instance": instance,
         "task": task,
     }
@@ -643,6 +646,10 @@ def should_profile_worker(config: RunConfig, task: dict[str, Any]) -> bool:
         not config.profile_worker_subtracks
         or str(task["subtrack"]) in config.profile_worker_subtracks
     )
+
+
+def profile_duration_seconds(config: RunConfig) -> float:
+    return max(1.0, config.timeout_seconds - 1.0)
 
 
 def worker_profile_path(
