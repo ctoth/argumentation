@@ -1069,6 +1069,20 @@ def _native_sparse_narrow_fixedpoint_extension(
     }
     closure = _BitsetHornClosure.from_framework(framework, telemetry)
     assumptions = frozenset(framework.assumptions)
+    pruned = _conflict_pruned_extension(framework, closure, assumptions, telemetry)
+    if require_assumptions <= pruned and _is_stable_extension(framework, closure, pruned):
+        telemetry["native_sparse_narrow_closure_checks"] = telemetry[
+            "prefsat_attacker_bitset_closure_checks"
+        ]
+        telemetry["native_sparse_narrow_rule_firings"] = telemetry[
+            "prefsat_attacker_bitset_rule_firings"
+        ]
+        return NativeSparseNarrowSatResult(
+            extension=pruned,
+            telemetry=telemetry,
+            route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
+            | {"algorithm_detail": "conflict_pruned_stable_fixedpoint"},
+        )
     current = frozenset()
     undefeated = assumptions
     while True:
@@ -1096,6 +1110,22 @@ def _native_sparse_narrow_fixedpoint_extension(
         route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
         | {"algorithm_detail": "defended_assumption_fixedpoint"},
     )
+
+
+def _conflict_pruned_extension(
+    framework: ABAFramework,
+    closure: _BitsetHornClosure,
+    assumptions: AssumptionSet,
+    telemetry: dict[str, int],
+) -> AssumptionSet:
+    current = assumptions
+    while True:
+        attacked = _attacked_assumptions(framework, closure, current)
+        telemetry["native_sparse_narrow_fixedpoint_iterations"] += 1
+        pruned = current - attacked
+        if pruned == current:
+            return current
+        current = pruned
 
 
 def _is_stable_extension(
