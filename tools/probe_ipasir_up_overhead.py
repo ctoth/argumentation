@@ -92,6 +92,12 @@ class CheckOnlyNoopPropagator(Propagator):
         self.check_models += 1
         return True
 
+    def provide_reason(self, lit: int) -> list[int]:
+        return [lit]
+
+    def add_clause(self) -> list[int]:
+        return []
+
     def counters(self) -> dict[str, int]:
         return {"check_models": self.check_models}
 
