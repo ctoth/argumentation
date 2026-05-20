@@ -88,7 +88,8 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
     if len(cluster_timeouts) < 10 or len(cluster_solved) < 10:
         raise SystemExit(
             f"structural cluster {cluster_key!r} has {len(cluster_timeouts)} timeout "
-            f"and {len(cluster_solved)} solved rows"
+            f"and {len(cluster_solved)} solved rows; available clusters: "
+            f"{_cluster_counts(timeout_candidates, solved_candidates)}"
         )
     selected_timeouts = _select_structural_timeouts(cluster_timeouts, limit=10)
     pairs = _pair_with_solved_matches(selected_timeouts, cluster_solved)
@@ -205,6 +206,21 @@ def _structural_cluster(telemetry: dict[str, object]) -> str:
         else "wide_rule_bodies"
     )
     return f"{density}|{width}"
+
+
+def _cluster_counts(
+    timeout_candidates: list[dict[str, Any]],
+    solved_candidates: list[dict[str, Any]],
+) -> dict[str, dict[str, int]]:
+    counts: dict[str, dict[str, int]] = {}
+    for status, candidates in (
+        ("timeout", timeout_candidates),
+        ("solved", solved_candidates),
+    ):
+        for candidate in candidates:
+            cluster = str(candidate["structural_cluster"])
+            counts.setdefault(cluster, {"timeout": 0, "solved": 0})[status] += 1
+    return dict(sorted(counts.items()))
 
 
 def _select_structural_timeouts(candidates: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
