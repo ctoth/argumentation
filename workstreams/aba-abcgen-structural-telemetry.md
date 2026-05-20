@@ -3,17 +3,21 @@
 Status: executable design.
 
 Workflow actually requested: design the next concrete workstream after the
-full ICCMA 2025 run showed the remaining ABA hard class is dominated by
-`abcgen` timeouts, with a secondary AF `admbuster` timeout-boundary signal.
+ICCMA 2025 run showed the remaining ABA hard class is dominated by the
+structural family historically labelled `abcgen`, with a secondary AF
+timeout-boundary signal. The broad run was intentionally stopped after enough
+evidence was collected; this workstream must use the existing event log and
+targeted reruns, not another full all-2025 sweep.
 
 ## Final State
 
-- The repo has a committed, deterministic `abcgen` 10 timeout / 10 solved
+- The repo has a committed, deterministic hard-ABA 10 timeout / 10 solved
   fixture under `tests/manifests/iccma2025-abcgen-10x10.json`.
 - The 20-row fixture is selected from the ICCMA 2025 manifest and event log by
-  instance kind, subtrack, row status, and measured structural telemetry. No
-  production route or optimizer decision uses filenames, parent directories, or
-  ICCMA year.
+  instance kind, subtrack, row status, and measured structural telemetry.
+  The fixture filename may retain `abcgen` as a historical benchmark label, but
+  the selection script and all production code must choose rows by structure,
+  not by `abcgen`, filenames, parent directories, or ICCMA year.
 - ABA structural telemetry is available as a reusable source API and CLI for any
   ABA instance, not only ICCMA:
   - atoms, assumptions, rules, contraries;
@@ -41,16 +45,32 @@ full ICCMA 2025 run showed the remaining ABA hard class is dominated by
 ## Current Evidence
 
 - The all-2025 native run was launched with a 30 second solver cap over 7,394
-  rows.
+  rows and was stopped by explicit user request after the ABA section and
+  enough AF timeout-boundary evidence were present.
 - The ABA section completed 1,920 rows: 480 solved, 1,280 skipped for missing
   query-acceptance inputs, and 160 timed out.
-- ABA timeout split: 131 `abcgen` rows and 29 generated `aba_*` rows.
+- ABA timeout split observed from the completed ABA prefix: 131 rows in the
+  benchmark family historically named `abcgen` and 29 generated `aba_*` rows.
 - The first AF timeout class appears at large `admbuster` rows. For
   `AFs/admbuster_2500000.af`, multiple rows timed out around 40 seconds even
   though the configured cap was 30 seconds.
-- The live event log reports solved AF rows above 30 seconds and timeout
+- The stopped event log also contains later AF rows with the same issue,
+  including `AFs/afinput_exp_acyclic_indvary2_step2_batch_yyy10_bfs_4_sub05.af`
+  at index 2428 timing out at about 40 seconds.
+- The event log reports solved AF rows above 30 seconds and timeout
   reasons such as `timeout>40.0`; this is a runner contract issue independent
   of argumentation theory.
+
+## Evidence Source
+
+- Use `data\iccma\2025\runs\native-cnf-main-all-2025-auto-cap30-events.jsonl`
+  as the source event log for this workstream.
+- The log is intentionally incomplete after the user-requested stop. That is
+  acceptable because all ABA rows completed before the stop, and the AF
+  evidence needed here is only the runner timeout-boundary defect.
+- Do not launch another all-2025 benchmark during this workstream. Every
+  execution command must be a unit test, fixture builder run, or targeted
+  single-row/profile command named below.
 
 ## Paper Page Anchors
 
@@ -100,6 +120,7 @@ closure, and structural graph definitions.
    - Create the dedicated experiment branch
      `exp/aba-abcgen-structural-telemetry`.
    - Leave unrelated untracked files alone.
+   - Do not rerun the broad all-2025 benchmark.
 
 2. Paper reread gate:
    - Reread every page image listed in Paper Page Anchors.
@@ -146,7 +167,12 @@ closure, and structural graph definitions.
      and `--sample-out tests\manifests\iccma2025-abcgen-10x10.json`.
    - Filter source rows to `kind == "aba"`, event `instance_kind == "aba"`,
      `status in {"solved", "timeout"}`, and subtracks that actually ran.
-   - Select exactly 10 timeout rows and exactly 10 solved rows.
+   - Construct the hard ABA cluster from structural telemetry over the completed
+     ABA prefix. The script may report benchmark source paths in the fixture,
+     but it must not use substring tests such as `abcgen` or `aba_` to decide
+     cluster membership.
+   - Select exactly 10 timeout rows and exactly 10 solved rows from that
+     structural cluster.
    - For each timeout row, record one solved match chosen by nearest structural
      telemetry vector over manifest counts and API telemetry, not by filename
      tokens.
@@ -176,6 +202,11 @@ closure, and structural graph definitions.
        `parent`, `archive`, `label`, or `year`;
      - at least one distinctive feature appears in three or more timeout/solved
        pairs.
+   - Add a production-path search gate that fails if source code routes on the
+     historical benchmark label:
+     `rg -n -F -- "abcgen" src tools tests`.
+     The only allowed matches are this workstream, the fixture filename, and
+     tests that assert the label is not used as a decision feature.
    - If this gate fails, the workstream is not complete and no optimizer
      implementation starts.
 
@@ -192,6 +223,7 @@ uv run pytest -q tests\test_iccma_runner_timeout_contract.py
 uv run pytest -q tests\test_aba_structural_telemetry.py
 uv run tools\aba_abcgen_telemetry.py --manifest data\iccma\2025\manifests\iccma-2025-manifest.json --event-log data\iccma\2025\runs\native-cnf-main-all-2025-auto-cap30-events.jsonl --sample-out tests\manifests\iccma2025-abcgen-10x10.json
 uv run pytest -q tests\test_aba_abcgen_telemetry_workstream.py tests\test_aba_structural_telemetry.py tests\test_iccma_runner_timeout_contract.py
+rg -n -F -- "abcgen" src tools tests
 uv run tools\iccma2025_run_native.py --backend auto --max-af-arguments 100000000 --max-aba-assumptions 100000000 --timeout-seconds 30 --only-instance <fixture-timeout-instance> --only-subtrack <fixture-subtrack> --profile-workers-dir data\iccma\2025\profiles\abcgen-10x10 --profile-worker-subtrack <fixture-subtrack> --label abcgen-profile-one --event-log-path data\iccma\2025\runs\abcgen-profile-one-events.jsonl
 ```
 
@@ -201,6 +233,8 @@ uv run tools\iccma2025_run_native.py --backend auto --max-af-arguments 100000000
 - The timeout-boundary test failed before the runner fix and passed after it.
 - `tests/manifests/iccma2025-abcgen-10x10.json` contains exactly 10 timeout
   rows, 10 solved rows, and 10 structurally matched pairs.
+- The fixture builder used the stopped event log and did not require a new
+  all-2025 run.
 - The structural telemetry properties pass and contain no filename/year route
   dependency.
 - The discriminator gate finds at least one non-filename structural feature that
