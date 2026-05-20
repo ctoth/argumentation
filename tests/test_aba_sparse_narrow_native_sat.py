@@ -59,6 +59,13 @@ def test_native_sparse_narrow_stable_matches_oracle(framework: ABAFramework) -> 
         assert result.extension is None
     assert result.telemetry["clingo_solver_calls"] == 0
     assert result.telemetry["native_sparse_narrow_solver_checks"] >= 1
+    assert len(result.telemetry["native_sparse_narrow_solve_times_ms"]) == result.telemetry[
+        "native_sparse_narrow_solver_checks"
+    ]
+    assert all(
+        elapsed_ms >= 0
+        for elapsed_ms in result.telemetry["native_sparse_narrow_solve_times_ms"]
+    )
     assert result.telemetry["native_sparse_narrow_z3_main_checks"] == 0
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 import importlib
+import time
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
@@ -937,6 +938,7 @@ class _NativeSparseNarrowStableSolver:
             "native_sparse_narrow_closure_checks": 0,
             "native_sparse_narrow_rule_firings": 0,
             "native_sparse_narrow_loop_formulas": 0,
+            "native_sparse_narrow_solve_times_ms": [],
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
             "prefsat_attacker_bitset_rule_firings": 0,
@@ -1011,7 +1013,11 @@ class _NativeSparseNarrowStableSolver:
         assumptions = [self.in_vars[assumption] for assumption in sorted(require_assumptions, key=repr)]
         while True:
             self.telemetry["native_sparse_narrow_solver_checks"] += 1
-            if not self.solver.solve(assumptions=assumptions):
+            started = time.perf_counter()
+            solved = self.solver.solve(assumptions=assumptions)
+            elapsed_ms = int(round((time.perf_counter() - started) * 1000))
+            self.telemetry["native_sparse_narrow_solve_times_ms"].append(elapsed_ms)
+            if not solved:
                 return None
             self.telemetry["native_sparse_narrow_candidate_models"] += 1
             extension = self._model_extension()
