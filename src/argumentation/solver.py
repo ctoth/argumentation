@@ -11,6 +11,7 @@ from argumentation import adf as adf_semantics
 from argumentation import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
+    native_sparse_narrow_sat_extension as native_sparse_narrow_aba_extension,
     sat_stable_acceptance as sat_aba_stable_acceptance,
     sat_stable_extension as sat_aba_stable_extension,
     sat_support_acceptance as sat_aba_support_acceptance,
@@ -40,6 +41,7 @@ from argumentation.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.aba_route_policy import sparse_narrow_native_sat_shape
 from argumentation.sat_encoding import (
     sat_extensions,
 )
@@ -158,6 +160,18 @@ def solve_aba_single_extension(
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
+        if (
+            semantics in {"preferred", "stable"}
+            and sparse_narrow_native_sat_shape(framework)
+        ):
+            try:
+                result = native_sparse_narrow_aba_extension(framework, semantics)
+            except RuntimeError as exc:
+                return _aba_sat_runtime_unavailable(exc)
+            return SingleExtensionSolverSuccess(
+                extension=result.extension,
+                metadata=result.route_metadata | result.telemetry,
+            )
         if semantics == "stable":
             try:
                 return SingleExtensionSolverSuccess(
@@ -551,6 +565,14 @@ def _auto_aba_backend_for_framework(
     task: str,
     framework: ABAInput,
 ) -> str:
+    if (
+        backend == "auto"
+        and semantics in {"preferred", "stable"}
+        and task == "single-extension"
+        and isinstance(framework, ABAFramework)
+        and sparse_narrow_native_sat_shape(framework)
+    ):
+        return "sat"
     if (
         backend == "auto"
         and semantics == "stable"
