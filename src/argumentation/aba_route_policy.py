@@ -49,8 +49,8 @@ def sparse_narrow_native_sat_shape(
         return False
     if not _is_flat_aba(framework):
         return False
-    atoms = len(framework.language - framework.assumptions)
-    if atoms == 0 or assumptions / atoms > 0.45:
+    language_size = len(framework.language)
+    if language_size == 0 or assumptions / language_size > 0.45:
         return False
     rules = len(framework.rules)
     if assumptions == 0 or rules / assumptions < 4.0:
