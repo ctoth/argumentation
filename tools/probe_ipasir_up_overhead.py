@@ -6,7 +6,7 @@ import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pysat.engines import Propagator
 from pysat.solvers import Solver
@@ -25,6 +25,8 @@ DEFAULT_CASES = (
     ProbeCase("medium", variables=700, clauses=3000, width=3),
     ProbeCase("aba_like", variables=10_000, clauses=33_000, width=3),
 )
+
+NoopMode = Literal["connect-only", "observe-all"]
 
 
 class CountingNoopPropagator(Propagator):
@@ -114,16 +116,17 @@ def run_solver(
     cnf: list[list[int]],
     *,
     variables: int,
-    observed: bool,
+    noop_mode: NoopMode | None,
 ) -> dict[str, Any]:
     propagator: CountingNoopPropagator | None = None
     started = time.perf_counter()
     with Solver(name="cadical195", bootstrap_with=cnf) as solver:
-        if observed:
+        if noop_mode is not None:
             propagator = CountingNoopPropagator()
             solver.connect_propagator(propagator)
-            for variable in range(1, variables + 1):
-                solver.observe(variable)
+            if noop_mode == "observe-all":
+                for variable in range(1, variables + 1):
+                    solver.observe(variable)
         status = solver.solve()
         stats = solver.accum_stats()
     elapsed = time.perf_counter() - started
@@ -140,6 +143,7 @@ def summarize_pair(
     case: ProbeCase,
     seed: int,
     repeat: int,
+    noop_mode: NoopMode,
 ) -> dict[str, Any]:
     cnf = hidden_assignment_cnf(
         variables=case.variables,
@@ -148,30 +152,35 @@ def summarize_pair(
         seed=seed,
     )
     baseline_runs = [
-        run_solver(cnf, variables=case.variables, observed=False)
+        run_solver(cnf, variables=case.variables, noop_mode=None)
         for _ in range(repeat)
     ]
-    observed_runs = [
-        run_solver(cnf, variables=case.variables, observed=True)
+    noop_runs = [
+        run_solver(cnf, variables=case.variables, noop_mode=noop_mode)
         for _ in range(repeat)
     ]
     baseline_median = median(run["elapsed_seconds"] for run in baseline_runs)
-    observed_median = median(run["elapsed_seconds"] for run in observed_runs)
+    noop_median = median(run["elapsed_seconds"] for run in noop_runs)
     overhead_ratio = (
-        observed_median / baseline_median
+        noop_median / baseline_median
         if baseline_median > 0
         else None
     )
-    return {
+    payload = {
         "case": case.__dict__,
         "seed": seed,
         "repeat": repeat,
+        "noop_mode": noop_mode,
         "baseline_runs": baseline_runs,
-        "observed_noop_runs": observed_runs,
+        "noop_runs": noop_runs,
         "baseline_median_seconds": baseline_median,
-        "observed_noop_median_seconds": observed_median,
+        "noop_median_seconds": noop_median,
         "overhead_ratio": overhead_ratio,
     }
+    if noop_mode == "observe-all":
+        payload["observed_noop_runs"] = noop_runs
+        payload["observed_noop_median_seconds"] = noop_median
+    return payload
 
 
 def median(values: list[float]) -> float:
@@ -204,6 +213,15 @@ def main(argv: list[str] | None = None) -> int:
         description="Measure PySAT cadical195 IPASIR-UP no-op propagator overhead."
     )
     parser.add_argument("--case", action="append", help="name:variables:clauses:width")
+    parser.add_argument(
+        "--noop-mode",
+        choices=("connect-only", "observe-all"),
+        default="observe-all",
+        help=(
+            "connect-only attaches the propagator without observed variables; "
+            "observe-all also observes every variable."
+        ),
+    )
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--seed", type=int, default=20260520)
     parser.add_argument("--output-json", type=Path)
@@ -212,12 +230,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.repeat < 1:
         raise ValueError("--repeat must be positive")
     results = [
-        summarize_pair(case=case, seed=args.seed + index, repeat=args.repeat)
+        summarize_pair(
+            case=case,
+            seed=args.seed + index,
+            repeat=args.repeat,
+            noop_mode=args.noop_mode,
+        )
         for index, case in enumerate(parse_cases(args.case))
     ]
     payload = {
         "seed": args.seed,
         "repeat": args.repeat,
+        "noop_mode": args.noop_mode,
         "results": results,
     }
     text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
