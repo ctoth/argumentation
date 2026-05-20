@@ -28,32 +28,18 @@ def main(argv: list[str] | None = None) -> int:
 
     fixture = _load_fixture(args.fixture)
     rows = fixture["rows"]
-    only_instances = frozenset(str(row["relative_path"]) for row in rows)
-    only_subtracks = frozenset(str(row["subtrack"]) for row in rows)
     max_aba_assumptions = max(int(row["manifest"]["assumptions"]) for row in rows)
     if args.event_log_path is not None:
         args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
         args.event_log_path.write_text("", encoding="utf-8")
 
-    config = RunConfig(
-        root=args.root,
-        backend=args.backend,
-        iccma_binary=None,
-        max_af_arguments=-1,
-        max_aba_assumptions=max_aba_assumptions,
-        timeout_seconds=args.timeout_seconds,
-        progress=True,
-        event_log_path=args.event_log_path,
-        only_instances=only_instances,
-        only_subtracks=only_subtracks,
-    )
     print(
         json.dumps(
             {
                 "event": "aba_10x10_fixture_start",
                 "rows": len(rows),
-                "instances": len(only_instances),
-                "subtracks": sorted(only_subtracks),
+                "instances": len({str(row["relative_path"]) for row in rows}),
+                "subtracks": sorted({str(row["subtrack"]) for row in rows}),
                 "timeout_seconds": args.timeout_seconds,
             },
             sort_keys=True,
@@ -61,7 +47,41 @@ def main(argv: list[str] | None = None) -> int:
         file=sys.stderr,
         flush=True,
     )
-    actual_rows = run_native(config)
+    actual_rows: list[dict[str, Any]] = []
+    for index, fixture_row in enumerate(rows, start=1):
+        print(
+            json.dumps(
+                {
+                    "event": "aba_10x10_fixture_row",
+                    "index": index,
+                    "total": len(rows),
+                    "instance": fixture_row["relative_path"],
+                    "subtrack": fixture_row["subtrack"],
+                },
+                sort_keys=True,
+            ),
+            file=sys.stderr,
+            flush=True,
+        )
+        config = RunConfig(
+            root=args.root,
+            backend=args.backend,
+            iccma_binary=None,
+            max_af_arguments=-1,
+            max_aba_assumptions=max_aba_assumptions,
+            timeout_seconds=args.timeout_seconds,
+            progress=True,
+            event_log_path=args.event_log_path,
+            only_instances=frozenset({str(fixture_row["relative_path"])}),
+            only_subtracks=frozenset({str(fixture_row["subtrack"])}),
+        )
+        row_batch = run_native(config)
+        if len(row_batch) != 1:
+            raise RuntimeError(
+                "fixture row did not map to exactly one runner row: "
+                f"{fixture_row['relative_path']} {fixture_row['subtrack']} -> {len(row_batch)}"
+            )
+        actual_rows.append(row_batch[0])
     summary = summarize(actual_rows)
     payload = {
         "fixture": str(args.fixture),
