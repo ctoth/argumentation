@@ -153,3 +153,30 @@ def test_duplicate_syntactic_rules_do_not_create_fake_atoms_or_assumptions() -> 
     assert telemetry["atoms"] == 3
     assert telemetry["assumptions"] == 1
     assert telemetry["rules"] == 1
+
+
+def test_deep_rule_dependency_chain_does_not_recurse_over_python_stack() -> None:
+    from argumentation.aba_telemetry import aba_structural_telemetry
+
+    assumption = lit("a")
+    contrary = lit("ca")
+    derived = [lit(f"d{i}") for i in range(1200)]
+    rules = [
+        Rule((assumption,), derived[0], "strict"),
+        *[
+            Rule((derived[index - 1],), derived[index], "strict")
+            for index in range(1, len(derived))
+        ],
+    ]
+    framework = ABAFramework(
+        language=frozenset([assumption, contrary, *derived]),
+        rules=frozenset(rules),
+        assumptions=frozenset({assumption}),
+        contrary={assumption: contrary},
+    )
+
+    telemetry = aba_structural_telemetry(framework)
+
+    assert telemetry["rules"] == 1200
+    assert telemetry["rule_dependency_scc_count"] == 1200
+    assert telemetry["rule_dependency_max_scc_size"] == 1
