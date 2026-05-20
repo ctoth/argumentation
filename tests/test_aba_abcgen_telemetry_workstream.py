@@ -25,15 +25,20 @@ def test_abcgen_10x10_fixture_is_structural_not_identity_based() -> None:
     payload = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
     rows = payload["rows"]
     pairs = payload["pairs"]
+    cluster = payload["selection"]["structural_cluster"]
 
     assert len([row for row in rows if row["status"] == "timeout"]) == 10
     assert len([row for row in rows if row["status"] == "solved"]) == 10
     assert len(pairs) == 10
+    assert cluster == "dense_assumption_language|narrow_rule_bodies"
 
     for row in rows:
+        assert row["structural_cluster"] == cluster
         telemetry = row["telemetry"]
         assert STRUCTURAL_TELEMETRY_KEYS <= set(telemetry)
         assert not (FORBIDDEN_FEATURE_KEYS & set(telemetry))
+        assert telemetry["assumption_to_atom_ratio"] >= 0.5
+        assert telemetry["max_rule_body_width"] <= 3
 
     distinctive_counter: Counter[str] = Counter()
     for pair in pairs:

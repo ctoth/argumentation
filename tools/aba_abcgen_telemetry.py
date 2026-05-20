@@ -75,8 +75,22 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
             f"{len(timeout_candidates)} timeout and {len(solved_candidates)} solved"
         )
 
-    selected_timeouts = _select_structural_timeouts(timeout_candidates, limit=10)
-    pairs = _pair_with_solved_matches(selected_timeouts, solved_candidates)
+    cluster_key = _dominant_timeout_cluster(timeout_candidates)
+    cluster_timeouts = [
+        candidate for candidate in timeout_candidates
+        if candidate["structural_cluster"] == cluster_key
+    ]
+    cluster_solved = [
+        candidate for candidate in solved_candidates
+        if candidate["structural_cluster"] == cluster_key
+    ]
+    if len(cluster_timeouts) < 10 or len(cluster_solved) < 10:
+        raise SystemExit(
+            f"structural cluster {cluster_key!r} has {len(cluster_timeouts)} timeout "
+            f"and {len(cluster_solved)} solved rows"
+        )
+    selected_timeouts = _select_structural_timeouts(cluster_timeouts, limit=10)
+    pairs = _pair_with_solved_matches(selected_timeouts, cluster_solved)
     selected_solved_ids = {pair["solved_row"] for pair in pairs}
     selected_rows = [
         *selected_timeouts,
@@ -91,6 +105,7 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
             "timeout_count": 10,
             "solved_count": 10,
             "method": "structural_telemetry_nearest_match",
+            "structural_cluster": cluster_key,
             "numeric_features": list(NUMERIC_FEATURES),
         },
         "rows": selected_rows,
@@ -162,6 +177,7 @@ def _candidate_from_event(
         "subtrack": event.get("subtrack"),
         "status": event.get("status"),
         "instance_kind": event.get("instance_kind"),
+        "structural_cluster": _structural_cluster(telemetry),
         "relative_path": event.get("instance"),
         "elapsed_seconds": event.get("elapsed_seconds"),
         "answer": event.get("answer"),
@@ -174,6 +190,43 @@ def _candidate_from_event(
         },
         "telemetry": telemetry,
     }
+
+
+def _dominant_timeout_cluster(candidates: list[dict[str, Any]]) -> str:
+    counts: dict[str, int] = {}
+    for candidate in candidates:
+        cluster = str(candidate["structural_cluster"])
+        counts[cluster] = counts.get(cluster, 0) + 1
+    return sorted(
+        counts,
+        key=lambda cluster: (
+            -counts[cluster],
+            _cluster_rank(cluster),
+            cluster,
+        ),
+    )[0]
+
+
+def _cluster_rank(cluster: str) -> tuple[int, int]:
+    density, width = cluster.split("|", maxsplit=1)
+    return (
+        0 if density == "dense_assumption_language" else 1,
+        0 if width == "narrow_rule_bodies" else 1,
+    )
+
+
+def _structural_cluster(telemetry: dict[str, object]) -> str:
+    density = (
+        "dense_assumption_language"
+        if float(telemetry["assumption_to_atom_ratio"]) >= 0.5
+        else "sparse_assumption_language"
+    )
+    width = (
+        "narrow_rule_bodies"
+        if int(telemetry["max_rule_body_width"]) <= 3
+        else "wide_rule_bodies"
+    )
+    return f"{density}|{width}"
 
 
 def _select_structural_timeouts(candidates: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
