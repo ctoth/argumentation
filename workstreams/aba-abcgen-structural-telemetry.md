@@ -113,6 +113,25 @@ closure, and structural graph definitions.
 - Do not add optimizer routes, fallback wrappers, or compatibility aliases in
   this workstream.
 
+## Hypothesis-Hard Rules
+
+- Contract tests must be authored and run before the production code they
+  constrain is implemented.
+- A semantic-only property is insufficient for this workstream. Every test group
+  must include at least one operational assertion: timeout boundary, no filename
+  decision features, deterministic telemetry keys, structural match evidence,
+  or bounded fixture counts.
+- The fixture-builder contract must fail on a selector that relies on raw
+  instance labels. It must inspect the fixture records and prove every
+  `decision_features` / `distinctive_features` key is structural telemetry, not
+  path identity.
+- The runner timeout contract must fail on the current `timeout_seconds + 10.0`
+  behavior before `tools/iccma2025_run_native.py` is edited.
+- The telemetry property tests must fail on a missing `aba_telemetry` API before
+  `src/argumentation/aba_telemetry.py` is added.
+- If a contract cannot be made to fail before implementation, stop and repair
+  the contract. Do not substitute a benchmark run for the missing property.
+
 ## Ordered Phases
 
 1. Branch and baseline gate:
@@ -133,6 +152,8 @@ closure, and structural graph definitions.
    - Add `tests/test_iccma_runner_timeout_contract.py` proving the runner
      reports `status == "timeout"` and a reason derived from the configured
      timeout, not from an internal 40 second cap.
+   - The first run of this test must fail against the current runner because
+     `run_or_skip` gives `run_child` hidden slack beyond the configured row cap.
    - Run the timeout test before editing the runner and record the failing
      assertion in the commit message or workstream completion evidence.
    - Fix `tools/iccma2025_run_native.py` so subprocess timeout, profile
@@ -156,6 +177,8 @@ closure, and structural graph definitions.
      - duplicate syntactic rules are counted as rules but do not create fake
        new atoms or assumptions;
      - SCC and histogram summaries are deterministic across repeated calls.
+   - Run these properties before adding `src/argumentation/aba_telemetry.py`;
+     the missing API is the required first failure.
    - Add a focused real-instance contract that parses at least one solved and
      one timed-out fixture row and produces positive, bounded telemetry.
 
@@ -178,6 +201,8 @@ closure, and structural graph definitions.
      tokens.
    - Each pair record must include `timeout_row`, `solved_row`,
      `shared_features`, `distinctive_features`, and `match_distance`.
+   - Each pair record must include `decision_features`; every key in that map
+     must be one of the structural telemetry fields emitted by the API.
    - The builder exits nonzero unless every pair has at least one
      non-filename `distinctive_features` entry.
 
@@ -230,6 +255,9 @@ uv run tools\iccma2025_run_native.py --backend auto --max-af-arguments 100000000
 ## Completion Evidence
 
 - Page images listed above were reread directly before source implementation.
+- The timeout-boundary and telemetry-property tests were run once before their
+  corresponding production code existed or was fixed, and failed for the
+  expected reasons.
 - The timeout-boundary test failed before the runner fix and passed after it.
 - `tests/manifests/iccma2025-abcgen-10x10.json` contains exactly 10 timeout
   rows, 10 solved rows, and 10 structurally matched pairs.
