@@ -86,6 +86,8 @@ class RunConfig:
     profile_workers_dir: Path | None = None
     profile_workers_format: str = "speedscope"
     profile_worker_subtracks: frozenset[str] = frozenset()
+    only_instances: frozenset[str] = frozenset()
+    only_subtracks: frozenset[str] = frozenset()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -133,6 +135,18 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Only profile this subtrack; repeat to profile multiple subtracks. Defaults to all.",
     )
+    parser.add_argument(
+        "--only-instance",
+        action="append",
+        default=[],
+        help="Run only this manifest relative_path; repeat to run multiple instances.",
+    )
+    parser.add_argument(
+        "--only-subtrack",
+        action="append",
+        default=[],
+        help="Run only this subtrack; repeat to run multiple subtracks.",
+    )
     args = parser.parse_args(argv)
     if args.event_log_path is not None:
         args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -150,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
         profile_workers_dir=args.profile_workers_dir,
         profile_workers_format=args.profile_workers_format,
         profile_worker_subtracks=frozenset(args.profile_worker_subtrack),
+        only_instances=frozenset(args.only_instance),
+        only_subtracks=frozenset(args.only_subtrack),
     )
     rows = run_native(config)
     output_dir = config.root / "runs"
@@ -199,8 +215,10 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         (instance, task)
         for instance in manifest
         if normalized_instance_kind(instance) in {"af", "aba"}
+        if not config.only_instances or str(instance["relative_path"]) in config.only_instances
         for task in task_matrix
         if task["instance_kind"] == normalized_instance_kind(instance)
+        if not config.only_subtracks or str(task["subtrack"]) in config.only_subtracks
     ]
     log_run_event(config, "iccma_jobs_built", jobs=len(jobs))
     rows: list[dict[str, Any]] = []

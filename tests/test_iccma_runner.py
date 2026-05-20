@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import lzma
 from io import StringIO
 from pathlib import Path
@@ -13,6 +14,7 @@ from tools.iccma2025_run_native import (
     read_instance_text,
     resolve_instance_path,
     RunConfig,
+    run_native,
     run_child,
     run_or_skip,
     worker_profile_path,
@@ -137,6 +139,74 @@ def test_run_or_skip_skips_missing_acceptance_query_before_worker(
 
     assert row["status"] == "skipped"
     assert row["reason"] == "missing_query"
+
+
+def test_run_native_filters_exact_instance_and_subtrack_before_solving(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    (manifests / "iccma-2025-manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "kind": "apx",
+                    "relative_path": "keep.apx",
+                    "arguments_or_atoms": 1,
+                },
+                {
+                    "kind": "apx",
+                    "relative_path": "skip.apx",
+                    "arguments_or_atoms": 1,
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (manifests / "iccma-2025-task-matrix.json").write_text(
+        json.dumps(
+            [
+                {"track": "main", "subtrack": "SE-CO", "instance_kind": "af"},
+                {"track": "main", "subtrack": "SE-PR", "instance_kind": "af"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    seen: list[tuple[str, str]] = []
+
+    def record_job(_config, instance, task):
+        seen.append((instance["relative_path"], task["subtrack"]))
+        return {
+            "instance": instance["relative_path"],
+            "subtrack": task["subtrack"],
+            "status": "solved",
+        }
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_or_skip", record_job)
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=100,
+        max_aba_assumptions=100,
+        timeout_seconds=5.0,
+        progress=False,
+        event_log_path=None,
+        only_instances=frozenset({"keep.apx"}),
+        only_subtracks=frozenset({"SE-CO"}),
+    )
+
+    rows = run_native(config)
+
+    assert seen == [("keep.apx", "SE-CO")]
+    assert rows == [
+        {
+            "instance": "keep.apx",
+            "subtrack": "SE-CO",
+            "status": "solved",
+        }
+    ]
 
 
 def test_run_child_streams_sat_check_events(tmp_path, capsys) -> None:
