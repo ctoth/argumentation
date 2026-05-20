@@ -8,7 +8,10 @@ import importlib
 from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet, derives
-from argumentation.aba_route_policy import native_cnf_prefsat_dense_shape
+from argumentation.aba_route_policy import (
+    SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
+    native_cnf_prefsat_dense_shape,
+)
 from argumentation.aspic import Literal, Rule
 
 
@@ -20,6 +23,13 @@ class RealPrefSatResult:
     prefsat_undec: dict[Literal, bool]
     telemetry: dict[str, int]
     progress_events: tuple[dict[str, int], ...]
+    route_metadata: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class NativeSparseNarrowSatResult:
+    extension: AssumptionSet | None
+    telemetry: dict[str, int]
     route_metadata: dict[str, Any]
 
 
@@ -100,6 +110,34 @@ def native_cnf_prefsat_extension(
     solver = _NativeCnfPrefSatSolver(framework)
     extension = solver.preferred_extension(require_assumptions=require_assumptions)
     return solver.result(extension)
+
+
+def native_sparse_narrow_sat_extension(
+    framework: ABAFramework,
+    semantics: str,
+    *,
+    require_assumptions: AssumptionSet = frozenset(),
+) -> NativeSparseNarrowSatResult:
+    if semantics == "preferred":
+        result = native_cnf_prefsat_extension(
+            framework,
+            require_assumptions=require_assumptions,
+        )
+        telemetry = _native_sparse_narrow_telemetry(result.telemetry)
+        return NativeSparseNarrowSatResult(
+            extension=result.extension,
+            telemetry=telemetry,
+            route_metadata=_native_sparse_narrow_route_metadata("preferred", telemetry),
+        )
+    if semantics == "stable":
+        solver = _NativeSparseNarrowStableSolver(framework)
+        extension = solver.stable_extension(require_assumptions=require_assumptions)
+        return NativeSparseNarrowSatResult(
+            extension=extension,
+            telemetry=dict(solver.telemetry),
+            route_metadata=_native_sparse_narrow_route_metadata("stable", solver.telemetry),
+        )
+    raise ValueError(f"unsupported sparse/narrow native SAT semantics: {semantics}")
 
 
 def should_use_native_cnf_prefsat(framework: ABAFramework) -> bool:
@@ -855,6 +893,149 @@ class _NativeCnfPrefSatSolver:
                 ),
             },
         )
+
+
+class _NativeSparseNarrowStableSolver:
+    def __init__(self, framework: ABAFramework) -> None:
+        solver_class = _load_pysat_solver()
+        self.framework = framework
+        self.assumptions = tuple(sorted(framework.assumptions, key=repr))
+        self._next_var = 1
+        self.in_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.solver = solver_class(name="glucose4")
+        self.telemetry = {
+            "clingo_solver_calls": 0,
+            "native_sparse_narrow_solver_checks": 0,
+            "native_sparse_narrow_candidate_models": 0,
+            "native_sparse_narrow_learned_clauses": 0,
+            "native_sparse_narrow_z3_main_checks": 0,
+            "native_sparse_narrow_closure_checks": 0,
+            "native_sparse_narrow_rule_firings": 0,
+            "prefsat_attacker_bitset_closure_checks": 0,
+            "prefsat_attacker_bitset_shrink_checks": 0,
+            "prefsat_attacker_bitset_rule_firings": 0,
+        }
+        self._closure = _BitsetHornClosure.from_framework(framework, self.telemetry)
+        self._contrary_bits = {
+            assumption: self._closure.literal_bits[framework.contrary[assumption]]
+            for assumption in self.assumptions
+        }
+        self._add_static_conflict_clauses()
+        self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
+
+    def _new_var(self) -> int:
+        variable = self._next_var
+        self._next_var += 1
+        return variable
+
+    def _add_clause(self, clause: list[int]) -> None:
+        self.solver.add_clause(clause)
+        self.telemetry["native_sparse_narrow_learned_clauses"] += 1
+
+    def _add_static_conflict_clauses(self) -> None:
+        empty_closure = self._closure.closure_mask(frozenset())
+        for target in self.assumptions:
+            if empty_closure & self._contrary_bits[target]:
+                self._add_clause([-self.in_vars[target]])
+        for source in self.assumptions:
+            closure = self._closure.closure_mask(frozenset({source}))
+            for target in self.assumptions:
+                if closure & self._contrary_bits[target]:
+                    if source == target:
+                        self._add_clause([-self.in_vars[target]])
+                    else:
+                        self._add_clause([-self.in_vars[source], -self.in_vars[target]])
+
+    def stable_extension(
+        self,
+        *,
+        require_assumptions: AssumptionSet = frozenset(),
+    ) -> AssumptionSet | None:
+        assumptions = [self.in_vars[assumption] for assumption in sorted(require_assumptions, key=repr)]
+        while True:
+            self.telemetry["native_sparse_narrow_solver_checks"] += 1
+            if not self.solver.solve(assumptions=assumptions):
+                return None
+            self.telemetry["native_sparse_narrow_candidate_models"] += 1
+            extension = self._model_extension()
+            refinement = self._stable_refinement(extension)
+            if refinement is None:
+                self._sync_closure_telemetry()
+                return extension
+            self._add_clause(refinement)
+            self._sync_closure_telemetry()
+
+    def _stable_refinement(self, extension: AssumptionSet) -> list[int] | None:
+        closure = self._closure.closure_mask(extension)
+        for target in sorted(extension, key=repr):
+            if closure & self._contrary_bits[target]:
+                support = self._closure.shrink_support(
+                    extension,
+                    self.framework.contrary[target],
+                )
+                return [
+                    -self.in_vars[target],
+                    *(
+                        -self.in_vars[assumption]
+                        for assumption in sorted(support - {target}, key=repr)
+                    ),
+                ]
+        for target in self.assumptions:
+            if target not in extension and not (closure & self._contrary_bits[target]):
+                outside = self.framework.assumptions - extension
+                return [
+                    *(self.in_vars[assumption] for assumption in sorted(outside, key=repr)),
+                    *(-self.in_vars[assumption] for assumption in sorted(extension, key=repr)),
+                ]
+        return None
+
+    def _model_extension(self) -> AssumptionSet:
+        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        return frozenset(
+            assumption
+            for assumption, variable in self.in_vars.items()
+            if variable in model
+        )
+
+    def _sync_closure_telemetry(self) -> None:
+        self.telemetry["native_sparse_narrow_closure_checks"] = self.telemetry[
+            "prefsat_attacker_bitset_closure_checks"
+        ]
+        self.telemetry["native_sparse_narrow_rule_firings"] = self.telemetry[
+            "prefsat_attacker_bitset_rule_firings"
+        ]
+
+
+def _native_sparse_narrow_telemetry(telemetry: dict[str, int]) -> dict[str, int]:
+    return {
+        **telemetry,
+        "clingo_solver_calls": 0,
+        "native_sparse_narrow_solver_checks": telemetry.get("native_cnf_solver_checks", 0),
+        "native_sparse_narrow_candidate_models": telemetry.get("native_cnf_candidate_models", 0),
+        "native_sparse_narrow_learned_clauses": telemetry.get("native_cnf_candidate_blocks", 0),
+        "native_sparse_narrow_z3_main_checks": telemetry.get("native_cnf_z3_main_checks", 0),
+        "native_sparse_narrow_closure_checks": telemetry.get(
+            "prefsat_attacker_bitset_closure_checks",
+            0,
+        ),
+        "native_sparse_narrow_rule_firings": telemetry.get(
+            "prefsat_attacker_bitset_rule_firings",
+            0,
+        ),
+    }
+
+
+def _native_sparse_narrow_route_metadata(
+    semantics: str,
+    telemetry: dict[str, int],
+) -> dict[str, Any]:
+    return {
+        "backend": "sat",
+        "algorithm": "native_sparse_narrow_sat",
+        "semantics": semantics,
+        "clingo_solver_calls": telemetry.get("clingo_solver_calls", 0),
+        "paper_page_images": SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
+    }
 
 
 class _RealPrefSatSolver:
@@ -2037,8 +2218,10 @@ def _load_clingo():
 
 __all__ = [
     "AssumptionKernel",
+    "NativeSparseNarrowSatResult",
     "RealPrefSatResult",
     "native_cnf_prefsat_extension",
+    "native_sparse_narrow_sat_extension",
     "real_prefsat_attack_edge_count",
     "real_prefsat_extension",
     "sat_stable_extension",
