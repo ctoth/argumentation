@@ -1,6 +1,6 @@
 # ABA abcgen Structural Telemetry Workstream
 
-Status: executable design.
+Status: completed on `exp/aba-abcgen-structural-telemetry`.
 
 Workflow actually requested: design the next concrete workstream after the
 ICCMA 2025 run showed the remaining ABA hard class is dominated by the
@@ -51,6 +51,9 @@ targeted reruns, not another full all-2025 sweep.
   query-acceptance inputs, and 160 timed out.
 - ABA timeout split observed from the completed ABA prefix: 131 rows in the
   benchmark family historically named `abcgen` and 29 generated `aba_*` rows.
+- Structural telemetry showed the hard historical benchmark family is the
+  `sparse_assumption_language|narrow_rule_bodies` cluster: 131 timeout rows and
+  109 solved rows in the stopped event log.
 - The first AF timeout class appears at large `admbuster` rows. For
   `AFs/admbuster_2500000.af`, multiple rows timed out around 40 seconds even
   though the configured cap was 30 seconds.
@@ -270,5 +273,9 @@ uv run tools\iccma2025_run_native.py --backend auto --max-af-arguments 100000000
   recurs in three or more timeout/solved pairs.
 - Four py-spy profiles exist under
   `data\iccma\2025\profiles\abcgen-10x10\` and are not committed.
-- The required pytest commands pass.
+- The required pytest command passed:
+  `uv run pytest -q tests\test_aba_abcgen_telemetry_workstream.py tests\test_aba_structural_telemetry.py tests\test_iccma_runner_timeout_contract.py tests\test_iccma_runner.py`
+  reported 22 passed in 1.63s.
+- `rg -n -F -- "abcgen" src tools tests` found no matches in `src` or `tools`;
+  matches were limited to the fixture and tests guarding the historical label.
 - `git status --short -- <Owned Paths>` is clean after the final commit.
