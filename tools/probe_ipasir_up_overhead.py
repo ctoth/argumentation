@@ -26,7 +26,7 @@ DEFAULT_CASES = (
     ProbeCase("aba_like", variables=10_000, clauses=33_000, width=3),
 )
 
-NoopMode = Literal["connect-only", "observe-all"]
+NoopMode = Literal["check-only", "connect-only", "observe-all"]
 
 
 class CountingNoopPropagator(Propagator):
@@ -83,6 +83,19 @@ class CountingNoopPropagator(Propagator):
         }
 
 
+class CheckOnlyNoopPropagator(Propagator):
+    def __init__(self) -> None:
+        super().__init__()
+        self.check_models = 0
+
+    def check_model(self, model: list[int]) -> bool:
+        self.check_models += 1
+        return True
+
+    def counters(self) -> dict[str, int]:
+        return {"check_models": self.check_models}
+
+
 def hidden_assignment_cnf(
     *,
     variables: int,
@@ -118,11 +131,14 @@ def run_solver(
     variables: int,
     noop_mode: NoopMode | None,
 ) -> dict[str, Any]:
-    propagator: CountingNoopPropagator | None = None
+    propagator: Any | None = None
     started = time.perf_counter()
     with Solver(name="cadical195", bootstrap_with=cnf) as solver:
         if noop_mode is not None:
-            propagator = CountingNoopPropagator()
+            if noop_mode == "check-only":
+                propagator = CheckOnlyNoopPropagator()
+            else:
+                propagator = CountingNoopPropagator()
             solver.connect_propagator(propagator)
             if noop_mode == "observe-all":
                 for variable in range(1, variables + 1):
@@ -215,10 +231,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--case", action="append", help="name:variables:clauses:width")
     parser.add_argument(
         "--noop-mode",
-        choices=("connect-only", "observe-all"),
+        choices=("check-only", "connect-only", "observe-all"),
         default="observe-all",
         help=(
-            "connect-only attaches the propagator without observed variables; "
+            "check-only attaches a minimal check_model propagator; "
+            "connect-only attaches the counting propagator without observed variables; "
             "observe-all also observes every variable."
         ),
     )
