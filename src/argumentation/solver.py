@@ -567,7 +567,7 @@ def _auto_aba_backend_for_framework(
 ) -> str:
     if (
         backend == "auto"
-        and semantics in {"preferred", "stable"}
+        and semantics == "preferred"
         and task == "single-extension"
         and isinstance(framework, ABAFramework)
         and sparse_narrow_native_sat_shape(framework)
