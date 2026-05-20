@@ -87,7 +87,7 @@ def test_auto_single_extension_sparse_narrow_never_calls_clingo(monkeypatch, sem
 
 def sparse_narrow_framework(assumptions: int, *, rule_ratio: int) -> ABAFramework:
     assumption_literals = tuple(lit(f"a{index}") for index in range(assumptions))
-    atom_count = assumptions * 3
+    atom_count = assumptions * 4
     atoms = tuple(lit(f"x{index}") for index in range(atom_count))
     rules = []
     for index in range(assumptions * rule_ratio):
