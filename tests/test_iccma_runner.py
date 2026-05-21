@@ -17,6 +17,7 @@ from tools.iccma2025_run_native import (
     run_native,
     run_child,
     run_or_skip,
+    solve_aba_job,
     worker_profile_path,
     write_csv,
 )
@@ -425,6 +426,107 @@ def test_write_csv_accepts_profiled_rows(tmp_path) -> None:
     header = output.read_text(encoding="utf-8").splitlines()[0]
     assert "profile_path" in header
     assert "solver_metadata" in header
+
+
+def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
+    tmp_path, monkeypatch
+) -> None:
+    from argumentation.solver import SingleExtensionSolverSuccess
+
+    instance_path = tmp_path / "extracted" / "instances" / "case.aba"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("ignored by parser monkeypatch\n", encoding="utf-8")
+    framework = object()
+    captured = {}
+
+    monkeypatch.setattr("argumentation.iccma.parse_aba", lambda text: framework)
+
+    def fake_solve(framework_arg, **kwargs):
+        captured["framework"] = framework_arg
+        captured["kwargs"] = kwargs
+        return SingleExtensionSolverSuccess(
+            extension=frozenset(),
+            metadata={
+                "solver": "clingo_multishot",
+                "clingo_control_args": ("--models=0", "--warn=none", "--configuration=frumpy"),
+                "clingo_statistics": {"solving": {"solvers": {"choices": 7.0}}},
+            },
+        )
+
+    monkeypatch.setattr("argumentation.solver.solve_aba_single_extension", fake_solve)
+
+    result = solve_aba_job(
+        {
+            "root": str(tmp_path),
+            "backend": "auto",
+            "solver_timeout_seconds": 40,
+            "clingo_control_args": ["--configuration=frumpy"],
+            "collect_clingo_statistics": True,
+            "instance": {
+                "kind": "aba",
+                "relative_path": "case.aba",
+                "arguments_or_atoms": 1,
+            },
+            "task": {
+                "track": "main",
+                "subtrack": "SE-ST",
+                "instance_kind": "aba",
+            },
+        }
+    )
+
+    assert captured["framework"] is framework
+    assert captured["kwargs"]["semantics"] == "stable"
+    assert captured["kwargs"]["backend"] == "auto"
+    assert captured["kwargs"]["clingo_control_args"] == ("--configuration=frumpy",)
+    assert captured["kwargs"]["collect_clingo_statistics"] is True
+    assert result["solver_metadata"]["clingo_statistics"] == {
+        "solving": {"solvers": {"choices": 7.0}}
+    }
+
+
+def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeypatch) -> None:
+    from argumentation.solver import SingleExtensionSolverSuccess
+
+    instance_path = tmp_path / "extracted" / "instances" / "case.aba"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("ignored by parser monkeypatch\n", encoding="utf-8")
+    captured = {}
+
+    monkeypatch.setattr("argumentation.iccma.parse_aba", lambda text: object())
+
+    def fake_solve(framework_arg, **kwargs):
+        captured["kwargs"] = kwargs
+        return SingleExtensionSolverSuccess(
+            extension=frozenset(),
+            metadata={
+                "solver": "clingo_multishot",
+                "clingo_control_args": ("--models=0", "--warn=none"),
+            },
+        )
+
+    monkeypatch.setattr("argumentation.solver.solve_aba_single_extension", fake_solve)
+
+    solve_aba_job(
+        {
+            "root": str(tmp_path),
+            "backend": "auto",
+            "solver_timeout_seconds": 40,
+            "instance": {
+                "kind": "aba",
+                "relative_path": "case.aba",
+                "arguments_or_atoms": 1,
+            },
+            "task": {
+                "track": "main",
+                "subtrack": "SE-ST",
+                "instance_kind": "aba",
+            },
+        }
+    )
+
+    assert captured["kwargs"]["clingo_control_args"] == ()
+    assert captured["kwargs"]["collect_clingo_statistics"] is False
 
 
 def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
