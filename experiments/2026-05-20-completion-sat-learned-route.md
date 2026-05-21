@@ -26,3 +26,15 @@ Reason: this became the strongest verified branch path: targeted tests passed
 and the focused gate reached four solved rows with one remaining timeout in
 the prior run record. It was not yet merged to `main` when this file was
 written.
+
+## Retroactive protocol audit
+
+Protocol status: kept branch baseline; remaining failure diagnosis incomplete.
+
+The record supports completion SAT as the strongest branch path at the time,
+but the one remaining timeout is not diagnosed here. The kept baseline is a
+real comparative result; the unsolved remainder still requires profiler or
+solver telemetry before the next optimization.
+
+Required follow-up: profile the remaining completion-SAT timeout row before
+adding another completion-SAT refinement.
