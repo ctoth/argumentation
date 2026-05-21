@@ -22,12 +22,13 @@ SCC loop materialization is not a free win for this class.
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: `promotion no-go; gate-only static-loop failure`.
 
 The record says static SCC loop preload made the gate worse, but it does not
 show whether the added clauses increased SAT solve time, formula build time, or
 later refinement cost. That distinction matters before selecting another loop
-preload variant.
+preload variant, so this record should not be treated as a full mechanism
+diagnosis.
 
 Required follow-up: profile or collect solver telemetry on the same row before
 reviving static loop materialization.
