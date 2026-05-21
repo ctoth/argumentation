@@ -20,3 +20,16 @@ Outcome: failed.
 Reason: validation kept the seed semantically safe, but it did not improve
 the operational gate. Correct seeds are not automatically useful solver
 guidance.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record proves that validated seeds did not improve the gate, but it does
+not profile or otherwise measure whether seeding failed because it did not
+change the first model, later refinement, clause learning, or candidate
+validation cost.
+
+Required follow-up: do not revive seed work without telemetry showing which
+solver phase the seed is expected to affect and whether that phase actually
+changes.
