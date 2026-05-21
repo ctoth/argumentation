@@ -21,3 +21,14 @@ Outcome: kept, with conflict learning deferred.
 
 Reason: validated pruning is admissible evidence; eager conflict learning was
 not yet justified by the gate and was kept out of the main path.
+
+## Retroactive protocol audit
+
+Protocol status: kept guarded refinement; eager-learning diagnosis incomplete.
+
+The validated pruning portion is a kept result because it has semantic
+validation and fixture gating. The deferred eager conflict-learning portion is
+not a diagnosed failure; it was simply not justified by the gate.
+
+Required follow-up: before adding eager conflict learning, gather solver
+telemetry proving it reduces the hard-row search enough to pay for itself.
