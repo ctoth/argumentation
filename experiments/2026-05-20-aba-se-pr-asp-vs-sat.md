@@ -89,3 +89,15 @@ the full 10x10 fixture. The expected production improvement is from `9/20`
 solved to `10/20` solved if the boundary row remains stable under the full
 fixture run.
 
+## Retroactive protocol audit
+
+Protocol status: exploratory metric result; diagnosis completed by follow-up
+boundary profile.
+
+The ASP-vs-SAT matrix is a valid comparison showing one ASP-only win and no
+invalid witness, but the win was too close to the timeout boundary to justify
+promotion by itself. The follow-up boundary-stability record supplies the
+missing diagnosis: clingo solve dominates and the row is unstable at the gate.
+
+Required follow-up: use this record only as the lead that motivated the
+boundary profile, not as standalone route-promotion evidence.
