@@ -31,6 +31,9 @@ Generated diagnostic outputs:
 - `data/iccma/2025/runs/direct-asp-auto-hard-row.csv`
 - `data/iccma/2025/runs/direct-asp-auto-10x10.json`
 - `data/iccma/2025/runs/direct-asp-auto-10x10.events.jsonl`
+- `data/iccma/2025/runs/direct-asp-auto-10x10-shape-manifest.json`
+- `data/iccma/2025/runs/direct-asp-auto-10x10-validated.json`
+- `data/iccma/2025/runs/direct-asp-auto-10x10-validated.csv`
 
 These diagnostics were not promoted as source artifacts.
 
@@ -80,6 +83,18 @@ Outcome: `9` solved, `11` timed out, `3` native sparse/narrow SAT routes, and
 `6` clingo solver calls. The known previous fixture baseline was `5` solved and
 `15` timed out.
 
+Validation-backed 10x10 shape gate:
+
+```powershell
+jq '[.rows[] | {year: 2025, track, subtrack, instance_kind, instance: .relative_path, arguments_or_atoms: .manifest.arguments_or_atoms}]' tests\manifests\iccma2025-abcgen-10x10.json > data\iccma\2025\runs\direct-asp-auto-10x10-shape-manifest.json
+uv run tools\aba_shape_benchmark.py --timeouts data\iccma\2025\runs\direct-asp-auto-10x10-shape-manifest.json --backend auto --timeout-seconds 30 --output-json data\iccma\2025\runs\direct-asp-auto-10x10-validated.json --output-csv data\iccma\2025\runs\direct-asp-auto-10x10-validated.csv
+```
+
+Outcome: `9` solved and `11` timed out. Witness validation statuses were `9`
+valid and `11` not checked for timed-out rows; no invalid witnesses were
+reported. Every solved `SE-ST` row used `solver="clingo_multishot"` with
+`solver_calls=1`.
+
 ## Decision
 
 Keep and promote.
@@ -94,4 +109,3 @@ Why:
   increasing timeouts.
 - Explicit SAT stable behavior and preferred auto behavior remain covered by
   tests.
-
