@@ -92,3 +92,15 @@ the boundary preferred row itself: either reduce ASP preferred solve time below
 the 30 second gate with an operational contract, or leave `SE-PR` auto on the
 current route.
 
+## Retroactive protocol audit
+
+Protocol status: promotion no-go; diagnosis completed by follow-up boundary
+profile.
+
+This record alone only proves the full route change failed the 10x10 gate. The
+mechanism-level diagnosis is in
+`experiments/2026-05-20-aba-se-pr-boundary-asp-stability.md`, which shows the
+boundary row is unstable near the timeout and dominated by `clingo.Control.solve`.
+
+Required follow-up: do not retry blanket `SE-PR` ASP routing unless a focused
+boundary-row experiment first moves clingo solve time below the gate.
