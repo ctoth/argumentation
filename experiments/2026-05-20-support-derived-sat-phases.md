@@ -19,3 +19,14 @@ Outcome: failed.
 
 Reason: phase steering from support attacks did not improve the focused hard
 class and was removed.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record captures a valid removal decision, but it does not measure why the
+phase hints failed. It does not show whether the hints were ignored, increased
+conflicts, or steered the solver toward worse candidates.
+
+Required follow-up: any future phase-steering experiment must record solver
+telemetry comparing the hinted and unhinted search on the same hard row.
