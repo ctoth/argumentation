@@ -168,3 +168,15 @@ The next executable contract should capture deterministic clingo search
 statistics and solver configuration for each row before attempting a production
 change. The gate should compare solved count, invalid witness count, and clingo
 search-shape metrics against the current all-timeout baseline.
+
+## Retroactive protocol audit
+
+Protocol status: true diagnostic experiment.
+
+This record satisfies the new standard. It uses profiles on the real
+single-extension ASP path and identifies `clingo.Control.solve` as the dominant
+cost, with add/ground/encoding only tiny sample counts.
+
+Required follow-up: choose `SE-ST` experiments that change clingo search shape
+or provide a stronger pre-benchmark operational invariant; do not optimize
+Python encoding or validation for this cohort.
