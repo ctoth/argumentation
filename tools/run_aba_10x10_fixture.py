@@ -123,7 +123,10 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             metadata = {}
         if metadata.get("algorithm") == "native_sparse_narrow_sat":
             routed_native_sat += 1
-        clingo_solver_calls += int(metadata.get("clingo_solver_calls", 0) or 0)
+        if metadata.get("solver") == "clingo_multishot":
+            clingo_solver_calls += int(metadata.get("solver_calls", 0) or 0)
+        else:
+            clingo_solver_calls += int(metadata.get("clingo_solver_calls", 0) or 0)
     return {
         "row_count": len(rows),
         "status_counts": dict(sorted(status_counts.items())),
