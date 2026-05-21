@@ -24,3 +24,15 @@ Reason: the projected route was too weak operationally; prior evidence showed
 the focused gate timed out across the hard rows even though semantic tests
 could pass. This is exactly the class of failure the operational contracts
 must catch.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+This record captures a valid revert decision, but it does not include a
+profiler-backed explanation of why projection remained too weak. Treat it as a
+negative gate result, not a completed performance experiment.
+
+Required follow-up: use the projected-route profile evidence, or rerun a
+focused `py-spy` profile, before using this failure to choose another
+projection-style optimization.
