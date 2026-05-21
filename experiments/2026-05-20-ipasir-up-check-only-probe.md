@@ -51,3 +51,15 @@ Generated diagnostics:
 - `data\iccma\2025\runs\ipasir-up-check-only-overhead.json`
 
 These generated diagnostics were not committed.
+
+## Retroactive protocol audit
+
+Protocol status: true operational overhead experiment.
+
+This record tested the narrower callback shape directly and measured callback
+overhead against the previous observe-all baseline. It is a positive feasibility
+result for check-model-only overhead, not proof that the real solver route will
+win.
+
+Required follow-up: the next real solver experiment must still profile or
+telemetry-check the actual sparse/narrow worker path if the metric fails.
