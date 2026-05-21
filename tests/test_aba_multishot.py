@@ -448,6 +448,115 @@ def test_enumerate_preferred_telemetry_iterates() -> None:
     assert telemetry.refinement_clauses >= 1
 
 
+def test_incremental_solver_passes_diagnostic_control_args(monkeypatch) -> None:
+    framework = battery()[0]
+    seen_args = []
+
+    class FakeResult:
+        satisfiable = False
+
+    class FakeControl:
+        def __init__(self, args):
+            seen_args.append(tuple(args))
+            self.statistics = {}
+
+        def add(self, *args, **kwargs):
+            return None
+
+        def ground(self, *args, **kwargs):
+            return None
+
+        def solve(self, *args, **kwargs):
+            return FakeResult()
+
+    class FakeClingo:
+        Control = FakeControl
+
+    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+
+    solver = AbaIncrementalSolver(framework, control_args=("--configuration=frumpy",))
+    telemetry = IncrementalTelemetry()
+
+    assert solver.find_stable_extension(telemetry=telemetry) is None
+    assert seen_args == [("--models=0", "--warn=none", "--configuration=frumpy")]
+    assert telemetry.clingo_control_args == (
+        "--models=0",
+        "--warn=none",
+        "--configuration=frumpy",
+    )
+    assert telemetry.clingo_statistics is None
+
+
+def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) -> None:
+    framework = battery()[0]
+
+    class FakeResult:
+        satisfiable = False
+
+    class FakeControl:
+        def __init__(self, args):
+            self.statistics = {
+                "summary": {"times": {"solve": 1.25}},
+                "solving": {"solvers": {"choices": 7.0, "conflicts": 3.0, "restarts": 2.0}},
+            }
+
+        def add(self, *args, **kwargs):
+            return None
+
+        def ground(self, *args, **kwargs):
+            return None
+
+        def solve(self, *args, **kwargs):
+            return FakeResult()
+
+    class FakeClingo:
+        Control = FakeControl
+
+    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+
+    solver = AbaIncrementalSolver(framework, collect_statistics=True)
+    telemetry = IncrementalTelemetry()
+
+    assert solver.find_stable_extension(telemetry=telemetry) is None
+    assert telemetry.clingo_control_args == ("--models=0", "--warn=none")
+    assert telemetry.clingo_statistics == {
+        "summary": {"times": {"solve": 1.25}},
+        "solving": {"solvers": {"choices": 7.0, "conflicts": 3.0, "restarts": 2.0}},
+    }
+
+
+def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> None:
+    framework = battery()[0]
+
+    class FakeResult:
+        satisfiable = False
+
+    class FakeControl:
+        def __init__(self, args):
+            self.statistics = {"summary": {"times": {"solve": 1.25}}}
+
+        def add(self, *args, **kwargs):
+            return None
+
+        def ground(self, *args, **kwargs):
+            return None
+
+        def solve(self, *args, **kwargs):
+            return FakeResult()
+
+    class FakeClingo:
+        Control = FakeControl
+
+    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+
+    solver = AbaIncrementalSolver(framework)
+    telemetry = IncrementalTelemetry()
+
+    assert solver.find_stable_extension(telemetry=telemetry) is None
+    assert telemetry.clingo_control_args == ("--models=0", "--warn=none")
+    assert telemetry.clingo_statistics is None
+
+
 # ---------------------------------------------------------------------------
 # Resource file is Listing 1
 # ---------------------------------------------------------------------------
