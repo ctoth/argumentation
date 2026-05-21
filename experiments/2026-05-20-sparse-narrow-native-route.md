@@ -33,3 +33,14 @@ Outcome: kept on `main`.
 Reason: it established the correct owned surface for later experiments:
 shape-based routing and a native SAT backend. It did not finish the hard row
 class; it made failures measurable and isolated.
+
+## Retroactive protocol audit
+
+Protocol status: kept routing/infrastructure result.
+
+This is not a failed optimization pretending to be complete. It established the
+shape-based route surface and exact fixture gates used by later experiments.
+The record already states it did not finish the hard row class.
+
+Required follow-up: diagnose hard-row failures in the later route-specific
+records, not in this infrastructure record.
