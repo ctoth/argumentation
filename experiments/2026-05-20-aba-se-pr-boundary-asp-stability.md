@@ -125,3 +125,14 @@ Leave `SE-PR` auto routing unchanged. Move attention to the large `SE-ST`
 clingo timeout cohort, or first create a deeper ASP solver-shape workstream if
 we want to attack clingo solve time directly.
 
+## Retroactive protocol audit
+
+Protocol status: true diagnosed no-go.
+
+This record satisfies the new failure-analysis standard: it repeats the
+boundary row, records instability at the 30-second gate, and profiles the real
+ASP path. The dominant cost is `clingo.Control.solve`, not Python encoding,
+grounding, parsing, or runner overhead.
+
+Required follow-up: any future `SE-PR` ASP route work must change clingo solve
+shape, not just route selection.
