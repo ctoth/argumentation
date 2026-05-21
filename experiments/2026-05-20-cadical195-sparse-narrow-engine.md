@@ -45,6 +45,32 @@ Cadical195 branch result:
 - Learned clauses: 33338.
 - Clingo calls: 0.
 
+Profile command on the `cadical195` branch:
+
+```powershell
+uv run tools\aba_shape_benchmark.py --instance data\iccma\2025\extracted\instances\ABAs\abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba --subtrack SE-ST --backend auto --timeout-seconds 150 --profile-dir data\iccma\2025\profiles\engine-cadical195-hard-row --profile-format raw --profile-duration-seconds 25 --output-json data\iccma\2025\runs\engine-cadical195-hard-row-profile.json --output-csv data\iccma\2025\runs\engine-cadical195-hard-row-profile.csv
+```
+
+Profile result:
+
+- row status: `profiled`
+- reason: `profile_duration_elapsed`
+- elapsed: `25.584035900072195` seconds
+- profile:
+  `data\iccma\2025\profiles\engine-cadical195-hard-row\aba-SE-ST-auto-abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba-a87d73ccc529.raw.txt`
+
+Hot frames:
+
+- `native_sparse_narrow_sat_extension -> _native_sparse_narrow_stable_extension -> stable_extension -> solve (pysat\solvers.py)`: `2441` samples
+- loop-formula generation stacks under `_unsupported_derived_loop_formulas`
+  and `_loop_formula_for`: tens of samples total
+- completion clause construction and parsing: single-digit samples
+
+Compared with
+`experiments/2026-05-20-glucose4-hard-row-full-profile.md`, the bottleneck did
+not move: both `glucose4` and `cadical195` are dominated by raw PySAT/CDCL solve
+time, not Python loop-formula code.
+
 Outcome: weakly positive but not a crack.
 
 Decision: keep the branch as experiment evidence. Do not promote this as a
@@ -53,24 +79,27 @@ row, but it still missed the 30-second focused gate by a wide margin and
 increased the number of CEGAR checks and loop formulas. The result is enough
 to keep CaDiCaL-specific follow-up possible, including an IPASIR-UP prototype,
 but not enough to justify replacing `glucose4` on `main` without broader row
-coverage.
+coverage. The profile narrows the follow-up target: CaDiCaL-specific work must
+change CDCL search behavior itself, not Python loop generation.
 
 Generated diagnostics:
 - `data\iccma\2025\runs\engine-baseline-glucose4-hard-row.json`
 - `data\iccma\2025\runs\engine-baseline-glucose4-hard-row.csv`
 - `data\iccma\2025\runs\engine-cadical195-hard-row.json`
 - `data\iccma\2025\runs\engine-cadical195-hard-row.csv`
+- `data\iccma\2025\profiles\engine-cadical195-hard-row\aba-SE-ST-auto-abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba-a87d73ccc529.raw.txt`
+- `data\iccma\2025\runs\engine-cadical195-hard-row-profile.json`
+- `data\iccma\2025\runs\engine-cadical195-hard-row-profile.csv`
 
 These generated diagnostics were not committed.
 
 ## Retroactive protocol audit
 
-Protocol status: weak positive metric result; failure diagnosis incomplete.
+Protocol status: weak positive metric result; diagnosis complete.
 
 The record validly shows that `cadical195` was faster than `glucose4` on the
-hard row but still far from the 30-second gate. It does not profile the
-`cadical195` branch, so it does not fully explain why the engine swap still
-missed the gate or why it increased CEGAR checks and loop formulas.
+hard row but still far from the 30-second gate. The follow-up profile shows the
+bottleneck stayed in raw PySAT/CDCL solve time, not Python loop-formula code.
 
 Required follow-up: any CaDiCaL-specific solver change should compare profiles
 or solver telemetry against both the `glucose4` full profile and this
