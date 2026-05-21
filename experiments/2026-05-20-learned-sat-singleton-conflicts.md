@@ -20,3 +20,14 @@ Outcome: abandoned with the learned SAT route.
 Reason: singleton conflict preloading was not enough to rescue the general
 learned SAT path. The later completion SAT work kept the lesson that small
 static support information can help, but not this route as a whole.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+This record is useful lineage for the learned SAT branch, but it does not
+profile why singleton conflict preloading failed to rescue the route. It should
+not be used as a complete mechanism-level failure result.
+
+Required follow-up: if singleton conflicts are revived, compare solver search
+telemetry before and after preloading on the same focused row.
