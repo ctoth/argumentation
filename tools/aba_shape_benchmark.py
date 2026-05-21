@@ -863,6 +863,8 @@ def run_backend_matrix(
     profile_dir: Path | None = None,
     profile_format: str = "speedscope",
     profile_duration_seconds: float | None = None,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
@@ -889,6 +891,8 @@ def run_backend_matrix(
                 ),
                 profile_format=profile_format,
                 profile_duration_seconds=profile_duration_seconds,
+                clingo_control_args=clingo_control_args,
+                collect_clingo_statistics=collect_clingo_statistics,
             ),
             timeout_seconds=timeout_seconds + 5.0,
         )
@@ -932,12 +936,16 @@ def backend_job(
     profile_path: Path | None = None,
     profile_format: str = "speedscope",
     profile_duration_seconds: float | None = None,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> dict[str, Any]:
     return {
         "root": str(job.root),
         "backend": backend,
         "iccma_binary": None,
         "solver_timeout_seconds": timeout_seconds,
+        "clingo_control_args": list(clingo_control_args),
+        "collect_clingo_statistics": collect_clingo_statistics,
         "profile_path": str(profile_path) if profile_path is not None else None,
         "profile_format": profile_format,
         "profile_duration_seconds": profile_duration_seconds,
@@ -1099,6 +1107,8 @@ def benchmark_rows(
     profile_dir: Path | None = None,
     profile_format: str = "speedscope",
     profile_duration_seconds: float | None = None,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, job in enumerate(jobs, start=1):
@@ -1123,6 +1133,8 @@ def benchmark_rows(
             profile_dir=profile_dir,
             profile_format=profile_format,
             profile_duration_seconds=profile_duration_seconds,
+            clingo_control_args=clingo_control_args,
+            collect_clingo_statistics=collect_clingo_statistics,
         )
         best = best_solved_backend(backend_results)
         buckets = shape_buckets(shape, class_name)
@@ -1331,6 +1343,8 @@ def build_payload(
     profile_dir: Path | None = None,
     profile_format: str = "speedscope",
     profile_duration_seconds: float | None = None,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> dict[str, Any]:
     return {
         "config": {
@@ -1345,6 +1359,8 @@ def build_payload(
             "profile_dir": str(profile_dir) if profile_dir is not None else None,
             "profile_duration_seconds": profile_duration_seconds,
             "profile_format": profile_format,
+            "clingo_control_args": list(clingo_control_args),
+            "collect_clingo_statistics": collect_clingo_statistics,
             "timeout_seconds": timeout_seconds,
         },
         "rows": rows,
@@ -1370,6 +1386,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="speedscope",
     )
     parser.add_argument("--profile-duration-seconds", type=float)
+    parser.add_argument("--clingo-control-arg", action="append", default=[])
+    parser.add_argument("--collect-clingo-statistics", action="store_true")
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--output-csv", type=Path, required=True)
     return parser.parse_args(argv)
@@ -1402,6 +1420,8 @@ def main(argv: list[str] | None = None) -> int:
         profile_dir=args.profile_dir,
         profile_format=args.profile_format,
         profile_duration_seconds=args.profile_duration_seconds,
+        clingo_control_args=tuple(args.clingo_control_arg),
+        collect_clingo_statistics=args.collect_clingo_statistics,
     )
     payload = build_payload(
         rows,
@@ -1410,6 +1430,8 @@ def main(argv: list[str] | None = None) -> int:
         profile_dir=args.profile_dir,
         profile_format=args.profile_format,
         profile_duration_seconds=args.profile_duration_seconds,
+        clingo_control_args=tuple(args.clingo_control_arg),
+        collect_clingo_statistics=args.collect_clingo_statistics,
     )
     write_json(args.output_json, payload)
     write_csv(args.output_csv, rows, backends=backends)
