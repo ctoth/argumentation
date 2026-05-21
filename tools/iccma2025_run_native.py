@@ -955,6 +955,8 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
             semantics=semantics,
             backend=backend,
             iccma=iccma_config,
+            clingo_control_args=tuple(job.get("clingo_control_args", ())),
+            collect_clingo_statistics=bool(job.get("collect_clingo_statistics", False)),
         )
         if isinstance(result, SingleExtensionSolverSuccess):
             return with_solver_metadata(
