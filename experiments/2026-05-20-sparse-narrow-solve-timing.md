@@ -64,3 +64,15 @@ Generated diagnostics:
 - `data\iccma\2025\runs\solve-timing-glucose4-hard-row.csv`
 
 These generated diagnostics were not committed.
+
+## Retroactive protocol audit
+
+Protocol status: true operational diagnostic result.
+
+This record satisfies the new standard without needing `py-spy`: it measured
+per-solve timing on the real sparse/narrow path and identified that the late
+refinement solves dominated, especially the fifth solve at about 102.7 seconds.
+
+Required follow-up: choose next native-SAT experiments from the late-refinement
+search target, not from first-model discovery or Python loop-formula
+micro-optimization.
