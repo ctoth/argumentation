@@ -22,11 +22,13 @@ class and was removed.
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: `promotion no-go; gate-only phase-hint failure`.
 
 The record captures a valid removal decision, but it does not measure why the
 phase hints failed. It does not show whether the hints were ignored, increased
-conflicts, or steered the solver toward worse candidates.
+conflicts, or steered the solver toward worse candidates. Treat it as a failed
+focused-gate phase-hint attempt, not as proof about all support-derived phase
+policies.
 
 Required follow-up: any future phase-steering experiment must record solver
 telemetry comparing the hinted and unhinted search on the same hard row.
