@@ -19,3 +19,15 @@ Outcome: failed.
 
 Reason: the tool did not return usable output in time. No solver design claim
 should be based on that attempted review.
+
+## Retroactive protocol audit
+
+Protocol status: complete process failure, not a solver-performance
+experiment.
+
+The profiler-backed failure-analysis rule does not apply because no production
+solver hypothesis was measured. The record is valid as a process/tooling result:
+external review produced no usable design evidence inside the allowed wait.
+
+Required follow-up: none for solver diagnosis; retry external review only with
+a narrower prompt or a longer explicitly budgeted wait.
