@@ -102,6 +102,8 @@ def solve_aba_with_backend(
     binary: str = "clingo",
     timeout_seconds: float = 30.0,
     simplify: bool = True,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> ABAQueryResult:
     """Dispatch a flat ABA query to the support-reference or ASP backend."""
     if (
@@ -121,6 +123,8 @@ def solve_aba_with_backend(
                 query=query,
                 binary=binary,
                 timeout_seconds=timeout_seconds,
+                clingo_control_args=clingo_control_args,
+                collect_clingo_statistics=collect_clingo_statistics,
             )
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
@@ -165,6 +169,8 @@ def solve_aba_with_backend(
             backend=backend,
             task=task,
             query=query,
+            clingo_control_args=clingo_control_args,
+            collect_clingo_statistics=collect_clingo_statistics,
         )
 
     if backend not in {"asp", "clingo", "clingo_subprocess"}:
@@ -236,6 +242,8 @@ def _solve_multishot(
     backend: str,
     task: str,
     query: Literal | None,
+    clingo_control_args: tuple[str, ...],
+    collect_clingo_statistics: bool,
 ) -> ABAQueryResult:
     """Solve a flat ABA query with the incremental multi-shot clingo solver.
 
@@ -252,7 +260,12 @@ def _solve_multishot(
         **aba_incremental.lehtonen_incremental_asp_metadata(),
     }
     try:
-        solver = aba_incremental.AbaIncrementalSolver(framework, encoding=encoding)
+        solver = aba_incremental.AbaIncrementalSolver(
+            framework,
+            encoding=encoding,
+            control_args=clingo_control_args,
+            collect_statistics=collect_clingo_statistics,
+        )
     except RuntimeError as exc:
         return _failure_result(
             status="unavailable_backend",
@@ -262,7 +275,7 @@ def _solve_multishot(
             reason=str(exc),
         )
 
-    telemetry = aba_incremental.IncrementalTelemetry()
+    telemetry = aba_incremental.IncrementalTelemetry(clingo_control_args=solver.control_args)
 
     # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
     if semantics == "preferred" and task == "skeptical" and query is not None:
@@ -329,13 +342,17 @@ def _solve_multishot(
     )
 
 
-def _incremental_telemetry_metadata(telemetry) -> dict[str, int]:
-    return {
+def _incremental_telemetry_metadata(telemetry) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
         "refinement_clauses": telemetry.refinement_clauses,
         "outer_iterations": telemetry.outer_iterations,
         "inner_iterations": telemetry.inner_iterations,
         "solver_calls": telemetry.solver_calls,
+        "clingo_control_args": telemetry.clingo_control_args,
     }
+    if telemetry.clingo_statistics is not None:
+        metadata["clingo_statistics"] = telemetry.clingo_statistics
+    return metadata
 
 
 def _solve_simplified(
@@ -347,6 +364,8 @@ def _solve_simplified(
     query: Literal | None,
     binary: str,
     timeout_seconds: float,
+    clingo_control_args: tuple[str, ...],
+    collect_clingo_statistics: bool,
 ) -> ABAQueryResult:
     """Solve a gated ABA query on the preprocessed residual and lift the answer back."""
     original = simplification.original
@@ -362,7 +381,13 @@ def _solve_simplified(
         and query is not None
         and backend in {"asp", "clingo"}
     ):
-        return _solve_simplified_ds_pr(simplification, backend=backend, query=query)
+        return _solve_simplified_ds_pr(
+            simplification,
+            backend=backend,
+            query=query,
+            clingo_control_args=clingo_control_args,
+            collect_clingo_statistics=collect_clingo_statistics,
+        )
 
     residual_task = "single-extension" if task == "single-extension" else "enum"
     residual_result = solve_aba_with_backend(
@@ -374,6 +399,8 @@ def _solve_simplified(
         binary=binary,
         timeout_seconds=timeout_seconds,
         simplify=False,
+        clingo_control_args=clingo_control_args,
+        collect_clingo_statistics=collect_clingo_statistics,
     )
     encoding = encode_aba_theory(original)
     if residual_result.status != "success":
@@ -406,7 +433,14 @@ def _solve_simplified(
     )
 
 
-def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> ABAQueryResult:
+def _solve_simplified_ds_pr(
+    simplification,
+    *,
+    backend: str,
+    query: Literal,
+    clingo_control_args: tuple[str, ...],
+    collect_clingo_statistics: bool,
+) -> ABAQueryResult:
     """DS-PR on a non-trivial preprocessed framework: lift rules + Algorithm 1 on the residual.
 
     Lift rules (mirror ``aba_sat._simplified_support_acceptance``):
@@ -454,7 +488,11 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
         )
 
     try:
-        residual_solver = aba_incremental.AbaIncrementalSolver(residual)
+        residual_solver = aba_incremental.AbaIncrementalSolver(
+            residual,
+            control_args=clingo_control_args,
+            collect_statistics=collect_clingo_statistics,
+        )
     except RuntimeError as exc:
         return _failure_result(
             status="unavailable_backend",
@@ -463,7 +501,9 @@ def _solve_simplified_ds_pr(simplification, *, backend: str, query: Literal) -> 
             encoding=encoding,
             reason=str(exc),
         )
-    telemetry = aba_incremental.IncrementalTelemetry()
+    telemetry = aba_incremental.IncrementalTelemetry(
+        clingo_control_args=residual_solver.control_args
+    )
 
     def _some_preferred() -> AssumptionSet | None:
         residual_pref = residual_solver.find_preferred_extension(telemetry=telemetry)
