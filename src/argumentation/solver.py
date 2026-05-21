@@ -149,6 +149,8 @@ def solve_aba_single_extension(
     semantics: str,
     backend: str = "auto",
     iccma: ICCMAConfig | None = None,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> SingleExtensionSolverResult:
     """Solve one flat ABA extension witness query."""
     backend = _auto_aba_backend_for_framework(
@@ -187,7 +189,13 @@ def solve_aba_single_extension(
     if backend in {"asp", "clingo"}:
         if not isinstance(framework, ABAFramework):
             return _aba_asp_requires_flat_framework(backend)
-        return _solve_asp_aba_single_extension(framework, semantics, backend)
+        return _solve_asp_aba_single_extension(
+            framework,
+            semantics,
+            backend,
+            clingo_control_args=clingo_control_args,
+            collect_clingo_statistics=collect_clingo_statistics,
+        )
     if backend == "native":
         extensions = _sorted_object_extensions(_aba_extensions(framework, semantics))
         return SingleExtensionSolverSuccess(
@@ -655,6 +663,9 @@ def _solve_asp_aba_single_extension(
     framework: ABAFramework,
     semantics: str,
     backend: str,
+    *,
+    clingo_control_args: tuple[str, ...] = (),
+    collect_clingo_statistics: bool = False,
 ) -> SingleExtensionSolverResult:
     from argumentation.aba_asp import solve_aba_with_backend
 
@@ -663,6 +674,8 @@ def _solve_asp_aba_single_extension(
         backend=backend,
         semantics=semantics,
         task="single-extension",
+        clingo_control_args=clingo_control_args,
+        collect_clingo_statistics=collect_clingo_statistics,
     )
     if result.status == "success":
         extension = result.extensions[0] if result.extensions else None
