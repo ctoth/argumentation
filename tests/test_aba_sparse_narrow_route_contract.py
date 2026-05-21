@@ -66,10 +66,19 @@ def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(m
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
 
-    def asp_spy(received: ABAFramework, routed_semantics: str, backend: str):
+    def asp_spy(
+        received: ABAFramework,
+        routed_semantics: str,
+        backend: str,
+        *,
+        clingo_control_args=(),
+        collect_clingo_statistics=False,
+    ):
         assert received == framework
         assert routed_semantics == "stable"
         assert backend == "asp"
+        assert clingo_control_args == ()
+        assert collect_clingo_statistics is False
         return solver.SingleExtensionSolverSuccess(
             extension=frozenset(),
             metadata={
