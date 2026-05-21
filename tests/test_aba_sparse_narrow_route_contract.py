@@ -77,6 +77,7 @@ def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(m
                 "semantics": "stable",
                 "solver": "clingo_multishot",
                 "algorithm": "first-model-witness",
+                "clingo_control_args": ("--models=0", "--warn=none"),
             },
         )
 
@@ -96,6 +97,8 @@ def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(m
     assert result.metadata["semantics"] == "stable"
     assert result.metadata["solver"] == "clingo_multishot"
     assert result.metadata["algorithm"] == "first-model-witness"
+    assert result.metadata["clingo_control_args"] == ("--models=0", "--warn=none")
+    assert "clingo_statistics" not in result.metadata
 
 
 def test_explicit_sat_single_extension_sparse_narrow_stable_uses_native_sat(monkeypatch) -> None:
