@@ -68,3 +68,15 @@ Generated diagnostics:
 - `data\iccma\2025\runs\profile-glucose4-hard-row-full.csv`
 
 These generated diagnostics were not committed.
+
+## Retroactive protocol audit
+
+Protocol status: true full-profile diagnostic experiment.
+
+This record is the model for the new standard. It profiled the real ICCMA
+worker path and showed the dominant cost was raw PySAT Glucose4 CDCL solving,
+not Python loop-formula generation, closure, SCC analysis, validation, runner
+overhead, or clingo.
+
+Required follow-up: native sparse/narrow experiments must change SAT search
+shape or solver behavior, not micro-optimize Python loop-formula code.
