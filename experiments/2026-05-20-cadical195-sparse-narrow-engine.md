@@ -62,3 +62,16 @@ Generated diagnostics:
 - `data\iccma\2025\runs\engine-cadical195-hard-row.csv`
 
 These generated diagnostics were not committed.
+
+## Retroactive protocol audit
+
+Protocol status: weak positive metric result; failure diagnosis incomplete.
+
+The record validly shows that `cadical195` was faster than `glucose4` on the
+hard row but still far from the 30-second gate. It does not profile the
+`cadical195` branch, so it does not fully explain why the engine swap still
+missed the gate or why it increased CEGAR checks and loop formulas.
+
+Required follow-up: any CaDiCaL-specific solver change should compare profiles
+or solver telemetry against both the `glucose4` full profile and this
+`cadical195` metric baseline.
