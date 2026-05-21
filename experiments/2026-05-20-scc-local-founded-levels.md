@@ -21,3 +21,15 @@ Outcome: failed.
 Reason: the broad level mapping regressed the gate; restricting it avoided
 some damage but did not solve the remaining hard row. The whole level-mapping
 path was removed from the branch.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record captures that SCC-local founded levels regressed or failed the gate,
+but it does not explain the solver mechanism. It does not measure whether the
+added variables/constraints increased CDCL search, grounding, or refinement
+work.
+
+Required follow-up: do not reintroduce founded-level variables without a
+focused profile or solver-stat comparison showing the intended search reduction.
