@@ -26,3 +26,16 @@ Reason: the stronger loop clauses and ranked closure changed the operational
 shape in the wrong direction under the gate. The recorded lesson is not
 "more constraints are faster"; the useful part must be contract-checked by
 row shape and solver behavior.
+
+## Retroactive protocol audit
+
+Protocol status: partially kept result; failed strengthening diagnosis
+incomplete.
+
+The basic loop-formula work remained guarded by tests and gates, but the failed
+strengthening/ranked-closure slices do not have profiler-backed explanation in
+this record. Treat those failed slices as promotion no-go, not complete
+mechanism-level failures.
+
+Required follow-up: any stronger loop/ranked-closure retry must compare solver
+telemetry or profile evidence before and after the added constraints.
