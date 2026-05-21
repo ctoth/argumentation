@@ -20,3 +20,14 @@ Outcome: kept.
 Reason: the fast path was guarded by witness validation rather than trusted
 by shape alone. It is a real reduction when the witness exists, but the later
 hard rows were not solved solely by this path.
+
+## Retroactive protocol audit
+
+Protocol status: kept validated fast path; not a complete hard-row solution.
+
+This is a real kept result for rows where the fixedpoint witness exists and
+validates. It should not be read as a diagnosis of the later hard-row timeouts,
+because those rows were not solved solely by this path.
+
+Required follow-up: future fixedpoint extensions need a gate proving which
+additional rows enter the validated-skip set.
