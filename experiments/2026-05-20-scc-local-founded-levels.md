@@ -24,12 +24,13 @@ path was removed from the branch.
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: `promotion no-go; gate-only level-mapping failure`.
 
 The record captures that SCC-local founded levels regressed or failed the gate,
 but it does not explain the solver mechanism. It does not measure whether the
 added variables/constraints increased CDCL search, grounding, or refinement
-work.
+work. Treat it as a removal record, not a complete explanation of founded-level
+constraints.
 
 Required follow-up: do not reintroduce founded-level variables without a
 focused profile or solver-stat comparison showing the intended search reduction.
