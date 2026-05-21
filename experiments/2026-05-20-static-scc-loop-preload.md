@@ -19,3 +19,15 @@ Outcome: failed.
 
 Reason: the preload made the solver path worse under the focused gate. Static
 SCC loop materialization is not a free win for this class.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record says static SCC loop preload made the gate worse, but it does not
+show whether the added clauses increased SAT solve time, formula build time, or
+later refinement cost. That distinction matters before selecting another loop
+preload variant.
+
+Required follow-up: profile or collect solver telemetry on the same row before
+reviving static loop materialization.
