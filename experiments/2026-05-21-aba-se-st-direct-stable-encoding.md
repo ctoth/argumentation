@@ -159,6 +159,55 @@ The five-row metric gate failed. The direct stable-only encoding did not solve
 any member of the timeout cohort and did not produce a measured deterministic
 surface reduction naming a next deletion target.
 
+## Failure analysis
+
+Profile command on the direct-stable branch:
+
+```powershell
+uv run tools\aba_shape_benchmark.py --instance data\iccma\2025\extracted\instances\ABAs\abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba --subtrack SE-ST --backend auto --timeout-seconds 35 --profile-dir data\iccma\2025\profiles\aba-se-st-direct-stable-encoding\small --profile-format raw --profile-duration-seconds 25 --output-json data\iccma\2025\runs\aba-se-st-direct-stable-encoding-profile-small.json --output-csv data\iccma\2025\runs\aba-se-st-direct-stable-encoding-profile-small.csv
+```
+
+Profile result:
+
+- row status: `profiled`
+- reason: `profile_duration_elapsed`
+- elapsed: `24.820364300045185` seconds
+- profile:
+  `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`
+
+Direct-stable hot frames:
+
+- `solve_aba_single_extension -> _solve_asp_aba_single_extension -> solve_aba_with_backend -> _solve_multishot -> find_stable_extension -> _solve_one -> solve (clingo\control.py:1065) -> _c_call`: `2440` samples
+- `find_stable_extension -> _new_stable_control -> add (clingo\control.py:320)`: `21` samples
+- `find_stable_extension -> _new_stable_control -> ground (clingo\control.py:566)`: `16` samples
+- encoding, simplification, parse, and resource loading: single-digit samples
+
+Compared against the prior `pi_com` stable path from
+`experiments/2026-05-20-aba-se-st-clingo-solver-shape.md` on the same row:
+
+- old stable hot path in `clingo.Control.solve`: `2450` samples
+- old add: `17` samples
+- old ground: `9` samples
+- old encoding: single-digit samples
+
+Interpretation:
+
+- the bottleneck did not move;
+- direct stable did not shrink the observed `clingo.Control.solve` dominance;
+- add/ground stayed tiny and slightly larger in the direct-stable profile;
+- deleting the complete/admissibility undefeated layer changed the encoding
+  surface, but not the hard search shape that matters for this row.
+
+The direct-stable experiment is now a true diagnosed no-go rather than only a
+promotion no-go.
+
+Next target from evidence: a successful `SE-ST` experiment must change clingo's
+search space/order more substantially than deleting the undefeated complete
+layer. The next workstream should target a measured clingo search-shape
+invariant, such as deterministic grounded/residual reduction, decomposition, or
+a semantics-preserving constraint that changes the solve search profile before
+the full benchmark gate.
+
 ## 10x10 regression metric
 
 Not run. Phase 6 failed, and the workstream's metric-fail branch requires
@@ -171,7 +220,8 @@ No-go.
 Abandon the direct stable source/test delta. Keep this experiment record as a
 failed first-class result. The direct stable-only encoding is semantically
 cleaner and passes focused correctness contracts, but it does not crack the
-current five-row `SE-ST` timeout problem.
+current five-row `SE-ST` timeout problem and does not move the profile out of
+`clingo.Control.solve`.
 
 Next architecture target: not clingo options, not SAT engine swapping, not
 IPASIR callbacks, and not merely deleting the complete/admissibility layer. The
@@ -187,13 +237,12 @@ Generated diagnostics are not committed:
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: true diagnosed no-go.
 
-The record proves that the direct stable encoding was semantically guarded and
-failed the five-row promotion gate, but it does not explain why it failed. It
-does not include a `py-spy` profile of the direct-stable branch or a comparison
-against the previous `pi_com` stable path.
+The follow-up `py-spy` profile on the direct-stable branch shows the bottleneck
+stayed in `clingo.Control.solve` with essentially the same sample count as the
+old `pi_com` stable path. The experiment now explains why the metric failed:
+the encoding deletion did not change the hard clingo search shape.
 
-Required follow-up: profile the real ICCMA worker path on the direct-stable
-branch and compare hot frames with
-`experiments/2026-05-20-aba-se-st-clingo-solver-shape.md`.
+Required follow-up: choose an `SE-ST` experiment that changes a measured
+clingo search-shape invariant before running the full benchmark gate.
