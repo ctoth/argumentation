@@ -175,3 +175,17 @@ Generated diagnostics were intentionally not promoted:
 - `data/iccma/2025/runs/aba-se-st-clingo-stats-option-sweep-configuration-*.csv`
 - `data/iccma/2025/runs/aba-se-st-clingo-stats-option-sweep-heuristic-*.json`
 - `data/iccma/2025/runs/aba-se-st-clingo-stats-option-sweep-heuristic-*.csv`
+
+## Retroactive protocol audit
+
+Protocol status: production option no-go; diagnosis depends on prior profile.
+
+The option sweep rules out the tested clingo configurations and heuristics for
+promotion, but by itself it is not a full failure diagnosis because every row
+timed out before clingo statistics were returned. Its mechanism claim depends
+on `experiments/2026-05-20-aba-se-st-clingo-solver-shape.md`, which already
+showed `clingo.Control.solve` dominance.
+
+Required follow-up: do not treat this as evidence against all encoding/search
+changes. It only rejects the specific option list; further work still needs
+profile-backed or solver-stat-backed clingo search evidence.
