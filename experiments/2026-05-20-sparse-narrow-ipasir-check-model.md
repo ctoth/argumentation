@@ -50,3 +50,15 @@ Generated diagnostics:
 - `data\iccma\2025\runs\ipasir-check-model-hard-row.csv`
 
 These generated diagnostics were not committed.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record proves that the check-model callback route timed out and should not
+be promoted. It does not profile that failed branch, so it does not prove why
+the callback shape was slower than `glucose4` and `cadical195` engine-only.
+
+Required follow-up: before rejecting all check-model-style propagators, profile
+the real failed worker path or add callback/solver telemetry that shows where
+the timeout is spent.
