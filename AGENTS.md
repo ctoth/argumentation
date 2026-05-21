@@ -15,6 +15,21 @@
   deterministic telemetry and route contracts should run normally.
 - A benchmark gate may remain the final proof, but it must not be the first
   executable signal that an implementation is operationally hopeless.
+- A failed or ambiguous benchmark gate is not a complete experiment result.
+  It is only a promotion no-go until profiler-backed or equivalent operational
+  evidence explains whether the intended bottleneck moved, shrank, or stayed
+  unchanged.
+- For Python solver/worker performance paths, use `py-spy` on the real worker
+  or solver process before abandoning the experiment or selecting the next
+  optimization. Do not profile only a wrapper when the hot work happens in a
+  child process.
+- Failed performance records must explicitly state: the profiler or operational
+  measurement used, the baseline or previous profile compared against, the
+  dominant cost before and after, whether the intended operational invariant
+  changed, and the next target named by the evidence.
+- If the metric misses and no profiler-backed diagnosis has been recorded, the
+  experiment status is `promotion no-go; diagnosis incomplete`, not `complete`
+  and not a true experiment failure.
 - If salvaging old research, import only assets that satisfy or help enforce
   these contracts: tests, telemetry, route predicates, calibration helpers,
   benchmark runner fixes, page-image citations, and failure records. Do not
