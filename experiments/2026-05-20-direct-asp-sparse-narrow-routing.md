@@ -109,3 +109,15 @@ Why:
   increasing timeouts.
 - Explicit SAT stable behavior and preferred auto behavior remain covered by
   tests.
+
+## Retroactive protocol audit
+
+Protocol status: true promotion experiment.
+
+This record remains a completed successful experiment. It had a route contract,
+a hard-row metric, a validation-backed 10x10 gate, no invalid solved witnesses,
+and a concrete improvement from `5/20` solved to `9/20` solved.
+
+Required follow-up: the remaining `SE-ST` timeout cohort still needs separate
+profile-backed diagnosis, which is covered by the later clingo solver-shape
+records.
