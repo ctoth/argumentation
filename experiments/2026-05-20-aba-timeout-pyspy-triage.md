@@ -79,3 +79,14 @@ The next workstream should preserve explicit `backend="sat"` and only consider
 `SE-PR` `backend="auto"` promotion if an operational gate beats the current
 `9/20` solved, `11/20` timeout result without invalid witnesses.
 
+## Retroactive protocol audit
+
+Protocol status: true diagnostic triage.
+
+This record satisfies the profiler requirement for the initial timeout split:
+`SE-PR` was native SAT solve dominated, and `SE-ST` was clingo solve dominated.
+It correctly selected later workstreams from profile evidence rather than from
+guessing.
+
+Required follow-up: use this as the parent diagnostic record when auditing
+later `SE-PR` and `SE-ST` route experiments.
