@@ -22,12 +22,12 @@ regressed and the change was reverted.
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: `promotion no-go; gate-only failure record`.
 
 The record says the smaller formula regressed, but it does not measure where
 the time moved or whether CDCL search, clause quality, or Python-side
-construction changed. This is a gate failure, not a diagnosed experiment
-failure.
+construction changed. This is not a mechanism-diagnosed experiment failure and
+must not be used as proof that all support-core reductions are bad.
 
 Required follow-up: if support-core reduction is revisited, compare solver
 profiles or solver telemetry before and after the reduction on the same hard
