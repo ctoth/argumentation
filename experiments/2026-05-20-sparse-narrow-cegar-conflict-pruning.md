@@ -24,11 +24,13 @@ not yet justified by the gate and was kept out of the main path.
 
 ## Retroactive protocol audit
 
-Protocol status: kept guarded refinement; eager-learning diagnosis incomplete.
+Protocol status: kept guarded refinement; eager learning not run.
 
 The validated pruning portion is a kept result because it has semantic
 validation and fixture gating. The deferred eager conflict-learning portion is
-not a diagnosed failure; it was simply not justified by the gate.
+not a diagnosed failure and should not be counted as an experiment result. It
+was a deliberately unpromoted idea because no operational contract yet showed
+that eager learning would pay for itself.
 
 Required follow-up: before adding eager conflict learning, gather solver
 telemetry proving it reduces the hard-row search enough to pay for itself.
