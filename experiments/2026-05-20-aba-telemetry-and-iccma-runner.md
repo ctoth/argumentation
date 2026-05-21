@@ -31,3 +31,14 @@ Reason: it produced the operational contract surface used by later work:
 shape-based row routing, per-row profiling, and hard-cluster fixture replay.
 This is not a filename heuristic and is not ICCMA-specific except for the
 runner entrypoint.
+
+## Retroactive protocol audit
+
+Protocol status: kept profiling infrastructure.
+
+This record is not a failed performance experiment. It created the profiler and
+telemetry surfaces that the new protocol now requires. The result is valid
+infrastructure evidence, not a solver-speed claim.
+
+Required follow-up: use this runner-level profiling path for failed solver
+experiments instead of relying on timeout counts alone.
