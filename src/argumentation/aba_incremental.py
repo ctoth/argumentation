@@ -27,6 +27,7 @@ the residual; lifting back is the caller's job.
 from __future__ import annotations
 
 import importlib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
 from typing import Any
@@ -38,6 +39,7 @@ from argumentation.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
 SUPPORTED_SEMANTICS = frozenset({"complete", "stable", "preferred", "grounded"})
+DEFAULT_CLINGO_CONTROL_ARGS = ("--models=0", "--warn=none")
 
 LEHTONEN_INCREMENTAL_ASP_CITATION = "Lehtonen_2021_IncrementalASP_ABA"
 LEHTONEN_INCREMENTAL_ASP_PAGE_CITATIONS = (
@@ -76,6 +78,18 @@ class IncrementalTelemetry:
     outer_iterations: int = 0
     inner_iterations: int = 0
     solver_calls: int = 0
+    clingo_control_args: tuple[str, ...] = DEFAULT_CLINGO_CONTROL_ARGS
+    clingo_statistics: dict[str, Any] | None = None
+
+
+def _sanitize_clingo_statistics(value: Any) -> Any:
+    if isinstance(value, Mapping) or hasattr(value, "items"):
+        return {str(key): _sanitize_clingo_statistics(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_clingo_statistics(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return repr(value)
 
 
 class AbaIncrementalSolver:
@@ -88,7 +102,14 @@ class AbaIncrementalSolver:
     builds a fresh ``Control`` (the L21-TPLP scheme).
     """
 
-    def __init__(self, framework: ABAFramework, *, encoding: ABAEncoding | None = None) -> None:
+    def __init__(
+        self,
+        framework: ABAFramework,
+        *,
+        encoding: ABAEncoding | None = None,
+        control_args: tuple[str, ...] = (),
+        collect_statistics: bool = False,
+    ) -> None:
         if not isinstance(framework, ABAFramework):  # defensive; callers gate this
             raise TypeError("AbaIncrementalSolver only handles flat ABAFramework")
         self.framework = framework
@@ -108,17 +129,27 @@ class AbaIncrementalSolver:
             literal: literal_id for literal_id, literal in encoding.literal_by_id.items()
         }
         self._clingo = _load_clingo()
+        self.control_args = DEFAULT_CLINGO_CONTROL_ARGS + tuple(control_args)
+        self.collect_statistics = collect_statistics
 
     # -- low-level Control construction -------------------------------------
 
     def _new_control(self, *, extra_program: str = "") -> Any:
-        ctl = self._clingo.Control(["--models=0", "--warn=none"])
+        ctl = self._clingo.Control(list(self.control_args))
         program = self._facts_text + "\n" + self._com_text
         if extra_program:
             program = program + "\n" + extra_program
         ctl.add("base", [], program)
         ctl.ground([("base", [])])
         return ctl
+
+    def _record_telemetry_control(self, telemetry: IncrementalTelemetry | None) -> None:
+        if telemetry is not None:
+            telemetry.clingo_control_args = self.control_args
+
+    def _record_telemetry_statistics(self, ctl, telemetry: IncrementalTelemetry | None) -> None:
+        if telemetry is not None and self.collect_statistics:
+            telemetry.clingo_statistics = _sanitize_clingo_statistics(ctl.statistics)
 
     def _symbol_in(self, assumption: Literal):
         return self._clingo.Function("in", [self._clingo.Function(self._id_by_assumption[assumption])])
@@ -141,7 +172,13 @@ class AbaIncrementalSolver:
                     result.add(assumption)
         return frozenset(result)
 
-    def _solve_one(self, ctl, *, assumptions=None) -> AssumptionSet | None:
+    def _solve_one(
+        self,
+        ctl,
+        *,
+        assumptions=None,
+        telemetry: IncrementalTelemetry | None = None,
+    ) -> AssumptionSet | None:
         """Solve for one model; return its ``in`` assumption set, or ``None`` if UNSAT."""
         captured: list[AssumptionSet] = []
 
@@ -149,7 +186,9 @@ class AbaIncrementalSolver:
             captured.append(self._extract_in_set(model))
             return False  # stop after first model
 
+        self._record_telemetry_control(telemetry)
         result = ctl.solve(assumptions=assumptions or [], on_model=on_model)
+        self._record_telemetry_statistics(ctl, telemetry)
         if not result.satisfiable:
             return None
         return captured[-1]
@@ -166,7 +205,9 @@ class AbaIncrementalSolver:
 
         if telemetry is not None:
             telemetry.solver_calls += 1
+        self._record_telemetry_control(telemetry)
         ctl.solve(on_model=on_model)
+        self._record_telemetry_statistics(ctl, telemetry)
         return _sorted_extensions(found)
 
     def enumerate_complete(self, *, telemetry: IncrementalTelemetry | None = None) -> tuple[AssumptionSet, ...]:
@@ -179,13 +220,13 @@ class AbaIncrementalSolver:
         ctl = self._new_control()
         if telemetry is not None:
             telemetry.solver_calls += 1
-        return self._solve_one(ctl)
+        return self._solve_one(ctl, telemetry=telemetry)
 
     def find_stable_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
         ctl = self._new_control(extra_program=":- out(X), not defeated(X).")
         if telemetry is not None:
             telemetry.solver_calls += 1
-        return self._solve_one(ctl)
+        return self._solve_one(ctl, telemetry=telemetry)
 
     def grounded_extension(self) -> AssumptionSet:
         # Use the polynomial support-mask fixpoint rather than ``aba.grounded_extension``
