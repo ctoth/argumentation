@@ -27,7 +27,7 @@ timeout. The change was reverted.
 
 ## Retroactive protocol audit
 
-Protocol status: `promotion no-go; diagnosis incomplete`.
+Protocol status: `promotion no-go; gate-only severe regression record`.
 
 The record proves a severe regression and justifies the revert, but it does not
 explain the mechanism. It does not compare solver profiles or inprocessing
