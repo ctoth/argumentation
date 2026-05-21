@@ -57,3 +57,14 @@ Generated diagnostics:
 - `data\iccma\2025\runs\ipasir-up-noop-overhead.json`
 
 This generated diagnostic was not committed.
+
+## Retroactive protocol audit
+
+Protocol status: true operational overhead experiment.
+
+This record does not need a solver hot-path profile because its hypothesis was
+callback overhead. The measured all-variable no-op propagator overhead is enough
+to reject that propagator shape.
+
+Required follow-up: use this only to rule out eager observe-all callbacks; it
+does not rule out narrower or check-model-only IPASIR-UP designs.
