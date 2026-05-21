@@ -24,3 +24,15 @@ Outcome: failed.
 Reason: inprocessing regressed the focused gate. Prior recorded result was
 three solved and two timed out, including a row that slowed from about 1.2s to
 timeout. The change was reverted.
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record proves a severe regression and justifies the revert, but it does not
+explain the mechanism. It does not compare solver profiles or inprocessing
+statistics for the row that slowed from about 1.2 seconds to timeout.
+
+Required follow-up: do not revisit CaDiCaL inprocessing without per-row solver
+statistics or `py-spy`/solver telemetry showing why preprocessing destroys the
+useful search shape.
