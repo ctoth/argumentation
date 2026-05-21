@@ -184,3 +184,16 @@ Generated diagnostics are not committed:
 
 - `data/iccma/2025/runs/aba-se-st-direct-stable-encoding-*.json`
 - `data/iccma/2025/runs/aba-se-st-direct-stable-encoding-*.csv`
+
+## Retroactive protocol audit
+
+Protocol status: `promotion no-go; diagnosis incomplete`.
+
+The record proves that the direct stable encoding was semantically guarded and
+failed the five-row promotion gate, but it does not explain why it failed. It
+does not include a `py-spy` profile of the direct-stable branch or a comparison
+against the previous `pi_com` stable path.
+
+Required follow-up: profile the real ICCMA worker path on the direct-stable
+branch and compare hot frames with
+`experiments/2026-05-20-aba-se-st-clingo-solver-shape.md`.
