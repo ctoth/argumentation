@@ -97,6 +97,34 @@ venvPath = "."
 venv = ".venv"
 include = ["src"]
 
+[tool.importlinter]
+root_package = "argumentation"
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "argumentation.semantics",
+    "argumentation.solving",
+    "argumentation.solver_adapters",
+    "argumentation.interop",
+    "argumentation.structured.aba | argumentation.probabilistic | argumentation.dynamics",
+    "argumentation.structured.aspic | argumentation.frameworks | argumentation.gradual | argumentation.ranking",
+    "argumentation.core",
+]
+ignore_imports = [
+    "argumentation.structured.aspic.aspic_encoding -> argumentation.solver_adapters.clingo",
+    "argumentation.structured.aba.aba_asp -> argumentation.solver_adapters.clingo",
+]
+
+[[tool.importlinter.contracts]]
+name = "gradual and ranking are independent"
+type = "independence"
+modules = [
+    "argumentation.gradual",
+    "argumentation.ranking",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
@@ -113,6 +141,7 @@ dev = [
     "clingo>=5.7",
     "gunray",
     "hypothesis>=6.0",
+    "import-linter>=2.0",
     "pyright>=1.1.390",
     "pytest>=8.0",
     "pytest-timeout>=2.3",
