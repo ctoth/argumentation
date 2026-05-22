@@ -104,6 +104,7 @@ def solve_aba_with_backend(
     simplify: bool = True,
     clingo_control_args: tuple[str, ...] = (),
     collect_clingo_statistics: bool = False,
+    clingo_solve_timeout_seconds: float | None = None,
 ) -> ABAQueryResult:
     """Dispatch a flat ABA query to the support-reference or ASP backend."""
     if (
@@ -125,6 +126,7 @@ def solve_aba_with_backend(
                 timeout_seconds=timeout_seconds,
                 clingo_control_args=clingo_control_args,
                 collect_clingo_statistics=collect_clingo_statistics,
+                clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
             )
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
@@ -171,6 +173,7 @@ def solve_aba_with_backend(
             query=query,
             clingo_control_args=clingo_control_args,
             collect_clingo_statistics=collect_clingo_statistics,
+            clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
 
     if backend not in {"asp", "clingo", "clingo_subprocess"}:
@@ -244,6 +247,7 @@ def _solve_multishot(
     query: Literal | None,
     clingo_control_args: tuple[str, ...],
     collect_clingo_statistics: bool,
+    clingo_solve_timeout_seconds: float | None,
 ) -> ABAQueryResult:
     """Solve a flat ABA query with the incremental multi-shot clingo solver.
 
@@ -265,6 +269,7 @@ def _solve_multishot(
             encoding=encoding,
             control_args=clingo_control_args,
             collect_statistics=collect_clingo_statistics,
+            solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
     except RuntimeError as exc:
         return _failure_result(
@@ -295,16 +300,28 @@ def _solve_multishot(
         )
 
     if task == "single-extension":
-        if semantics == "grounded":
-            extension = solver.grounded_extension()
-        elif semantics == "complete":
-            extension = solver.find_complete_extension(telemetry=telemetry)
-        elif semantics == "stable":
-            extension = solver.find_stable_extension(telemetry=telemetry)
-        elif semantics == "preferred":
-            extension = solver.find_preferred_extension(telemetry=telemetry)
-        else:  # pragma: no cover - dispatcher gates this
-            raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+        try:
+            if semantics == "grounded":
+                extension = solver.grounded_extension()
+            elif semantics == "complete":
+                extension = solver.find_complete_extension(telemetry=telemetry)
+            elif semantics == "stable":
+                extension = solver.find_stable_extension(telemetry=telemetry)
+            elif semantics == "preferred":
+                extension = solver.find_preferred_extension(telemetry=telemetry)
+            else:  # pragma: no cover - dispatcher gates this
+                raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+        except aba_incremental.ClingoSolveTimeout as exc:
+            return _failure_result(
+                status="timeout",
+                semantics=semantics,
+                backend=backend,
+                encoding=encoding,
+                reason=str(exc),
+                metadata=metadata_base
+                | {"algorithm": "first-model-witness"}
+                | _incremental_telemetry_metadata(telemetry),
+            )
         extensions = tuple() if extension is None else (extension,)
         return _task_result(
             framework,
@@ -352,6 +369,10 @@ def _incremental_telemetry_metadata(telemetry) -> dict[str, Any]:
     }
     if telemetry.clingo_statistics is not None:
         metadata["clingo_statistics"] = telemetry.clingo_statistics
+    if telemetry.clingo_timeout_seconds is not None:
+        metadata["clingo_timeout_seconds"] = telemetry.clingo_timeout_seconds
+    if telemetry.clingo_interrupted:
+        metadata["clingo_interrupted"] = True
     return metadata
 
 
@@ -366,6 +387,7 @@ def _solve_simplified(
     timeout_seconds: float,
     clingo_control_args: tuple[str, ...],
     collect_clingo_statistics: bool,
+    clingo_solve_timeout_seconds: float | None,
 ) -> ABAQueryResult:
     """Solve a gated ABA query on the preprocessed residual and lift the answer back."""
     original = simplification.original
@@ -401,6 +423,7 @@ def _solve_simplified(
         simplify=False,
         clingo_control_args=clingo_control_args,
         collect_clingo_statistics=collect_clingo_statistics,
+        clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
     )
     encoding = encode_aba_theory(original)
     if residual_result.status != "success":
@@ -412,6 +435,7 @@ def _solve_simplified(
             reason=residual_result.metadata.get("reason", "residual ABA solve failed"),
             stdout=residual_result.metadata.get("stdout", ""),
             stderr=residual_result.metadata.get("stderr", ""),
+            metadata=dict(residual_result.metadata) | {"preprocessing": "grounded_reduct_aba"},
         )
     lifted = tuple(
         sorted(
@@ -658,8 +682,13 @@ def _failure_result(
     reason: str,
     stdout: str = "",
     stderr: str = "",
+    metadata: dict[str, Any] | None = None,
 ) -> ABAQueryResult:
-    metadata = {"reason": reason, "encoding": encoding.metadata["encoding"]}
+    metadata = {
+        **(metadata or {}),
+        "reason": reason,
+        "encoding": encoding.metadata["encoding"],
+    }
     if stdout:
         metadata["stdout"] = stdout
     if stderr:
