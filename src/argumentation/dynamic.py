@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, cast
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.enforcement import SemanticsName, extensions_for
 
 

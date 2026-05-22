@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from itertools import combinations
 
-from argumentation.dung import ArgumentationFramework, conflict_free
+from argumentation.core.dung import ArgumentationFramework, conflict_free
 
 
 class MattToniIntractable(ValueError):

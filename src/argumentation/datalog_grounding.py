@@ -22,7 +22,7 @@ from argumentation.aspic import (
     Rule,
     Scalar,
 )
-from argumentation.preference import strict_partial_order_closure
+from argumentation.core.preference import strict_partial_order_closure
 
 if TYPE_CHECKING:
     from gunray import DefeasibleTheory, GroundingInspection, GroundRuleInstance

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.dfquad import (
     dfquad_aggregate,
     dfquad_bipolar_strengths,

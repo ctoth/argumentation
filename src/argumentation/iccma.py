@@ -12,7 +12,7 @@ from argumentation.adf import (
 )
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 
 APX_ARG_RE = re.compile(r"arg\(([^)]+)\)\.")
 APX_ATT_RE = re.compile(r"att\(([^,]+),([^)]+)\)\.")

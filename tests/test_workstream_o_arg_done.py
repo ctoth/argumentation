@@ -15,9 +15,9 @@ from argumentation.aspic import (
     Rule,
 )
 from argumentation.aspic_encoding import encode_aspic_theory
-from argumentation.dung import ArgumentationFramework, admissible, ideal_extension
+from argumentation.core.dung import ArgumentationFramework, admissible, ideal_extension
 from argumentation.partial_af import PartialArgumentationFramework
-from argumentation.preference import strictly_weaker
+from argumentation.core.preference import strictly_weaker
 from argumentation.probabilistic import _z_for_confidence
 from argumentation.semantics import accepted_arguments
 

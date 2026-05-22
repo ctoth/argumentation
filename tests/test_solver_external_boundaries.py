@@ -9,7 +9,7 @@ from argumentation.adf import (
     dung_to_adf,
     interpretation_to_mapping,
 )
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     complete_extensions,
     grounded_extension,
@@ -23,7 +23,7 @@ from argumentation.solver import (
     solve_adf_models,
     solve_setaf_extensions,
 )
-from tests.test_dung import argumentation_frameworks
+from tests.core.test_dung import argumentation_frameworks
 
 
 ADF_DUNG_ORACLES = {

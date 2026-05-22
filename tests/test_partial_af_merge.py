@@ -7,7 +7,7 @@ from itertools import product
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.partial_af import (
     EnumerationExceeded,
     consensual_expand,

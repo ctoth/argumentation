@@ -4,7 +4,7 @@ import importlib
 
 import pytest
 
-from argumentation import bipolar, dung, labelling
+from argumentation.core import bipolar, dung, labelling
 
 
 pytestmark = pytest.mark.unit

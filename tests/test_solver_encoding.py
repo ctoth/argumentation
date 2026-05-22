@@ -6,7 +6,7 @@ import pytest
 from hypothesis import given, settings
 
 import argumentation.af_sat as af_sat
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     _attackers_index,
     admissible,
@@ -43,7 +43,7 @@ from argumentation.sat_encoding import (
     stable_extensions_from_encoding,
 )
 from argumentation.solver import solve_dung_acceptance
-from tests.test_dung import af, argumentation_frameworks
+from tests.core.test_dung import af, argumentation_frameworks
 
 
 SAT_EXTENSION_ORACLES = {

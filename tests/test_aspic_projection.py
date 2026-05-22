@@ -13,7 +13,7 @@ from argumentation.aspic import (
     compute_attacks,
     compute_defeats,
 )
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 
 
 def test_build_abstract_framework_matches_manual_aspic_pipeline() -> None:

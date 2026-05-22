@@ -5,7 +5,7 @@ import importlib
 import pytest
 
 import argumentation
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.ranking import RankingResult, categoriser_scores
 from argumentation.ranking_axioms import (
     abstraction,

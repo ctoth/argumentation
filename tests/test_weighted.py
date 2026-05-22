@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import argumentation
-from argumentation.dung import grounded_extension
+from argumentation.core.dung import grounded_extension
 from argumentation.weighted import (
     WeightedArgumentationFramework,
     minimum_budget_for_grounded_acceptance,

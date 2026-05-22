@@ -131,7 +131,7 @@ def solve_aspic_grounded(
     materialized ASPIC-to-Dung reference path; optional ASP/clingo backends can
     attach to the same encoding/result contract in later slices.
     """
-    from argumentation.dung import grounded_extension
+    from argumentation.core.dung import grounded_extension
 
     encoding = encode_aspic_theory(system, kb, pref)
     projection = build_abstract_framework(system, kb, pref)
@@ -269,7 +269,7 @@ def solve_aspic_with_backend(
         # AF preprocessing (Wave A): shrink the projected Dung framework with the
         # grounded reduct + self-loop-sink removal before handing it to clingo,
         # then lift every returned extension back to the full argument set.
-        from argumentation.preprocessing import simplify_af
+        from argumentation.core.preprocessing import simplify_af
 
         simplification = simplify_af(projection.framework, semantics=semantics)
         residual_framework = simplification.residual
@@ -392,7 +392,7 @@ def _backend_failure_result(
 
 
 def _materialized_extensions(framework, semantics: str) -> tuple[frozenset[str], ...]:
-    from argumentation import dung
+    from argumentation.core import dung
 
     if semantics == "grounded":
         return (dung.grounded_extension(framework),)

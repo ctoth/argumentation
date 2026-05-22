@@ -30,7 +30,7 @@ from argumentation.af_sat import (
 )
 from argumentation.adf import AbstractDialecticalFramework
 from argumentation.aspic import Literal
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     cf2_extensions,
     complete_extensions,
@@ -45,13 +45,13 @@ from argumentation.aba_route_policy import sparse_narrow_native_sat_shape
 from argumentation.sat_encoding import (
     sat_extensions,
 )
-from argumentation.scc_recursive import (
+from argumentation.core.scc_recursive import (
     SCC_RECURSIVE_SEMANTICS,
     scc_extensions,
 )
 from argumentation.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
-from argumentation.solver_results import (
+from argumentation.core.solver_results import (
     AcceptanceSuccess,
     ExtensionEnumerationSuccess,
     SingleExtensionSuccess,

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypeAlias, TypeVar, Union
 
 if TYPE_CHECKING:
-    from argumentation.dung import ArgumentationFramework
+    from argumentation.core.dung import ArgumentationFramework
 
 Scalar: TypeAlias = str | int | float | bool
 
@@ -1325,7 +1325,7 @@ def build_abstract_framework(
     id_prefix: str = "arg",
 ) -> ASPICAbstractProjection:
     """Build arguments, attacks, defeats, and the derived Dung AF together."""
-    from argumentation.dung import ArgumentationFramework
+    from argumentation.core.dung import ArgumentationFramework
 
     arguments = build_arguments(system, kb)
     attacks = compute_attacks(arguments, system)

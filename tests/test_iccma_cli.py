@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from argumentation import iccma_cli
-from argumentation.labelling import ExactEnumerationExceeded
+from argumentation.core.labelling import ExactEnumerationExceeded
 
 
 def test_iccma_cli_prints_single_extension(tmp_path, capsys) -> None:

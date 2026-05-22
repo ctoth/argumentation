@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from itertools import combinations
 from typing import Iterable, Literal, Mapping
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     admissible,
     cf2_extensions,

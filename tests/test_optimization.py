@@ -6,7 +6,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from argumentation.dung import ArgumentationFramework, admissible, conflict_free
+from argumentation.core.dung import ArgumentationFramework, admissible, conflict_free
 from argumentation.optimization import (
     OptimizationFeature,
     OptimizationObjective,

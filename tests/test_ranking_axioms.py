@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argumentation
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.ranking import categoriser_ranking
 from argumentation.ranking_axioms import (
     abstraction,

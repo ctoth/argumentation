@@ -23,7 +23,7 @@ from argumentation.aspic import (
 from argumentation.aspic_encoding import encode_aspic_theory
 from argumentation.aspic_encoding import solve_aspic_grounded
 from argumentation.aspic_encoding import solve_aspic_with_backend
-from argumentation.dung import grounded_extension
+from argumentation.core.dung import grounded_extension
 
 
 ASP_CONSTANT_RE = re.compile(r"^[a-z][A-Za-z0-9_]*$")

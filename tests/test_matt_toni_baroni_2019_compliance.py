@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.gradual_principles import PRINCIPLE_COMPLIANCE, ComplianceLabel
 from argumentation.matt_toni import matt_toni_strengths
 

@@ -22,7 +22,7 @@ from argumentation.af_revision import (
     diller_2015_revise_by_framework,
     stable_kernel,
 )
-from argumentation.dung import ArgumentationFramework, grounded_extension, stable_extensions
+from argumentation.core.dung import ArgumentationFramework, grounded_extension, stable_extensions
 
 
 pytestmark = pytest.mark.property

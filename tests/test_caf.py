@@ -14,7 +14,7 @@ from argumentation.caf import (
     is_i_maximal,
     is_well_formed,
 )
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     naive_extensions,
     preferred_extensions,

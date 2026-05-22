@@ -4,7 +4,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 import pytest
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.iccma import parse_af, write_af
 
 

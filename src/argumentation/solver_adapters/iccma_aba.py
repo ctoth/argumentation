@@ -14,7 +14,7 @@ import tempfile
 from argumentation.aba import ABAFramework
 from argumentation.aspic import Literal
 from argumentation.iccma import write_numeric_aba
-from argumentation.solver_results import (
+from argumentation.core.solver_results import (
     SolverProcessError,
     SolverProtocolError,
     SolverUnavailable,

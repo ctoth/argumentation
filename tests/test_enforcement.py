@@ -3,7 +3,7 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.dung import ArgumentationFramework, stable_extensions
+from argumentation.core.dung import ArgumentationFramework, stable_extensions
 from argumentation.enforcement import (
     AFEdit,
     apply_edit,

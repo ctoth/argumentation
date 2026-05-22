@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     admissible as dung_admissible,
     complete_extensions as dung_complete_extensions,

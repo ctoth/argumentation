@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import combinations
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     admissible,
     characteristic_fn,

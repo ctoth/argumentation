@@ -7,7 +7,7 @@ from enum import StrEnum
 from itertools import combinations, product
 from typing import TypeAlias
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     grounded_extension,
     preferred_extensions,

@@ -12,7 +12,7 @@ import pytest
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.sensitivity import attack_removal_sensitivity, score_conflict
 
 

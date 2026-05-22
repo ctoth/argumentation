@@ -7,7 +7,7 @@ from itertools import combinations
 from math import inf
 from typing import Mapping
 
-from argumentation.dung import ArgumentationFramework, grounded_extension
+from argumentation.core.dung import ArgumentationFramework, grounded_extension
 
 
 @dataclass(frozen=True)

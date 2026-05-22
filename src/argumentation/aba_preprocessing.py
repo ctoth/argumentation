@@ -1,7 +1,7 @@
 """Semantics-preserving preprocessing for flat ABA frameworks.
 
 Wave C2a of the graph-theory speedup workstream: the ABA analog of
-:mod:`argumentation.preprocessing`'s Dung grounded reduct. Before a flat ABA
+:mod:`argumentation.core.preprocessing`'s Dung grounded reduct. Before a flat ABA
 framework is handed to the Z3 SAT path or the clingo ASP path, fix the part of
 the answer that is polynomially computable -- the well-founded (grounded)
 assumption set and the assumptions whose contrary it already derives -- then

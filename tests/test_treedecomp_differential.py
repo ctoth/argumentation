@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 
 

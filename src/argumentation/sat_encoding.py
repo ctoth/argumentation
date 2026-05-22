@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     _attackers_index,
     admissible,
@@ -133,7 +133,7 @@ def sat_extensions(
     # complete / preferred / stable -> SCC-recursive layer (Wave B2): grounded-reduct
     # preprocessing composed with Baroni-Giacomin-Guida SCC decomposition. Transparent.
     if semantics in ("complete", "preferred", "stable"):
-        from argumentation.scc_recursive import scc_extensions
+        from argumentation.core.scc_recursive import scc_extensions
 
         return _sorted_extensions(scc_extensions(framework, semantics))
     if semantics == "semi-stable":

@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from itertools import combinations
 from typing import Callable, Literal
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     cf2_extensions,
     complete_extensions,

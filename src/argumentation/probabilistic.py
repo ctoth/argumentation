@@ -107,7 +107,7 @@ def _normalize_strategy(strategy: str) -> tuple[str, str]:
         raise ValueError(f"Unknown strategy: {requested}. Supported strategies: {supported}")
     return _STRATEGY_ALIASES.get(requested, requested), requested
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     complete_extensions,
     grounded_extension,
@@ -566,7 +566,7 @@ def _build_sampled_framework(
     )
     all_defeats = set(direct_defeats)
     if sampled_supports and direct_defeats:
-        from argumentation.bipolar import cayrol_derived_defeats
+        from argumentation.core.bipolar import cayrol_derived_defeats
 
         all_defeats |= set(cayrol_derived_defeats(frozenset(direct_defeats), frozenset(sampled_supports)))
 

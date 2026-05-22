@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Final
 
-from argumentation.bipolar import (
+from argumentation.core.bipolar import (
     BipolarArgumentationFramework,
     bipolar_complete_extensions,
     bipolar_grounded_extension,
@@ -13,7 +13,7 @@ from argumentation.bipolar import (
     s_preferred_extensions,
     stable_extensions as bipolar_stable_extensions,
 )
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     cf2_extensions,
     complete_extensions,

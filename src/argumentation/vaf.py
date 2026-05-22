@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from itertools import permutations
 from typing import Mapping, Sequence
 
-from argumentation.dung import ArgumentationFramework, preferred_extensions
+from argumentation.core.dung import ArgumentationFramework, preferred_extensions
 
 
 Audience = tuple[str, ...]

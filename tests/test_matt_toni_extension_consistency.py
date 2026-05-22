@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.matt_toni import matt_toni_strengths
 
 

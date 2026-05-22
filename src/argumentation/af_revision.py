@@ -8,7 +8,7 @@ from enum import StrEnum
 from itertools import combinations
 from typing import Protocol
 
-from argumentation.dung import ArgumentationFramework, grounded_extension, stable_extensions
+from argumentation.core.dung import ArgumentationFramework, grounded_extension, stable_extensions
 
 
 class ExtensionConstraint(Protocol):

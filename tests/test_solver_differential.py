@@ -7,7 +7,7 @@ from hypothesis import given, settings, strategies as st
 
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
@@ -21,7 +21,7 @@ from argumentation.solver_differential import (
     run_benchmark_smoke,
     solver_capability_matrix,
 )
-from tests.test_dung import argumentation_frameworks
+from tests.core.test_dung import argumentation_frameworks
 
 
 @st.composite

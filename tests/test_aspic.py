@@ -35,7 +35,7 @@ from argumentation.aspic import (
     def_rules, last_def_rules, prem_p, is_firm, is_strict,
     CSAF, is_c_consistent, strict_closure,
 )
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     complete_extensions,
     grounded_extension,

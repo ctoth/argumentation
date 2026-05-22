@@ -14,7 +14,7 @@ from enum import StrEnum
 from itertools import product
 from typing import Any, Mapping, TypeAlias
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 
 
 class ThreeValued(StrEnum):

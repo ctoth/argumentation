@@ -7,7 +7,7 @@ importance of an argument or an attack to the framework's verdict.
 
 from __future__ import annotations
 
-from argumentation.dung import ArgumentationFramework, grounded_extension
+from argumentation.core.dung import ArgumentationFramework, grounded_extension
 from argumentation.dfquad import dfquad_strengths
 from argumentation.gradual import WeightedBipolarGraph
 

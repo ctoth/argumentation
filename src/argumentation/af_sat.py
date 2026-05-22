@@ -9,13 +9,13 @@ from hashlib import sha1
 from time import perf_counter
 from typing import Any
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     _attackers_index,
     grounded_extension,
     range_of,
 )
-from argumentation.preprocessing import AfSimplification, simplify_af
+from argumentation.core.preprocessing import AfSimplification, simplify_af
 
 
 @dataclass(frozen=True)

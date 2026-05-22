@@ -23,7 +23,7 @@ from enum import Enum
 from itertools import product
 from typing import TYPE_CHECKING
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 
 if TYPE_CHECKING:
     from argumentation.probabilistic import ProbabilisticAF

@@ -6,7 +6,7 @@ from itertools import combinations
 
 import pytest
 
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.partial_af import (
     PartialArgumentationFramework,
     enumerate_completions,

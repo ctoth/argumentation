@@ -5,7 +5,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 import argumentation
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 from argumentation.ranking import (
     RankingResult,
     burden_numbers,

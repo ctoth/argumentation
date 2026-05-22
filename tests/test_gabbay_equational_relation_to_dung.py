@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.dung import ArgumentationFramework, complete_extensions
+from argumentation.core.dung import ArgumentationFramework, complete_extensions
 from argumentation.equational import equational_fixpoint
 from argumentation.gradual import WeightedBipolarGraph
 

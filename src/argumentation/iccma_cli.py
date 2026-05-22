@@ -10,7 +10,7 @@ from typing import Sequence, TextIO
 from argumentation.aba import ABAFramework
 from argumentation.aspic import Literal
 from argumentation.iccma import parse_aba, parse_af
-from argumentation.labelling import ExactEnumerationExceeded
+from argumentation.core.labelling import ExactEnumerationExceeded
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     SingleExtensionSolverSuccess,

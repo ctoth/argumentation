@@ -13,8 +13,8 @@ import argumentation.solver as solver_module
 from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom, Literal, Rule
 from argumentation.aba_sat import support_extensions
-from argumentation.dung import ArgumentationFramework
-from argumentation.dung import stable_extensions as native_stable_extensions
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.dung import stable_extensions as native_stable_extensions
 from argumentation.iccma import parse_aba
 from argumentation.solver_adapters import iccma_af, iccma_aba
 from argumentation.solver_adapters.iccma_aba import (
@@ -39,7 +39,7 @@ from argumentation.solver_adapters.iccma_af import (
     solve_af_acceptance,
     solve_af_extensions,
 )
-from argumentation.solver_results import SolverUnavailable
+from argumentation.core.solver_results import SolverUnavailable
 
 
 def af(args: set[str], defeats: set[tuple[str, str]]) -> ArgumentationFramework:

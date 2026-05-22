@@ -4,11 +4,11 @@ from argumentation.aba import ABAFramework
 from argumentation.aspic import GroundAtom
 from argumentation.aspic import Literal
 from argumentation.aspic import Rule
-from argumentation.dung import ArgumentationFramework
-from argumentation.dung import complete_extensions
-from argumentation.dung import grounded_extension
-from argumentation.dung import preferred_extensions
-from argumentation.dung import stable_extensions
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.dung import complete_extensions
+from argumentation.core.dung import grounded_extension
+from argumentation.core.dung import preferred_extensions
+from argumentation.core.dung import stable_extensions
 import argumentation.solver as solver_module
 from argumentation.solver import (
     AcceptanceSolverSuccess,
@@ -23,7 +23,7 @@ from argumentation.solver import (
     solve_dung_single_extension,
 )
 from hypothesis import given, settings, strategies as st
-from tests.test_dung import argumentation_frameworks
+from tests.core.test_dung import argumentation_frameworks
 from argumentation.solver_adapters.iccma_af import (
     ICCMAOutput,
     ICCMAOutputKind,

@@ -18,7 +18,7 @@ from itertools import chain, combinations
 from typing import Mapping, TypeAlias
 
 from argumentation.aspic import Literal, Rule
-from argumentation.dung import ArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
 
 
 AssumptionSet: TypeAlias = frozenset[Literal]
