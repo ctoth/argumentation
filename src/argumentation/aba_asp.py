@@ -369,6 +369,10 @@ def _incremental_telemetry_metadata(telemetry) -> dict[str, Any]:
     }
     if telemetry.clingo_statistics is not None:
         metadata["clingo_statistics"] = telemetry.clingo_statistics
+    if telemetry.clingo_grounding is not None:
+        metadata["clingo_grounding"] = telemetry.clingo_grounding
+    if telemetry.clingo_assignment_probe is not None:
+        metadata["clingo_assignment_probe"] = telemetry.clingo_assignment_probe
     if telemetry.clingo_timeout_seconds is not None:
         metadata["clingo_timeout_seconds"] = telemetry.clingo_timeout_seconds
     if telemetry.clingo_interrupted:
