@@ -922,6 +922,7 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
         ICCMAConfig,
         SingleExtensionSolverSuccess,
         SolverBackendError,
+        SolverBackendTimeout,
         SolverBackendUnavailable,
         SolverProtocolError,
         solve_aba_acceptance,
@@ -974,6 +975,19 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
             return unavailable_result(result.reason, result.install_hint)
         if isinstance(result, SolverBackendError):
             return solver_error_result(result.reason, result.details)
+        if isinstance(result, SolverBackendTimeout):
+            return with_solver_metadata(
+                {
+                    "status": "timeout",
+                    "reason": result.reason,
+                    "answer": None,
+                    "extension_count": None,
+                    "witness_size": None,
+                    "witness": [],
+                    "error": None,
+                },
+                result.metadata,
+            )
         if isinstance(result, SolverProtocolError):
             return protocol_error_result(result.reason, result.details)
         raise TypeError(f"unknown solver result: {result!r}")
