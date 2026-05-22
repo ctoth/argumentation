@@ -73,12 +73,14 @@ def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(m
         *,
         clingo_control_args=(),
         collect_clingo_statistics=False,
+        clingo_solve_timeout_seconds=None,
     ):
         assert received == framework
         assert routed_semantics == "stable"
         assert backend == "asp"
         assert clingo_control_args == ()
         assert collect_clingo_statistics is False
+        assert clingo_solve_timeout_seconds is None
         return solver.SingleExtensionSolverSuccess(
             extension=frozenset(),
             metadata={
