@@ -27,7 +27,11 @@ from argumentation import aba_asp
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework, AssumptionSet, derives
 from argumentation.aba_asp import solve_aba_with_backend
-from argumentation.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
+from argumentation.aba_incremental import (
+    AbaIncrementalSolver,
+    ClingoSolveTimeout,
+    IncrementalTelemetry,
+)
 from argumentation.aspic import GroundAtom, Literal, Rule
 
 
@@ -522,6 +526,70 @@ def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) ->
     assert telemetry.clingo_statistics == {
         "summary": {"times": {"solve": 1.25}},
         "solving": {"solvers": {"choices": 7.0, "conflicts": 3.0, "restarts": 2.0}},
+    }
+
+
+def test_incremental_solver_interrupts_solve_at_diagnostic_timeout(monkeypatch) -> None:
+    framework = battery()[0]
+
+    class FakeHandle:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return False
+
+        def wait(self, timeout):
+            assert timeout == 0.25
+            return False
+
+        def cancel(self):
+            return None
+
+        def get(self):
+            class FakeResult:
+                satisfiable = False
+                interrupted = True
+
+            return FakeResult()
+
+    class FakeControl:
+        def __init__(self, args):
+            self.statistics = {
+                "summary": {"times": {"solve": 0.25}},
+                "solving": {"solvers": {"choices": 11.0}},
+            }
+
+        def add(self, *args, **kwargs):
+            return None
+
+        def ground(self, *args, **kwargs):
+            return None
+
+        def solve(self, *args, **kwargs):
+            assert kwargs["async_"] is True
+            return FakeHandle()
+
+    class FakeClingo:
+        Control = FakeControl
+
+    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+
+    solver = AbaIncrementalSolver(
+        framework,
+        collect_statistics=True,
+        solve_timeout_seconds=0.25,
+    )
+    telemetry = IncrementalTelemetry()
+
+    with pytest.raises(ClingoSolveTimeout):
+        solver.find_stable_extension(telemetry=telemetry)
+
+    assert telemetry.clingo_timeout_seconds == 0.25
+    assert telemetry.clingo_interrupted is True
+    assert telemetry.clingo_statistics == {
+        "summary": {"times": {"solve": 0.25}},
+        "solving": {"solvers": {"choices": 11.0}},
     }
 
 
