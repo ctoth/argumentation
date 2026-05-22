@@ -133,7 +133,7 @@ def test_telemetry_is_rule_order_invariant(framework) -> None:
 
 def test_duplicate_syntactic_rules_do_not_create_fake_atoms_or_assumptions() -> None:
     from argumentation.structured.aba.aba_telemetry import aba_structural_telemetry
-    from argumentation.iccma import parse_aba
+    from argumentation.interop.iccma import parse_aba
 
     framework = parse_aba(
         "\n".join(

@@ -19,7 +19,7 @@ from argumentation.core.dung import (
     grounded_extension,
     range_of,
 )
-from argumentation.iccma import write_af
+from argumentation.interop.iccma import write_af
 from argumentation.core.solver_results import (
     SolverProcessError,
     SolverProtocolError,

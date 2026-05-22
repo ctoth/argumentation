@@ -35,7 +35,7 @@ from argumentation.af_sat import (
     find_stable_extension,
     find_stage_extension,
 )
-from argumentation.iccma import parse_apx
+from argumentation.interop.iccma import parse_apx
 from argumentation.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,

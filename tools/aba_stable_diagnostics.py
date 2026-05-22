@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal
-from argumentation.iccma import parse_aba
+from argumentation.interop.iccma import parse_aba
 
 
 def stable_diagnostics(

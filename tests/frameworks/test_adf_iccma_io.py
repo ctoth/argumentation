@@ -9,7 +9,7 @@ from argumentation.frameworks.adf import (
     Not,
     True_,
 )
-from argumentation.iccma import parse_adf, write_adf
+from argumentation.interop.iccma import parse_adf, write_adf
 
 
 def test_adf_iccma_round_trip_preserves_ast_shape() -> None:

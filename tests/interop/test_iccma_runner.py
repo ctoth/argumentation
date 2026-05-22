@@ -439,7 +439,7 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
     framework = object()
     captured = {}
 
-    monkeypatch.setattr("argumentation.iccma.parse_aba", lambda text: framework)
+    monkeypatch.setattr("argumentation.interop.iccma.parse_aba", lambda text: framework)
 
     def fake_solve(framework_arg, **kwargs):
         captured["framework"] = framework_arg
@@ -494,7 +494,7 @@ def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeyp
     instance_path.write_text("ignored by parser monkeypatch\n", encoding="utf-8")
     captured = {}
 
-    monkeypatch.setattr("argumentation.iccma.parse_aba", lambda text: object())
+    monkeypatch.setattr("argumentation.interop.iccma.parse_aba", lambda text: object())
 
     def fake_solve(framework_arg, **kwargs):
         captured["kwargs"] = kwargs

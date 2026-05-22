@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from argumentation.structured.aba.aba import ABAFramework, derives
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.iccma import parse_aba, write_aba
+from argumentation.interop.iccma import parse_aba, write_aba
 
 
 SCHEMA_VERSION = 1

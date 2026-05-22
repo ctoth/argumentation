@@ -13,7 +13,7 @@ from argumentation.structured.aba.aba_telemetry import (
     STRUCTURAL_TELEMETRY_KEYS,
     aba_structural_telemetry,
 )
-from argumentation.iccma import parse_aba
+from argumentation.interop.iccma import parse_aba
 from tools.iccma2025_run_native import DATA_ROOT, read_instance_text, resolve_instance_path
 
 

@@ -6,7 +6,7 @@ import sys
 
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.iccma import write_aba
+from argumentation.interop.iccma import write_aba
 from tools import aba_shape_benchmark
 from tools.aba_shape_benchmark import (
     AbaShape,

@@ -7,7 +7,7 @@ from pathlib import Path
 from tools.iccma_timeout_corpus import collect_timeout_rows, summarize_timeout_rows
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 FIELDS = [

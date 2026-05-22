@@ -13,7 +13,7 @@ from tools.iccma_run_timeout_rows import (
 from tools.iccma_timeout_corpus import summarize_timeout_rows
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 CAP150_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-cap150-timeouts.json"
 CAP200_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-cap200-timeouts.json"
 ICCMA_2025_INPUT_ROOT = ROOT / "data" / "iccma" / "2025" / "extracted" / "instances"

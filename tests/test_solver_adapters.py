@@ -15,7 +15,7 @@ from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.structured.aba.aba_sat import support_extensions
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.dung import stable_extensions as native_stable_extensions
-from argumentation.iccma import parse_aba
+from argumentation.interop.iccma import parse_aba
 from argumentation.solver_adapters import iccma_af, iccma_aba
 from argumentation.solver_adapters.iccma_aba import (
     ICCMAABAOutputKind,

@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
-from argumentation.iccma import parse_aba
+from argumentation.interop.iccma import parse_aba
 
 
 def _run_with_timeout(instance: Path, mode: str, *, timeout_seconds: float) -> dict[str, Any]:

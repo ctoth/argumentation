@@ -21,7 +21,7 @@ from argumentation.structured.aba.aba_decomposition import plan_decomposed_prefs
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aba.aba_route_policy import native_cnf_prefsat_dense_shape
 from argumentation.structured.aspic.aspic import GroundAtom, Literal
-from argumentation.iccma import parse_aba
+from argumentation.interop.iccma import parse_aba
 from tools.iccma2025_run_native import TASK_TO_SEMANTICS, run_child as run_native_child
 
 

@@ -4,7 +4,7 @@ import pytest
 
 from argumentation.structured.aba.aba import ABAFramework, NotFlatABAError
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.iccma import parse_aba, parse_apx, parse_tgf, write_aba, write_numeric_aba
+from argumentation.interop.iccma import parse_aba, parse_apx, parse_tgf, write_aba, write_numeric_aba
 
 
 def lit(name: str) -> Literal:
