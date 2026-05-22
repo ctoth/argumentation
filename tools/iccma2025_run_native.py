@@ -950,13 +950,20 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
             timeout_seconds=float(job["solver_timeout_seconds"]),
         )
     if problem == "SE":
+        collect_clingo_statistics = bool(job.get("collect_clingo_statistics", False))
+        clingo_solve_timeout_seconds = (
+            max(0.1, float(job["solver_timeout_seconds"]) - 1.0)
+            if collect_clingo_statistics
+            else None
+        )
         result = solve_aba_single_extension(
             framework,
             semantics=semantics,
             backend=backend,
             iccma=iccma_config,
             clingo_control_args=tuple(job.get("clingo_control_args", ())),
-            collect_clingo_statistics=bool(job.get("collect_clingo_statistics", False)),
+            collect_clingo_statistics=collect_clingo_statistics,
+            clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
         if isinstance(result, SingleExtensionSolverSuccess):
             return with_solver_metadata(
