@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation import backends
+from argumentation.solving import backends
 
 
 def test_default_backend_uses_materialized_for_weakest_link() -> None:

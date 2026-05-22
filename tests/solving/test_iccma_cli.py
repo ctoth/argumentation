@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation import iccma_cli
+from argumentation.solving import iccma_cli
 from argumentation.core.labelling import ExactEnumerationExceeded
 
 
@@ -52,7 +52,7 @@ def test_iccma_cli_auto_uses_sat_for_stable_af(tmp_path, capsys, monkeypatch) ->
         return iccma_cli.SingleExtensionSolverSuccess(extension=frozenset({"1"}))
 
     monkeypatch.setattr(
-        "argumentation.iccma_cli.solve_dung_single_extension",
+        "argumentation.solving.iccma_cli.solve_dung_single_extension",
         fake_solve_single_extension,
     )
 
@@ -88,7 +88,7 @@ def test_iccma_cli_reports_exact_enumeration_limits(
         raise ExactEnumerationExceeded("too many candidate subsets")
 
     monkeypatch.setattr(
-        "argumentation.iccma_cli.solve_dung_single_extension",
+        "argumentation.solving.iccma_cli.solve_dung_single_extension",
         fake_solve_single_extension,
     )
 

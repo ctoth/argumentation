@@ -13,7 +13,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.af_sat import (
+from argumentation.solving.af_sat import (
     find_complete_extension,
     find_ideal_extension,
     find_preferred_extension,

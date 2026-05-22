@@ -18,7 +18,7 @@ from argumentation.structured.aba.aba_sat import (
     sat_support_extension as sat_aba_support_extension,
     support_extensions as sat_aba_support_extensions,
 )
-from argumentation.af_sat import (
+from argumentation.solving.af_sat import (
     SATTraceSink,
     find_complete_extension,
     find_ideal_extension,
@@ -42,7 +42,7 @@ from argumentation.core.dung import (
     stage_extensions,
 )
 from argumentation.structured.aba.aba_route_policy import sparse_narrow_native_sat_shape
-from argumentation.sat_encoding import (
+from argumentation.solving.sat_encoding import (
     sat_extensions,
 )
 from argumentation.core.scc_recursive import (

@@ -11,7 +11,7 @@ from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.interop.iccma import parse_aba, parse_af
 from argumentation.core.labelling import ExactEnumerationExceeded
-from argumentation.solver import (
+from argumentation.solving.solver import (
     AcceptanceSolverSuccess,
     SingleExtensionSolverSuccess,
     solve_aba_acceptance,
@@ -81,7 +81,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="argumentation.iccma_cli",
+        prog="argumentation.solving.iccma_cli",
         description="Solve ICCMA-style abstract argumentation tasks.",
     )
     parser.add_argument("-p", "--problem", required=True, help="ICCMA problem, e.g. SE-ST")

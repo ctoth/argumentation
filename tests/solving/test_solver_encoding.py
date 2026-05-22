@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from hypothesis import given, settings
 
-import argumentation.af_sat as af_sat
+import argumentation.solving.af_sat as af_sat
 from argumentation.core.dung import (
     ArgumentationFramework,
     _attackers_index,
@@ -19,7 +19,7 @@ from argumentation.core.dung import (
     stable_extensions,
     stage_extensions,
 )
-from argumentation.af_sat import (
+from argumentation.solving.af_sat import (
     AfSatKernel,
     PreferredSkepticalTaskSolver,
     PreferredSuperCoreSolver,
@@ -36,13 +36,13 @@ from argumentation.af_sat import (
     find_stage_extension,
 )
 from argumentation.interop.iccma import parse_apx
-from argumentation.sat_encoding import (
+from argumentation.solving.sat_encoding import (
     CNFEncoding,
     encode_stable_extensions,
     sat_extensions,
     stable_extensions_from_encoding,
 )
-from argumentation.solver import solve_dung_acceptance
+from argumentation.solving.solver import solve_dung_acceptance
 from tests.core.test_dung import af, argumentation_frameworks
 
 

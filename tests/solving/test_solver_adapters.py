@@ -9,7 +9,7 @@ from types import SimpleNamespace
 import pytest
 from hypothesis import given, settings, strategies as st
 
-import argumentation.solver as solver_module
+import argumentation.solving.solver as solver_module
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.structured.aba.aba_sat import support_extensions
@@ -232,7 +232,7 @@ def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
 
     def fake_run(command, *, capture_output, text, timeout, check):
         calls.append(command)
-        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.iccma_cli"]
+        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.solving.iccma_cli"]
         assert command[5:8] == ["-p", "SE-ST", "-f"]
         assert command[8].endswith(".af")
         assert capture_output is True
@@ -249,7 +249,7 @@ def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
     result = solve_af_extensions(
         framework,
         semantics="stable",
-        binary="uv run python -m argumentation.iccma_cli",
+        binary="uv run python -m argumentation.solving.iccma_cli",
         timeout_seconds=5.0,
     )
 
@@ -815,7 +815,7 @@ def test_iccma_aba_adapter_accepts_python_module_command(monkeypatch) -> None:
 
     def fake_run(command, *, capture_output, text, timeout, check):
         calls.append(command)
-        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.iccma_cli"]
+        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.solving.iccma_cli"]
         assert command[5:8] == ["-p", "SE-ST", "-f"]
         assert command[8].endswith(".aba")
         assert capture_output is True
@@ -832,7 +832,7 @@ def test_iccma_aba_adapter_accepts_python_module_command(monkeypatch) -> None:
     result = solve_iccma_aba_extensions(
         framework,
         semantics="stable",
-        binary="uv run python -m argumentation.iccma_cli",
+        binary="uv run python -m argumentation.solving.iccma_cli",
         timeout_seconds=5.0,
     )
 

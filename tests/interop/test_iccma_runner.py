@@ -431,7 +431,7 @@ def test_write_csv_accepts_profiled_rows(tmp_path) -> None:
 def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
     tmp_path, monkeypatch
 ) -> None:
-    from argumentation.solver import SingleExtensionSolverSuccess
+    from argumentation.solving.solver import SingleExtensionSolverSuccess
 
     instance_path = tmp_path / "extracted" / "instances" / "case.aba"
     instance_path.parent.mkdir(parents=True)
@@ -453,7 +453,7 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
             },
         )
 
-    monkeypatch.setattr("argumentation.solver.solve_aba_single_extension", fake_solve)
+    monkeypatch.setattr("argumentation.solving.solver.solve_aba_single_extension", fake_solve)
 
     result = solve_aba_job(
         {
@@ -487,7 +487,7 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
 
 
 def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeypatch) -> None:
-    from argumentation.solver import SingleExtensionSolverSuccess
+    from argumentation.solving.solver import SingleExtensionSolverSuccess
 
     instance_path = tmp_path / "extracted" / "instances" / "case.aba"
     instance_path.parent.mkdir(parents=True)
@@ -506,7 +506,7 @@ def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeyp
             },
         )
 
-    monkeypatch.setattr("argumentation.solver.solve_aba_single_extension", fake_solve)
+    monkeypatch.setattr("argumentation.solving.solver.solve_aba_single_extension", fake_solve)
 
     solve_aba_job(
         {

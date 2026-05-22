@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import solver
+from argumentation.solving import solver
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aba.aba_sat import NativeSparseNarrowSatResult
 from argumentation.structured.aba.aba_route_policy import (

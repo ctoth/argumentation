@@ -758,7 +758,7 @@ def find_query_path(instance_path: Path) -> Path | None:
 
 def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
     from argumentation.interop.iccma import parse_af, parse_apx, parse_tgf
-    from argumentation.solver import (
+    from argumentation.solving.solver import (
         AcceptanceSolverSuccess,
         ICCMAConfig,
         SATConfig,
@@ -917,7 +917,7 @@ def infer_year(instance: dict[str, Any], task: dict[str, Any]) -> str | None:
 def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
     from argumentation.structured.aspic.aspic import GroundAtom, Literal
     from argumentation.interop.iccma import parse_aba
-    from argumentation.solver import (
+    from argumentation.solving.solver import (
         AcceptanceSolverSuccess,
         ICCMAConfig,
         SingleExtensionSolverSuccess,

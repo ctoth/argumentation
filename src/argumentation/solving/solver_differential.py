@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Literal
 
-from argumentation.solver import (
+from argumentation.solving.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverResult,
     ExtensionSolverSuccess,

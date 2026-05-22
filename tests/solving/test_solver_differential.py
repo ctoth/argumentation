@@ -8,14 +8,14 @@ from hypothesis import given, settings, strategies as st
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.solver import (
+from argumentation.solving.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     SingleExtensionSolverSuccess,
     solve_aba_acceptance,
     solve_dung_extensions,
 )
-from argumentation.solver_differential import (
+from argumentation.solving.solver_differential import (
     assert_solver_results_agree,
     load_benchmark_manifest,
     run_benchmark_smoke,

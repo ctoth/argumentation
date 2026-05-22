@@ -8,7 +8,7 @@ from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.solver import (
+from argumentation.solving.solver import (
     AcceptanceSolverSuccess,
     ICCMAConfig,
     SingleExtensionSolverSuccess,
@@ -115,7 +115,7 @@ def test_solve_aba_single_extension_auto_uses_stable_sat_without_native_enumerat
     def fail_native(*args, **kwargs):
         raise AssertionError("native ABA stable enumeration should not run")
 
-    monkeypatch.setattr("argumentation.solver.aba_semantics.stable_extensions", fail_native)
+    monkeypatch.setattr("argumentation.solving.solver.aba_semantics.stable_extensions", fail_native)
 
     result = solve_aba_single_extension(framework, semantics="stable")
 
@@ -131,7 +131,7 @@ def test_solve_aba_acceptance_auto_uses_stable_sat_without_native_enumeration(
     def fail_native(*args, **kwargs):
         raise AssertionError("native ABA stable enumeration should not run")
 
-    monkeypatch.setattr("argumentation.solver.aba_semantics.stable_extensions", fail_native)
+    monkeypatch.setattr("argumentation.solving.solver.aba_semantics.stable_extensions", fail_native)
 
     result = solve_aba_acceptance(
         framework,
@@ -156,7 +156,7 @@ def test_solve_aba_single_extension_auto_uses_support_sat_without_enumeration(
         raise AssertionError("ABA support extension enumeration should not run")
 
     monkeypatch.setattr(
-        "argumentation.solver.sat_aba_support_extensions",
+        "argumentation.solving.solver.sat_aba_support_extensions",
         fail_support_enumeration,
     )
 
@@ -179,7 +179,7 @@ def test_solve_aba_acceptance_auto_uses_support_sat_without_enumeration(
         raise AssertionError("ABA support acceptance enumeration should not run")
 
     monkeypatch.setattr(
-        "argumentation.solver.sat_aba_support_extensions",
+        "argumentation.solving.solver.sat_aba_support_extensions",
         fail_support_enumeration,
     )
 

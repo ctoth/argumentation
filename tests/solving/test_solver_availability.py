@@ -9,8 +9,8 @@ from argumentation.core.dung import complete_extensions
 from argumentation.core.dung import grounded_extension
 from argumentation.core.dung import preferred_extensions
 from argumentation.core.dung import stable_extensions
-import argumentation.solver as solver_module
-from argumentation.solver import (
+import argumentation.solving.solver as solver_module
+from argumentation.solving.solver import (
     AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     SingleExtensionSolverSuccess,
@@ -686,7 +686,7 @@ def test_solve_dung_single_extension_routes_explicit_iccma_backend(monkeypatch) 
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_extensions",
+        "argumentation.solving.solver.iccma_af.solve_af_extensions",
         fake_solve_af_extensions,
     )
 
@@ -713,7 +713,7 @@ def test_solve_dung_single_extension_maps_iccma_unavailable(monkeypatch) -> None
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_extensions",
+        "argumentation.solving.solver.iccma_af.solve_af_extensions",
         fake_solve_af_extensions,
     )
 
@@ -744,7 +744,7 @@ def test_solve_dung_single_extension_requires_iccma_config_before_subprocess(
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_extensions",
+        "argumentation.solving.solver.iccma_af.solve_af_extensions",
         fake_solve_af_extensions,
     )
 
@@ -773,7 +773,7 @@ def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> Non
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_extensions",
+        "argumentation.solving.solver.iccma_af.solve_af_extensions",
         fake_solve_af_extensions,
     )
 
@@ -803,7 +803,7 @@ def test_solve_dung_single_extension_preserves_iccma_protocol_error(monkeypatch)
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_extensions",
+        "argumentation.solving.solver.iccma_af.solve_af_extensions",
         fake_solve_af_extensions,
     )
 
@@ -841,7 +841,7 @@ def test_solve_dung_acceptance_preserves_iccma_protocol_error(monkeypatch) -> No
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_acceptance",
+        "argumentation.solving.solver.iccma_af.solve_af_acceptance",
         fake_solve_af_acceptance,
     )
 
@@ -893,7 +893,7 @@ def test_solve_dung_acceptance_requires_iccma_config_before_subprocess(
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_acceptance",
+        "argumentation.solving.solver.iccma_af.solve_af_acceptance",
         fake_solve_af_acceptance,
     )
 
@@ -981,7 +981,7 @@ def test_solve_dung_acceptance_routes_explicit_iccma_backend(monkeypatch) -> Non
         )
 
     monkeypatch.setattr(
-        "argumentation.solver.iccma_af.solve_af_acceptance",
+        "argumentation.solving.solver.iccma_af.solve_af_acceptance",
         fake_solve_af_acceptance,
     )
 
