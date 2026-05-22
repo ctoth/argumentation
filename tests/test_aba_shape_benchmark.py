@@ -438,10 +438,14 @@ def test_benchmark_rows_emit_paper_route_features(monkeypatch, tmp_path: Path) -
         profile_dir=None,
         profile_format="speedscope",
         profile_duration_seconds=None,
+        clingo_control_args=(),
+        collect_clingo_statistics=False,
     ):
         assert profile_dir is None
         assert profile_format == "speedscope"
         assert profile_duration_seconds is None
+        assert clingo_control_args == ()
+        assert collect_clingo_statistics is False
         return {
             "asp": {
                 "status": "solved",
