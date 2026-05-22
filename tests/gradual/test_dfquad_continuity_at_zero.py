@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from hypothesis import given, strategies as st
 
-from argumentation.dfquad import dfquad_strengths
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.dfquad import dfquad_strengths
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 @given(

@@ -13,7 +13,7 @@ from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.sensitivity import attack_removal_sensitivity, score_conflict
+from argumentation.gradual.sensitivity import attack_removal_sensitivity, score_conflict
 
 
 # ── score_conflict ──────────────────────────────────────────────────

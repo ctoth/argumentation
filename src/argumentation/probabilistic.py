@@ -1402,8 +1402,8 @@ def _compute_dfquad(
     the same as a weak argument. A principled separation would maintain P_A for
     sampling and τ as an independent parameter.
     """
-    from argumentation.dfquad import dfquad_bipolar_strengths, dfquad_strengths
-    from argumentation.gradual import WeightedBipolarGraph
+    from argumentation.gradual.dfquad import dfquad_bipolar_strengths, dfquad_strengths
+    from argumentation.gradual.gradual import WeightedBipolarGraph
 
     if semantics != "grounded":
         raise ValueError(

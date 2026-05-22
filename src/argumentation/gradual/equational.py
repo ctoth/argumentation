@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from argumentation.gradual import GradualStrengthResult, WeightedBipolarGraph
+from argumentation.gradual.gradual import GradualStrengthResult, WeightedBipolarGraph
 
 
 EquationScheme = Literal["inverse", "max", "min"]

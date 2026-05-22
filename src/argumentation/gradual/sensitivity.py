@@ -8,8 +8,8 @@ importance of an argument or an attack to the framework's verdict.
 from __future__ import annotations
 
 from argumentation.core.dung import ArgumentationFramework, grounded_extension
-from argumentation.dfquad import dfquad_strengths
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.dfquad import dfquad_strengths
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 def score_conflict(
@@ -84,7 +84,7 @@ def attack_removal_sensitivity(
 
     ``supports`` maps support edges to their weights and ``base_scores`` gives
     each argument's base score; both are passed straight through to
-    :func:`argumentation.dfquad.dfquad_strengths`.
+    :func:`argumentation.gradual.dfquad.dfquad_strengths`.
     """
     if attack not in framework.defeats:
         return 0.0

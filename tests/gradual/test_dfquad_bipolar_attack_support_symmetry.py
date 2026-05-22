@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.dfquad import dfquad_bipolar_strengths
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.dfquad import dfquad_bipolar_strengths
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 def test_bipolar_single_support_and_attack_are_symmetric_around_neutral() -> None:

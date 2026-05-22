@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.equational import equational_fixpoint
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.equational import equational_fixpoint
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 def test_eq_inverse_and_eq_max_on_simple_attack_chain() -> None:

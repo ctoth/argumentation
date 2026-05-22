@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.gradual import (
+from argumentation.gradual.gradual import (
     WeightedBipolarGraph,
     quadratic_energy_strengths_continuous,
     quadratic_energy_strengths_discrete,

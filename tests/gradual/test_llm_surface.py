@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.llm_surface import (
+from argumentation.gradual.llm_surface import (
     build_qbaf_from_proposition_set,
     contest,
     explain_acceptance,

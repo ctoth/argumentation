@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Mapping
 
-from argumentation.gradual import (
+from argumentation.gradual.gradual import (
     ShapleyAttackImpactResult,
     WeightedBipolarGraph,
     quadratic_energy_strengths,

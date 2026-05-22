@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.gradual import (
+from argumentation.gradual.gradual import (
     WeightedBipolarGraph,
     quadratic_energy_strengths,
     quadratic_energy_strengths_continuous,

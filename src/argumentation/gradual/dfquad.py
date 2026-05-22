@@ -6,7 +6,7 @@ import math
 from collections import deque
 from collections.abc import Mapping
 
-from argumentation.gradual import GradualStrengthResult, WeightedBipolarGraph
+from argumentation.gradual.gradual import GradualStrengthResult, WeightedBipolarGraph
 
 
 def dfquad_aggregate(base_score: float, combined_influence: float) -> float:

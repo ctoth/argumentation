@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework, complete_extensions
-from argumentation.equational import equational_fixpoint
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.equational import equational_fixpoint
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 def test_eq_min_crisp_attack_chain_recovers_complete_extension_acceptance() -> None:

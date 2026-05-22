@@ -3,9 +3,9 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-from argumentation.dfquad import dfquad_strengths
-from argumentation.gradual import WeightedBipolarGraph
-from argumentation.gradual_principles import (
+from argumentation.gradual.dfquad import dfquad_strengths
+from argumentation.gradual.gradual import WeightedBipolarGraph
+from argumentation.gradual.gradual_principles import (
     PRINCIPLE_COMPLIANCE,
     ComplianceLabel,
     principle_balance,

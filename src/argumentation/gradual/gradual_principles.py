@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from enum import Enum
 
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.gradual import WeightedBipolarGraph
 
 
 StrengthFunction = Callable[[WeightedBipolarGraph], dict[str, float]]

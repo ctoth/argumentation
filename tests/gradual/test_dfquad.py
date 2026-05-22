@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.dfquad import (
+from argumentation.gradual.dfquad import (
     dfquad_aggregate,
     dfquad_bipolar_strengths,
     dfquad_combine,
     dfquad_strengths,
 )
-from argumentation.gradual import WeightedBipolarGraph
+from argumentation.gradual.gradual import WeightedBipolarGraph
 from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 
 
