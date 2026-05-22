@@ -655,6 +655,30 @@ def test_solve_aba_with_backend_returns_clingo_timeout_metadata(monkeypatch) -> 
     }
 
 
+def test_solve_aba_with_backend_collects_clingo_instrumentation_metadata() -> None:
+    result = solve_aba_with_backend(
+        battery()[1],
+        backend="asp",
+        semantics="stable",
+        task="single-extension",
+        collect_clingo_statistics=True,
+    )
+
+    assert result.status == "success"
+    grounding = result.metadata["clingo_grounding"]
+    probe = result.metadata["clingo_assignment_probe"]
+
+    assert grounding["rules"]["total"] > 0
+    assert grounding["rules"]["by_head_predicate"]["in/1"] > 0
+    assert grounding["rules"]["by_head_predicate"]["out/1"] > 0
+    assert grounding["rules"]["by_head_predicate"]["supported/1"] > 0
+    assert grounding["rules"]["by_head_predicate"]["defeated/1"] > 0
+    assert probe["watched_by_predicate"]["in/1"] > 0
+    assert probe["watched_by_predicate"]["out/1"] > 0
+    assert probe["watched_by_predicate"]["supported/1"] > 0
+    assert probe["watched_by_predicate"]["defeated/1"] > 0
+
+
 def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> None:
     framework = battery()[0]
 
