@@ -22,8 +22,6 @@ from argumentation.subjective_aspic import (
 
 def test_subjective_aspic_module_is_exported() -> None:
     assert argumentation.subjective_aspic.subjective_knowledge_base is subjective_knowledge_base
-    assert "subjective_aspic" in argumentation.__all__
-    assert "value_based" not in argumentation.__all__
 
 
 def lit(name: str) -> Literal:

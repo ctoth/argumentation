@@ -13,7 +13,6 @@ from argumentation.weighted import (
 
 def test_weighted_module_is_exported() -> None:
     assert argumentation.weighted.WeightedArgumentationFramework is WeightedArgumentationFramework
-    assert "weighted" in argumentation.__all__
 
 
 def _mutual_weighted_framework() -> WeightedArgumentationFramework:

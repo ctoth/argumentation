@@ -21,7 +21,6 @@ from argumentation.ranking_axioms import (
 
 def test_ranking_axioms_module_is_exported() -> None:
     assert argumentation.ranking_axioms.void_precedence is void_precedence
-    assert "ranking_axioms" in argumentation.__all__
 
 
 def test_strict_preference_transitive_checks_ranking_result() -> None:

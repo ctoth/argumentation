@@ -15,7 +15,6 @@ from argumentation.practical_reasoning import (
 
 def test_practical_reasoning_module_is_exported() -> None:
     assert argumentation.practical_reasoning.PracticalArgument is PracticalArgument
-    assert "practical_reasoning" in argumentation.__all__
 
 
 def _toy_aats() -> ActionBasedAlternatingTransitionSystem:

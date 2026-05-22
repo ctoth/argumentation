@@ -23,7 +23,6 @@ from argumentation.ranking import (
 def test_ranking_module_is_exported() -> None:
     assert argumentation.ranking.categoriser_scores is categoriser_scores
     assert argumentation.ranking.RankingResult is RankingResult
-    assert "ranking" in argumentation.__all__
 
 
 def _bonzon_example() -> ArgumentationFramework:

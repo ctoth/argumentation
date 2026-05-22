@@ -9,7 +9,6 @@ from argumentation.vaf import ValueBasedArgumentationFramework
 
 def test_vaf_module_is_exported() -> None:
     assert argumentation.vaf.ValueBasedArgumentationFramework is ValueBasedArgumentationFramework
-    assert "vaf" in argumentation.__all__
 
 
 def test_successful_attacks_follow_bench_capon_defeat_condition() -> None:

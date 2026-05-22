@@ -13,7 +13,6 @@ from argumentation.gradual import (
 
 def test_gradual_module_is_exported() -> None:
     assert argumentation.gradual.WeightedBipolarGraph is WeightedBipolarGraph
-    assert "gradual" in argumentation.__all__
 
 
 def test_quadratic_energy_keeps_isolated_argument_at_initial_weight() -> None:

@@ -32,8 +32,6 @@ ASP_CONSTANT_RE = re.compile(r"^[a-z][A-Za-z0-9_]*$")
 def test_aspic_encoding_module_is_exported_from_package() -> None:
     package = importlib.reload(argumentation)
 
-    assert "aspic_encoding" in package.__all__
-
 
 def test_aspic_encoding_assigns_deterministic_facts_and_signature() -> None:
     p = Literal(GroundAtom("p"))

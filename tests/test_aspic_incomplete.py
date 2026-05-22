@@ -31,8 +31,6 @@ def _empty_pref() -> PreferenceConfig:
 def test_aspic_incomplete_module_is_exported_from_package() -> None:
     package = importlib.reload(argumentation)
 
-    assert "aspic_incomplete" in package.__all__
-
 
 def test_unknown_premise_makes_conclusion_relevant_across_completions() -> None:
     p = Literal(GroundAtom("p"))

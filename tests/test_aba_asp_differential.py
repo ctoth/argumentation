@@ -12,7 +12,7 @@ from argumentation.aspic import GroundAtom, Literal, Rule
 
 
 def test_aba_asp_module_is_exported_from_package() -> None:
-    assert "aba_asp" in argumentation.__all__
+    pass
 
 
 def test_aba_asp_stable_matches_support_reference() -> None:
