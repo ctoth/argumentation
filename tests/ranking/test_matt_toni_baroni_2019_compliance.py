@@ -6,7 +6,7 @@ from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.gradual.gradual_principles import PRINCIPLE_COMPLIANCE, ComplianceLabel
-from argumentation.matt_toni import matt_toni_strengths
+from argumentation.ranking.matt_toni import matt_toni_strengths
 
 
 @given(st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False))

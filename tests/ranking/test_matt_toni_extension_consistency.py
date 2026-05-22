@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.matt_toni import matt_toni_strengths
+from argumentation.ranking.matt_toni import matt_toni_strengths
 
 
 def test_unattacked_arguments_are_strongest_and_attacked_arguments_are_weaker() -> None:

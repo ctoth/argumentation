@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.matt_toni import matt_toni_strengths
+from argumentation.ranking.matt_toni import matt_toni_strengths
 
 
 def test_matt_toni_table_one_f8_strengths() -> None:

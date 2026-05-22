@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import argumentation
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking import categoriser_ranking
-from argumentation.ranking_axioms import (
+from argumentation.ranking.ranking import categoriser_ranking
+from argumentation.ranking.ranking_axioms import (
     abstraction,
     cardinality_precedence,
     counter_transitivity,
@@ -17,10 +16,6 @@ from argumentation.ranking_axioms import (
     strict_preference_transitive,
     void_precedence,
 )
-
-
-def test_ranking_axioms_module_is_exported() -> None:
-    assert argumentation.ranking_axioms.void_precedence is void_precedence
 
 
 def test_strict_preference_transitive_checks_ranking_result() -> None:

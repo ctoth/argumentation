@@ -4,9 +4,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-import argumentation
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking import (
+from argumentation.ranking.ranking import (
     RankingResult,
     burden_numbers,
     burden_ranking,
@@ -18,11 +17,6 @@ from argumentation.ranking import (
     iterated_graded_ranking,
     tuples_ranking,
 )
-
-
-def test_ranking_module_is_exported() -> None:
-    assert argumentation.ranking.categoriser_scores is categoriser_scores
-    assert argumentation.ranking.RankingResult is RankingResult
 
 
 def _bonzon_example() -> ArgumentationFramework:

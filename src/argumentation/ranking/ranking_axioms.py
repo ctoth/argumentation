@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking import RankingResult
+from argumentation.ranking.ranking import RankingResult
 
 RankingSemantics = Callable[[ArgumentationFramework], RankingResult]
 

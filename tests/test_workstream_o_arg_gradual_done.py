@@ -7,8 +7,8 @@ import pytest
 
 
 def test_workstream_o_arg_gradual_public_surface_is_complete() -> None:
-    from argumentation import matt_toni
     from argumentation.gradual import dfquad, equational, gradual, gradual_principles
+    from argumentation.ranking import matt_toni
 
     assert matt_toni is not None
     assert equational is not None

@@ -6,8 +6,8 @@ import pytest
 
 import argumentation
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking import RankingResult, categoriser_scores
-from argumentation.ranking_axioms import (
+from argumentation.ranking.ranking import RankingResult, categoriser_scores
+from argumentation.ranking.ranking_axioms import (
     abstraction,
     cardinality_precedence,
     counter_transitivity,
@@ -31,8 +31,8 @@ def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
     assert argumentation.structured.aspic.subjective_aspic is importlib.import_module(
         "argumentation.structured.aspic.subjective_aspic"
     )
-    assert argumentation.ranking_axioms is importlib.import_module(
-        "argumentation.ranking_axioms"
+    assert argumentation.ranking.ranking_axioms is importlib.import_module(
+        "argumentation.ranking.ranking_axioms"
     )
 
     with pytest.raises(ModuleNotFoundError):
@@ -63,16 +63,16 @@ def test_workstream_o_arg_vaf_ranking_contracts_are_closed() -> None:
         strict_preference_transitive,
         void_precedence,
     } == {
-        argumentation.ranking_axioms.abstraction,
-        argumentation.ranking_axioms.cardinality_precedence,
-        argumentation.ranking_axioms.counter_transitivity,
-        argumentation.ranking_axioms.defense_precedence,
-        argumentation.ranking_axioms.distributed_defense_precedence,
-        argumentation.ranking_axioms.independence,
-        argumentation.ranking_axioms.quality_precedence,
-        argumentation.ranking_axioms.self_contradiction,
-        argumentation.ranking_axioms.strict_addition_of_defense_branch,
-        argumentation.ranking_axioms.strict_counter_transitivity,
-        argumentation.ranking_axioms.strict_preference_transitive,
-        argumentation.ranking_axioms.void_precedence,
+        argumentation.ranking.ranking_axioms.abstraction,
+        argumentation.ranking.ranking_axioms.cardinality_precedence,
+        argumentation.ranking.ranking_axioms.counter_transitivity,
+        argumentation.ranking.ranking_axioms.defense_precedence,
+        argumentation.ranking.ranking_axioms.distributed_defense_precedence,
+        argumentation.ranking.ranking_axioms.independence,
+        argumentation.ranking.ranking_axioms.quality_precedence,
+        argumentation.ranking.ranking_axioms.self_contradiction,
+        argumentation.ranking.ranking_axioms.strict_addition_of_defense_branch,
+        argumentation.ranking.ranking_axioms.strict_counter_transitivity,
+        argumentation.ranking.ranking_axioms.strict_preference_transitive,
+        argumentation.ranking.ranking_axioms.void_precedence,
     }

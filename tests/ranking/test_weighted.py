@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-import argumentation
 from argumentation.core.dung import grounded_extension
-from argumentation.weighted import (
+from argumentation.ranking.weighted import (
     WeightedArgumentationFramework,
     minimum_budget_for_grounded_acceptance,
     weighted_grounded_extensions,
 )
-
-
-def test_weighted_module_is_exported() -> None:
-    assert argumentation.weighted.WeightedArgumentationFramework is WeightedArgumentationFramework
 
 
 def _mutual_weighted_framework() -> WeightedArgumentationFramework:
