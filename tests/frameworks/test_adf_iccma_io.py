@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     And,
     Atom,

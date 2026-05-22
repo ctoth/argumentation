@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     Atom,
     Not,

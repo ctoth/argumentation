@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import argumentation
-
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     And,
     Atom,
@@ -18,10 +16,6 @@ from argumentation.adf import (
     to_json,
     write_iccma_formula,
 )
-
-
-def test_adf_module_is_exported() -> None:
-    pass
 
 
 def test_acceptance_condition_ast_json_and_iccma_round_trip() -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AcceptanceCondition,
     AbstractDialecticalFramework,
     parse_iccma_formula,

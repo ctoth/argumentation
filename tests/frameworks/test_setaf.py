@@ -13,7 +13,7 @@ from argumentation.core.dung import (
     preferred_extensions,
     stable_extensions as dung_stable_extensions,
 )
-from argumentation.setaf import (
+from argumentation.frameworks.setaf import (
     SETAF,
     admissible,
     attacks_argument,

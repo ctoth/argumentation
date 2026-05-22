@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 
-from argumentation.setaf import SETAF
+from argumentation.frameworks.setaf import SETAF
 
 
 _ASPARTIX_FACT_RE = re.compile(

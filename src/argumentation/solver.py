@@ -7,8 +7,8 @@ from dataclasses import dataclass
 import importlib.util
 
 from argumentation import aba as aba_semantics
-from argumentation import adf as adf_semantics
-from argumentation import setaf as setaf_semantics
+from argumentation.frameworks import adf as adf_semantics
+from argumentation.frameworks import setaf as setaf_semantics
 from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
 from argumentation.aba_sat import (
     native_sparse_narrow_sat_extension as native_sparse_narrow_aba_extension,
@@ -28,7 +28,7 @@ from argumentation.af_sat import (
     find_stage_extension,
     is_preferred_skeptically_accepted,
 )
-from argumentation.adf import AbstractDialecticalFramework
+from argumentation.frameworks.adf import AbstractDialecticalFramework
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.core.dung import (
     ArgumentationFramework,
@@ -49,7 +49,7 @@ from argumentation.core.scc_recursive import (
     SCC_RECURSIVE_SEMANTICS,
     scc_extensions,
 )
-from argumentation.setaf import SETAF
+from argumentation.frameworks.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.core.solver_results import (
     AcceptanceSuccess,

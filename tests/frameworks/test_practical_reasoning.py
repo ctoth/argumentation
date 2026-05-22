@@ -5,16 +5,11 @@ from hypothesis import strategies as st
 
 import pytest
 
-import argumentation
-from argumentation.practical_reasoning import (
+from argumentation.frameworks.practical_reasoning import (
     ActionBasedAlternatingTransitionSystem,
     PracticalArgument,
     critical_question_objections,
 )
-
-
-def test_practical_reasoning_module_is_exported() -> None:
-    assert argumentation.practical_reasoning.PracticalArgument is PracticalArgument
 
 
 def _toy_aats() -> ActionBasedAlternatingTransitionSystem:

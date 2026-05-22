@@ -8,7 +8,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import grounded_extension, preferred_extensions, stable_extensions
-from argumentation.partial_af import (
+from argumentation.frameworks.partial_af import (
     PartialArgumentationFramework,
     credulously_accepted_arguments,
     enumerate_completions,

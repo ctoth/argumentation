@@ -3,7 +3,7 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.caf import (
+from argumentation.frameworks.caf import (
     ClaimAugmentedAF,
     claim_range,
     claim_level_extensions,

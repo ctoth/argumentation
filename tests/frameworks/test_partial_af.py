@@ -7,7 +7,7 @@ from itertools import combinations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.partial_af import (
+from argumentation.frameworks.partial_af import (
     PartialArgumentationFramework,
     enumerate_completions,
     merge_framework_edit_distance,

@@ -24,9 +24,9 @@ from argumentation.ranking_axioms import (
 
 
 def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
-    assert argumentation.vaf is importlib.import_module("argumentation.vaf")
-    assert argumentation.practical_reasoning is importlib.import_module(
-        "argumentation.practical_reasoning"
+    assert argumentation.frameworks.vaf is importlib.import_module("argumentation.frameworks.vaf")
+    assert argumentation.frameworks.practical_reasoning is importlib.import_module(
+        "argumentation.frameworks.practical_reasoning"
     )
     assert argumentation.structured.aspic.subjective_aspic is importlib.import_module(
         "argumentation.structured.aspic.subjective_aspic"

@@ -27,7 +27,7 @@ from argumentation.core.dung import (
     stage_extensions,
     stable_extensions,
 )
-from argumentation.partial_af import (
+from argumentation.frameworks.partial_af import (
     PartialArgumentationFramework,
     enumerate_completions,
 )

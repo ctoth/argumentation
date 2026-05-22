@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from argumentation import aba, adf
+from argumentation import aba
+from argumentation.frameworks import adf
 from argumentation.aba import ABAFramework, ABAPlusFramework, NotFlatABAError
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     And,
     Atom,

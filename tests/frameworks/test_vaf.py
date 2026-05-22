@@ -3,12 +3,7 @@ from __future__ import annotations
 from hypothesis import given
 from hypothesis import strategies as st
 
-import argumentation
-from argumentation.vaf import ValueBasedArgumentationFramework
-
-
-def test_vaf_module_is_exported() -> None:
-    assert argumentation.vaf.ValueBasedArgumentationFramework is ValueBasedArgumentationFramework
+from argumentation.frameworks.vaf import ValueBasedArgumentationFramework
 
 
 def test_successful_attacks_follow_bench_capon_defeat_condition() -> None:

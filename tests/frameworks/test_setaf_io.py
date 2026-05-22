@@ -4,8 +4,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.setaf import SETAF
-from argumentation.setaf_io import (
+from argumentation.frameworks.setaf import SETAF
+from argumentation.frameworks.setaf_io import (
     parse_aspartix_setaf,
     parse_compact_setaf,
     write_aspartix_setaf,

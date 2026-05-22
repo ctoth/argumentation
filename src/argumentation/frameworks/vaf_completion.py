@@ -7,7 +7,7 @@ from enum import Enum
 from itertools import permutations
 from typing import Sequence
 
-from argumentation.vaf import Audience, ValueBasedArgumentationFramework
+from argumentation.frameworks.vaf import Audience, ValueBasedArgumentationFramework
 
 
 FACT_VALUE = "fact"

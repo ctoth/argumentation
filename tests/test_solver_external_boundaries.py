@@ -3,7 +3,7 @@ from __future__ import annotations
 from hypothesis import given, settings, strategies as st
 
 import argumentation.solver as solver_module
-from argumentation.adf import (
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     ThreeValued,
     dung_to_adf,
@@ -16,7 +16,7 @@ from argumentation.core.dung import (
     preferred_extensions,
     stable_extensions,
 )
-from argumentation.setaf import SETAF
+from argumentation.frameworks.setaf import SETAF
 from argumentation.solver import (
     ExtensionSolverSuccess,
     SolverBackendUnavailable,

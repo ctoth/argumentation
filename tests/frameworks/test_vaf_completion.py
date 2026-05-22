@@ -4,8 +4,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from argumentation.vaf import ValueBasedArgumentationFramework
-from argumentation.vaf_completion import (
+from argumentation.frameworks.vaf import ValueBasedArgumentationFramework
+from argumentation.frameworks.vaf_completion import (
     FACT_VALUE,
     ArgumentChain,
     ArgumentLine,
