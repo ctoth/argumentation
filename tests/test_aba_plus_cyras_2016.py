@@ -9,7 +9,7 @@ from argumentation.aba import (
     preferred_extensions,
     stable_extensions,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 def lit(name: str) -> Literal:

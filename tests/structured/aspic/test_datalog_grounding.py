@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from gunray import DefeasibleTheory, Rule as GunrayRule
 
-from argumentation.aspic import GroundAtom, Literal, build_arguments
-from argumentation.datalog_grounding import (
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, build_arguments
+from argumentation.structured.aspic.datalog_grounding import (
     ground_defeasible_theory,
     grounding_inspection_to_aspic,
 )

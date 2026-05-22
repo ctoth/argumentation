@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from itertools import combinations
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     KnowledgeBase,
     Literal,
@@ -13,7 +13,7 @@ from argumentation.aspic import (
     build_arguments,
     conc,
 )
-from argumentation.aspic_encoding import solve_aspic_grounded
+from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
 
 
 @dataclass(frozen=True)

@@ -6,7 +6,7 @@ from collections import Counter, defaultdict, deque
 from typing import Iterable
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import Literal
+from argumentation.structured.aspic.aspic import Literal
 
 
 STRUCTURAL_TELEMETRY_KEYS = frozenset(

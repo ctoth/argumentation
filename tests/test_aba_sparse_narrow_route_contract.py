@@ -11,7 +11,7 @@ from argumentation.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     sparse_narrow_native_sat_shape,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 FORBIDDEN_LOCATOR_KEYS = {

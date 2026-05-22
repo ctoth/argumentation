@@ -57,7 +57,7 @@ from argumentation.aba import (
     ABAPlusFramework,
     AssumptionSet,
 )
-from argumentation.aspic import Literal, Rule
+from argumentation.structured.aspic.aspic import Literal, Rule
 
 
 # Semantics for which the grounded ABA reduct is semantics-preserving.

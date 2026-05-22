@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.iccma import write_aba
 from tools import aba_shape_benchmark
 from tools.aba_shape_benchmark import (

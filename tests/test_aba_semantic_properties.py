@@ -6,7 +6,7 @@ from hypothesis import given, settings
 
 from argumentation import aba as native_aba
 from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from tests.aba_hypothesis_generators import (
     flat_aba_frameworks,
     normal_candidate_frameworks,

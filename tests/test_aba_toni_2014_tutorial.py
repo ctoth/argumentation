@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.aba import ABAArgument, ABAFramework, NotFlatABAError, argument_for, attacks, derives
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 def lit(name: str) -> Literal:

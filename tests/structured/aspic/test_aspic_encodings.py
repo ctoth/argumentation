@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import importlib
 import re
 from types import SimpleNamespace
 
-import argumentation
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,
@@ -20,17 +18,13 @@ from argumentation.aspic import (
     build_abstract_framework,
     conc,
 )
-from argumentation.aspic_encoding import encode_aspic_theory
-from argumentation.aspic_encoding import solve_aspic_grounded
-from argumentation.aspic_encoding import solve_aspic_with_backend
+from argumentation.structured.aspic.aspic_encoding import encode_aspic_theory
+from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+from argumentation.structured.aspic.aspic_encoding import solve_aspic_with_backend
 from argumentation.core.dung import grounded_extension
 
 
 ASP_CONSTANT_RE = re.compile(r"^[a-z][A-Za-z0-9_]*$")
-
-
-def test_aspic_encoding_module_is_exported_from_package() -> None:
-    package = importlib.reload(argumentation)
 
 
 def test_aspic_encoding_assigns_deterministic_facts_and_signature() -> None:

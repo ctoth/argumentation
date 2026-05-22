@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ASPICAbstractProjection,
     ArgumentationSystem,
     GroundAtom,

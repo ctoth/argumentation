@@ -28,8 +28,8 @@ def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
     assert argumentation.practical_reasoning is importlib.import_module(
         "argumentation.practical_reasoning"
     )
-    assert argumentation.subjective_aspic is importlib.import_module(
-        "argumentation.subjective_aspic"
+    assert argumentation.structured.aspic.subjective_aspic is importlib.import_module(
+        "argumentation.structured.aspic.subjective_aspic"
     )
     assert argumentation.ranking_axioms is importlib.import_module(
         "argumentation.ranking_axioms"

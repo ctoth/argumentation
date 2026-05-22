@@ -36,7 +36,7 @@ from typing import Any
 from argumentation.aba import ABAFramework, AssumptionSet
 from argumentation.aba_asp import ABAEncoding, encode_aba_theory
 from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
-from argumentation.aspic import Literal
+from argumentation.structured.aspic.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
 SUPPORTED_SEMANTICS = frozenset({"complete", "stable", "preferred", "grounded"})

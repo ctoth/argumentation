@@ -14,7 +14,7 @@ from argumentation.adf import (
     grounded_interpretation,
     interpretation_from_mapping,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.iccma import parse_aba, write_aba
 
 

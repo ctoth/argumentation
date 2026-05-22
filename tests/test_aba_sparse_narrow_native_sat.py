@@ -5,7 +5,7 @@ from hypothesis import strategies as st
 
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 @st.composite

@@ -5,7 +5,7 @@ Section 4.2 indirect-consistency closure and for avoiding private helper
 imports at the package boundary.
 """
 
-from argumentation import aspic
+from argumentation.structured.aspic import aspic
 
 
 def test_transposition_closure_returns_closed_rules_and_post_closure_language():

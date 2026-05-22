@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,

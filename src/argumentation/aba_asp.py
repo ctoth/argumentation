@@ -11,7 +11,7 @@ from argumentation import aba as aba_semantics
 from argumentation.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
 from argumentation.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
 from argumentation.aba_sat import _minimal_supports, support_extensions
-from argumentation.aspic import Literal
+from argumentation.structured.aspic.aspic import Literal
 
 
 @dataclass(frozen=True)

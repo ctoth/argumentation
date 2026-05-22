@@ -10,7 +10,7 @@ from argumentation.aba import (
     stable_extensions,
     well_founded_extension,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 def lit(name: str) -> Literal:

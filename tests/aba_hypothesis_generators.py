@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from hypothesis import strategies as st
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 @dataclass(frozen=True)

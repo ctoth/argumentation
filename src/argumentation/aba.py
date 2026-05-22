@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from itertools import chain, combinations
 from typing import Mapping, TypeAlias
 
-from argumentation.aspic import Literal, Rule
+from argumentation.structured.aspic.aspic import Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 
 

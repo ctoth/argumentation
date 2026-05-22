@@ -1,9 +1,9 @@
 import pytest
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom
-from argumentation.aspic import Literal
-from argumentation.aspic import Rule
+from argumentation.structured.aspic.aspic import GroundAtom
+from argumentation.structured.aspic.aspic import Literal
+from argumentation.structured.aspic.aspic import Rule
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.dung import complete_extensions
 from argumentation.core.dung import grounded_extension

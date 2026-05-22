@@ -13,7 +13,7 @@ from argumentation.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     native_cnf_prefsat_dense_shape,
 )
-from argumentation.aspic import Literal, Rule
+from argumentation.structured.aspic.aspic import Literal, Rule
 
 
 @dataclass(frozen=True)

@@ -32,7 +32,7 @@ from argumentation.aba_incremental import (
     ClingoSolveTimeout,
     IncrementalTelemetry,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 def lit(name: str) -> Literal:

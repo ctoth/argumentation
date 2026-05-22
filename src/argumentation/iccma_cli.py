@@ -8,7 +8,7 @@ import sys
 from typing import Sequence, TextIO
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import Literal
+from argumentation.structured.aspic.aspic import Literal
 from argumentation.iccma import parse_aba, parse_af
 from argumentation.core.labelling import ExactEnumerationExceeded
 from argumentation.solver import (

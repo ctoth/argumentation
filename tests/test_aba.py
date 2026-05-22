@@ -6,7 +6,7 @@ from hypothesis import given, settings, strategies as st
 from argumentation import aba as native_aba
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.solver import (
     AcceptanceSolverSuccess,
     ICCMAConfig,

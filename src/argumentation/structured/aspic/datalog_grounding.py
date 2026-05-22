@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal as TypingLiteral
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,

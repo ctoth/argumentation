@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-import argumentation
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,
@@ -12,16 +11,12 @@ from argumentation.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.subjective_aspic import (
+from argumentation.structured.aspic.subjective_aspic import (
     complementary_literals,
     subjective_argumentation_theory,
     subjective_defeasible_rules,
     subjective_knowledge_base,
 )
-
-
-def test_subjective_aspic_module_is_exported() -> None:
-    assert argumentation.subjective_aspic.subjective_knowledge_base is subjective_knowledge_base
 
 
 def lit(name: str) -> Literal:

@@ -15,8 +15,8 @@ import pytest
 from hypothesis import HealthCheck, given, settings, assume
 from hypothesis import strategies as st
 
-import argumentation.aspic as aspic
-from argumentation.aspic import (
+import argumentation.structured.aspic.aspic as aspic
+from argumentation.structured.aspic.aspic import (
     Literal,
     GroundAtom,
     ContrarinessFn,

@@ -29,7 +29,7 @@ from argumentation.af_sat import (
     is_preferred_skeptically_accepted,
 )
 from argumentation.adf import AbstractDialecticalFramework
-from argumentation.aspic import Literal
+from argumentation.structured.aspic.aspic import Literal
 from argumentation.core.dung import (
     ArgumentationFramework,
     cf2_extensions,

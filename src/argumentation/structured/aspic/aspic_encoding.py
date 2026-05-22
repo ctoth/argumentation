@@ -6,7 +6,7 @@ import hashlib
 import re
 from dataclasses import dataclass, field
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     KnowledgeBase,
     Literal,

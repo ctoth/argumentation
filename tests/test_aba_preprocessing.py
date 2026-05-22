@@ -21,7 +21,7 @@ from argumentation.aba_preprocessing import (
     simplify_aba,
 )
 from argumentation.aba_asp import solve_aba_with_backend
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
 def lit(name: str) -> Literal:

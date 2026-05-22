@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-import importlib
-
-import argumentation
-
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,
@@ -13,7 +9,7 @@ from argumentation.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.aspic_incomplete import (
+from argumentation.structured.aspic.aspic_incomplete import (
     PartialASPICTheory,
     evaluate_incomplete_grounded,
 )
@@ -26,10 +22,6 @@ def _empty_pref() -> PreferenceConfig:
         comparison="elitist",
         link="last",
     )
-
-
-def test_aspic_incomplete_module_is_exported_from_package() -> None:
-    package = importlib.reload(argumentation)
 
 
 def test_unknown_premise_makes_conclusion_relevant_across_completions() -> None:

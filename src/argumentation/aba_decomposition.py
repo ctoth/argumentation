@@ -9,7 +9,7 @@ from typing import Any
 
 from argumentation.aba import ABAFramework, AssumptionSet
 from argumentation.aba_preprocessing import simplify_aba
-from argumentation.aspic import Literal, Rule
+from argumentation.structured.aspic.aspic import Literal, Rule
 
 
 @dataclass(frozen=True)

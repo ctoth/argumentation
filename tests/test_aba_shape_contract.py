@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from tools.aba_shape_benchmark import compute_aba_shape
 
 

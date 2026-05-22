@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.aba import ABAFramework, NotFlatABAError
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.iccma import parse_aba, parse_apx, parse_tgf, write_aba, write_numeric_aba
 
 

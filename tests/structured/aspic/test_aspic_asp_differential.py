@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.aspic import (
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,
@@ -13,7 +13,7 @@ from argumentation.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.aspic_encoding import solve_aspic_with_backend
+from argumentation.structured.aspic.aspic_encoding import solve_aspic_with_backend
 
 
 def mutually_attacking_premises():

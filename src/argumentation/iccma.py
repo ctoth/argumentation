@@ -11,7 +11,7 @@ from argumentation.adf import (
     write_iccma_formula,
 )
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 
 APX_ARG_RE = re.compile(r"arg\(([^)]+)\)\.")

@@ -6,7 +6,7 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from argumentation.aba import ABAFramework
-from argumentation.aspic import GroundAtom, Literal, Rule
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.solver import (
     AcceptanceSolverSuccess,
