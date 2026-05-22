@@ -5,7 +5,7 @@ from collections import defaultdict
 import pytest
 from hypothesis import given, settings
 
-from argumentation.aba import ABAFramework, NotFlatABAError
+from argumentation.structured.aba.aba import ABAFramework, NotFlatABAError
 from argumentation.structured.aspic.aspic import Literal, Rule
 from argumentation.iccma import parse_aba, write_aba
 from tests.aba_hypothesis_generators import (

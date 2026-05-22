@@ -6,11 +6,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import importlib.util
 
-from argumentation import aba as aba_semantics
+from argumentation.structured.aba import aba as aba_semantics
 from argumentation.frameworks import adf as adf_semantics
 from argumentation.frameworks import setaf as setaf_semantics
-from argumentation.aba import ABAFramework, ABAInput, ABAPlusFramework
-from argumentation.aba_sat import (
+from argumentation.structured.aba.aba import ABAFramework, ABAInput, ABAPlusFramework
+from argumentation.structured.aba.aba_sat import (
     native_sparse_narrow_sat_extension as native_sparse_narrow_aba_extension,
     sat_stable_acceptance as sat_aba_stable_acceptance,
     sat_stable_extension as sat_aba_stable_extension,
@@ -41,7 +41,7 @@ from argumentation.core.dung import (
     stable_extensions,
     stage_extensions,
 )
-from argumentation.aba_route_policy import sparse_narrow_native_sat_shape
+from argumentation.structured.aba.aba_route_policy import sparse_narrow_native_sat_shape
 from argumentation.sat_encoding import (
     sat_extensions,
 )
@@ -675,7 +675,7 @@ def _solve_asp_aba_single_extension(
     collect_clingo_statistics: bool = False,
     clingo_solve_timeout_seconds: float | None = None,
 ) -> SingleExtensionSolverResult:
-    from argumentation.aba_asp import solve_aba_with_backend
+    from argumentation.structured.aba.aba_asp import solve_aba_with_backend
 
     result = solve_aba_with_backend(
         framework,
@@ -699,7 +699,7 @@ def _solve_asp_aba_acceptance(
     query: Literal,
     backend: str,
 ) -> AcceptanceSolverResult:
-    from argumentation.aba_asp import solve_aba_with_backend
+    from argumentation.structured.aba.aba_asp import solve_aba_with_backend
 
     result = solve_aba_with_backend(
         framework,

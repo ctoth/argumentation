@@ -10,9 +10,9 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 import argumentation.solver as solver_module
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.aba_sat import support_extensions
+from argumentation.structured.aba.aba_sat import support_extensions
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.dung import stable_extensions as native_stable_extensions
 from argumentation.iccma import parse_aba

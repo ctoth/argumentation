@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from argumentation.aba_telemetry import STRUCTURAL_TELEMETRY_KEYS
+from argumentation.structured.aba.aba_telemetry import STRUCTURAL_TELEMETRY_KEYS
 
 
 FIXTURE_PATH = Path("tests/manifests/iccma2025-abcgen-10x10.json")

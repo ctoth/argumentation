@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,

@@ -11,8 +11,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.iccma import parse_aba
 

@@ -3,8 +3,8 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework, AssumptionSet
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 

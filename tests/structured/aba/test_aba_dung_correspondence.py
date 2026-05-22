@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.aba import ABAFramework, aba_to_dung, grounded_extension, preferred_extensions
+from argumentation.structured.aba.aba import ABAFramework, aba_to_dung, grounded_extension, preferred_extensions
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import grounded_extension as dung_grounded_extension
 from argumentation.core.dung import preferred_extensions as dung_preferred_extensions

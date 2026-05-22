@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.aba import (
+from argumentation.structured.aba.aba import (
     ABAFramework,
     ABAPlusFramework,
     attacks_with_preferences,

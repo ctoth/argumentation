@@ -4,10 +4,10 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import aba as native_aba
-from argumentation.aba import ABAFramework, AssumptionSet, derives
-from argumentation.aba_asp import encode_aba_theory, solve_aba_with_backend
-from argumentation.aba_incremental import (
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba_asp import encode_aba_theory, solve_aba_with_backend
+from argumentation.structured.aba.aba_incremental import (
     AbaIncrementalSolver,
     LEHTONEN_INCREMENTAL_ASP_CITATION,
     LEHTONEN_INCREMENTAL_ASP_PAGE_CITATIONS,

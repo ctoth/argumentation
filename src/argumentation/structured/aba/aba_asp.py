@@ -7,10 +7,10 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from argumentation import aba as aba_semantics
-from argumentation.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
-from argumentation.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
-from argumentation.aba_sat import _minimal_supports, support_extensions
+from argumentation.structured.aba import aba as aba_semantics
+from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
+from argumentation.structured.aba.aba_sat import _minimal_supports, support_extensions
 from argumentation.structured.aspic.aspic import Literal
 
 
@@ -112,7 +112,7 @@ def solve_aba_with_backend(
         and isinstance(framework, ABAFramework)
         and semantics in GROUNDED_REDUCT_ABA_SEMANTICS
     ):
-        from argumentation.aba_preprocessing import simplify_aba
+        from argumentation.structured.aba.aba_preprocessing import simplify_aba
 
         simplification = simplify_aba(framework, semantics=semantics)
         if not simplification.is_trivial:
@@ -256,7 +256,7 @@ def _solve_multishot(
     single grounded solve for complete/stable) plus the shared task projection for
     the other ABA queries.
     """
-    from argumentation import aba_incremental
+    from argumentation.structured.aba import aba_incremental
 
     metadata_base = {
         "encoding": encoding.metadata["encoding"],
@@ -487,8 +487,8 @@ def _solve_simplified_ds_pr(
       drops ``fixed_out``-using rules), so run Algorithm 1 on the residual and
       lift the counterexample.
     """
-    from argumentation import aba as _aba
-    from argumentation import aba_incremental
+    from argumentation.structured.aba import aba as _aba
+    from argumentation.structured.aba import aba_incremental
 
     original = simplification.original
     residual = simplification.residual

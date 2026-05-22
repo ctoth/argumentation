@@ -8,9 +8,9 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import aba as native_aba
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from tools.aba_shape_benchmark import compute_aba_shape, route_candidates_from_shape_data
 
@@ -129,7 +129,7 @@ def test_decomposed_prefsat_page_image_contract() -> None:
 def test_decomposed_prefsat_matches_preferred_oracle_on_small_products(
     framework: ABAFramework,
 ) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 
@@ -139,7 +139,7 @@ def test_decomposed_prefsat_matches_preferred_oracle_on_small_products(
 @given(layered_independent_aba_for_decomposition())
 @settings(max_examples=25, deadline=None)
 def test_decomposition_reports_required_telemetry(framework: ABAFramework) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 
@@ -147,7 +147,7 @@ def test_decomposition_reports_required_telemetry(framework: ABAFramework) -> No
 
 
 def test_reduced_product_never_calls_full_instance_prefsat(monkeypatch: pytest.MonkeyPatch) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     framework = _independent_product_framework(component_count=3)
     original_kernel = aba_sat.real_prefsat_extension
@@ -174,7 +174,7 @@ def test_reduced_product_never_calls_full_instance_prefsat(monkeypatch: pytest.M
 def test_no_reduction_calls_real_prefsat_once_and_reports_reason(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     framework = _single_component_framework(size=4)
     original_kernel = aba_sat.real_prefsat_extension
@@ -198,7 +198,7 @@ def test_no_reduction_calls_real_prefsat_once_and_reports_reason(
 
 
 def test_decomposition_never_calls_aba_to_dung(monkeypatch: pytest.MonkeyPatch) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     def fail_aba_to_dung(_framework: ABAFramework) -> None:
         raise AssertionError("decomposed PrefSat must stay on direct ABA facts")
@@ -215,7 +215,7 @@ def test_decomposition_never_calls_aba_to_dung(monkeypatch: pytest.MonkeyPatch) 
 @given(layered_independent_aba_for_decomposition())
 @settings(max_examples=25, deadline=None)
 def test_lifted_answer_validates_against_original_framework(framework: ABAFramework) -> None:
-    from argumentation import aba_decomposition
+    from argumentation.structured.aba import aba_decomposition
 
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 

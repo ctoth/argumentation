@@ -7,7 +7,7 @@ import csv
 from pathlib import Path
 from time import perf_counter
 
-from argumentation.aba_asp import solve_aba_with_backend
+from argumentation.structured.aba.aba_asp import solve_aba_with_backend
 from argumentation.structured.aspic.aspic_encoding import solve_aspic_with_backend
 
 from bench.instance_gen import aba_chain, aspic_chain

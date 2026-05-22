@@ -12,15 +12,15 @@ import random
 
 import pytest
 
-from argumentation import aba as native_aba
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework, ABAPlusFramework
-from argumentation.aba_preprocessing import (
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework
+from argumentation.structured.aba.aba_preprocessing import (
     GROUNDED_REDUCT_ABA_SEMANTICS,
     grounded_assumption_set_via_supports,
     simplify_aba,
 )
-from argumentation.aba_asp import solve_aba_with_backend
+from argumentation.structured.aba.aba_asp import solve_aba_with_backend
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 

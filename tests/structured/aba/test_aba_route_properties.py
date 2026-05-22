@@ -6,7 +6,7 @@ from typing import Any
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from tests.aba_hypothesis_generators import (
     flat_aba_frameworks,
     flat_aba_specs,

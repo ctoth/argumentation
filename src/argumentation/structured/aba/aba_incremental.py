@@ -11,15 +11,15 @@ Assumption-Based Argumentation*, TPLP 2021 (arXiv:2108.04192):
 * a fresh ``#program`` part re-grounded per refinement for the *permanent*
   ``constr(out(I)) = :- out(a1), ..., out(ak).`` accumulation -- this is the
   abstraction-refinement clause of Algorithm 1, the clingo analog of the Z3
-  ``solver.add`` in :mod:`argumentation.aba_sat`.
+  ``solver.add`` in :mod:`argumentation.structured.aba.aba_sat`.
 
 This module *replaces* the enumerate-then-filter subprocess clingo path in
-:mod:`argumentation.aba_asp` for the ``asp`` / ``clingo`` backends on flat ABA
+:mod:`argumentation.structured.aba.aba_asp` for the ``asp`` / ``clingo`` backends on flat ABA
 with ``complete`` / ``stable`` / ``preferred`` / ``grounded`` semantics. The old
 subprocess path is still reachable as ``backend="clingo_subprocess"`` (oracle).
 ``admissible`` keeps the subprocess path (no ``pi_com``-style module for it).
 
-Composes under :func:`argumentation.aba_preprocessing.simplify_aba`: the caller
+Composes under :func:`argumentation.structured.aba.aba_preprocessing.simplify_aba`: the caller
 (``solve_aba_with_backend``) runs ``simplify_aba`` first and feeds this solver
 the residual; lifting back is the caller's job.
 """
@@ -33,9 +33,9 @@ from dataclasses import dataclass
 from importlib import resources
 from typing import Any
 
-from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba_asp import ABAEncoding, encode_aba_theory
-from argumentation.aba_preprocessing import grounded_assumption_set_via_supports
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
+from argumentation.structured.aba.aba_asp import ABAEncoding, encode_aba_theory
+from argumentation.structured.aba.aba_preprocessing import grounded_assumption_set_via_supports
 from argumentation.structured.aspic.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"

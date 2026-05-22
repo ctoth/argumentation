@@ -1,6 +1,6 @@
 import pytest
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.structured.aspic.aspic import Rule

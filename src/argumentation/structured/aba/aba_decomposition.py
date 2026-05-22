@@ -7,8 +7,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
-from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba_preprocessing import simplify_aba
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
+from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import Literal, Rule
 
 
@@ -85,7 +85,7 @@ def decomposed_prefsat_extension(
     *,
     require_assumptions: AssumptionSet = frozenset(),
 ) -> AbaDecomposedPrefSatResult:
-    from argumentation import aba_sat
+    from argumentation.structured.aba import aba_sat
 
     simplification = simplify_aba(framework, semantics="preferred")
     residual = simplification.residual
@@ -290,7 +290,7 @@ def _solver_checks(telemetry: dict[str, Any]) -> int:
 
 
 def _validation_success(framework: ABAFramework, extension: AssumptionSet) -> int:
-    from argumentation import aba_sat
+    from argumentation.structured.aba import aba_sat
 
     if len(framework.assumptions) > 12:
         return 1

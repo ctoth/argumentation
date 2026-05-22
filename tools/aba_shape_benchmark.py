@@ -15,11 +15,11 @@ from typing import Any, Iterable, Mapping
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from argumentation import aba as native_aba
-from argumentation.aba import ABAFramework, AssumptionSet
-from argumentation.aba_decomposition import plan_decomposed_prefsat
-from argumentation.aba_preprocessing import simplify_aba
-from argumentation.aba_route_policy import native_cnf_prefsat_dense_shape
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
+from argumentation.structured.aba.aba_decomposition import plan_decomposed_prefsat
+from argumentation.structured.aba.aba_preprocessing import simplify_aba
+from argumentation.structured.aba.aba_route_policy import native_cnf_prefsat_dense_shape
 from argumentation.structured.aspic.aspic import GroundAtom, Literal
 from argumentation.iccma import parse_aba
 from tools.iccma2025_run_native import TASK_TO_SEMANTICS, run_child as run_native_child
@@ -1050,7 +1050,7 @@ def _large_witness_validation(
     subtrack: str,
     witness: AssumptionSet,
 ) -> dict[str, Any]:
-    from argumentation import aba_sat
+    from argumentation.structured.aba import aba_sat
 
     semantics = solver_class("aba", subtrack).split("/")[-1]
     if not witness <= framework.assumptions:

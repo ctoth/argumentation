@@ -8,8 +8,8 @@ import importlib
 import time
 from typing import Any
 
-from argumentation.aba import ABAFramework, AssumptionSet, derives
-from argumentation.aba_route_policy import (
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     native_cnf_prefsat_dense_shape,
 )
@@ -43,7 +43,7 @@ def _positive_solver_model(solver: Any) -> frozenset[int]:
 
 def _aba_simplification(framework: ABAFramework, semantics: str):
     """Lazily import to avoid a module import cycle (aba_preprocessing -> aba_sat)."""
-    from argumentation.aba_preprocessing import simplify_aba
+    from argumentation.structured.aba.aba_preprocessing import simplify_aba
 
     return simplify_aba(framework, semantics=semantics)
 
@@ -547,7 +547,7 @@ def sat_support_extension(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
     if semantics == "preferred" and require_derived is None and require_not_derived is None:
-        from argumentation.aba_decomposition import decomposed_prefsat_extension
+        from argumentation.structured.aba.aba_decomposition import decomposed_prefsat_extension
 
         decomposed = decomposed_prefsat_extension(
             framework,

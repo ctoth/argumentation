@@ -51,7 +51,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import chain
 
-from argumentation.aba import (
+from argumentation.structured.aba.aba import (
     ABAFramework,
     ABAInput,
     ABAPlusFramework,
@@ -122,7 +122,7 @@ def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionS
     against it, rather than recomputing attack relations inside every ``defends``
     check.
     """
-    from argumentation.aba_sat import _SupportState
+    from argumentation.structured.aba.aba_sat import _SupportState
 
     state = _SupportState.from_framework(framework)
     n = len(state.assumptions)
@@ -162,7 +162,7 @@ def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionS
 
 
 def _forward_closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Literal]:
-    from argumentation.aba import _closure
+    from argumentation.structured.aba.aba import _closure
 
     return _closure(framework, premises)
 

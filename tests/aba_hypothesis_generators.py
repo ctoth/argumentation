@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from hypothesis import strategies as st
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 

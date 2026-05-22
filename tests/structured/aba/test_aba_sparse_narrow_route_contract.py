@@ -5,9 +5,9 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from argumentation import solver
-from argumentation.aba import ABAFramework
-from argumentation.aba_sat import NativeSparseNarrowSatResult
-from argumentation.aba_route_policy import (
+from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_sat import NativeSparseNarrowSatResult
+from argumentation.structured.aba.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     sparse_narrow_native_sat_shape,
 )

@@ -7,8 +7,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from tests.aba_hypothesis_generators import renamed_framework
 from tools.aba_shape_benchmark import compute_aba_shape, route_candidates_from_shape_data

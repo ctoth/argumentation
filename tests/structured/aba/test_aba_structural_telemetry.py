@@ -3,7 +3,7 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
@@ -102,7 +102,7 @@ def small_flat_aba_frameworks(draw):
 @given(small_flat_aba_frameworks())
 @settings(max_examples=40)
 def test_telemetry_is_deterministic_and_omits_identity_keys(framework) -> None:
-    from argumentation.aba_telemetry import aba_structural_telemetry
+    from argumentation.structured.aba.aba_telemetry import aba_structural_telemetry
 
     first = aba_structural_telemetry(framework)
     second = aba_structural_telemetry(framework)
@@ -119,7 +119,7 @@ def test_telemetry_is_deterministic_and_omits_identity_keys(framework) -> None:
 @given(small_flat_aba_frameworks())
 @settings(max_examples=40)
 def test_telemetry_is_rule_order_invariant(framework) -> None:
-    from argumentation.aba_telemetry import aba_structural_telemetry
+    from argumentation.structured.aba.aba_telemetry import aba_structural_telemetry
 
     reordered = ABAFramework(
         language=framework.language,
@@ -132,7 +132,7 @@ def test_telemetry_is_rule_order_invariant(framework) -> None:
 
 
 def test_duplicate_syntactic_rules_do_not_create_fake_atoms_or_assumptions() -> None:
-    from argumentation.aba_telemetry import aba_structural_telemetry
+    from argumentation.structured.aba.aba_telemetry import aba_structural_telemetry
     from argumentation.iccma import parse_aba
 
     framework = parse_aba(
@@ -156,7 +156,7 @@ def test_duplicate_syntactic_rules_do_not_create_fake_atoms_or_assumptions() -> 
 
 
 def test_deep_rule_dependency_chain_does_not_recurse_over_python_stack() -> None:
-    from argumentation.aba_telemetry import aba_structural_telemetry
+    from argumentation.structured.aba.aba_telemetry import aba_structural_telemetry
 
     assumption = lit("a")
     contrary = lit("ca")

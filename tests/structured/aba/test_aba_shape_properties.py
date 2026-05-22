@@ -5,7 +5,7 @@ from dataclasses import asdict
 
 from hypothesis import given, settings
 
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal, Rule
 from tests.aba_hypothesis_generators import (
     flat_aba_frameworks,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.aba import ABAArgument, ABAFramework, NotFlatABAError, argument_for, attacks, derives
+from argumentation.structured.aba.aba import ABAArgument, ABAFramework, NotFlatABAError, argument_for, attacks, derives
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 

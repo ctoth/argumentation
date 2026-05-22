@@ -22,12 +22,12 @@ import random
 
 import pytest
 
-from argumentation import aba as native_aba
-from argumentation import aba_asp
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework, AssumptionSet, derives
-from argumentation.aba_asp import solve_aba_with_backend
-from argumentation.aba_incremental import (
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba import aba_asp
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba_asp import solve_aba_with_backend
+from argumentation.structured.aba.aba_incremental import (
     AbaIncrementalSolver,
     ClingoSolveTimeout,
     IncrementalTelemetry,
@@ -476,7 +476,7 @@ def test_incremental_solver_passes_diagnostic_control_args(monkeypatch) -> None:
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
 
     solver = AbaIncrementalSolver(framework, control_args=("--configuration=frumpy",))
     telemetry = IncrementalTelemetry()
@@ -516,7 +516,7 @@ def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) ->
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
 
     solver = AbaIncrementalSolver(framework, collect_statistics=True)
     telemetry = IncrementalTelemetry()
@@ -573,7 +573,7 @@ def test_incremental_solver_interrupts_solve_at_diagnostic_timeout(monkeypatch) 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
 
     solver = AbaIncrementalSolver(
         framework,
@@ -634,7 +634,7 @@ def test_solve_aba_with_backend_returns_clingo_timeout_metadata(monkeypatch) -> 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
 
     result = solve_aba_with_backend(
         framework,
@@ -701,7 +701,7 @@ def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
 
     solver = AbaIncrementalSolver(framework)
     telemetry = IncrementalTelemetry()

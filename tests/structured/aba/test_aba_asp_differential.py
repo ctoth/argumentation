@@ -3,16 +3,11 @@ from __future__ import annotations
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-import argumentation
-from argumentation import aba as native_aba
-from argumentation.aba import ABAFramework
-from argumentation.aba_asp import solve_aba_with_backend
-from argumentation.aba_sat import support_extensions
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_asp import solve_aba_with_backend
+from argumentation.structured.aba.aba_sat import support_extensions
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-
-
-def test_aba_asp_module_is_exported_from_package() -> None:
-    pass
 
 
 def test_aba_asp_stable_matches_support_reference() -> None:

@@ -5,8 +5,8 @@ import time
 
 import pytest
 
-from argumentation.aba import ABAFramework
-from argumentation.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
+from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 import argumentation.solver as solver_module
 from argumentation.solver import SingleExtensionSolverSuccess, solve_aba_single_extension

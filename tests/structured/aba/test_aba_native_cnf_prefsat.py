@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from hypothesis import given, settings
 
-from argumentation import aba_sat
-from argumentation import aba_decomposition
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba import aba_decomposition
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from tests.test_aba_real_prefsat_contract import small_flat_aba_for_real_prefsat
+from tests.structured.aba.test_aba_real_prefsat_contract import small_flat_aba_for_real_prefsat
 
 
 NATIVE_CNF_PREFSAT_PAGE_IMAGES = (

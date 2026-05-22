@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 from hypothesis import given, settings, strategies as st
 
-from argumentation import aba as native_aba
-from argumentation import aba_sat
-from argumentation.aba import ABAFramework
-from argumentation.aba_preprocessing import simplify_aba
+from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba import aba_sat
+from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.solver import (
     AcceptanceSolverSuccess,

@@ -10,7 +10,7 @@ from argumentation.frameworks.adf import (
     parse_iccma_formula,
     write_iccma_formula,
 )
-from argumentation.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 
