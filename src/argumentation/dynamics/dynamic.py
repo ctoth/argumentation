@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Literal, cast
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.enforcement import SemanticsName, extensions_for
+from argumentation.dynamics.enforcement import SemanticsName, extensions_for
 
 
 UpdateKind = Literal["add_arg", "del_arg", "add_att", "del_att"]

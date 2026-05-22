@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.af_revision import (
+from argumentation.dynamics.af_revision import (
     AFChangeKind,
     AFKernelSemantics,
     ExtensionRevisionState,

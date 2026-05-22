@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.approximate import (
+from argumentation.dynamics.approximate import (
     approximate_grounded,
     approximate_semi_stable,
     k_stable_extensions,

@@ -4,7 +4,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework, stable_extensions
-from argumentation.enforcement import (
+from argumentation.dynamics.enforcement import (
     AFEdit,
     apply_edit,
     enforce_credulous,

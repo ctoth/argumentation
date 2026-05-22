@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from argumentation.af_revision import AFChangeKind, ExtensionRevisionState, _classify_extension_change
+from argumentation.dynamics.af_revision import AFChangeKind, ExtensionRevisionState, _classify_extension_change
 from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,

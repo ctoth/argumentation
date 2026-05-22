@@ -4,7 +4,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.dynamic import (
+from argumentation.dynamics.dynamic import (
     DynamicRecomputeOracle,
     DynamicArgumentationFramework,
     DynamicUpdate,
@@ -13,7 +13,7 @@ from argumentation.dynamic import (
     apply_update_stream,
     parse_update_stream,
 )
-from argumentation.enforcement import extensions_for
+from argumentation.dynamics.enforcement import extensions_for
 
 
 def test_dynamic_queries_recompute_after_attack_updates() -> None:

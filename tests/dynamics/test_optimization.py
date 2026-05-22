@@ -7,7 +7,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework, admissible, conflict_free
-from argumentation.optimization import (
+from argumentation.dynamics.optimization import (
     OptimizationFeature,
     OptimizationObjective,
     OptimizationPolicy,
@@ -175,7 +175,7 @@ def test_tie_break_is_stable_under_input_order_permutations() -> None:
 
 def test_unavailable_z3_is_explicit_status(monkeypatch: pytest.MonkeyPatch) -> None:
     """Bjorner-Phan 2014 p.7 motivates a Z3-backed path; unavailable backends must not silently choose."""
-    import argumentation.optimization as optimization
+    import argumentation.dynamics.optimization as optimization
 
     monkeypatch.setattr(optimization, "_import_z3", lambda: None)
     framework = ArgumentationFramework(
