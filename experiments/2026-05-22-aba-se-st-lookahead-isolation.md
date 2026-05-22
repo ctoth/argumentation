@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: planned on experiment branch.
+Status: measured on experiment branch; source change not promoted.
 
 Experiment branch: `exp/aba-se-st-lookahead-isolation`
 
@@ -92,3 +92,85 @@ five-row confirmation in this experiment.
 
 Promote only this experiment record to `main`. Do not promote generated JSON or
 CSV diagnostics.
+
+## Experiment Result
+
+Command run:
+
+```powershell
+uv run tools\aba_shape_benchmark.py --instance data\iccma\2025\extracted\instances\ABAs\abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba --subtrack SE-ST --backend auto --timeout-seconds 40 --collect-clingo-statistics --clingo-control-arg=--heuristic=Vsids --clingo-control-arg=--lookahead=atom --output-json data\iccma\2025\runs\aba-se-st-lookahead-isolation-vsids-atom.json --output-csv data\iccma\2025\runs\aba-se-st-lookahead-isolation-vsids-atom.csv
+```
+
+Result:
+
+- status: `timeout`
+- reason: `clingo solve exceeded 39.000s`
+- error: `null`
+- control args: `--models=0 --warn=none --heuristic=Vsids --lookahead=atom`
+- choices: `511`
+- conflicts: `48983`
+- restarts: `5`
+- solve time: `39.009939193725586`
+- models enumerated: `0`
+
+Grounded problem shape stayed the same as the existing Unit/default diagnostic
+rows:
+
+- `problem.lp.atoms = 98225`
+- `problem.lp.bodies = 53472`
+- `problem.lp.rules = 117535`
+- `problem.lp.eqs = 141293`
+- `problem.generator.vars = 6666`
+- `problem.generator.constraints = 3273`
+- `problem.generator.complexity = 31315`
+
+Comparison:
+
+| Variant | Status | Choices | Conflicts | Restarts | Solve seconds | Models |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `--heuristic=Vsids` | timeout | 613031 | 524385 | 1346 | 39.00089645385742 | 0 |
+| `--heuristic=Vsids --lookahead=atom` | timeout | 511 | 48983 | 5 | 39.009939193725586 | 0 |
+| `--heuristic=Unit` | timeout | 561 | 44885 | 5 | 39.0024471282959 | 0 |
+
+## Interpretation
+
+The Unit signal is lookahead/failed-literal driven.
+
+Adding `--lookahead=atom` to plain `Vsids` reproduces the Unit shape: choices
+and restarts collapse by roughly three orders of magnitude, while solve time and
+timeout status do not improve. The grounded program did not shrink, so this is
+not a grounding or encoding-size effect. It is clingo spending the full budget
+inside solve while failed-literal/lookahead probing avoids ordinary branching.
+
+## Outcome
+
+Positive mechanism isolation; production option no-go.
+
+This experiment identifies the mechanism behind the previous Unit signal. It
+does not solve the row and does not justify a production clingo option change.
+
+## Decision
+
+Do not run more lookahead/heuristic variants in this track. The mechanism is
+now sufficiently identified for the next step: the encoding must make the
+lookahead/proof obligation smaller.
+
+## Next Target
+
+Run one stable-encoding experiment with an operational contract against this
+representative row:
+
+- single variable: add one deterministic constraint or derived predicate family
+  to reduce unsupported/circularly unsupported `in/1` candidates;
+- fast contract: the generated stable program changes measurably while
+  semantic equivalence holds on focused ABA tests;
+- metric gate: with `--heuristic=Vsids --lookahead=atom`, the representative
+  row must reduce conflicts or solve time against this record before any
+  five-row gate;
+- failure analysis: if it still times out, compare choices/conflicts/restarts
+  and state whether the encoding changed the lookahead proof burden.
+
+Generated diagnostics were not committed:
+
+- `data\iccma\2025\runs\aba-se-st-lookahead-isolation-vsids-atom.json`
+- `data\iccma\2025\runs\aba-se-st-lookahead-isolation-vsids-atom.csv`
