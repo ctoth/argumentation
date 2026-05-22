@@ -7,7 +7,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_IMPORT_ROOTS = (
-    frozenset({"argumentation", "gunray", "z3"}) | sys.stdlib_module_names
+    frozenset({"argumentation", "gunray", "pysat", "z3"}) | sys.stdlib_module_names
 )
 
 
