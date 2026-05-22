@@ -508,11 +508,17 @@ def sat_support_extension(
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
     if semantics == "preferred" and require_derived is None and require_not_derived is None:
+        stable_witness = sat_stable_extension(framework, simplify=False)
+        if stable_witness is not None and require_assumptions <= stable_witness:
+            return stable_witness
         if should_use_native_cnf_prefsat(framework):
-            return native_cnf_prefsat_extension(
+            native_result = native_cnf_prefsat_extension(
                 framework,
                 require_assumptions=require_assumptions,
-            ).extension
+            )
+            if require_assumptions <= native_result.extension:
+                return native_result.extension
+            return None
     if (
         simplify
         and require_derived is None
@@ -536,10 +542,13 @@ def sat_support_extension(
     if semantics == "preferred" and require_derived is None and require_not_derived is None:
         from argumentation.aba_decomposition import decomposed_prefsat_extension
 
-        return decomposed_prefsat_extension(
+        decomposed = decomposed_prefsat_extension(
             framework,
             require_assumptions=require_assumptions,
         ).extension
+        if require_assumptions <= decomposed:
+            return decomposed
+        return None
     if semantics == "preferred" and (
         require_derived is not None or require_not_derived is not None
     ):
