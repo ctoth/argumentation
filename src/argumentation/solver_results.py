@@ -56,6 +56,18 @@ class SolverProtocolError:
 
 
 @dataclass(frozen=True)
+class SolverTimeout:
+    backend: str
+    problem: str
+    message: str
+    metadata: dict[str, Any] | None = None
+
+    @property
+    def reason(self) -> str:
+        return self.message
+
+
+@dataclass(frozen=True)
 class ExtensionEnumerationSuccess:
     extensions: tuple[frozenset[object], ...]
     metadata: dict[str, Any] | None = None
