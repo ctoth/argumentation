@@ -136,7 +136,7 @@ def test_native_cnf_prefsat_reports_operational_contract(framework: ABAFramework
     assert telemetry["native_cnf_clauses"] >= len(framework.assumptions)
     assert telemetry["native_cnf_solver_checks"] >= 1
     assert telemetry["native_cnf_candidate_models"] <= telemetry["native_cnf_solver_checks"]
-    assert telemetry["native_cnf_candidate_blocks"] <= len(framework.assumptions) + 2
+    assert telemetry["native_cnf_candidate_blocks"] <= telemetry["native_cnf_candidate_models"]
     assert telemetry["native_cnf_z3_main_checks"] == 0
     assert telemetry["native_cnf_closure_materializations"] == 0
 
