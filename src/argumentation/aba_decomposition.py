@@ -89,9 +89,25 @@ def decomposed_prefsat_extension(
 
     simplification = simplify_aba(framework, semantics="preferred")
     residual = simplification.residual
-    residual_required = frozenset(require_assumptions - simplification.fixed_in)
     plan = plan_decomposed_prefsat(residual)
     telemetry = _base_telemetry(framework, plan)
+
+    if require_assumptions & simplification.fixed_out:
+        # A required assumption forced OUT by preprocessing (its contrary is
+        # forward-derivable from the grounded set alone) cannot appear in any
+        # preferred extension: every preferred set is conflict-free (Bondarenko
+        # et al. 1997, Def. 2.2, p.70) and contains the well-founded set (Thm.
+        # 6.4, p.90), whose theory derives that assumption's contrary -- so
+        # including it would break conflict-freeness. The query is therefore
+        # unsatisfiable. Return an empty extension; the sat_support_extension
+        # caller turns `require_assumptions not <= extension` into None. (Were
+        # this assumption left in residual_required, it would leak into the
+        # residual solver, which has no SAT variable for it -> KeyError.)
+        telemetry["decomp_validation_success"] = 1
+        telemetry["decomp_lifted_extension_size"] = 0
+        return AbaDecomposedPrefSatResult(extension=frozenset(), telemetry=telemetry)
+
+    residual_required = frozenset(require_assumptions - simplification.fixed_in)
 
     if plan.no_reduction_reason == "empty_residual":
         extension = simplification.lift(frozenset())

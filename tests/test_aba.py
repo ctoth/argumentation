@@ -6,6 +6,7 @@ from hypothesis import given, settings, strategies as st
 from argumentation import aba as native_aba
 from argumentation import aba_sat
 from argumentation.aba import ABAFramework
+from argumentation.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.solver import (
     AcceptanceSolverSuccess,
@@ -423,6 +424,121 @@ def test_preferred_support_sat_preserves_required_assumptions(
     else:
         assert required <= witness
         assert witness in native_aba.preferred_extensions(framework)
+
+
+def _fixed_out_required_aba() -> ABAFramework:
+    """Framework where preprocessing forces a required assumption OUT.
+
+    a3 is unattacked, so it is the grounded (well-founded) set -> fixed_in.
+    Rule a3 -> c2 then derives c2 = contrary(a2) from the grounded set alone,
+    so a2 is forced OUT -> fixed_out. The only preferred extension is {a3}.
+    This is the verbatim Hypothesis falsifying example for the KeyError bug.
+    """
+
+    def lit(name: str) -> Literal:
+        return Literal(GroundAtom(name))
+
+    a1, a2, a3 = lit("a1"), lit("a2"), lit("a3")
+    c1, c2, c3 = lit("c1"), lit("c2"), lit("c3")
+    return ABAFramework(
+        language=frozenset({a1, a2, a3, c1, c2, c3}),
+        rules=frozenset(
+            {
+                Rule(antecedents=(a3,), consequent=c2, kind="strict", name=None),
+                Rule(antecedents=(a1,), consequent=c1, kind="strict", name=None),
+            }
+        ),
+        assumptions=frozenset({a1, a2, a3}),
+        contrary={a1: c1, a2: c2, a3: c3},
+    )
+
+
+def test_preferred_support_sat_fixed_out_required_assumption_is_unsatisfiable() -> None:
+    """A required assumption forced OUT by simplify_aba yields None, not KeyError.
+
+    Regression for the decomposed-PrefSat bug: decomposed_prefsat_extension
+    subtracted only fixed_in from the required set, so a required fixed_out
+    assumption leaked into the residual solver and raised KeyError. A fixed_out
+    assumption is in no preferred extension (Bondarenko et al. 1997, Def. 2.2
+    p.70 + Thm. 6.4 p.90), so the query is unsatisfiable -> None.
+    """
+    framework = _fixed_out_required_aba()
+
+    def lit(name: str) -> Literal:
+        return Literal(GroundAtom(name))
+
+    a1, a2, a3 = lit("a1"), lit("a2"), lit("a3")
+
+    simplification = simplify_aba(framework, semantics="preferred")
+    assert simplification.fixed_in == frozenset({a3})
+    assert simplification.fixed_out == frozenset({a2})
+
+    # Required a2 is forced OUT -> no preferred extension satisfies it -> None.
+    assert (
+        aba_sat.sat_support_extension(
+            framework, "preferred", require_assumptions=frozenset({a1, a2})
+        )
+        is None
+    )
+
+    # Required a3 is forced IN (the grounded set) -> still satisfiable: the
+    # fixed_in branch is left untouched by the fix.
+    witness_in = aba_sat.sat_support_extension(
+        framework, "preferred", require_assumptions=frozenset({a3})
+    )
+    assert witness_in is not None
+    assert a3 in witness_in
+    assert witness_in in native_aba.preferred_extensions(framework)
+
+    # a1 is a genuine residual assumption (not fixed_in, not fixed_out): rule
+    # a1 -> c1 = contrary(a1) makes {a1} self-attacking, so no preferred
+    # extension contains it. The residual solver -- not the fixed_out guard --
+    # correctly reports this as None.
+    assert a1 not in simplification.fixed_in
+    assert a1 not in simplification.fixed_out
+    assert not any(a1 in ext for ext in native_aba.preferred_extensions(framework))
+    assert (
+        aba_sat.sat_support_extension(
+            framework, "preferred", require_assumptions=frozenset({a1})
+        )
+        is None
+    )
+
+    # With no requirement the decomposed path produces a real preferred
+    # extension (the grounded set {a3}) via the residual + lift.
+    witness_unconstrained = aba_sat.sat_support_extension(framework, "preferred")
+    assert witness_unconstrained == frozenset({a3})
+    assert witness_unconstrained in native_aba.preferred_extensions(framework)
+
+
+@given(flat_aba_frameworks(), st.data())
+@settings(deadline=10000, max_examples=40)
+def test_preferred_support_sat_fixed_out_requirement_is_always_unsatisfiable(
+    framework: ABAFramework,
+    data: st.DataObject,
+) -> None:
+    """Invariant: a required assumption in fixed_out makes the query None.
+
+    A fixed_out assumption's contrary is forward-derivable from the grounded
+    set, which is contained in every preferred extension (Bondarenko et al.
+    1997, Thm. 6.4 p.90); including it would break conflict-freeness (Def. 2.2
+    p.70). So for any flat ABA framework, if a drawn required set intersects
+    fixed_out, sat_support_extension must return None.
+    """
+    assumptions = tuple(sorted(framework.assumptions, key=repr))
+    required = data.draw(st.frozensets(st.sampled_from(assumptions), max_size=2))
+
+    fixed_out = simplify_aba(framework, semantics="preferred").fixed_out
+    if not (required & fixed_out):
+        return
+
+    witness = aba_sat.sat_support_extension(
+        framework, "preferred", require_assumptions=required
+    )
+    assert witness is None
+    assert not any(
+        required <= extension for extension in native_aba.preferred_extensions(framework)
+    )
 
 
 @given(flat_aba_frameworks(), st.sampled_from(["require_derived", "require_not_derived"]))
