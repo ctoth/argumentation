@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: planned on experiment branch.
+Status: measured on experiment branch; source change not promoted.
 
 Experiment branch: `exp/aba-se-st-unit-mechanism-profile`
 
@@ -107,3 +107,92 @@ and the next target is named from the evidence.
 
 Promote only this experiment record to `main`. Do not promote generated JSON,
 CSV, or raw profile artifacts.
+
+## Experiment Result
+
+Py-spy availability:
+
+```powershell
+uv tool run py-spy --version
+```
+
+Result: `py-spy 0.4.2`.
+
+Profile command run:
+
+```powershell
+uv run tools\aba_shape_benchmark.py --instance data\iccma\2025\extracted\instances\ABAs\abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba --subtrack SE-ST --backend auto --timeout-seconds 35 --profile-dir data\iccma\2025\profiles\aba-se-st-unit-mechanism-profile\small --profile-format raw --profile-duration-seconds 25 --clingo-control-arg=--heuristic=Unit --output-json data\iccma\2025\runs\aba-se-st-unit-mechanism-profile-small.json --output-csv data\iccma\2025\runs\aba-se-st-unit-mechanism-profile-small.csv
+```
+
+Result:
+
+- row status: `profiled`
+- reason: `profile_duration_elapsed`
+- error: `null`
+- elapsed: `25.354729900020175`
+- profile:
+  `data\iccma\2025\profiles\aba-se-st-unit-mechanism-profile\small\aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`
+
+Unit hot frames:
+
+- `solve_aba_single_extension -> _solve_asp_aba_single_extension -> solve_aba_with_backend -> _solve_multishot -> find_stable_extension -> _solve_one -> solve (clingo\control.py:1065) -> _c_call`: `2454` samples
+- `find_stable_extension -> _new_control -> add (clingo\control.py:320) -> _add2`: `16` samples
+- `find_stable_extension -> _new_control -> ground (clingo\control.py:566)`: `10` samples
+- parsing, preprocessing, Python fact encoding, resource loading, and runner
+  setup: single-digit samples each
+
+## Classification
+
+Still opaque clingo solve.
+
+Compared with the baseline profile, Unit did not move the Python-visible hot
+path out of `clingo.Control.solve`:
+
+- baseline solve samples: `2446`
+- Unit solve samples: `2454`
+- baseline add/ground samples: `18` / `20`
+- Unit add/ground samples: `16` / `10`
+
+The operational invariant from
+`experiments/2026-05-22-aba-se-st-option-stats-resweep.md` remains important:
+Unit collapses choices/restarts/conflicts dramatically, but py-spy cannot see
+inside the remaining clingo solve time. The next target is therefore not
+Python, parsing, preprocessing, grounding, or another clingo option matrix.
+
+## Outcome
+
+Negative for Python-visible mechanism movement; positive for target selection.
+
+The experiment proves that the Unit signal is internal to clingo solve. The
+next useful experiment must either expose finer clingo solve telemetry or alter
+the stable encoding so the already-measured choices/conflicts/restarts change
+and the solve budget shrinks.
+
+## Decision
+
+Do not promote a route or option change.
+
+Promote this record only.
+
+## Next Target
+
+Run an encoding-side operational experiment, not another option sweep:
+
+- single variable: add one deterministic stable-encoding constraint family;
+- fast contract: the generated clingo program changes in a measurable way and
+  still passes semantic tests;
+- metric gate: representative row with `--collect-clingo-statistics` must
+  reduce Unit-era conflicts or solve time before any five-row gate;
+- failure analysis: if it still times out, compare stats against this record
+  and state whether the encoding constraint changed the internal clingo search
+  shape.
+
+Candidate mechanism to inspect before implementation: constraints that
+deterministically remove unsupported or circularly unsupported `in/1`
+assignments before clingo's lookahead spends the full budget proving them away.
+
+Generated diagnostics were not committed:
+
+- `data\iccma\2025\runs\aba-se-st-unit-mechanism-profile-small.json`
+- `data\iccma\2025\runs\aba-se-st-unit-mechanism-profile-small.csv`
+- `data\iccma\2025\profiles\aba-se-st-unit-mechanism-profile\small\*.raw.txt`
