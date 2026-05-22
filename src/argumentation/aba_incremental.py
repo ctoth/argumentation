@@ -80,6 +80,12 @@ class IncrementalTelemetry:
     solver_calls: int = 0
     clingo_control_args: tuple[str, ...] = DEFAULT_CLINGO_CONTROL_ARGS
     clingo_statistics: dict[str, Any] | None = None
+    clingo_timeout_seconds: float | None = None
+    clingo_interrupted: bool = False
+
+
+class ClingoSolveTimeout(TimeoutError):
+    """Raised when an internal diagnostic clingo solve budget is exhausted."""
 
 
 def _sanitize_clingo_statistics(value: Any) -> Any:
@@ -109,6 +115,7 @@ class AbaIncrementalSolver:
         encoding: ABAEncoding | None = None,
         control_args: tuple[str, ...] = (),
         collect_statistics: bool = False,
+        solve_timeout_seconds: float | None = None,
     ) -> None:
         if not isinstance(framework, ABAFramework):  # defensive; callers gate this
             raise TypeError("AbaIncrementalSolver only handles flat ABAFramework")
@@ -131,6 +138,7 @@ class AbaIncrementalSolver:
         self._clingo = _load_clingo()
         self.control_args = DEFAULT_CLINGO_CONTROL_ARGS + tuple(control_args)
         self.collect_statistics = collect_statistics
+        self.solve_timeout_seconds = solve_timeout_seconds
 
     # -- low-level Control construction -------------------------------------
 
@@ -187,7 +195,27 @@ class AbaIncrementalSolver:
             return False  # stop after first model
 
         self._record_telemetry_control(telemetry)
-        result = ctl.solve(assumptions=assumptions or [], on_model=on_model)
+        if self.solve_timeout_seconds is None:
+            result = ctl.solve(assumptions=assumptions or [], on_model=on_model)
+        else:
+            if telemetry is not None:
+                telemetry.clingo_timeout_seconds = self.solve_timeout_seconds
+            with ctl.solve(
+                assumptions=assumptions or [],
+                on_model=on_model,
+                async_=True,
+            ) as handle:
+                finished = handle.wait(self.solve_timeout_seconds)
+                if not finished:
+                    handle.cancel()
+                    result = handle.get()
+                    self._record_telemetry_statistics(ctl, telemetry)
+                    if telemetry is not None:
+                        telemetry.clingo_interrupted = True
+                    raise ClingoSolveTimeout(
+                        f"clingo solve exceeded {self.solve_timeout_seconds:.3f}s"
+                    )
+                result = handle.get()
         self._record_telemetry_statistics(ctl, telemetry)
         if not result.satisfiable:
             return None
