@@ -593,6 +593,68 @@ def test_incremental_solver_interrupts_solve_at_diagnostic_timeout(monkeypatch) 
     }
 
 
+def test_solve_aba_with_backend_returns_clingo_timeout_metadata(monkeypatch) -> None:
+    framework = battery()[0]
+
+    class FakeHandle:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            return False
+
+        def wait(self, timeout):
+            assert timeout == 0.25
+            return False
+
+        def cancel(self):
+            return None
+
+        def get(self):
+            class FakeResult:
+                satisfiable = False
+                interrupted = True
+
+            return FakeResult()
+
+    class FakeControl:
+        def __init__(self, args):
+            self.statistics = {"solving": {"solvers": {"conflicts": 17.0}}}
+
+        def add(self, *args, **kwargs):
+            return None
+
+        def ground(self, *args, **kwargs):
+            return None
+
+        def solve(self, *args, **kwargs):
+            assert kwargs["async_"] is True
+            return FakeHandle()
+
+    class FakeClingo:
+        Control = FakeControl
+
+    monkeypatch.setattr("argumentation.aba_incremental._load_clingo", lambda: FakeClingo)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="stable",
+        task="single-extension",
+        collect_clingo_statistics=True,
+        clingo_solve_timeout_seconds=0.25,
+    )
+
+    assert result.status == "timeout"
+    assert result.metadata["solver"] == "clingo_multishot"
+    assert result.metadata["algorithm"] == "first-model-witness"
+    assert result.metadata["clingo_timeout_seconds"] == 0.25
+    assert result.metadata["clingo_interrupted"] is True
+    assert result.metadata["clingo_statistics"] == {
+        "solving": {"solvers": {"conflicts": 17.0}}
+    }
+
+
 def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> None:
     framework = battery()[0]
 
