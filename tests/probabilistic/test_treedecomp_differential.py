@@ -5,7 +5,7 @@ import random
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 
 
 def _random_praf(seed: int) -> ProbabilisticAF:

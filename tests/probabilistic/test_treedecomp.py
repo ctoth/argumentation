@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
-from argumentation.probabilistic_treedecomp import (
+from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic_treedecomp import (
     compute_exact_dp,
     compute_exact_dp_with_diagnostics,
     compute_tree_decomposition,

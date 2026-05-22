@@ -17,7 +17,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from argumentation.probabilistic_components import connected_components
+from argumentation.probabilistic.probabilistic_components import connected_components
 
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
 _DETERMINISTIC_EPSILON = 1e-12
@@ -719,7 +719,7 @@ def _compute_probabilistic_acceptance(
             if requested_strategy != normalized_strategy else result
         )
     if normalized_strategy == "exact_dp":
-        from argumentation.probabilistic_treedecomp import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_treedecomp import supports_exact_dp
 
         if not _exact_dp_supports_query(
             query_kind=normalized_query_kind,
@@ -810,7 +810,7 @@ def _compute_probabilistic_acceptance(
 
     # Medium AF with low treewidth: exact DP (Popescu & Wallner 2024)
     # Per plan Section 2.4: estimate treewidth, use DP if below cutoff.
-    from argumentation.probabilistic_treedecomp import estimate_treewidth
+    from argumentation.probabilistic.probabilistic_treedecomp import estimate_treewidth
 
     tw = estimate_treewidth(praf.framework)
     if (
@@ -820,7 +820,7 @@ def _compute_probabilistic_acceptance(
             inference_mode=normalized_inference_mode,
         )
     ):
-        from argumentation.probabilistic_treedecomp import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_treedecomp import supports_exact_dp
 
         if supports_exact_dp(praf, semantics):
             return _compute_exact_dp(
@@ -1261,7 +1261,7 @@ def _compute_exact_dp(
     dynamic programming on tree decompositions. Tractable for low-treewidth
     AFs (complexity O(3^k * n) where k is treewidth).
     """
-    from argumentation.probabilistic_treedecomp import compute_exact_dp
+    from argumentation.probabilistic.probabilistic_treedecomp import compute_exact_dp
 
     if query_kind != "argument_acceptance" or inference_mode != "credulous":
         raise ValueError("exact_dp currently only supports credulous argument acceptance")
@@ -1301,7 +1301,7 @@ def _compute_paper_td(
     if queried_set is None:
         raise ValueError("paper_td requires queried_set")
 
-    from argumentation.probabilistic_treedecomp import (
+    from argumentation.probabilistic.probabilistic_treedecomp import (
         compute_paper_exact_extension_probability,
     )
 

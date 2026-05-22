@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 from argumentation.core.dung import ArgumentationFramework
 
 if TYPE_CHECKING:
-    from argumentation.probabilistic import ProbabilisticAF
+    from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
 
 def supports_exact_dp(
@@ -431,7 +431,7 @@ def compute_paper_exact_extension_probability(
     if unknown:
         raise ValueError(f"queried_set contains unknown arguments: {unknown!r}")
 
-    from argumentation.probabilistic import _expectation
+    from argumentation.probabilistic.probabilistic import _expectation
 
     p_arguments = {
         argument: _expectation(praf.p_args[argument])
@@ -1253,7 +1253,7 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
             root_probability_mass=1.0,
         )
 
-    from argumentation.probabilistic import _expectation
+    from argumentation.probabilistic.probabilistic import _expectation
 
     p_arg: dict[str, float] = {
         a: _expectation(praf.p_args[a]) for a in af.arguments
@@ -1262,7 +1262,7 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
         d: _expectation(praf.p_defeats[d]) for d in af.defeats
     }
 
-    from argumentation.probabilistic_components import connected_components
+    from argumentation.probabilistic.probabilistic_components import connected_components
     components = connected_components(praf)
 
     acceptance: dict[str, float] = {}

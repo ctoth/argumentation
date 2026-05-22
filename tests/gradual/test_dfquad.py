@@ -10,7 +10,7 @@ from argumentation.gradual.dfquad import (
     dfquad_strengths,
 )
 from argumentation.gradual.gradual import WeightedBipolarGraph
-from argumentation.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
 
 
 def test_dfquad_aggregate_bounds_attack_and_support_effects() -> None:

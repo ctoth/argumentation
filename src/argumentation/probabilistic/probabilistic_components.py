@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from argumentation.probabilistic import ProbabilisticAF
+    from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
 
 def connected_components(praf: "ProbabilisticAF") -> list[set[str]]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic import (
+from argumentation.probabilistic.probabilistic import (
     ProbabilisticAF,
     _z_for_confidence,
     compute_probabilistic_acceptance,

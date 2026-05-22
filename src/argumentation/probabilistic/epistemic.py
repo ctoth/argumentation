@@ -24,7 +24,7 @@ import re
 from typing import Literal, Mapping, Sequence
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic import ProbabilisticAF
+from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
 
 @dataclass(frozen=True)

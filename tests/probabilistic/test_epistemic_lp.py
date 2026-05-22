@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from argumentation.epistemic import (
+from argumentation.probabilistic.epistemic import (
     EpistemicLabel,
     LabelledArc,
     LabelledEpistemicGraph,

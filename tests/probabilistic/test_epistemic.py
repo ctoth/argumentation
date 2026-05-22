@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from argumentation.epistemic import (
+from argumentation.probabilistic.epistemic import (
     BeliefConstraint,
     EpistemicGraph,
     Influence,
