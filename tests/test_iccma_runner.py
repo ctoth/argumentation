@@ -480,6 +480,7 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
     assert captured["kwargs"]["backend"] == "auto"
     assert captured["kwargs"]["clingo_control_args"] == ("--configuration=frumpy",)
     assert captured["kwargs"]["collect_clingo_statistics"] is True
+    assert captured["kwargs"]["clingo_solve_timeout_seconds"] == 39.0
     assert result["solver_metadata"]["clingo_statistics"] == {
         "solving": {"solvers": {"choices": 7.0}}
     }
@@ -527,6 +528,7 @@ def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeyp
 
     assert captured["kwargs"]["clingo_control_args"] == ()
     assert captured["kwargs"]["collect_clingo_statistics"] is False
+    assert captured["kwargs"]["clingo_solve_timeout_seconds"] is None
 
 
 def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
