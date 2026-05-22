@@ -1,6 +1,6 @@
 # SETAF Semantics and I/O
 
-`argumentation.setaf` models finite SETAFs (argumentation frameworks with
+`argumentation.frameworks.setaf` models finite SETAFs (argumentation frameworks with
 collective attacks). The dataclass `SETAF(arguments, attacks)` is frozen;
 each collective attack is a `CollectiveAttack = (frozenset[str], str)` with
 nonempty tail. The constructor coerces tails to `frozenset` and arguments to
@@ -35,7 +35,7 @@ argument is not in the framework.
 | `stage_extensions` | range-maximal conflict-free sets |
 
 ```python
-from argumentation.setaf import (
+from argumentation.frameworks.setaf import (
     SETAF, complete_extensions, grounded_extension, preferred_extensions,
     stable_extensions, semi_stable_extensions, stage_extensions,
 )
@@ -52,7 +52,7 @@ the same enumeration.
 
 ## I/O formats
 
-`argumentation.setaf_io` supports the ASPARTIX SETAF fact format using
+`argumentation.frameworks.setaf_io` supports the ASPARTIX SETAF fact format using
 `arg/1`, `att/2`, and `mem/2`. `att(Name, Target)` gives the head and
 `mem(Name, Argument)` facts give the nonempty tail. The parser skips lines
 beginning with `%` and rejects missing terminating dots, `mem` referencing
@@ -61,7 +61,7 @@ sorted, attacks sorted by `(sorted_tail, head)`, attack names emitted as
 `r{index}`.
 
 ```python
-from argumentation.setaf_io import parse_aspartix_setaf, write_aspartix_setaf
+from argumentation.frameworks.setaf_io import parse_aspartix_setaf, write_aspartix_setaf
 
 framework = parse_aspartix_setaf("""
 arg(a).

@@ -1,6 +1,6 @@
 [project]
 name = "formal-argumentation"
-version = "0.2.0"
+version = "0.3.0"
 description = "Finite formal argumentation frameworks and semantics: Dung, ASPIC+, bipolar, partial, and revision"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -83,6 +83,7 @@ packages = ["src/argumentation"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "/CHANGELOG.md",
     "/CONTRIBUTING.md",
     "/README.md",
     "/docs",
