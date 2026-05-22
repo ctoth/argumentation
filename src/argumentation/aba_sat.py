@@ -34,6 +34,13 @@ class NativeSparseNarrowSatResult:
     route_metadata: dict[str, Any]
 
 
+def _positive_solver_model(solver: Any) -> frozenset[int]:
+    model = solver.get_model()
+    if model is None:
+        raise RuntimeError("SAT solver reported satisfiable without a model")
+    return frozenset(literal for literal in model if literal > 0)
+
+
 def _aba_simplification(framework: ABAFramework, semantics: str):
     """Lazily import to avoid a module import cycle (aba_preprocessing -> aba_sat)."""
     from argumentation.aba_preprocessing import simplify_aba
@@ -856,7 +863,7 @@ class _NativeCnfPrefSatSolver:
         return None
 
     def _model_extension(self) -> AssumptionSet:
-        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        model = _positive_solver_model(self.solver)
         return frozenset(
             assumption
             for assumption, variable in self.in_vars.items()
@@ -1044,7 +1051,7 @@ class _NativeSparseNarrowStableSolver:
         extension: AssumptionSet,
     ) -> list[list[int]]:
         closure = self._closure.closure_mask(extension)
-        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        model = _positive_solver_model(self.solver)
         derived = 0
         for literal, variable in self.derived_vars.items():
             if variable in model:
@@ -1143,7 +1150,7 @@ class _NativeSparseNarrowStableSolver:
         return bits
 
     def _model_extension(self) -> AssumptionSet:
-        model = frozenset(literal for literal in self.solver.get_model() if literal > 0)
+        model = _positive_solver_model(self.solver)
         return frozenset(
             assumption
             for assumption, variable in self.in_vars.items()
