@@ -57,12 +57,14 @@ from argumentation.solver_results import (
     SingleExtensionSuccess,
     SolverProcessError,
     SolverProtocolError,
+    SolverTimeout,
     SolverUnavailable,
 )
 
 
 SolverBackendUnavailable = SolverUnavailable
 SolverBackendError = SolverProcessError
+SolverBackendTimeout = SolverTimeout
 
 
 @dataclass(frozen=True)
@@ -91,18 +93,21 @@ ExtensionSolverResult = (
     ExtensionSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverBackendTimeout
     | SolverProtocolError
 )
 SingleExtensionSolverResult = (
     SingleExtensionSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverBackendTimeout
     | SolverProtocolError
 )
 AcceptanceSolverResult = (
     AcceptanceSolverSuccess
     | SolverBackendUnavailable
     | SolverBackendError
+    | SolverBackendTimeout
     | SolverProtocolError
 )
 
@@ -715,7 +720,9 @@ def _solve_asp_aba_acceptance(
     return _aba_asp_failure(result)
 
 
-def _aba_asp_failure(result) -> SolverBackendUnavailable | SolverBackendError | SolverProtocolError:
+def _aba_asp_failure(
+    result,
+) -> SolverBackendUnavailable | SolverBackendError | SolverBackendTimeout | SolverProtocolError:
     reason = result.metadata.get("reason", result.status)
     stdout = result.metadata.get("stdout", "")
     stderr = result.metadata.get("stderr", "")
@@ -733,6 +740,13 @@ def _aba_asp_failure(result) -> SolverBackendUnavailable | SolverBackendError | 
             returncode=1,
             stdout=stdout,
             stderr=stderr or reason,
+        )
+    if result.status == "timeout":
+        return SolverBackendTimeout(
+            backend=result.backend,
+            problem=problem,
+            message=reason,
+            metadata=dict(result.metadata),
         )
     return SolverProtocolError(
         backend=result.backend,
