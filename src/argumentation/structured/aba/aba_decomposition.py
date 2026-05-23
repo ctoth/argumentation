@@ -32,7 +32,7 @@ class AbaDecompositionPlan:
 
 @dataclass(frozen=True)
 class AbaDecomposedPrefSatResult:
-    extension: AssumptionSet
+    extension: AssumptionSet | None
     telemetry: dict[str, Any]
     component_results: tuple[Any, ...] = ()
 
@@ -99,21 +99,23 @@ def decomposed_prefsat_extension(
         # et al. 1997, Def. 2.2, p.70) and contains the well-founded set (Thm.
         # 6.4, p.90), whose theory derives that assumption's contrary -- so
         # including it would break conflict-freeness. The query is therefore
-        # unsatisfiable. Return an empty extension; the sat_support_extension
-        # caller turns `require_assumptions not <= extension` into None. (Were
-        # this assumption left in residual_required, it would leak into the
-        # residual solver, which has no SAT variable for it -> KeyError.)
-        telemetry["decomp_validation_success"] = 1
+        # unsatisfiable. (Were this assumption left in residual_required, it
+        # would leak into the residual solver, which has no SAT variable for it
+        # -> KeyError.)
+        telemetry["decomp_validation_success"] = 0
         telemetry["decomp_lifted_extension_size"] = 0
-        return AbaDecomposedPrefSatResult(extension=frozenset(), telemetry=telemetry)
+        return AbaDecomposedPrefSatResult(extension=None, telemetry=telemetry)
 
     residual_required = frozenset(require_assumptions - simplification.fixed_in)
 
     if plan.no_reduction_reason == "empty_residual":
         extension = simplification.lift(frozenset())
-        telemetry["decomp_validation_success"] = _validation_success(framework, extension)
-        telemetry["decomp_lifted_extension_size"] = len(extension)
-        return AbaDecomposedPrefSatResult(extension=extension, telemetry=telemetry)
+        return _decomposed_result(
+            framework,
+            require_assumptions,
+            extension,
+            telemetry,
+        )
 
     if plan.no_reduction_reason != "reduced":
         prefsat = (
@@ -128,11 +130,11 @@ def decomposed_prefsat_extension(
         extension = simplification.lift(result.extension)
         telemetry["decomp_full_instance_prefsat_calls"] = 1
         telemetry["decomp_solver_checks"] = _solver_checks(result.telemetry)
-        telemetry["decomp_validation_success"] = _validation_success(framework, extension)
-        telemetry["decomp_lifted_extension_size"] = len(extension)
-        return AbaDecomposedPrefSatResult(
-            extension=extension,
-            telemetry=telemetry,
+        return _decomposed_result(
+            framework,
+            require_assumptions,
+            extension,
+            telemetry,
             component_results=(result,),
         )
 
@@ -152,12 +154,37 @@ def decomposed_prefsat_extension(
     extension = simplification.lift(residual_extension)
     telemetry["decomp_prefsat_component_calls"] = len(component_results)
     telemetry["decomp_solver_checks"] = solver_checks
+    return _decomposed_result(
+        framework,
+        require_assumptions,
+        extension,
+        telemetry,
+        component_results=tuple(component_results),
+    )
+
+
+def _decomposed_result(
+    framework: ABAFramework,
+    require_assumptions: AssumptionSet,
+    extension: AssumptionSet,
+    telemetry: dict[str, Any],
+    *,
+    component_results: tuple[Any, ...] = (),
+) -> AbaDecomposedPrefSatResult:
+    if not require_assumptions <= extension:
+        telemetry["decomp_validation_success"] = 0
+        telemetry["decomp_lifted_extension_size"] = 0
+        return AbaDecomposedPrefSatResult(
+            extension=None,
+            telemetry=telemetry,
+            component_results=component_results,
+        )
     telemetry["decomp_validation_success"] = _validation_success(framework, extension)
     telemetry["decomp_lifted_extension_size"] = len(extension)
     return AbaDecomposedPrefSatResult(
         extension=extension,
         telemetry=telemetry,
-        component_results=tuple(component_results),
+        component_results=component_results,
     )
 
 
