@@ -552,9 +552,11 @@ def sat_support_extension(
         decomposed = decomposed_prefsat_extension(
             framework,
             require_assumptions=require_assumptions,
-        ).extension
-        if require_assumptions <= decomposed:
-            return decomposed
+        )
+        if decomposed.extension is None:
+            return None
+        if require_assumptions <= decomposed.extension:
+            return decomposed.extension
         return None
     if semantics == "preferred" and (
         require_derived is not None or require_not_derived is not None
