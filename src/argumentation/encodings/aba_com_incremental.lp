@@ -3,7 +3,7 @@
 % (arXiv:2108.04192), Listing 1 ("Module pi_com"). Used by the incremental
 % CEGAR loop of Algorithm 1 (skeptical acceptance under preferred). Expects the
 % ABA(F) facts assumption/1, head/2, body/2, contrary/2 (a subset of what
-% argumentation.aba_asp.encode_aba_theory emits).
+% argumentation.structured.aba.aba_asp.encode_aba_theory emits).
 %
 % An answer set I of ABA(F) cup pi_com has {a : in(a) in I} a complete
 % assumption set of F, supported(x) in I iff x is forward-derivable from it, and
