@@ -4,6 +4,7 @@ import pytest
 from hypothesis import given, settings, strategies as st
 
 from argumentation.structured.aba import aba as native_aba
+from argumentation.structured.aba import aba_decomposition
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
@@ -473,6 +474,16 @@ def test_preferred_support_sat_fixed_out_required_assumption_is_unsatisfiable() 
     assert simplification.fixed_in == frozenset({a3})
     assert simplification.fixed_out == frozenset({a2})
 
+    # Direct decomposed-PrefSat callers must see the unsatisfiable requirement,
+    # not a successful empty extension.
+    direct_fixed_out = aba_decomposition.decomposed_prefsat_extension(
+        framework,
+        require_assumptions=frozenset({a1, a2}),
+    )
+    assert direct_fixed_out.extension is None
+    assert direct_fixed_out.telemetry["decomp_validation_success"] == 0
+    assert direct_fixed_out.telemetry["decomp_lifted_extension_size"] == 0
+
     # Required a2 is forced OUT -> no preferred extension satisfies it -> None.
     assert (
         aba_sat.sat_support_extension(
@@ -497,6 +508,12 @@ def test_preferred_support_sat_fixed_out_required_assumption_is_unsatisfiable() 
     assert a1 not in simplification.fixed_in
     assert a1 not in simplification.fixed_out
     assert not any(a1 in ext for ext in native_aba.preferred_extensions(framework))
+    direct_residual_unsat = aba_decomposition.decomposed_prefsat_extension(
+        framework,
+        require_assumptions=frozenset({a1}),
+    )
+    assert direct_residual_unsat.extension is None
+    assert direct_residual_unsat.telemetry["decomp_validation_success"] == 0
     assert (
         aba_sat.sat_support_extension(
             framework, "preferred", require_assumptions=frozenset({a1})
