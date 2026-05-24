@@ -4,7 +4,6 @@ import importlib
 
 import pytest
 
-import argumentation
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.ranking.ranking import RankingResult, categoriser_scores
 from argumentation.ranking.ranking_axioms import (
@@ -24,14 +23,16 @@ from argumentation.ranking.ranking_axioms import (
 
 
 def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
-    assert argumentation.frameworks.vaf is importlib.import_module("argumentation.frameworks.vaf")
-    assert argumentation.frameworks.practical_reasoning is importlib.import_module(
+    assert importlib.import_module("argumentation.frameworks.vaf").__name__ == (
+        "argumentation.frameworks.vaf"
+    )
+    assert importlib.import_module("argumentation.frameworks.practical_reasoning").__name__ == (
         "argumentation.frameworks.practical_reasoning"
     )
-    assert argumentation.structured.aspic.subjective_aspic is importlib.import_module(
+    assert importlib.import_module("argumentation.structured.aspic.subjective_aspic").__name__ == (
         "argumentation.structured.aspic.subjective_aspic"
     )
-    assert argumentation.ranking.ranking_axioms is importlib.import_module(
+    assert importlib.import_module("argumentation.ranking.ranking_axioms").__name__ == (
         "argumentation.ranking.ranking_axioms"
     )
 
@@ -40,6 +41,7 @@ def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
 
 
 def test_workstream_o_arg_vaf_ranking_contracts_are_closed() -> None:
+    ranking_axioms = importlib.import_module("argumentation.ranking.ranking_axioms")
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b"), ("b", "a")}),
@@ -63,16 +65,16 @@ def test_workstream_o_arg_vaf_ranking_contracts_are_closed() -> None:
         strict_preference_transitive,
         void_precedence,
     } == {
-        argumentation.ranking.ranking_axioms.abstraction,
-        argumentation.ranking.ranking_axioms.cardinality_precedence,
-        argumentation.ranking.ranking_axioms.counter_transitivity,
-        argumentation.ranking.ranking_axioms.defense_precedence,
-        argumentation.ranking.ranking_axioms.distributed_defense_precedence,
-        argumentation.ranking.ranking_axioms.independence,
-        argumentation.ranking.ranking_axioms.quality_precedence,
-        argumentation.ranking.ranking_axioms.self_contradiction,
-        argumentation.ranking.ranking_axioms.strict_addition_of_defense_branch,
-        argumentation.ranking.ranking_axioms.strict_counter_transitivity,
-        argumentation.ranking.ranking_axioms.strict_preference_transitive,
-        argumentation.ranking.ranking_axioms.void_precedence,
+        ranking_axioms.abstraction,
+        ranking_axioms.cardinality_precedence,
+        ranking_axioms.counter_transitivity,
+        ranking_axioms.defense_precedence,
+        ranking_axioms.distributed_defense_precedence,
+        ranking_axioms.independence,
+        ranking_axioms.quality_precedence,
+        ranking_axioms.self_contradiction,
+        ranking_axioms.strict_addition_of_defense_branch,
+        ranking_axioms.strict_counter_transitivity,
+        ranking_axioms.strict_preference_transitive,
+        ranking_axioms.void_precedence,
     }
