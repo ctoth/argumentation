@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from argumentation import aba, adf
-from argumentation.aba import ABAFramework, ABAPlusFramework, NotFlatABAError
-from argumentation.adf import (
+from argumentation.structured.aba import aba
+from argumentation.frameworks import adf
+from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework, NotFlatABAError
+from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     And,
     Atom,
@@ -14,8 +15,8 @@ from argumentation.adf import (
     grounded_interpretation,
     interpretation_from_mapping,
 )
-from argumentation.aspic import GroundAtom, Literal, Rule
-from argumentation.iccma import parse_aba, write_aba
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
+from argumentation.interop.iccma import parse_aba, write_aba
 
 
 def lit(name: str) -> Literal:

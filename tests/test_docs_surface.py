@@ -10,21 +10,21 @@ def test_readme_documents_new_package_surfaces() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     for expected in (
-        "argumentation.ranking",
-        "argumentation.weighted",
-        "argumentation.gradual",
-        "argumentation.subjective_aspic",
-        "argumentation.vaf",
-        "argumentation.practical_reasoning",
-        "argumentation.ranking_axioms",
-        "argumentation.accrual",
-        "argumentation.setaf",
-        "argumentation.enforcement",
-        "argumentation.caf",
-        "argumentation.dynamic",
-        "argumentation.approximate",
-        "argumentation.epistemic",
-        "argumentation.llm_surface",
+        "argumentation.ranking.ranking",
+        "argumentation.ranking.weighted",
+        "argumentation.gradual.gradual",
+        "argumentation.structured.aspic.subjective_aspic",
+        "argumentation.frameworks.vaf",
+        "argumentation.frameworks.practical_reasoning",
+        "argumentation.ranking.ranking_axioms",
+        "argumentation.core.accrual",
+        "argumentation.frameworks.setaf",
+        "argumentation.dynamics.enforcement",
+        "argumentation.frameworks.caf",
+        "argumentation.dynamics.dynamic",
+        "argumentation.dynamics.approximate",
+        "argumentation.probabilistic.epistemic",
+        "argumentation.gradual.llm_surface",
     ):
         assert expected in readme
 
@@ -40,21 +40,21 @@ def test_architecture_documents_new_package_surfaces() -> None:
     architecture = (ROOT / "docs" / "architecture.md").read_text(encoding="utf-8")
 
     for expected in (
-        "argumentation.ranking",
-        "argumentation.weighted",
-        "argumentation.gradual",
-        "argumentation.subjective_aspic",
-        "argumentation.vaf",
-        "argumentation.practical_reasoning",
-        "argumentation.ranking_axioms",
-        "argumentation.accrual",
-        "argumentation.setaf",
-        "argumentation.enforcement",
-        "argumentation.caf",
-        "argumentation.dynamic",
-        "argumentation.approximate",
-        "argumentation.epistemic",
-        "argumentation.llm_surface",
+        "argumentation.ranking.ranking",
+        "argumentation.ranking.weighted",
+        "argumentation.gradual.gradual",
+        "argumentation.structured.aspic.subjective_aspic",
+        "argumentation.frameworks.vaf",
+        "argumentation.frameworks.practical_reasoning",
+        "argumentation.ranking.ranking_axioms",
+        "argumentation.core.accrual",
+        "argumentation.frameworks.setaf",
+        "argumentation.dynamics.enforcement",
+        "argumentation.frameworks.caf",
+        "argumentation.dynamics.dynamic",
+        "argumentation.dynamics.approximate",
+        "argumentation.probabilistic.epistemic",
+        "argumentation.gradual.llm_surface",
     ):
         assert expected in architecture
 

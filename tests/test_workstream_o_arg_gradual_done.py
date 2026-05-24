@@ -7,13 +7,12 @@ import pytest
 
 
 def test_workstream_o_arg_gradual_public_surface_is_complete() -> None:
-    import argumentation
-    from argumentation import dfquad, equational, gradual, gradual_principles, matt_toni
+    from argumentation.gradual import dfquad, equational, gradual, gradual_principles
+    from argumentation.ranking import matt_toni
 
-    assert argumentation.dfquad is dfquad
-    assert argumentation.matt_toni is matt_toni
-    assert argumentation.equational is equational
-    assert argumentation.gradual_principles is gradual_principles
+    assert matt_toni is not None
+    assert equational is not None
+    assert gradual_principles is not None
     assert hasattr(gradual, "quadratic_energy_strengths_continuous")
     assert hasattr(dfquad, "dfquad_bipolar_strengths")
     assert "integration_method" in {

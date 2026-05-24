@@ -4,8 +4,8 @@ import re
 
 import pytest
 
-from argumentation.af_revision import AFChangeKind, ExtensionRevisionState, _classify_extension_change
-from argumentation.aspic import (
+from argumentation.dynamics.af_revision import AFChangeKind, ExtensionRevisionState, _classify_extension_change
+from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
     GroundAtom,
@@ -14,11 +14,11 @@ from argumentation.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.aspic_encoding import encode_aspic_theory
-from argumentation.dung import ArgumentationFramework, admissible, ideal_extension
-from argumentation.partial_af import PartialArgumentationFramework
-from argumentation.preference import strictly_weaker
-from argumentation.probabilistic import _z_for_confidence
+from argumentation.structured.aspic.aspic_encoding import encode_aspic_theory
+from argumentation.core.dung import ArgumentationFramework, admissible, ideal_extension
+from argumentation.frameworks.partial_af import PartialArgumentationFramework
+from argumentation.core.preference import strictly_weaker
+from argumentation.probabilistic.probabilistic import _z_for_confidence
 from argumentation.semantics import accepted_arguments
 
 

@@ -5,11 +5,11 @@ import time
 
 import pytest
 
-from argumentation.aba import ABAFramework
-from argumentation.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
-from argumentation.aspic import GroundAtom, Literal, Rule
-import argumentation.solver as solver_module
-from argumentation.solver import SingleExtensionSolverSuccess, solve_aba_single_extension
+from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
+from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
+import argumentation.solving.solver as solver_module
+from argumentation.solving.solver import SingleExtensionSolverSuccess, solve_aba_single_extension
 from tests import performance_contracts
 from tests.performance_contracts import (
     CALIBRATION_ENV,

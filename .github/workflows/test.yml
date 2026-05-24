@@ -18,4 +18,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv run pytest -q --timeout=600
       - run: uv run pyright src
+      - run: uv run lint-imports
       - run: uv build

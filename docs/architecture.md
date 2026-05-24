@@ -5,207 +5,284 @@ data types and algorithms over argumentation frameworks. It does not own
 application-level concepts (storage, persistence, schedulers, application
 CLIs) — see [Non-goals](#non-goals).
 
-The public surface is grouped into nine tiers. Per-family deep dives live
+The distribution name is `formal-argumentation`; the import root is
+`argumentation`. The package is organized into layered subpackages. The
+module catalogue below is grouped by subpackage; the
+[Layered architecture](#layered-architecture) section states the import DAG
+and the `import-linter` contract that enforces it. Per-family deep dives live
 in dedicated docs (see [See also](#see-also)).
 
 ## Modules
 
-### Core: Dung, labelling, preference, dispatch
+### `core/` — Dung, labelling, preference, dispatch primitives
 
-- `argumentation.dung` — Dung 1995 abstract argumentation frameworks and
+- `argumentation.core.dung` — Dung 1995 abstract argumentation frameworks and
   extension semantics. Core: grounded, complete, preferred, stable.
   Extended: naive, semi-stable (Caminada 2011), stage, CF2 (Gaggl &
   Woltran 2013), stage2, eager, ideal (Dung, Mancarella & Toni 2007), and
   prudent-semantics helpers.
-- `argumentation.labelling` — Three-valued IN / OUT / UNDEC labelling and
+- `argumentation.core.labelling` — Three-valued IN / OUT / UNDEC labelling and
   the extension-to-labelling bridge used by accrual and quantitative
   services.
-- `argumentation.preference` — Strict-partial-order helpers and elitist /
+- `argumentation.core.preference` — Strict-partial-order helpers and elitist /
   democratic preference comparisons (Modgil & Prakken 2018 Def 19).
-- `argumentation.semantics` — Generic set-returning semantics dispatch
-  over argumentation-owned Dung, bipolar, and partial-AF dataclasses.
-
-### Structured: ASPIC+, ABA, accrual
-
-- `argumentation.aspic` — ASPIC+ literals, rules, premise/strict/defeasible
-  arguments, attacks, defeats, and CSAF construction (Modgil & Prakken
-  2018).
-- `argumentation.aspic_encoding` — Deterministic ASP-style fact encoding
-  of ASPIC+ theories (Lehtonen, Niskanen & Järvisalo 2024) and a typed
-  grounded query surface with a backend-dispatch entry point
-  (`solve_aspic_with_backend`).
-- `argumentation.aspic_incomplete` — ASPIC+ reasoning with optional
-  ordinary premises by exact completion enumeration; classifies a query
-  as `stable`, `relevant`, `unknown`, or `unsupported`.
-- `argumentation.subjective_aspic` — Wallner-style value filtering helpers
-  for ASPIC+ subjective knowledge bases and defeasible rules.
-- `argumentation.aba` — Flat ABA and ABA+ frameworks over ASPIC literals,
-  with constructor-level rejection of non-flat frameworks via
-  `NotFlatABAError` and preference-aware attack reversal (Bondarenko et
-  al. 1997; Čyras & Toni 2016).
-- `argumentation.aba_asp` — Clingo-backed flat ABA extension queries
-  encoding `ABAFramework` into deterministic ASP facts. Requires the
-  `[asp]` extra. ABA+ ASP is not yet implemented.
-- `argumentation.aba_sat` — Pure-Python (no Z3) task-directed support-mask
-  SAT enumeration for flat ABA stable, complete, and preferred extensions.
-- `argumentation.accrual` — Prakken-style weak/strong applicability
-  helpers and same-conclusion accrual envelopes.
-
-### Quantitative and bipolar
-
-- `argumentation.bipolar` — Cayrol-style bipolar argumentation frameworks
+- `argumentation.core.bipolar` — Cayrol-style bipolar argumentation frameworks
   with derived defeats and d/s/c-admissibility semantics.
-- `argumentation.gradual` — Potyka-style quadratic-energy gradual
-  strengths for weighted bipolar graphs, revised direct-impact
-  attribution, and exact Shapley-style per-attack impact scores
-  (Al Anaissy et al. 2024).
-- `argumentation.gradual_principles` — Executable balance, directionality,
-  and monotonicity checks over gradual strength functions.
-- `argumentation.ranking` — Categoriser, Burden, and related ranking-based
-  semantics over Dung AFs.
-- `argumentation.ranking_axioms` — Executable ranking postulate checks
-  over `RankingResult` outputs.
-- `argumentation.weighted` — Dunne-style weighted argument systems with
-  inconsistency-budget grounded semantics and deleted-attack witnesses.
-- `argumentation.dfquad` — DF-QuAD aggregation/combination and strength
-  propagation for quantitative bipolar graphs.
-- `argumentation.equational` — Iterative equational fixpoint scoring
-  schemes over weighted bipolar graphs.
-- `argumentation.matt_toni` — Finite zero-sum game strengths for small
-  AFs, with explicit intractability signalling for oversized matrices.
+- `argumentation.core.accrual` — Prakken-style weak/strong applicability
+  helpers and same-conclusion accrual envelopes.
+- `argumentation.core.preprocessing` — Framework-simplification helpers shared
+  by the solver and encoding layers.
+- `argumentation.core.scc_recursive` — SCC-recursive extension computation
+  shared by the Dung semantics.
+- `argumentation.core.solver_results` — Shared result dataclasses
+  `SolverUnavailable`, `SolverProcessError`, `SolverProtocolError`.
+- `argumentation.semantics` — Generic set-returning semantics dispatch
+  over argumentation-owned Dung, bipolar, and partial-AF dataclasses. This is
+  a single top-level module, not a subpackage; it is the topmost layer.
 
-### Probabilistic and epistemic
+### `structured/aspic/` — ASPIC+ structured argumentation
 
-- `argumentation.probabilistic` — Probabilistic argumentation frameworks
-  (PrAFs) with primitive-relation uncertainty. Auto-routing strategy
-  dispatcher across `deterministic`, `exact_enum`, `mc` (Li, Oren &
-  Norman 2012), `exact_dp`, `paper_td` (Popescu & Wallner 2024), and
-  DF-QuAD gradual semantics (Freedman et al. 2025).
-- `argumentation.probabilistic_components` — Connected component
-  decomposition over the primitive semantic dependency graph (Hunter &
-  Thimm 2017, Proposition 18).
-- `argumentation.probabilistic_treedecomp` — Min-degree treewidth
-  estimation, tree decomposition computation, nice-tree-decomposition
-  conversion, and an adapted grounded edge-tracking DP. Exact for the
-  supported grounded route, but not the full Popescu & Wallner I/O/U
-  witness-table DP. See `gaps.md` for the asymptotic limitation.
-- `argumentation.epistemic` — Hunter-style epistemic language and belief
-  distributions, labelled epistemic graphs with positive/negative/dependent
-  labels, Potyka-style linear atomic constraints over probability
-  labellings, and explicitly approximate belief-grid helpers. The Z3-backed
-  surface in the package; install the `[z3]` extra.
-
-### Specialized frameworks
-
-- `argumentation.adf` — Abstract dialectical frameworks with typed
-  acceptance-condition ASTs, three-valued operator semantics, structural
-  link classification, and Dung bridges (Brewka & Woltran 2010; Brewka et
-  al. 2013).
-- `argumentation.setaf` — SETAFs with collective attacks; grounded /
-  complete / preferred / stable / semi-stable / stage semantics. See
-  [`setaf.md`](setaf.md).
-- `argumentation.setaf_io` — ASPARTIX SETAF facts plus package-local
-  compact SETAF parser/writer.
-- `argumentation.caf` — Claim-augmented AFs with inherited and claim-level
-  views plus concurrence checks. See [`caf-semantics.md`](caf-semantics.md).
-- `argumentation.vaf` — Bench-Capon value-based argumentation frameworks,
-  audience-specific defeat, and objective/subjective acceptance.
-- `argumentation.vaf_completion` — Value-based argument-chain construction,
-  line classification, fact-first audiences, and two-value cycle
-  completion helpers.
-- `argumentation.practical_reasoning` — Atkinson and Bench-Capon
-  AATS-backed AS1 practical arguments with CQ5, CQ6, and CQ11 objection
-  generation.
-
-### Dynamics, revision, enforcement
-
-- `argumentation.partial_af` — Partial argumentation frameworks with a
-  three-way attack/ignorance/non-attack partition, completion enumeration,
-  skeptical and credulous acceptance, and Sum / Max / Leximax merge
-  operators.
-- `argumentation.af_revision` — AF-level revision: kernel union expansion
-  (Baumann 2015), revise-by-formula and revise-by-framework (Diller 2015),
-  and grounded-argument-addition classification (`cayrol_2014_classify_grounded_argument_addition`,
-  cited to Cayrol, de Saint-Cyr & Lagasquie-Schiex 2010, JAIR 38).
-- `argumentation.dynamic` — Dynamic AF update streams with a named
-  recompute oracle, Alfano-Greco-Parisi-style single-attack incremental
-  influenced/reduced-AF updates for grounded, complete, preferred, and
-  stable semantics, and query results with explicit fallback metadata.
-- `argumentation.enforcement` — Brute-force minimal-change argument and
-  extension enforcement with separate typed witnesses for unconstrained
-  fixed-argument edits, conservative Baumann-style normal/strong/weak
-  expansions, and explicit liberal source-to-target semantics changes.
-  See `gaps.md` for the brute-force-vs-Baumann scope.
-- `argumentation.approximate` — k-stable semantics, bounded grounded
-  iteration, and budgeted semi-stable approximation with exactness
-  metadata.
-
-### Encoding and interop
-
-- `argumentation.iccma` — ICCMA-style AF, ADF, and ABA I/O for interop with
-  external argumentation solvers.
-- `argumentation.iccma_cli` — Argparse `main(argv)` for the ICCMA AF/ABA
-  CLI, registered as the `iccma-cli` console script. Dispatches to
-  `argumentation.solver`.
-- `argumentation.sat_encoding` — Solver-independent CNF encoding of stable
-  extensions, plus a reference scan-based enumerator.
-- `argumentation.af_sat` — Incremental Z3-backed SAT kernel for Dung AF
-  acceptance with telemetry (`AfSatKernel`, `SATCheck`, `SATTraceSink`).
-- `argumentation.datalog_grounding` — Grounding of Gunray
+- `argumentation.structured.aspic.aspic` — ASPIC+ literals, rules,
+  premise/strict/defeasible arguments, attacks, defeats, and CSAF
+  construction (Modgil & Prakken 2018).
+- `argumentation.structured.aspic.aspic_encoding` — Deterministic ASP-style
+  fact encoding of ASPIC+ theories (Lehtonen, Niskanen & Järvisalo 2024) and
+  a typed grounded query surface with a backend-dispatch entry point
+  (`solve_aspic_with_backend`).
+- `argumentation.structured.aspic.aspic_incomplete` — ASPIC+ reasoning with
+  optional ordinary premises by exact completion enumeration; classifies a
+  query as `stable`, `relevant`, `unknown`, or `unsupported`.
+- `argumentation.structured.aspic.subjective_aspic` — Wallner-style value
+  filtering helpers for ASPIC+ subjective knowledge bases and defeasible
+  rules.
+- `argumentation.structured.aspic.datalog_grounding` — Grounding of Gunray
   `DefeasibleTheory` instances into propositional ASPIC+ via
   `ground_defeasible_theory(theory) -> GroundedDatalogTheory`. Requires
   the `[grounding]` extra. Consumes Gunray rather than redefining the
   defeasible-theory schema; Diller (2025) Definition 12 NAP analysis is
   not implemented (see `gaps.md`).
-- `argumentation.encodings/` — Prebuilt clingo `.lp` modules
-  (admissible / complete / stable for AF, ASPIC+, and ABA) shipped in the
-  wheel and concatenated with facts by the clingo subprocess adapter.
-- `argumentation.llm_surface` — Dependency-free QBAF construction,
+
+### `structured/aba/` — assumption-based argumentation
+
+- `argumentation.structured.aba.aba` — Flat ABA and ABA+ frameworks over
+  ASPIC literals, with constructor-level rejection of non-flat frameworks via
+  `NotFlatABAError` and preference-aware attack reversal (Bondarenko et
+  al. 1997; Čyras & Toni 2016).
+- `argumentation.structured.aba.aba_asp` — Clingo-backed flat ABA extension
+  queries encoding `ABAFramework` into deterministic ASP facts. Requires the
+  `[asp]` extra. ABA+ ASP is not yet implemented.
+- `argumentation.structured.aba.aba_sat` — Pure-Python (no Z3) task-directed
+  support-mask SAT enumeration for flat ABA stable, complete, and preferred
+  extensions.
+- `argumentation.structured.aba.aba_decomposition` — SCC-style decomposition
+  planning for ABA preferred-extension SAT enumeration.
+- `argumentation.structured.aba.aba_incremental` — Incremental multi-shot ABA
+  solving with clingo, plus an incremental-telemetry record.
+- `argumentation.structured.aba.aba_preprocessing` — Flat-ABA simplification
+  and grounded-reduct helpers.
+- `argumentation.structured.aba.aba_route_policy` — Shape-driven route policy
+  for choosing the sparse-narrow native SAT path.
+- `argumentation.structured.aba.aba_telemetry` — Structural telemetry keys and
+  derivations for ABA frameworks.
+
+### `frameworks/` — specialized framework families
+
+- `argumentation.frameworks.adf` — Abstract dialectical frameworks with typed
+  acceptance-condition ASTs, three-valued operator semantics, structural
+  link classification, and Dung bridges (Brewka & Woltran 2010; Brewka et
+  al. 2013).
+- `argumentation.frameworks.setaf` — SETAFs with collective attacks; grounded
+  / complete / preferred / stable / semi-stable / stage semantics. See
+  [`setaf.md`](setaf.md).
+- `argumentation.frameworks.setaf_io` — ASPARTIX SETAF facts plus
+  package-local compact SETAF parser/writer.
+- `argumentation.frameworks.caf` — Claim-augmented AFs with inherited and
+  claim-level views plus concurrence checks. See
+  [`caf-semantics.md`](caf-semantics.md).
+- `argumentation.frameworks.vaf` — Bench-Capon value-based argumentation
+  frameworks, audience-specific defeat, and objective/subjective acceptance.
+- `argumentation.frameworks.vaf_completion` — Value-based argument-chain
+  construction, line classification, fact-first audiences, and two-value
+  cycle completion helpers.
+- `argumentation.frameworks.partial_af` — Partial argumentation frameworks
+  with a three-way attack/ignorance/non-attack partition, completion
+  enumeration, skeptical and credulous acceptance, and Sum / Max / Leximax
+  merge operators.
+- `argumentation.frameworks.practical_reasoning` — Atkinson and Bench-Capon
+  AATS-backed AS1 practical arguments with CQ5, CQ6, and CQ11 objection
+  generation.
+
+### `gradual/` — gradual and weighted-bipolar semantics
+
+- `argumentation.gradual.gradual` — Potyka-style quadratic-energy gradual
+  strengths for weighted bipolar graphs, revised direct-impact attribution,
+  and exact Shapley-style per-attack impact scores (Al Anaissy et al. 2024).
+- `argumentation.gradual.gradual_principles` — Executable balance,
+  directionality, and monotonicity checks over gradual strength functions.
+- `argumentation.gradual.dfquad` — DF-QuAD aggregation/combination and
+  strength propagation for quantitative bipolar graphs.
+- `argumentation.gradual.equational` — Iterative equational fixpoint scoring
+  schemes over weighted bipolar graphs.
+- `argumentation.gradual.sensitivity` — Sensitivity analysis over gradual
+  strength functions.
+- `argumentation.gradual.llm_surface` — Dependency-free QBAF construction,
   Shapley-style explanation, and contestation witnesses for externally
   supplied argumentative LLM proposition graphs.
 
-### Solver orchestration
+### `ranking/` — ranking-based semantics
 
-- `argumentation.solver` — Typed solver-result wrappers for Dung, ABA, ADF,
-  and SETAF tasks. Entry points: `solve_dung_extensions /
+- `argumentation.ranking.ranking` — Categoriser, Burden, and related
+  ranking-based semantics over Dung AFs.
+- `argumentation.ranking.ranking_axioms` — Executable ranking postulate checks
+  over `RankingResult` outputs.
+- `argumentation.ranking.weighted` — Dunne-style weighted argument systems
+  with inconsistency-budget grounded semantics and deleted-attack witnesses.
+- `argumentation.ranking.matt_toni` — Finite zero-sum game strengths for small
+  AFs, with explicit intractability signalling for oversized matrices.
+
+### `probabilistic/` — probabilistic and epistemic argumentation
+
+- `argumentation.probabilistic.probabilistic` — Probabilistic argumentation
+  frameworks (PrAFs) with primitive-relation uncertainty. Auto-routing
+  strategy dispatcher across `deterministic`, `exact_enum`, `mc` (Li, Oren &
+  Norman 2012), `exact_dp`, `paper_td` (Popescu & Wallner 2024), and
+  DF-QuAD gradual semantics (Freedman et al. 2025).
+- `argumentation.probabilistic.probabilistic_components` — Connected component
+  decomposition over the primitive semantic dependency graph (Hunter &
+  Thimm 2017, Proposition 18).
+- `argumentation.probabilistic.probabilistic_treedecomp` — Min-degree
+  treewidth estimation, tree decomposition computation,
+  nice-tree-decomposition conversion, and an adapted grounded edge-tracking
+  DP. Exact for the supported grounded route, but not the full Popescu &
+  Wallner I/O/U witness-table DP. See `gaps.md` for the asymptotic
+  limitation.
+- `argumentation.probabilistic.epistemic` — Hunter-style epistemic language
+  and belief distributions, labelled epistemic graphs with
+  positive/negative/dependent labels, Potyka-style linear atomic constraints
+  over probability labellings, and explicitly approximate belief-grid
+  helpers. The Z3-backed surface in the package; install the `[z3]` extra.
+
+### `dynamics/` — revision, enforcement, dynamic update
+
+- `argumentation.dynamics.af_revision` — AF-level revision: kernel union
+  expansion (Baumann 2015), revise-by-formula and revise-by-framework
+  (Diller 2015), and grounded-argument-addition classification
+  (`cayrol_2014_classify_grounded_argument_addition`, cited to Cayrol, de
+  Saint-Cyr & Lagasquie-Schiex 2010, JAIR 38).
+- `argumentation.dynamics.dynamic` — Dynamic AF update streams with a named
+  recompute oracle, Alfano-Greco-Parisi-style single-attack incremental
+  influenced/reduced-AF updates for grounded, complete, preferred, and
+  stable semantics, and query results with explicit fallback metadata.
+- `argumentation.dynamics.enforcement` — Brute-force minimal-change argument
+  and extension enforcement with separate typed witnesses for unconstrained
+  fixed-argument edits, conservative Baumann-style normal/strong/weak
+  expansions, and explicit liberal source-to-target semantics changes.
+  See `gaps.md` for the brute-force-vs-Baumann scope.
+- `argumentation.dynamics.approximate` — k-stable semantics, bounded grounded
+  iteration, and budgeted semi-stable approximation with exactness
+  metadata.
+- `argumentation.dynamics.optimization` — Optimisation helpers over AF
+  enforcement and revision.
+
+### `interop/` — exchange-format I/O
+
+- `argumentation.interop.iccma` — ICCMA-style AF, ADF, and ABA I/O for interop
+  with external argumentation solvers.
+
+### `solving/` — solver orchestration and SAT encodings
+
+- `argumentation.solving.solver` — Typed solver-result wrappers for Dung, ABA,
+  ADF, and SETAF tasks. Entry points: `solve_dung_extensions /
   solve_dung_single_extension / solve_dung_acceptance`, `solve_aba_extensions
   / solve_aba_single_extension / solve_aba_acceptance`, `solve_adf_models`,
   `solve_setaf_extensions`. Configuration dataclasses: `ICCMAConfig`,
   `SATConfig`.
-- `argumentation.solver_results` — Shared result dataclasses
-  `SolverUnavailable`, `SolverProcessError`, `SolverProtocolError`.
-- `argumentation.solver_differential` — Hosts `solver_capability_matrix`
-  and task-aware comparison helpers for native, ICCMA, SAT, clingo, ADF,
-  SETAF, and unsupported backend combinations.
-- `argumentation.backends` — Capability detection (`has_clingo`,
+- `argumentation.solving.solver_differential` — Hosts
+  `solver_capability_matrix` and task-aware comparison helpers for native,
+  ICCMA, SAT, clingo, ADF, SETAF, and unsupported backend combinations.
+- `argumentation.solving.backends` — Capability detection (`has_clingo`,
   `has_z3`), `default_backend(...)` policy, and `backend_choice_reason(...)`
   diagnostics. See [`backends.md`](backends.md).
-- `argumentation.solver_adapters/` — Subprocess adapters as a subpackage:
-  - `solver_adapters/clingo` — Subprocess driver for ASPIC+/ABA/AF clingo
-    encodings; parses `accepted_arg(...)` / `accepted_lit(...)` lines.
-  - `solver_adapters/iccma_aba` — ICCMA-protocol flat-ABA solvers.
-  - `solver_adapters/iccma_af` — ICCMA-protocol AF solvers, with typed
-    DC/DS/SE output parsing.
+- `argumentation.solving.sat_encoding` — Solver-independent CNF encoding of
+  stable extensions, plus a reference scan-based enumerator.
+- `argumentation.solving.af_sat` — Incremental Z3-backed SAT kernel for Dung
+  AF acceptance with telemetry (`AfSatKernel`, `SATCheck`, `SATTraceSink`).
+- `argumentation.solving.iccma_cli` — Argparse `main(argv)` for the ICCMA
+  AF/ABA CLI, registered as the `iccma-cli` console script. Dispatches to
+  `argumentation.solving.solver`.
+
+### `solver_adapters/` — external-solver subprocess adapters
+
+- `argumentation.solver_adapters.clingo` — Subprocess driver for
+  ASPIC+/ABA/AF clingo encodings; parses `accepted_arg(...)` /
+  `accepted_lit(...)` lines.
+- `argumentation.solver_adapters.iccma_aba` — ICCMA-protocol flat-ABA solvers.
+- `argumentation.solver_adapters.iccma_af` — ICCMA-protocol AF solvers, with
+  typed DC/DS/SE output parsing.
+
+### `encodings/` — prebuilt clingo encodings
+
+- `argumentation.encodings/` — Prebuilt clingo `.lp` modules
+  (admissible / complete / stable for AF, ASPIC+, and ABA) shipped in the
+  wheel and concatenated with facts by the clingo subprocess adapter.
+
+## Layered architecture
+
+The package is partitioned into layers. A module may import only from its own
+layer or a strictly lower layer; an upward import is forbidden. From the base
+upward:
+
+1. **`core`** — `dung`, `labelling`, `preference`, `bipolar`, `accrual`,
+   `preprocessing`, `scc_recursive`, `solver_results`. Depends on nothing
+   else in the package.
+2. **`structured.aspic`, `frameworks`, `gradual`, `ranking`** — framework
+   families built directly on `core`. These four are siblings; `gradual` and
+   `ranking` are additionally constrained to be independent of each other.
+3. **`structured.aba`, `probabilistic`, `dynamics`** — built on `core` and
+   the layer-2 families.
+4. **`interop`** — exchange-format I/O over the framework layers.
+5. **`solver_adapters`** — external-solver subprocess adapters.
+6. **`solving`** — solver orchestration (`solver`, `solver_differential`,
+   `backends`, `sat_encoding`, `af_sat`, `iccma_cli`).
+7. **`semantics`** — the topmost generic dispatcher.
+
+The DAG is enforced mechanically by `import-linter`. The
+`[tool.importlinter]` contracts in `pyproject.toml` declare a `layers`
+contract (base `argumentation.core` up to `argumentation.semantics`) and an
+`independence` contract pinning `argumentation.gradual` and
+`argumentation.ranking` apart. `uv run lint-imports` checks both; an upward
+import fails CI.
+
+Two function-local imports are sanctioned exceptions, listed in the
+contract's `ignore_imports`:
+
+- `argumentation.structured.aspic.aspic_encoding -> argumentation.solver_adapters.clingo`
+- `argumentation.structured.aba.aba_asp -> argumentation.solver_adapters.clingo`
+
+Both are deferred (function-local) imports of the optional clingo subprocess
+adapter, used only when the `[asp]` extra is installed. They are deliberate
+and explicitly whitelisted; no other upward import is permitted.
 
 ## Backend policy
 
 Pure-Python algorithms are the reference implementation. Dung extension
 *enumeration* has one package-owned execution path: finite set enumeration
-in `argumentation.dung`, with `argumentation.labelling` used by the
+in `argumentation.core.dung`, with `argumentation.core.labelling` used by the
 semantic implementations that require labelling projections.
 
-`argumentation.solver.solve_dung_extensions` exposes that path through the
-backend name `native`. Other extension-enumeration backend names return
-`SolverUnavailable`; this includes the deleted `argumentation.dung_z3`
+`argumentation.solving.solver.solve_dung_extensions` exposes that path
+through the backend name `native`. Other extension-enumeration backend names
+return `SolverUnavailable`; this includes the deleted `argumentation.dung_z3`
 module name. `backend="iccma"` is supported only for single-extension and
 acceptance tasks (one ICCMA witness is not full enumeration).
 
 ABA, ADF, SETAF, and ASPIC+ have their own native execution paths through
-`argumentation.solver`; the SAT backend for AFs uses `argumentation.af_sat`
-and the ASP backends for ABA / ASPIC+ route through `argumentation.aba_asp`
-/ `argumentation.aspic_encoding`. The `default_backend(...)` policy
-function in `argumentation.backends` picks among these without forcing
-dispatch — see [`backends.md`](backends.md) for the rule body and the
+`argumentation.solving.solver`; the SAT backend for AFs uses
+`argumentation.solving.af_sat` and the ASP backends for ABA / ASPIC+ route
+through `argumentation.structured.aba.aba_asp` /
+`argumentation.structured.aspic.aspic_encoding`. The `default_backend(...)`
+policy function in `argumentation.solving.backends` picks among these without
+forcing dispatch — see [`backends.md`](backends.md) for the rule body and the
 canonical backend-string set.
 
 ## Solver contracts
@@ -218,7 +295,7 @@ Solver calls are separated by task result type:
   backend-supplied witness or counterexample.
 
 unsupported combinations return typed unavailable results before subprocess
-invocation. `argumentation.solver_differential` hosts
+invocation. `argumentation.solving.solver_differential` hosts
 `solver_capability_matrix`, the package-owned record of which combinations
 are live for native, ICCMA, SAT, clingo, ADF, SETAF, and unsupported backend
 combinations.
@@ -242,10 +319,11 @@ identity, storage, merge policy, provenance, or rendering policy.
 development dependency for tests; it is not used for Dung extension
 enumeration. The Z3-backed package surfaces are:
 
-- `argumentation.epistemic.constraints_satisfiable` /
+- `argumentation.probabilistic.epistemic.constraints_satisfiable` /
   `constraints_entail` — linear real constraints over argument
   probability labels.
-- `argumentation.af_sat` — incremental SAT kernel for Dung AF acceptance.
+- `argumentation.solving.af_sat` — incremental SAT kernel for Dung AF
+  acceptance.
 
 Without `z3-solver`, those entry points raise a runtime error naming the
 missing dependency (`epistemic.py`, `af_sat.py`).
@@ -340,3 +418,5 @@ focused test pins the chosen behaviour.
   preparation tooling.
 - [`iccma-2025-data.md`](iccma-2025-data.md) — ICCMA 2025 data and
   native runner.
+- [`../CHANGELOG.md`](../CHANGELOG.md) — release history, including the
+  0.3.0 layered-subpackage reorganization.

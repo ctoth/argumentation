@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import tempfile
 
-from argumentation.dung import (
+from argumentation.core.dung import (
     ArgumentationFramework,
     admissible,
     characteristic_fn,
@@ -19,8 +19,8 @@ from argumentation.dung import (
     grounded_extension,
     range_of,
 )
-from argumentation.iccma import write_af
-from argumentation.solver_results import (
+from argumentation.interop.iccma import write_af
+from argumentation.core.solver_results import (
     SolverProcessError,
     SolverProtocolError,
     SolverUnavailable,

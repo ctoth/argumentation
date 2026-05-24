@@ -122,5 +122,5 @@ The contest tag (`iccma-2025`) is inferred from the `--root` directory
 name; if you pass a custom `--root`, the tag changes accordingly.
 
 The runner uses the package-native ABA path. Library-level
-`argumentation.solver.solve_aba_*` surfaces separately support
+`argumentation.solving.solver.solve_aba_*` surfaces separately support
 ICCMA-compatible ABA subprocess dispatch via `ICCMAConfig(...)`.

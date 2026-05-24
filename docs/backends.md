@@ -1,6 +1,6 @@
 # Backend selection
 
-`argumentation.backends` exposes capability detection and the default
+`argumentation.solving.backends` exposes capability detection and the default
 backend selection policy. Solver entry points consume the chosen backend
 string; `default_backend(...)` is a policy function, not a forced dispatch
 layer — callers may always override with an explicit `backend=` argument.
@@ -8,7 +8,7 @@ layer — callers may always override with an explicit `backend=` argument.
 ## Capability detection
 
 ```python
-from argumentation.backends import has_clingo, has_z3
+from argumentation.solving.backends import has_clingo, has_z3
 
 has_clingo()   # True if `clingo` is on PATH or the `clingo` Python package is importable
 has_z3()       # True if `z3-solver` is installed (the [z3] extra)
@@ -21,7 +21,7 @@ invokes the current Python executable with `-m clingo`
 ## Default backend rule
 
 ```python
-from argumentation.backends import default_backend, backend_choice_reason
+from argumentation.solving.backends import default_backend, backend_choice_reason
 
 backend: str = default_backend(
     semantics="grounded",
@@ -61,21 +61,21 @@ The canonical set of backend strings consumers should compare against:
 | String | Where used | Implemented by |
 |---|---|---|
 | `"asp"` | ASPIC+ grounded path, large-theory routing | `solver_adapters/clingo.py` |
-| `"sat"` | AF acceptance (Z3-backed) | `argumentation.af_sat` |
-| `"materialized_reference"` | Pure-Python reference projection | `argumentation.aspic_encoding` |
-| `"support_reference"` | ABA reference path (alias accepted by `aba_asp`) | `argumentation.aba_asp` |
-| `"native"` | In-package native enumeration | `argumentation.solver` |
+| `"sat"` | AF acceptance (Z3-backed) | `argumentation.solving.af_sat` |
+| `"materialized_reference"` | Pure-Python reference projection | `argumentation.structured.aspic.aspic_encoding` |
+| `"support_reference"` | ABA reference path (alias accepted by `aba_asp`) | `argumentation.structured.aba.aba_asp` |
+| `"native"` | In-package native enumeration | `argumentation.solving.solver` |
 | `"iccma"` | External ICCMA-protocol subprocess | `solver_adapters/iccma_af`, `solver_adapters/iccma_aba` |
-| `"aspforaba"` | Recognized but currently unimplemented; returns typed `SolverUnavailable` | `argumentation.solver` |
+| `"aspforaba"` | Recognized but currently unimplemented; returns typed `SolverUnavailable` | `argumentation.solving.solver` |
 
 `aba_asp.run_aba_query` accepts `{"support_reference", "materialized_reference"}`
 interchangeably for the reference path.
 
 ## Entry points that consume a backend choice
 
-- `argumentation.aspic_encoding.solve_aspic_with_backend(theory, *, backend, ...)`.
-- `argumentation.aba_asp.run_aba_query(framework, *, backend, ...)`.
-- `argumentation.solver.solve_dung_extensions / solve_dung_single_extension /
+- `argumentation.structured.aspic.aspic_encoding.solve_aspic_with_backend(theory, *, backend, ...)`.
+- `argumentation.structured.aba.aba_asp.run_aba_query(framework, *, backend, ...)`.
+- `argumentation.solving.solver.solve_dung_extensions / solve_dung_single_extension /
   solve_dung_acceptance / solve_aba_extensions / solve_aba_single_extension /
   solve_aba_acceptance / solve_adf_models / solve_setaf_extensions`.
 
@@ -83,7 +83,7 @@ For ICCMA and SAT paths, the binary, timeout, and trace-sink configuration
 flow through:
 
 ```python
-from argumentation.solver import ICCMAConfig, SATConfig
+from argumentation.solving.solver import ICCMAConfig, SATConfig
 ```
 
 ## ICCMA subprocess adapters
@@ -103,7 +103,7 @@ construct an `ICCMAConfig(binary=...)` passed explicitly.
 
 ## SAT paths
 
-The `"sat"` backend for Dung AFs uses `argumentation.af_sat`'s incremental
+The `"sat"` backend for Dung AFs uses `argumentation.solving.af_sat`'s incremental
 Z3 kernel:
 
 - `AfSatKernel` — reusable Z3 solver bound to one AF, supporting per-task
@@ -111,7 +111,7 @@ Z3 kernel:
 - `SATCheck` — typed result wrapper.
 - `SATTraceSink` — opt-in telemetry hook for benchmark instrumentation.
 
-`argumentation.aba_sat` is a separate, pure-Python (no Z3) bitmask-based
+`argumentation.structured.aba.aba_sat` is a separate, pure-Python (no Z3) bitmask-based
 support enumerator for ABA stable, complete, and preferred extensions. It is
 not the `"sat"` backend choice; it is its own task-directed surface.
 

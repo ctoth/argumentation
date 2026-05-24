@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from argumentation.vaf import ValueBasedArgumentationFramework
-from argumentation.vaf_completion import (
+from argumentation.frameworks.vaf import ValueBasedArgumentationFramework
+from argumentation.frameworks.vaf_completion import (
     FACT_VALUE,
     ArgumentChain,
     ArgumentLine,

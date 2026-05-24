@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.bipolar import BipolarArgumentationFramework
-from argumentation.dung import ArgumentationFramework
-from argumentation.partial_af import PartialArgumentationFramework
+from argumentation.core.bipolar import BipolarArgumentationFramework
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.frameworks.partial_af import PartialArgumentationFramework
 from argumentation.semantics import SemanticsUndefined, accepted_arguments, extensions
 
 

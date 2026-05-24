@@ -1,6 +1,6 @@
 [project]
 name = "formal-argumentation"
-version = "0.2.0"
+version = "0.3.0"
 description = "Finite formal argumentation frameworks and semantics: Dung, ASPIC+, bipolar, partial, and revision"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -69,7 +69,7 @@ Repository = "https://github.com/ctoth/argumentation"
 Issues = "https://github.com/ctoth/argumentation/issues"
 
 [project.scripts]
-iccma-cli = "argumentation.iccma_cli:main"
+iccma-cli = "argumentation.solving.iccma_cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -78,11 +78,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/argumentation"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"src/argumentation/encodings" = "argumentation/encodings"
-
 [tool.hatch.build.targets.sdist]
 include = [
+    "/CHANGELOG.md",
     "/CONTRIBUTING.md",
     "/README.md",
     "/docs",
@@ -96,6 +94,34 @@ typeCheckingMode = "basic"
 venvPath = "."
 venv = ".venv"
 include = ["src"]
+
+[tool.importlinter]
+root_package = "argumentation"
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+layers = [
+    "argumentation.semantics",
+    "argumentation.solving",
+    "argumentation.solver_adapters",
+    "argumentation.interop",
+    "argumentation.structured.aba | argumentation.probabilistic | argumentation.dynamics",
+    "argumentation.structured.aspic | argumentation.frameworks | argumentation.gradual | argumentation.ranking",
+    "argumentation.core",
+]
+ignore_imports = [
+    "argumentation.structured.aspic.aspic_encoding -> argumentation.solver_adapters.clingo",
+    "argumentation.structured.aba.aba_asp -> argumentation.solver_adapters.clingo",
+]
+
+[[tool.importlinter.contracts]]
+name = "gradual and ranking are independent"
+type = "independence"
+modules = [
+    "argumentation.gradual",
+    "argumentation.ranking",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -113,6 +139,7 @@ dev = [
     "clingo>=5.7",
     "gunray",
     "hypothesis>=6.0",
+    "import-linter>=2.0",
     "pyright>=1.1.390",
     "pytest>=8.0",
     "pytest-timeout>=2.3",

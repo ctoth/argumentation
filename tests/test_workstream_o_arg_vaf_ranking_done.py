@@ -4,10 +4,9 @@ import importlib
 
 import pytest
 
-import argumentation
-from argumentation.dung import ArgumentationFramework
-from argumentation.ranking import RankingResult, categoriser_scores
-from argumentation.ranking_axioms import (
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.ranking.ranking import RankingResult, categoriser_scores
+from argumentation.ranking.ranking_axioms import (
     abstraction,
     cardinality_precedence,
     counter_transitivity,
@@ -24,15 +23,17 @@ from argumentation.ranking_axioms import (
 
 
 def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
-    assert argumentation.vaf is importlib.import_module("argumentation.vaf")
-    assert argumentation.practical_reasoning is importlib.import_module(
-        "argumentation.practical_reasoning"
+    assert importlib.import_module("argumentation.frameworks.vaf").__name__ == (
+        "argumentation.frameworks.vaf"
     )
-    assert argumentation.subjective_aspic is importlib.import_module(
-        "argumentation.subjective_aspic"
+    assert importlib.import_module("argumentation.frameworks.practical_reasoning").__name__ == (
+        "argumentation.frameworks.practical_reasoning"
     )
-    assert argumentation.ranking_axioms is importlib.import_module(
-        "argumentation.ranking_axioms"
+    assert importlib.import_module("argumentation.structured.aspic.subjective_aspic").__name__ == (
+        "argumentation.structured.aspic.subjective_aspic"
+    )
+    assert importlib.import_module("argumentation.ranking.ranking_axioms").__name__ == (
+        "argumentation.ranking.ranking_axioms"
     )
 
     with pytest.raises(ModuleNotFoundError):
@@ -40,6 +41,7 @@ def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
 
 
 def test_workstream_o_arg_vaf_ranking_contracts_are_closed() -> None:
+    ranking_axioms = importlib.import_module("argumentation.ranking.ranking_axioms")
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b"), ("b", "a")}),
@@ -63,16 +65,16 @@ def test_workstream_o_arg_vaf_ranking_contracts_are_closed() -> None:
         strict_preference_transitive,
         void_precedence,
     } == {
-        argumentation.ranking_axioms.abstraction,
-        argumentation.ranking_axioms.cardinality_precedence,
-        argumentation.ranking_axioms.counter_transitivity,
-        argumentation.ranking_axioms.defense_precedence,
-        argumentation.ranking_axioms.distributed_defense_precedence,
-        argumentation.ranking_axioms.independence,
-        argumentation.ranking_axioms.quality_precedence,
-        argumentation.ranking_axioms.self_contradiction,
-        argumentation.ranking_axioms.strict_addition_of_defense_branch,
-        argumentation.ranking_axioms.strict_counter_transitivity,
-        argumentation.ranking_axioms.strict_preference_transitive,
-        argumentation.ranking_axioms.void_precedence,
+        ranking_axioms.abstraction,
+        ranking_axioms.cardinality_precedence,
+        ranking_axioms.counter_transitivity,
+        ranking_axioms.defense_precedence,
+        ranking_axioms.distributed_defense_precedence,
+        ranking_axioms.independence,
+        ranking_axioms.quality_precedence,
+        ranking_axioms.self_contradiction,
+        ranking_axioms.strict_addition_of_defense_branch,
+        ranking_axioms.strict_counter_transitivity,
+        ranking_axioms.strict_preference_transitive,
+        ranking_axioms.void_precedence,
     }

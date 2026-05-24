@@ -1,6 +1,6 @@
 # Claim-Augmented Argumentation Frameworks
 
-`argumentation.caf` implements finite claim-augmented argumentation frameworks
+`argumentation.frameworks.caf` implements finite claim-augmented argumentation frameworks
 as a semantic surface, not a complexity-theorem surface.
 
 ## Implemented model
@@ -15,7 +15,7 @@ A `ClaimAugmentedAF` consists of:
 The module exposes two CAF views, dispatched through a single entry point:
 
 ```python
-from argumentation.caf import ClaimAugmentedAF, extensions
+from argumentation.frameworks.caf import ClaimAugmentedAF, extensions
 
 caf = ClaimAugmentedAF(framework=af, claims={"a1": "x", "a2": "x", "a3": "y"})
 
@@ -76,7 +76,7 @@ This package does not expose those complexity classes or problem labels as
 runtime APIs. It implements the finite semantic computations above. No
 theorem or complexity class should be read as an implemented decision
 procedure unless a corresponding function and tests exist in
-`argumentation.caf`.
+`argumentation.frameworks.caf`.
 
 ## Test standard
 
