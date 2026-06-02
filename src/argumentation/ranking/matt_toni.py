@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from itertools import combinations
 
+from argumentation.core.finite import subsets_bitmask
 from argumentation.core.dung import ArgumentationFramework, conflict_free
 
 
@@ -226,8 +227,4 @@ def _gaussian_elimination(
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
-    ordered = tuple(sorted(arguments))
-    return [
-        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
-        for mask in range(1 << len(ordered))
-    ]
+    return subsets_bitmask(arguments)

@@ -14,6 +14,7 @@ from argumentation.core.dung import (
     attackers_of,
     characteristic_fn,
 )
+from argumentation.core.finite import iter_subsets_bitmask
 
 
 class Label(Enum):
@@ -312,13 +313,7 @@ def _sort_labellings(labellings: list[Labelling]) -> list[Labelling]:
 
 
 def _all_subsets(arguments: frozenset[str]) -> Iterator[frozenset[str]]:
-    ordered = sorted(arguments)
-    for mask in range(1 << len(ordered)):
-        yield frozenset(
-            ordered[index]
-            for index in range(len(ordered))
-            if mask & (1 << index)
-        )
+    yield from iter_subsets_bitmask(arguments)
 
 
 def _is_acyclic(framework: ArgumentationFramework) -> bool:

@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.finite import predecessors_index
 from argumentation.ranking.ranking import RankingResult
 
 RankingSemantics = Callable[[ArgumentationFramework], RankingResult]
@@ -299,10 +300,7 @@ def _attack_relation(
 
 
 def _attackers(framework: ArgumentationFramework) -> dict[str, frozenset[str]]:
-    attackers: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
-    for attacker, target in _attack_relation(framework):
-        attackers[target].add(attacker)
-    return {argument: frozenset(values) for argument, values in attackers.items()}
+    return predecessors_index(_attack_relation(framework), nodes=framework.arguments)
 
 
 def _same_pair_order(

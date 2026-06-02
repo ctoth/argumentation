@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
+from argumentation.core.finite import predecessors_index
 from argumentation.gradual.gradual import GradualStrengthResult, WeightedBipolarGraph
 
 
@@ -92,13 +93,7 @@ def _predecessors(
     relation: frozenset[tuple[str, str]],
     arguments: frozenset[str],
 ) -> dict[str, frozenset[str]]:
-    predecessors: dict[str, set[str]] = {argument: set() for argument in arguments}
-    for source, target in relation:
-        predecessors[target].add(source)
-    return {
-        argument: frozenset(values)
-        for argument, values in predecessors.items()
-    }
+    return predecessors_index(relation, nodes=arguments)
 
 
 def _product(values: Iterable[float]) -> float:

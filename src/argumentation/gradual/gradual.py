@@ -7,6 +7,8 @@ from itertools import combinations
 from math import factorial
 from typing import Mapping
 
+from argumentation.core.finite import normalize_binary_relation, predecessors_index
+
 
 @dataclass(frozen=True)
 class WeightedBipolarGraph:
@@ -414,28 +416,20 @@ def _normalize_relation(
     relation: frozenset[tuple[str, str]],
     arguments: frozenset[str],
 ) -> frozenset[tuple[str, str]]:
-    normalized = frozenset((str(source), str(target)) for source, target in relation)
-    unknown = sorted(
-        (source, target)
-        for source, target in normalized
-        if source not in arguments or target not in arguments
+    return normalize_binary_relation(
+        name,
+        relation,
+        arguments,
+        value=str,
+        error_template="{name} must only reference declared arguments: {unknown!r}",
     )
-    if unknown:
-        raise ValueError(f"{name} must only reference declared arguments: {unknown!r}")
-    return normalized
 
 
 def _predecessors(
     relation: frozenset[tuple[str, str]],
     arguments: frozenset[str],
 ) -> dict[str, frozenset[str]]:
-    predecessors: dict[str, set[str]] = {argument: set() for argument in arguments}
-    for source, target in relation:
-        predecessors[target].add(source)
-    return {
-        argument: frozenset(values)
-        for argument, values in predecessors.items()
-    }
+    return predecessors_index(relation, nodes=arguments)
 
 
 def _without_attacks(

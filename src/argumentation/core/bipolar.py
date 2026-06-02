@@ -9,11 +9,17 @@ into this abstract support relation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import combinations
 
 from argumentation.core.dung import (
     ArgumentationFramework as DungArgumentationFramework,
     grounded_extension as dung_grounded_extension,
+)
+from argumentation.core.finite import (
+    extension_sort_key,
+    normalize_binary_relation,
+    predecessors_index,
+    subsets_by_size,
+    successors_index,
 )
 
 
@@ -44,40 +50,21 @@ def _normalize_relation(
     relation: frozenset[tuple[str, str]],
     arguments: frozenset[str],
 ) -> frozenset[tuple[str, str]]:
-    normalized = frozenset((source, target) for source, target in relation)
-    unknown = sorted(
-        (source, target)
-        for source, target in normalized
-        if source not in arguments or target not in arguments
-    )
-    if unknown:
-        raise ValueError(
-            f"{name} must only contain pairs over arguments: {unknown!r}"
-        )
-    return normalized
+    return normalize_binary_relation(name, relation, arguments)
 
 
 def _support_successors(supports: frozenset[tuple[str, str]]) -> dict[str, frozenset[str]]:
-    successors: dict[str, set[str]] = {}
-    for source, target in supports:
-        successors.setdefault(source, set()).add(target)
-    return {source: frozenset(targets) for source, targets in successors.items()}
+    return successors_index(supports)
 
 
 def _support_predecessors(supports: frozenset[tuple[str, str]]) -> dict[str, frozenset[str]]:
-    predecessors: dict[str, set[str]] = {}
-    for source, target in supports:
-        predecessors.setdefault(target, set()).add(source)
-    return {target: frozenset(sources) for target, sources in predecessors.items()}
+    return predecessors_index(supports)
 
 
 def _attackers_index(
     defeats: frozenset[tuple[str, str]],
 ) -> dict[str, frozenset[str]]:
-    attackers: dict[str, set[str]] = {}
-    for source, target in defeats:
-        attackers.setdefault(target, set()).add(source)
-    return {target: frozenset(sources) for target, sources in attackers.items()}
+    return predecessors_index(defeats)
 
 
 def _closure_or_compute(
@@ -403,12 +390,7 @@ def _c_admissible(
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
-    ordered = sorted(arguments)
-    subsets: list[frozenset[str]] = []
-    for size in range(len(ordered) + 1):
-        for subset in combinations(ordered, size):
-            subsets.append(frozenset(subset))
-    return subsets
+    return subsets_by_size(arguments)
 
 
 def _maximal_sets(
@@ -442,7 +424,7 @@ def _maximal_sets(
         for candidate in admissible_sets
         if not any(candidate < other for other in admissible_sets)
     ]
-    return sorted(maximal, key=lambda s: (len(s), tuple(sorted(s))))
+    return sorted(maximal, key=extension_sort_key)
 
 
 def d_preferred_extensions(
@@ -485,7 +467,7 @@ def stable_extensions(
             for target in outsiders
         ):
             stable.append(candidate)
-    return sorted(stable, key=lambda s: (len(s), tuple(sorted(s))))
+    return sorted(stable, key=extension_sort_key)
 
 
 def characteristic_fn(
@@ -552,4 +534,4 @@ def bipolar_complete_extensions(
             attackers_index=attackers_index,
         ) == candidate
     ]
-    return sorted(completes, key=lambda s: (len(s), tuple(sorted(s))))
+    return sorted(completes, key=extension_sort_key)

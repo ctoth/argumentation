@@ -15,6 +15,15 @@ from collections import deque
 from dataclasses import dataclass
 from itertools import combinations
 
+from argumentation.core.finite import (
+    extension_sort_key,
+    iter_subsets_bitmask,
+    normalize_binary_relation,
+    predecessors_index,
+    strongly_connected_components,
+    successors_index,
+)
+
 
 @dataclass(frozen=True)
 class ArgumentationFramework:
@@ -56,43 +65,21 @@ def _normalize_relation(
     relation: frozenset[tuple[str, str]],
     arguments: frozenset[str],
 ) -> frozenset[tuple[str, str]]:
-    normalized = frozenset((attacker, target) for attacker, target in relation)
-    unknown = sorted(
-        (attacker, target)
-        for attacker, target in normalized
-        if attacker not in arguments or target not in arguments
-    )
-    if unknown:
-        raise ValueError(
-            f"{name} must only contain pairs over arguments: {unknown!r}"
-        )
-    return normalized
+    return normalize_binary_relation(name, relation, arguments)
 
 
 def _attackers_index(
     defeats: frozenset[tuple[str, str]],
 ) -> dict[str, frozenset[str]]:
     """Build target -> attackers adjacency for a defeat relation."""
-    attackers: dict[str, set[str]] = {}
-    for attacker, target in defeats:
-        attackers.setdefault(target, set()).add(attacker)
-    return {
-        target: frozenset(sources)
-        for target, sources in attackers.items()
-    }
+    return predecessors_index(defeats)
 
 
 def _targets_index(
     defeats: frozenset[tuple[str, str]],
 ) -> dict[str, frozenset[str]]:
     """Build source -> targets adjacency for a defeat relation."""
-    targets: dict[str, set[str]] = {}
-    for attacker, target in defeats:
-        targets.setdefault(attacker, set()).add(target)
-    return {
-        source: frozenset(destinations)
-        for source, destinations in targets.items()
-    }
+    return successors_index(defeats)
 
 
 def attackers_of(
@@ -328,11 +315,7 @@ def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
-    ordered = sorted(arguments)
-    return [
-        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
-        for mask in range(1 << len(ordered))
-    ]
+    return list(iter_subsets_bitmask(arguments))
 
 
 def _range_maximal_extensions(
@@ -404,53 +387,15 @@ def eager_extension(framework: ArgumentationFramework) -> frozenset[str]:
             attackers_index=attackers_index,
         )
     ]
-    return max(candidates, key=lambda candidate: (len(candidate), tuple(sorted(candidate))))
+    return max(candidates, key=extension_sort_key)
 
 
 def _strongly_connected_components(
     arguments: frozenset[str],
     defeats: frozenset[tuple[str, str]],
 ) -> list[frozenset[str]]:
-    index = 0
-    stack: list[str] = []
-    on_stack: set[str] = set()
-    indices: dict[str, int] = {}
-    lowlinks: dict[str, int] = {}
-    components: list[frozenset[str]] = []
-    outgoing: dict[str, list[str]] = {argument: [] for argument in arguments}
-    for attacker, target in defeats:
-        outgoing.setdefault(attacker, []).append(target)
-
-    def connect(argument: str) -> None:
-        nonlocal index
-        indices[argument] = index
-        lowlinks[argument] = index
-        index += 1
-        stack.append(argument)
-        on_stack.add(argument)
-
-        for target in sorted(outgoing.get(argument, [])):
-            if target not in indices:
-                connect(target)
-                lowlinks[argument] = min(lowlinks[argument], lowlinks[target])
-            elif target in on_stack:
-                lowlinks[argument] = min(lowlinks[argument], indices[target])
-
-        if lowlinks[argument] == indices[argument]:
-            component: set[str] = set()
-            while True:
-                member = stack.pop()
-                on_stack.remove(member)
-                component.add(member)
-                if member == argument:
-                    break
-            components.append(frozenset(component))
-
-    for argument in sorted(arguments):
-        if argument not in indices:
-            connect(argument)
-
-    return sorted(components, key=lambda component: tuple(sorted(component)))
+    outgoing = successors_index(defeats, nodes=arguments)
+    return strongly_connected_components(outgoing)
 
 
 def _subframework(

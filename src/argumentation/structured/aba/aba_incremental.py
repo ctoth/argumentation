@@ -33,6 +33,7 @@ from dataclasses import dataclass
 from importlib import resources
 from typing import Any
 
+from argumentation.core.finite import sorted_extensions
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
 from argumentation.structured.aba.aba_asp import ABAEncoding, encode_aba_theory
 from argumentation.structured.aba.aba_preprocessing import grounded_assumption_set_via_supports
@@ -657,10 +658,7 @@ class AbaIncrementalSolver:
 
 
 def _sorted_extensions(extensions) -> tuple[AssumptionSet, ...]:
-    unique = {frozenset(extension) for extension in extensions}
-    return tuple(
-        sorted(unique, key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))))
-    )
+    return sorted_extensions(extensions, key=repr, unique=True)
 
 
 __all__ = [

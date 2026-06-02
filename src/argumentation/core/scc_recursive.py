@@ -50,7 +50,6 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass, field
-from itertools import combinations
 
 from argumentation.core.dung import (
     ArgumentationFramework,
@@ -63,6 +62,7 @@ from argumentation.core.dung import (
     preferred_extensions,
     stable_extensions,
 )
+from argumentation.core.finite import subsets_by_size
 from argumentation.core.preprocessing import AfSimplification, simplify_af
 
 SCC_RECURSIVE_SEMANTICS: frozenset[str] = frozenset(
@@ -99,12 +99,7 @@ LAST_SOLVE = _SolveTelemetry()
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
-    ordered = sorted(arguments)
-    out: list[frozenset[str]] = []
-    for size in range(len(ordered) + 1):
-        for combo in combinations(ordered, size):
-            out.append(frozenset(combo))
-    return out
+    return subsets_by_size(arguments)
 
 
 def _base_complete_in_c(

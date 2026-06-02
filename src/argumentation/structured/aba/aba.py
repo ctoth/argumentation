@@ -14,11 +14,12 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from itertools import chain, combinations
+from itertools import chain
 from typing import Mapping, TypeAlias
 
-from argumentation.structured.aspic.aspic import Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.finite import sorted_extensions, subsets_by_size
+from argumentation.structured.aspic.aspic import Literal, Rule
 
 
 AssumptionSet: TypeAlias = frozenset[Literal]
@@ -356,16 +357,11 @@ def _defends(framework: ABAInput, defender: AssumptionSet, target: AssumptionSet
 
 
 def _all_subsets(items: frozenset[Literal]) -> tuple[AssumptionSet, ...]:
-    ordered = sorted(items, key=repr)
-    return tuple(
-        frozenset(combination)
-        for size in range(len(ordered) + 1)
-        for combination in combinations(ordered, size)
-    )
+    return tuple(subsets_by_size(items, key=repr))
 
 
 def _sort_extensions(extensions) -> tuple[AssumptionSet, ...]:
-    return tuple(sorted(extensions, key=lambda ext: (len(ext), tuple(sorted(map(repr, ext))))))
+    return sorted_extensions(extensions, key=repr)
 
 
 def _transitive_closure(

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict, deque
 from typing import Iterable
 
+from argumentation.core.finite import strongly_connected_components
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal
 
@@ -169,47 +170,7 @@ def _max_scc_size(graph: dict[int, set[int]]) -> int:
 
 
 def _strongly_connected_components(graph: dict[int, set[int]]) -> list[set[int]]:
-    components: list[set[int]] = []
-    visited: set[int] = set()
-    finish_order: list[int] = []
-    for node in graph:
-        if node in visited:
-            continue
-        stack = [(node, False)]
-        while stack:
-            current, expanded = stack.pop()
-            if expanded:
-                finish_order.append(current)
-                continue
-            if current in visited:
-                continue
-            visited.add(current)
-            stack.append((current, True))
-            for successor in sorted(graph[current], reverse=True):
-                if successor not in visited:
-                    stack.append((successor, False))
-
-    reverse_graph = {node: set() for node in graph}
-    for source, targets in graph.items():
-        for target in targets:
-            reverse_graph.setdefault(target, set()).add(source)
-
-    assigned: set[int] = set()
-    for node in reversed(finish_order):
-        if node in assigned:
-            continue
-        component: set[int] = set()
-        stack = [node]
-        assigned.add(node)
-        while stack:
-            current = stack.pop()
-            component.add(current)
-            for predecessor in reverse_graph.get(current, set()):
-                if predecessor not in assigned:
-                    assigned.add(predecessor)
-                    stack.append(predecessor)
-        components.append(component)
-    return components
+    return [set(component) for component in strongly_connected_components(graph)]
 
 
 __all__ = ["STRUCTURAL_TELEMETRY_KEYS", "aba_structural_telemetry"]

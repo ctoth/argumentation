@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import combinations
 from typing import Iterable
+
+from argumentation.core.finite import sorted_extensions, subsets_by_size
 
 
 CollectiveAttack = tuple[frozenset[str], str]
@@ -160,21 +161,11 @@ def _range_maximal(
 
 
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
-    ordered = sorted(arguments)
-    subsets: list[frozenset[str]] = []
-    for size in range(len(ordered) + 1):
-        for subset in combinations(ordered, size):
-            subsets.append(frozenset(subset))
-    return subsets
+    return subsets_by_size(arguments)
 
 
 def _sorted_extensions(values: Iterable[frozenset[str]]) -> tuple[frozenset[str], ...]:
-    return tuple(
-        sorted(
-            values,
-            key=lambda extension: (len(extension), tuple(sorted(extension))),
-        )
-    )
+    return sorted_extensions(values)
 
 
 def _check_candidate(framework: SETAF, candidate: frozenset[str]) -> None:

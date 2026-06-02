@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.finite import predecessors_index
 
 
 @dataclass(frozen=True)
@@ -338,13 +339,7 @@ def _attack_relation(
 
 
 def _attackers(framework: ArgumentationFramework) -> dict[str, frozenset[str]]:
-    attackers: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
-    for attacker, target in _attack_relation(framework):
-        attackers[target].add(attacker)
-    return {
-        argument: frozenset(values)
-        for argument, values in attackers.items()
-    }
+    return predecessors_index(_attack_relation(framework), nodes=framework.arguments)
 
 
 def _result(
