@@ -142,6 +142,7 @@ def test_current_docs_do_not_cite_old_test_layout_paths() -> None:
         text = path.read_text(encoding="utf-8")
         for old_path in (
             "tests/test_solver_adapters.py",
+            "tests/test_setaf.py",
             "tests/test_adf_acceptance_condition_ast.py",
             "tests/test_aba_bondarenko_examples.py",
             "tests/test_dung_ideal_admissibility.py",

@@ -91,5 +91,5 @@ The semantics implementations follow the standard SETAF formulations of
 Nielsen & Parsons (2007) and the conflict-free / admissibility / range
 formulations as adapted in the ICCMA-aligned literature; tests are pinned to
 "Definition 1/2/3" of the SETAF reference paper and the
-`test_definition_*_*` cases in `tests/test_setaf.py` are the executable
+`test_definition_*_*` cases in `tests/frameworks/test_setaf.py` are the executable
 specification.
