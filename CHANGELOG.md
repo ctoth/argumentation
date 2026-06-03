@@ -5,6 +5,16 @@ All notable changes to `formal-argumentation` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Documentation
+
+- Added a `docs/` landing page, executable examples, and contributor-facing
+  performance-research guidance for solver, routing, benchmark, and profiling
+  work.
+- Refreshed gap, backend, ICCMA, and SETAF documentation references after the
+  layered 0.3.0 package and test layout changes.
+
 ## [0.3.0] - 2026-05-22
 
 ### Changed — BREAKING
