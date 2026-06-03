@@ -50,8 +50,8 @@ def encode_aba_theory(framework: ABAFramework, *, include_supports: bool = True)
         _literal_id(literal): literal
         for literal in sorted(framework.language, key=repr)
     }
-    _reject_id_collisions(assumption_by_id, "assumption")
-    _reject_id_collisions(literal_by_id, "literal")
+    _reject_id_collisions(framework.assumptions, assumption_by_id, "assumption")
+    _reject_id_collisions(framework.language, literal_by_id, "literal")
 
     facts: set[str] = set()
     for assumption_id, assumption in assumption_by_id.items():
@@ -709,8 +709,14 @@ def _literal_id(literal: Literal) -> str:
     return cleaned
 
 
-def _reject_id_collisions(mapping: dict[str, Literal], kind: str) -> None:
-    if len(mapping) == len(set(mapping)):
+def _reject_id_collisions(
+    sources: frozenset[Literal], mapping: dict[str, Literal], kind: str
+) -> None:
+    # ``mapping`` is keyed on sanitized ids, so distinct literals that sanitize
+    # to the same id have already been merged away by the dict comprehension.
+    # Detect the collision against the original source literals: if more
+    # distinct literals exist than distinct ids, ``_literal_id`` is lossy here.
+    if len(set(sources)) == len(mapping):
         return
     raise ValueError(f"duplicate {kind} ASP ids")
 
