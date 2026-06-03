@@ -319,6 +319,36 @@ def test_iccma_af_adapter_reports_solver_error(monkeypatch) -> None:
     assert result.stderr == "bad input"
 
 
+def test_iccma_af_adapter_timeout_is_distinct_from_nonzero_and_protocol(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run",
+        fake_run,
+    )
+
+    result = solve_af_extensions(
+        af({"1"}, set()),
+        semantics="stable",
+        binary="fake-iccma-solver",
+        timeout_seconds=0.01,
+    )
+
+    assert isinstance(result, ICCMASolverError)
+    assert result.returncode == -1
+    assert result.reason == "solver exited with code -1"
+    assert result.stdout == "partial out"
+    assert result.stderr == "partial err"
+
+
 def test_iccma_af_adapter_reports_protocol_error(monkeypatch) -> None:
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.shutil.which",

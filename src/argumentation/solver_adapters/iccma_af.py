@@ -265,6 +265,14 @@ def _run_iccma_af_solver(
             timeout=timeout_seconds,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        return ICCMASolverError(
+            backend=binary,
+            problem=problem,
+            returncode=-1,
+            stderr=_timeout_stream(exc.stderr),
+            stdout=_timeout_stream(exc.stdout),
+        )
     finally:
         path.unlink(missing_ok=True)
 
@@ -437,6 +445,14 @@ def _split_command(command: str) -> list[str]:
 def _strip_outer_quotes(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
         return value[1:-1]
+    return value
+
+
+def _timeout_stream(value: str | bytes | None) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
     return value
 
 
