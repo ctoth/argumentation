@@ -1608,20 +1608,34 @@ def _is_acyclic(framework: ArgumentationFramework) -> bool:
     visiting: set[str] = set()
     visited: set[str] = set()
 
-    def visit(argument: str) -> bool:
-        if argument in visiting:
-            return False
-        if argument in visited:
-            return True
-        visiting.add(argument)
-        for target in outgoing.get(argument, []):
-            if not visit(target):
+    # Iterative post-order DFS (explicit stack) so a long chain of arguments does
+    # not recurse one Python frame per edge and raise RecursionError. Each stack
+    # entry is (argument, entered): the first pop with entered=False marks the
+    # node grey and re-pushes it as entered=True beneath its children; the second
+    # pop (entered=True) marks it black. A grey node reached again is a cycle.
+    for root in framework.arguments:
+        if root in visited:
+            continue
+        stack: list[tuple[str, bool]] = [(root, False)]
+        while stack:
+            argument, entered = stack.pop()
+            if entered:
+                visiting.discard(argument)
+                visited.add(argument)
+                continue
+            if argument in visited:
+                continue
+            if argument in visiting:
                 return False
-        visiting.remove(argument)
-        visited.add(argument)
-        return True
+            visiting.add(argument)
+            stack.append((argument, True))
+            for target in outgoing.get(argument, []):
+                if target in visiting:
+                    return False
+                if target not in visited:
+                    stack.append((target, False))
 
-    return all(visit(argument) for argument in framework.arguments)
+    return True
 
 
 def _load_z3():
