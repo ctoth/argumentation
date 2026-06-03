@@ -102,3 +102,32 @@ def test_architecture_documents_solver_contracts_and_capabilities() -> None:
         assert expected in architecture
 
     assert "there is no ABA solver dispatcher yet" not in architecture
+
+
+def test_current_docs_do_not_cite_old_flat_source_paths() -> None:
+    offenders: list[tuple[str, str]] = []
+
+    for path in sorted((ROOT / "docs").glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        for old_path in (
+            "src/argumentation/aba.py",
+            "src/argumentation/aba_asp.py",
+            "src/argumentation/aba_sat.py",
+            "src/argumentation/accrual.py",
+            "src/argumentation/adf.py",
+            "src/argumentation/af_revision.py",
+            "src/argumentation/aspic_encoding.py",
+            "src/argumentation/datalog_grounding.py",
+            "src/argumentation/dung.py",
+            "src/argumentation/enforcement.py",
+            "src/argumentation/iccma_cli.py",
+            "src/argumentation/preference.py",
+            "src/argumentation/practical_reasoning.py",
+            "src/argumentation/probabilistic.py",
+            "src/argumentation/probabilistic_treedecomp.py",
+            "src/argumentation/vaf_completion.py",
+        ):
+            if old_path in text:
+                offenders.append((path.name, old_path))
+
+    assert offenders == []
