@@ -158,41 +158,54 @@ def strongly_connected_components(
     for successors in graph.values():
         nodes.update(successors)
 
-    index = 0
-    stack: list[T] = []
-    on_stack: set[T] = set()
-    indices: dict[T, int] = {}
-    lowlinks: dict[T, int] = {}
+    successors_by_node = {
+        node: _ordered_items(graph.get(node, ()), key)
+        for node in nodes
+    }
+    predecessors_by_node: dict[T, set[T]] = {node: set() for node in nodes}
+    for source, successors in successors_by_node.items():
+        for target in successors:
+            predecessors_by_node.setdefault(target, set()).add(source)
+
+    visited: set[T] = set()
+    finish_order: list[T] = []
     components: list[frozenset[T]] = []
 
-    def connect(node: T) -> None:
-        nonlocal index
-        indices[node] = index
-        lowlinks[node] = index
-        index += 1
-        stack.append(node)
-        on_stack.add(node)
-
-        for successor in _ordered_items(graph.get(node, ()), key):
-            if successor not in indices:
-                connect(successor)
-                lowlinks[node] = min(lowlinks[node], lowlinks[successor])
-            elif successor in on_stack:
-                lowlinks[node] = min(lowlinks[node], indices[successor])
-
-        if lowlinks[node] == indices[node]:
-            component: set[T] = set()
-            while True:
-                member = stack.pop()
-                on_stack.remove(member)
-                component.add(member)
-                if member == node:
-                    break
-            components.append(frozenset(component))
-
     for node in _ordered_items(nodes, key):
-        if node not in indices:
-            connect(node)
+        if node in visited:
+            continue
+        visited.add(node)
+        stack: list[tuple[T, Iterator[T]]] = [
+            (node, iter(successors_by_node.get(node, ())))
+        ]
+        while stack:
+            current, successors = stack[-1]
+            for successor in successors:
+                if successor in visited:
+                    continue
+                visited.add(successor)
+                stack.append((successor, iter(successors_by_node.get(successor, ()))))
+                break
+            else:
+                finish_order.append(current)
+                stack.pop()
+
+    assigned: set[T] = set()
+    for node in reversed(finish_order):
+        if node in assigned:
+            continue
+        component: set[T] = set()
+        component_stack = [node]
+        assigned.add(node)
+        while component_stack:
+            current = component_stack.pop()
+            component.add(current)
+            for predecessor in _ordered_items(predecessors_by_node.get(current, ()), key):
+                if predecessor in assigned:
+                    continue
+                assigned.add(predecessor)
+                component_stack.append(predecessor)
+        components.append(frozenset(component))
 
     return sorted(
         components,
