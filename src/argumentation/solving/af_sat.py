@@ -15,7 +15,8 @@ from argumentation.core.dung import (
     grounded_extension,
     range_of,
 )
-from argumentation.core.preprocessing import AfSimplification, simplify_af
+from argumentation.core.preprocessing import simplify_af
+from argumentation.core.reduct import SemanticReduct
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,7 @@ class StableUnsatExplanation:
     clause_group_count: int
     runtime_seconds: float
     simplification_fixed_in_count: int
-    simplification_removed_out_count: int
+    simplification_fixed_out_count: int
     model_extension_size: int | None = None
     model_extension_fingerprint: str | None = None
     metadata: Mapping[str, object] | None = None
@@ -84,7 +85,7 @@ class StableUnsatExplanation:
             "clause_group_count": self.clause_group_count,
             "runtime_seconds": self.runtime_seconds,
             "simplification_fixed_in_count": self.simplification_fixed_in_count,
-            "simplification_removed_out_count": self.simplification_removed_out_count,
+            "simplification_fixed_out_count": self.simplification_fixed_out_count,
             "model_extension_size": self.model_extension_size,
             "model_extension_fingerprint": self.model_extension_fingerprint,
             "metadata": dict(self.metadata or {}),
@@ -381,7 +382,12 @@ def _prepare(
     simplify: bool,
     require_in: str | None,
     require_out: str | None,
-) -> tuple[ArgumentationFramework, AfSimplification, str | None, str | None] | None:
+) -> tuple[
+    ArgumentationFramework,
+    SemanticReduct[ArgumentationFramework, str],
+    str | None,
+    str | None,
+] | None:
     """Apply the AF preprocessing layer to a single-extension finder.
 
     Returns ``(residual, simplification, residual_require_in, residual_require_out)``
@@ -392,19 +398,18 @@ def _prepare(
     _optional_argument(framework, require_in)
     _optional_argument(framework, require_out)
     if not simplify:
-        return framework, AfSimplification(framework, framework, frozenset(), frozenset()), require_in, require_out
+        return framework, SemanticReduct(framework, framework, frozenset(), frozenset()), require_in, require_out
     simplification = simplify_af(framework, semantics=semantics)
-    if require_in is not None:
-        if require_in in simplification.removed_out:
-            return None
-        if require_in in simplification.fixed_in:
-            require_in = None
-    if require_out is not None:
-        if require_out in simplification.fixed_in:
-            return None
-        if require_out in simplification.removed_out:
-            require_out = None
-    return simplification.residual, simplification, require_in, require_out
+    projection = simplification.project_requirements(
+        required_in=() if require_in is None else (require_in,),
+        required_out=() if require_out is None else (require_out,),
+    )
+    if projection is None:
+        return None
+    residual_required_in, residual_required_out = projection
+    residual_in = next(iter(residual_required_in), None)
+    residual_out = next(iter(residual_required_out), None)
+    return simplification.residual, simplification, residual_in, residual_out
 
 
 def find_stable_extension(
@@ -467,7 +472,7 @@ def explain_stable_unsat(
             clause_group_count=0,
             runtime_seconds=perf_counter() - started,
             simplification_fixed_in_count=0,
-            simplification_removed_out_count=0,
+            simplification_fixed_out_count=0,
             metadata=metadata,
         )
 
@@ -557,7 +562,7 @@ def explain_stable_unsat(
         clause_group_count=len(label_map),
         runtime_seconds=runtime_seconds,
         simplification_fixed_in_count=len(simplification.fixed_in),
-        simplification_removed_out_count=len(simplification.removed_out),
+        simplification_fixed_out_count=len(simplification.fixed_out),
         model_extension_size=model_size,
         model_extension_fingerprint=model_fingerprint,
         metadata=metadata,
@@ -668,7 +673,7 @@ def is_preferred_skeptically_accepted(
                 framework, trace_sink, metadata, "preferred_skeptical_preprocessing_grounded_in", accepted=True
             )
             return True
-        if query in simplification.removed_out:
+        if query in simplification.fixed_out:
             _emit_preprocessing_shortcut(
                 framework, trace_sink, metadata, "preferred_skeptical_preprocessing_forced_out", accepted=False
             )

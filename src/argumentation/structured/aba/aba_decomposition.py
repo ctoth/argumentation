@@ -92,7 +92,10 @@ def decomposed_prefsat_extension(
     plan = plan_decomposed_prefsat(residual)
     telemetry = _base_telemetry(framework, plan)
 
-    if require_assumptions & simplification.fixed_out:
+    projected_requirements = simplification.project_requirements(
+        required_in=require_assumptions,
+    )
+    if projected_requirements is None:
         # A required assumption forced OUT by preprocessing (its contrary is
         # forward-derivable from the grounded set alone) cannot appear in any
         # preferred extension: every preferred set is conflict-free (Bondarenko
@@ -106,7 +109,7 @@ def decomposed_prefsat_extension(
         telemetry["decomp_lifted_extension_size"] = 0
         return AbaDecomposedPrefSatResult(extension=None, telemetry=telemetry)
 
-    residual_required = frozenset(require_assumptions - simplification.fixed_in)
+    residual_required, _ = projected_requirements
 
     if plan.no_reduction_reason == "empty_residual":
         extension = simplification.lift(frozenset())

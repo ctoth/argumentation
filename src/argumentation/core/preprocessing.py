@@ -58,15 +58,13 @@ Reasoner" (KR 2020); Dvorak et al., "ASPARTIX-V19/-V21"; folklore grounded reduc
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from dataclasses import dataclass
-
 from argumentation.core.dung import (
     ArgumentationFramework,
     _attackers_index,
     _targets_index,
     grounded_extension,
 )
+from argumentation.core.reduct import SemanticReduct
 
 # Semantics for which the grounded reduct is semantics-preserving (see module docstring).
 GROUNDED_REDUCT_SEMANTICS: frozenset[str] = frozenset(
@@ -90,45 +88,6 @@ GROUNDED_REDUCT_SEMANTICS: frozenset[str] = frozenset(
 # a stage extension (range {a,c}, incomparable to range {b,c} of {b}). Applying the
 # grounded reduct would wrongly force c OUT. Stage gets only the always-sound
 # self-loop-sink removal.
-
-
-@dataclass(frozen=True)
-class AfSimplification:
-    """Result of :func:`simplify_af`.
-
-    ``residual`` is the AF to actually solve. ``fixed_in`` are arguments forced IN
-    in every extension of the (admissibility-based) semantics; they are *not*
-    present in ``residual``. ``removed_out`` are arguments dropped from ``residual``
-    that are OUT in every extension (the grounded-attacked arguments and any
-    pure self-loop sinks). ``original`` is the framework that was simplified.
-    """
-
-    original: ArgumentationFramework
-    residual: ArgumentationFramework
-    fixed_in: frozenset[str]
-    removed_out: frozenset[str]
-
-    @property
-    def is_trivial(self) -> bool:
-        """True when the residual is the whole framework (nothing was removed)."""
-        return not self.fixed_in and not self.removed_out
-
-    def lift(self, residual_extension: Iterable[str]) -> frozenset[str]:
-        """Map an extension of ``residual`` back to an extension of ``original``."""
-        return frozenset(residual_extension) | self.fixed_in
-
-    def lift_all(
-        self, residual_extensions: Iterable[Iterable[str]]
-    ) -> list[frozenset[str]]:
-        """Map a collection of residual extensions back, de-duplicated, order-stable."""
-        seen: set[frozenset[str]] = set()
-        lifted: list[frozenset[str]] = []
-        for extension in residual_extensions:
-            value = self.lift(extension)
-            if value not in seen:
-                seen.add(value)
-                lifted.append(value)
-        return lifted
 
 
 def is_symmetric_irreflexive(framework: ArgumentationFramework) -> bool:
@@ -164,7 +123,7 @@ def simplify_af(
     framework: ArgumentationFramework,
     *,
     semantics: str | None = None,
-) -> AfSimplification:
+) -> SemanticReduct[ArgumentationFramework, str]:
     """Compute a semantics-preserving reduced AF and the lift-back data.
 
     When ``semantics`` is given and is not in :data:`GROUNDED_REDUCT_SEMANTICS`, the
@@ -175,28 +134,28 @@ def simplify_af(
     apply_grounded = semantics is None or _normalize_semantics(semantics) in GROUNDED_REDUCT_SEMANTICS
 
     fixed_in: frozenset[str] = frozenset()
-    removed_out: frozenset[str] = frozenset()
+    fixed_out: frozenset[str] = frozenset()
 
     if apply_grounded:
         grounded = grounded_extension(framework)
         attacked_by_grounded = _attacked_by(grounded, framework.defeats)
         fixed_in = grounded
-        removed_out = attacked_by_grounded
+        fixed_out = attacked_by_grounded
     # Pure self-loop sink removal is sound for every supported semantics except
     # stable (a self-loop sink can never be covered, so it is the obstruction to a
     # stable extension existing -- deleting it would spuriously create one).
     allow_sink_removal = semantics is None or _normalize_semantics(semantics) != "stable"
     if allow_sink_removal:
         sinks = _pure_self_loop_sinks(framework) - fixed_in
-        removed_out = removed_out | sinks
+        fixed_out = fixed_out | sinks
 
-    removed = fixed_in | removed_out
+    removed = fixed_in | fixed_out
     if not removed:
-        return AfSimplification(
+        return SemanticReduct(
             original=framework,
             residual=framework,
             fixed_in=frozenset(),
-            removed_out=frozenset(),
+            fixed_out=frozenset(),
         )
 
     residual_arguments = framework.arguments - removed
@@ -219,11 +178,11 @@ def simplify_af(
         defeats=residual_defeats,
         attacks=residual_attacks,
     )
-    return AfSimplification(
+    return SemanticReduct(
         original=framework,
         residual=residual,
         fixed_in=fixed_in,
-        removed_out=removed_out,
+        fixed_out=fixed_out,
     )
 
 
@@ -250,7 +209,6 @@ def _normalize_semantics(semantics: str) -> str:
 
 
 __all__ = [
-    "AfSimplification",
     "GROUNDED_REDUCT_SEMANTICS",
     "isolated_arguments",
     "is_symmetric_irreflexive",

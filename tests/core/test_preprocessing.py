@@ -33,11 +33,11 @@ from argumentation.core.dung import (
 from argumentation.core.dung import complete_extensions as native_complete_extensions
 from argumentation.core.dung import ideal_extension as native_ideal_extension
 from argumentation.core.preprocessing import (
-    AfSimplification,
     is_symmetric_irreflexive,
     isolated_arguments,
     simplify_af,
 )
+from argumentation.core.reduct import SemanticReduct
 
 z3 = pytest.importorskip("z3")  # noqa: F841
 
@@ -91,12 +91,15 @@ def _random_af(draw, max_args: int = 4):
 # ── Direct invariants of simplify_af ────────────────────────────────
 
 
-def _check_simplification_shape(framework: ArgumentationFramework, simplification: AfSimplification) -> None:
+def _check_simplification_shape(
+    framework: ArgumentationFramework,
+    simplification: SemanticReduct[ArgumentationFramework, str],
+) -> None:
     assert simplification.original is framework
     assert simplification.fixed_in <= framework.arguments
-    assert simplification.removed_out <= framework.arguments
-    assert simplification.fixed_in.isdisjoint(simplification.removed_out)
-    removed = simplification.fixed_in | simplification.removed_out
+    assert simplification.fixed_out <= framework.arguments
+    assert simplification.fixed_in.isdisjoint(simplification.fixed_out)
+    removed = simplification.fixed_in | simplification.fixed_out
     assert simplification.residual.arguments == framework.arguments - removed
     # Residual carries exactly the attacks among its surviving arguments.
     for attacker, target in framework.defeats:
@@ -124,7 +127,7 @@ def test_grounded_reduct_fixes_grounded_in_and_attacked_out() -> None:
     framework = _af({"a", "b", "c"}, {("a", "b"), ("b", "c")})
     simplification = simplify_af(framework, semantics="complete")
     assert simplification.fixed_in == frozenset({"a", "c"})
-    assert simplification.removed_out == frozenset({"b"})
+    assert simplification.fixed_out == frozenset({"b"})
     assert not simplification.residual.arguments
 
 
@@ -132,9 +135,9 @@ def test_self_loop_sink_removed_except_for_stable() -> None:
     framework = _af({"a", "b"}, {("a", "a")})
     # b is unattacked -> grounded; a is a pure self-loop sink.
     non_stable = simplify_af(framework, semantics="complete")
-    assert "a" in non_stable.removed_out
+    assert "a" in non_stable.fixed_out
     stable_view = simplify_af(framework, semantics="stable")
-    assert "a" not in stable_view.removed_out
+    assert "a" not in stable_view.fixed_out
     assert "a" in stable_view.residual.arguments
 
 

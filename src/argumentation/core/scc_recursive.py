@@ -63,7 +63,8 @@ from argumentation.core.dung import (
     stable_extensions,
 )
 from argumentation.core.finite import subsets_by_size
-from argumentation.core.preprocessing import AfSimplification, simplify_af
+from argumentation.core.preprocessing import simplify_af
+from argumentation.core.reduct import SemanticReduct
 
 SCC_RECURSIVE_SEMANTICS: frozenset[str] = frozenset(
     {"complete", "preferred", "stable"}
@@ -299,7 +300,10 @@ def scc_extensions(
         LAST_SOLVE.notes.append("decompose=False -> flat base solve on whole AF")
         return _base_solve(semantics, framework, framework.arguments)
 
-    simplification: AfSimplification = simplify_af(framework, semantics=semantics)
+    simplification: SemanticReduct[ArgumentationFramework, str] = simplify_af(
+        framework,
+        semantics=semantics,
+    )
     residual = simplification.residual
     LAST_SOLVE.residual_size = len(residual.arguments)
 

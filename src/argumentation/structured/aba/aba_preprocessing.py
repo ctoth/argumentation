@@ -47,10 +47,9 @@ Wave A validated its AF reduct.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from dataclasses import dataclass
 from itertools import chain
 
+from argumentation.core.reduct import SemanticReduct
 from argumentation.structured.aba.aba import (
     ABAFramework,
     ABAInput,
@@ -70,45 +69,6 @@ GROUNDED_REDUCT_ABA_SEMANTICS: frozenset[str] = frozenset(
         "ideal",
     }
 )
-
-
-@dataclass(frozen=True)
-class AbaSimplification:
-    """Result of :func:`simplify_aba`.
-
-    ``residual`` is the flat ABA framework to actually solve. ``fixed_in`` are
-    assumptions forced IN in every extension of the gated semantics; they are
-    *not* assumptions of ``residual``. ``fixed_out`` are assumptions forced OUT;
-    they are *not* assumptions of ``residual`` either. ``original`` is the
-    framework that was simplified.
-    """
-
-    original: ABAFramework
-    residual: ABAFramework
-    fixed_in: AssumptionSet
-    fixed_out: AssumptionSet
-
-    @property
-    def is_trivial(self) -> bool:
-        """True when nothing was fixed (the residual is the original framework)."""
-        return not self.fixed_in and not self.fixed_out
-
-    def lift(self, residual_extension: Iterable[Literal]) -> AssumptionSet:
-        """Map an extension of ``residual`` back to an extension of ``original``."""
-        return frozenset(residual_extension) | self.fixed_in
-
-    def lift_all(
-        self, residual_extensions: Iterable[Iterable[Literal]]
-    ) -> list[AssumptionSet]:
-        """Map a collection of residual extensions back, de-duplicated, order-stable."""
-        seen: set[AssumptionSet] = set()
-        lifted: list[AssumptionSet] = []
-        for extension in residual_extensions:
-            value = self.lift(extension)
-            if value not in seen:
-                seen.add(value)
-                lifted.append(value)
-        return lifted
 
 
 def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionSet:
@@ -213,7 +173,7 @@ def simplify_aba(
     framework: ABAInput,
     *,
     semantics: str | None = None,
-) -> AbaSimplification:
+) -> SemanticReduct[ABAFramework, Literal]:
     """Compute a semantics-preserving reduced flat ABA framework and lift data.
 
     When ``semantics`` is given and not in :data:`GROUNDED_REDUCT_ABA_SEMANTICS`,
@@ -224,9 +184,9 @@ def simplify_aba(
     """
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
-        return AbaSimplification(base, base, frozenset(), frozenset())
+        return SemanticReduct(base, base, frozenset(), frozenset())
     if semantics is not None and _normalize_semantics(semantics) not in GROUNDED_REDUCT_ABA_SEMANTICS:
-        return AbaSimplification(framework, framework, frozenset(), frozenset())
+        return SemanticReduct(framework, framework, frozenset(), frozenset())
 
     # Cheap O(|rules|) bail-out: if every assumption's contrary is forward-derivable
     # from the full assumption set then no assumption is initially unattacked, so the
@@ -240,7 +200,7 @@ def simplify_aba(
     ) and not any(
         framework.contrary[assumption] in fact_closure for assumption in framework.assumptions
     ):
-        return AbaSimplification(framework, framework, frozenset(), frozenset())
+        return SemanticReduct(framework, framework, frozenset(), frozenset())
 
     grounded = grounded_assumption_set_via_supports(framework)
     closure = _forward_closure(framework, grounded)
@@ -251,9 +211,9 @@ def simplify_aba(
         if assumption not in fixed_in and framework.contrary[assumption] in closure
     )
     if not fixed_in and not fixed_out:
-        return AbaSimplification(framework, framework, frozenset(), frozenset())
+        return SemanticReduct(framework, framework, frozenset(), frozenset())
     residual = _residual_framework(framework, fixed_in=fixed_in, fixed_out=fixed_out)
-    return AbaSimplification(
+    return SemanticReduct(
         original=framework,
         residual=residual,
         fixed_in=fixed_in,
@@ -266,7 +226,6 @@ def _normalize_semantics(semantics: str) -> str:
 
 
 __all__ = [
-    "AbaSimplification",
     "GROUNDED_REDUCT_ABA_SEMANTICS",
     "grounded_assumption_set_via_supports",
     "simplify_aba",
