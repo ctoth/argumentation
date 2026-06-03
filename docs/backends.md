@@ -31,7 +31,7 @@ backend: str = default_backend(
 )
 ```
 
-Current rule (verified at `backends.py:23-33`):
+Current rule (implemented in `src/argumentation/solving/backends.py`):
 
 ```text
 if weakest_link:                       materialized_reference
@@ -66,7 +66,7 @@ The canonical set of backend strings consumers should compare against:
 | `"support_reference"` | ABA reference path (alias accepted by `aba_asp`) | `argumentation.structured.aba.aba_asp` |
 | `"native"` | In-package native enumeration | `argumentation.solving.solver` |
 | `"iccma"` | External ICCMA-protocol subprocess | `solver_adapters/iccma_af`, `solver_adapters/iccma_aba` |
-| `"aspforaba"` | Recognized but currently unimplemented; returns typed `SolverUnavailable` | `argumentation.solving.solver` |
+| `"aspforaba"` | Recognized as an unavailable direct backend; real ASPFORABA binaries are passed as `backend="iccma"` with `ICCMAConfig(binary=...)` | `argumentation.solving.solver`, `solver_adapters/iccma_aba.py` |
 
 `aba_asp.run_aba_query` accepts `{"support_reference", "materialized_reference"}`
 interchangeably for the reference path.
@@ -96,10 +96,10 @@ from argumentation.solving.solver import ICCMAConfig, SATConfig
 | `iccma_aba` | `solver_adapters/iccma_aba.py` | ICCMA-protocol flat-ABA solvers (`SUPPORTED_ABA_PROBLEMS = DC-CO, DC-ST, DS-PR, DS-ST, SE-PR, SE-ST`) |
 | `iccma_af` | `solver_adapters/iccma_af.py` | ICCMA-protocol AF solvers (`DC-CO, DC-ST, DC-SST, DC-STG, DS-PR, DS-ST, DS-SST, DS-STG, SE-PR, SE-ST, SE-SST, SE-STG, SE-ID`) |
 
-The adapters do not read environment variables. ICCMA test fixtures read
-`ICCMA_AF_SOLVER` and `ASPFORABA_SOLVER` / `ICCMA_ABA_SOLVER` (see
-`tests/test_solver_adapters.py:565,829`) to locate solver binaries, then
-construct an `ICCMAConfig(binary=...)` passed explicitly.
+The adapters do not read environment variables. ICCMA smoke tests read
+`ICCMA_AF_SOLVER` and `ASPFORABA_SOLVER` / `ICCMA_ABA_SOLVER` in
+`tests/solving/test_solver_adapters.py` to locate optional real solver
+binaries, then construct explicit adapter calls or an `ICCMAConfig(binary=...)`.
 
 ## SAT paths
 

@@ -305,9 +305,10 @@ surfaces. Full enumeration callers use native enumeration; single-extension
 and acceptance callers can use ICCMA subprocesses through
 `ICCMAConfig(...)`. Optional smoke-test binaries are named by the
 environment variables `ICCMA_AF_SOLVER`, `ICCMA_ABA_SOLVER`, and
-`ASPFORABA_SOLVER`, which the test fixtures (`tests/test_solver_adapters.py`)
-read to construct an `ICCMAConfig`. The `solver_adapters` package itself
-does not read environment variables.
+`ASPFORABA_SOLVER`, which the optional smoke tests in
+`tests/solving/test_solver_adapters.py` read before constructing explicit
+adapter calls or an `ICCMAConfig`. The `solver_adapters` package itself does
+not read environment variables.
 
 External callers supply already-projected frameworks, theories, or benchmark
 manifests and consume package result objects; this package does not own caller

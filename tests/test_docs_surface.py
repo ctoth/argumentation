@@ -135,6 +135,28 @@ def test_current_docs_do_not_cite_old_flat_source_paths() -> None:
     assert offenders == []
 
 
+def test_current_docs_do_not_cite_old_test_layout_paths() -> None:
+    offenders: list[tuple[str, str]] = []
+
+    for path in sorted((ROOT / "docs").glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        for old_path in (
+            "tests/test_solver_adapters.py",
+            "tests/test_adf_acceptance_condition_ast.py",
+            "tests/test_aba_bondarenko_examples.py",
+            "tests/test_dung_ideal_admissibility.py",
+            "tests/test_aspic_encodings.py",
+            "tests/test_af_revision.py",
+            "tests/test_preference.py",
+            "tests/test_probabilistic.py",
+            "tests/test_vaf_completion.py",
+        ):
+            if old_path in text:
+                offenders.append((path.name, old_path))
+
+    assert offenders == []
+
+
 def test_docs_index_links_exist() -> None:
     index_path = ROOT / "docs" / "index.md"
     index = index_path.read_text(encoding="utf-8")
