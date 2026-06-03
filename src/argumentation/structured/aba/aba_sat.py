@@ -2094,69 +2094,6 @@ def _prefsat_closure(framework: ABAFramework, extension: AssumptionSet) -> froze
     return frozenset(derived)
 
 
-def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
-    literals = tuple(sorted(framework.language, key=repr))
-    rank_bound = len(literals)
-    rank_bits = max(1, (rank_bound + 1).bit_length())
-    rank_bound_value = z3.BitVecVal(rank_bound, rank_bits)
-    derived = {
-        literal: z3.Bool(f"der_{_literal_key(literal)}")
-        for literal in literals
-    }
-    ranks = {
-        literal: z3.BitVec(f"rank_bv_{_literal_key(literal)}", rank_bits)
-        for literal in literals
-    }
-    rules_by_consequent = _rules_by_consequent(framework, literals)
-
-    for literal in literals:
-        solver.add(z3.ULE(ranks[literal], rank_bound_value))
-
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(derived[assumption] == variables[assumption])
-        solver.add(z3.Implies(variables[assumption], ranks[assumption] == z3.BitVecVal(0, rank_bits)))
-
-    for rule in sorted(framework.rules, key=repr):
-        antecedents = tuple(rule.antecedents)
-        if not antecedents:
-            solver.add(derived[rule.consequent])
-        else:
-            solver.add(
-                z3.Implies(
-                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
-                    derived[rule.consequent],
-                )
-            )
-
-    for literal in literals:
-        if literal in framework.assumptions:
-            continue
-        support_terms = []
-        for rule in rules_by_consequent[literal]:
-            antecedents = tuple(rule.antecedents)
-            if not antecedents:
-                support_terms.append(z3.BoolVal(True))
-                continue
-            support_terms.append(
-                z3.And(
-                    *(
-                        z3.And(
-                            derived[antecedent],
-                            z3.ULT(ranks[antecedent], ranks[literal]),
-                        )
-                        for antecedent in antecedents
-                    )
-                )
-            )
-        solver.add(
-            z3.Implies(
-                derived[literal],
-                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
-            )
-        )
-    return derived
-
-
 def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...]):
     grouped: dict[Literal, list[Rule]] = {literal: [] for literal in literals}
     for rule in sorted(framework.rules, key=repr):
