@@ -9,7 +9,10 @@ from typing import Any
 
 from argumentation.structured.aba import aba as aba_semantics
 from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
-from argumentation.structured.aba.aba_preprocessing import GROUNDED_REDUCT_ABA_SEMANTICS
+from argumentation.structured.aba.aba_preprocessing import (
+    GROUNDED_REDUCT_ABA_SEMANTICS,
+    _simplified_query_decision,
+)
 from argumentation.structured.aba.aba_sat import _minimal_supports, support_extensions
 from argumentation.structured.aspic.aspic import Literal
 
@@ -471,23 +474,10 @@ def _solve_simplified_ds_pr(
 ) -> ABAQueryResult:
     """DS-PR on a non-trivial preprocessed framework: lift rules + Algorithm 1 on the residual.
 
-    Lift rules (mirror ``aba_sat._simplified_support_acceptance``):
-
-    * ``query`` is an assumption in ``fixed_in`` -> in every preferred set -> YES;
-    * ``query`` is an assumption in ``fixed_out`` -> in no gated extension -> NO,
-      with any preferred set of ``original`` (= lift of a residual preferred set)
-      as the counterexample;
-    * ``query`` is a sentence already in ``Th(fixed_in)`` -> derived by every
-      preferred set -> YES;
-    * ``query`` not in ``residual.language`` (and not in ``Th(fixed_in)``) -> not
-      forward-derivable from any extension of ``original`` -> NO, counterexample =
-      lift of a residual preferred set;
-    * otherwise: ``query`` is skeptically accepted under preferred in ``original``
-      iff it is in ``residual`` (the residual bakes in ``fixed_in``'s closure and
-      drops ``fixed_out``-using rules), so run Algorithm 1 on the residual and
-      lift the counterexample.
+    Query lift cases are classified by
+    ``aba_preprocessing._simplified_query_decision``. Residual queries run
+    Algorithm 1 on the residual and lift the counterexample.
     """
-    from argumentation.structured.aba import aba as _aba
     from argumentation.structured.aba import aba_incremental
 
     original = simplification.original
@@ -537,14 +527,10 @@ def _solve_simplified_ds_pr(
         residual_pref = residual_solver.find_preferred_extension(telemetry=telemetry)
         return None if residual_pref is None else simplification.lift(residual_pref)
 
-    if query in simplification.fixed_in:
+    decision = _simplified_query_decision(simplification, query)
+    if decision in {"fixed_in", "fixed_in_closure"}:
         return _result(True, None)
-    if query in simplification.fixed_out:
-        return _result(False, _some_preferred())
-    closure_of_fixed_in = _aba._closure(original, simplification.fixed_in)
-    if query in closure_of_fixed_in:
-        return _result(True, None)
-    if query not in residual.language:
+    if decision in {"fixed_out", "outside_residual"}:
         return _result(False, _some_preferred())
 
     answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(query, telemetry=telemetry)

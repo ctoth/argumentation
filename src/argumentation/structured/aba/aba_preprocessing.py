@@ -71,6 +71,22 @@ GROUNDED_REDUCT_ABA_SEMANTICS: frozenset[str] = frozenset(
 )
 
 
+def _simplified_query_decision(
+    simplification: SemanticReduct[ABAFramework, Literal],
+    query: Literal,
+) -> str:
+    """Classify a query against a non-trivial grounded ABA reduct."""
+    if query in simplification.fixed_in:
+        return "fixed_in"
+    if query in simplification.fixed_out:
+        return "fixed_out"
+    if query in _forward_closure(simplification.original, simplification.fixed_in):
+        return "fixed_in_closure"
+    if query not in simplification.residual.language:
+        return "outside_residual"
+    return "residual"
+
+
 def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionSet:
     """Compute the grounded assumption set with a polynomial support-mask fixpoint.
 

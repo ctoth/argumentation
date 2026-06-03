@@ -9,6 +9,7 @@ import time
 from typing import Any
 
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba_preprocessing import _simplified_query_decision
 from argumentation.structured.aba.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     native_cnf_prefsat_dense_shape,
@@ -482,11 +483,12 @@ def _simplified_support_acceptance(
         witness = sat_support_extension(residual, semantics, simplify=False)
         return None if witness is None else simplification.lift(witness)
 
-    if query in simplification.fixed_in:
+    decision = _simplified_query_decision(simplification, query)
+    if decision in {"fixed_in", "fixed_in_closure"}:
         if task == "credulous":
             return True, _residual_witness()
         return True, None
-    if query in simplification.fixed_out or query not in residual.language:
+    if decision in {"fixed_out", "outside_residual"}:
         if task == "credulous":
             return False, None
         return False, _residual_witness()
