@@ -375,6 +375,17 @@ class AfSatKernel:
             raise ValueError(f"range size {size!r} outside 0..{len(self.arguments)}")
 
 
+@dataclass(frozen=True)
+class _PreparedAfSat:
+    residual: ArgumentationFramework
+    reduct: SemanticReduct[ArgumentationFramework, str]
+    required_in: frozenset[str]
+    required_out: frozenset[str]
+
+    def lift(self, extension: frozenset[str] | None) -> frozenset[str] | None:
+        return None if extension is None else self.reduct.lift(extension)
+
+
 def _prepare(
     framework: ArgumentationFramework,
     semantics: str,
@@ -382,34 +393,32 @@ def _prepare(
     simplify: bool,
     require_in: str | None,
     require_out: str | None,
-) -> tuple[
-    ArgumentationFramework,
-    SemanticReduct[ArgumentationFramework, str],
-    str | None,
-    str | None,
-] | None:
+) -> _PreparedAfSat | None:
     """Apply the AF preprocessing layer to a single-extension finder.
 
-    Returns ``(residual, simplification, residual_require_in, residual_require_out)``
-    or ``None`` when the constraints are already unsatisfiable on the fixed part
-    (e.g. ``require_in`` is forced OUT, or ``require_out`` is forced IN).
+    Returns ``None`` when the constraints are already unsatisfiable on the fixed
+    part (e.g. ``require_in`` is forced OUT, or ``require_out`` is forced IN).
     """
     # Validate before simplifying so unknown arguments still raise.
-    _optional_argument(framework, require_in)
-    _optional_argument(framework, require_out)
+    required_in = _optional_argument(framework, require_in)
+    required_out = _optional_argument(framework, require_out)
     if not simplify:
-        return framework, SemanticReduct(framework, framework, frozenset(), frozenset()), require_in, require_out
-    simplification = simplify_af(framework, semantics=semantics)
-    projection = simplification.project_requirements(
-        required_in=() if require_in is None else (require_in,),
-        required_out=() if require_out is None else (require_out,),
+        reduct = SemanticReduct(framework, framework, frozenset(), frozenset())
+        return _PreparedAfSat(framework, reduct, required_in, required_out)
+    reduct = simplify_af(framework, semantics=semantics)
+    projection = reduct.project_requirements(
+        required_in=required_in,
+        required_out=required_out,
     )
     if projection is None:
         return None
     residual_required_in, residual_required_out = projection
-    residual_in = next(iter(residual_required_in), None)
-    residual_out = next(iter(residual_required_out), None)
-    return simplification.residual, simplification, residual_in, residual_out
+    return _PreparedAfSat(
+        reduct.residual,
+        reduct,
+        residual_required_in,
+        residual_required_out,
+    )
 
 
 def find_stable_extension(
@@ -426,14 +435,13 @@ def find_stable_extension(
     )
     if prepared is None:
         return None
-    residual, simplification, residual_in, residual_out = prepared
-    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_stable_coverage()
-    problem.require_in(_optional_argument(residual, residual_in))
-    problem.require_out(_optional_argument(residual, residual_out))
+    problem.require_in(prepared.required_in)
+    problem.require_out(prepared.required_out)
     if problem.check("stable_extension") != "sat":
         return None
-    return simplification.lift(problem.model_extension())
+    return prepared.lift(problem.model_extension())
 
 
 def explain_stable_unsat(
@@ -476,7 +484,7 @@ def explain_stable_unsat(
             metadata=metadata,
         )
 
-    residual, simplification, residual_in, residual_out = prepared
+    residual = prepared.residual
     z3 = _load_z3()
     solver = z3.Solver()
     arguments = tuple(sorted(residual.arguments))
@@ -505,9 +513,9 @@ def explain_stable_unsat(
             z3.Or(in_vars[argument], *(in_vars[attacker] for attacker in attackers)),
         )
 
-    for argument in sorted(_optional_argument(residual, residual_in)):
+    for argument in sorted(prepared.required_in):
         track("require_in", argument, in_vars[argument])
-    for argument in sorted(_optional_argument(residual, residual_out)):
+    for argument in sorted(prepared.required_out):
         track("require_out", argument, z3.Not(in_vars[argument]))
 
     result_ref = solver.check()
@@ -525,8 +533,9 @@ def explain_stable_unsat(
             for argument, variable in in_vars.items()
             if z3.is_true(solver.model().evaluate(variable, model_completion=True))
         )
-        model_size = len(simplification.lift(extension))
-        model_fingerprint = _extension_fingerprint(simplification.lift(extension))
+        lifted_extension = prepared.reduct.lift(extension)
+        model_size = len(lifted_extension)
+        model_fingerprint = _extension_fingerprint(lifted_extension)
     elif solver_result == "unsat":
         for item in solver.unsat_core():
             mapped = label_map.get(str(item))
@@ -561,8 +570,8 @@ def explain_stable_unsat(
         requirement_argument_ids=tuple(sorted(requirement_arguments)),
         clause_group_count=len(label_map),
         runtime_seconds=runtime_seconds,
-        simplification_fixed_in_count=len(simplification.fixed_in),
-        simplification_fixed_out_count=len(simplification.fixed_out),
+        simplification_fixed_in_count=len(prepared.reduct.fixed_in),
+        simplification_fixed_out_count=len(prepared.reduct.fixed_out),
         model_extension_size=model_size,
         model_extension_fingerprint=model_fingerprint,
         metadata=metadata,
@@ -583,16 +592,15 @@ def find_complete_extension(
     )
     if prepared is None:
         return None
-    residual, simplification, residual_in, residual_out = prepared
-    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     extension = _complete_extension(
         problem,
-        required_in=_optional_argument(residual, residual_in),
-        required_out=_optional_argument(residual, residual_out),
+        required_in=prepared.required_in,
+        required_out=prepared.required_out,
         utility_name="complete_extension",
     )
-    return None if extension is None else simplification.lift(extension)
+    return prepared.lift(extension)
 
 
 def find_preferred_extension(
@@ -609,14 +617,15 @@ def find_preferred_extension(
     )
     if prepared is None:
         return None
-    residual, simplification, residual_in_arg, residual_out_arg = prepared
-    framework = residual
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
-    required_in = _optional_argument(framework, residual_in_arg)
-    required_out = _optional_argument(framework, residual_out_arg)
-    result = _find_preferred_extension_body(problem, framework, required_in, required_out)
-    return None if result is None else simplification.lift(result)
+    result = _find_preferred_extension_body(
+        problem,
+        prepared.residual,
+        prepared.required_in,
+        prepared.required_out,
+    )
+    return prepared.lift(result)
 
 
 def _find_preferred_extension_body(
@@ -854,20 +863,19 @@ def find_semi_stable_extension(
     )
     if prepared is None:
         return None
-    residual, simplification, residual_in, residual_out = prepared
-    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_complete_labelling()
     problem.add_range_definition()
     extension = _range_maximal_extension(
         problem,
-        residual,
+        prepared.residual,
         base="complete",
-        required_in=_optional_argument(residual, residual_in),
-        required_out=_optional_argument(residual, residual_out),
+        required_in=prepared.required_in,
+        required_out=prepared.required_out,
         seed_utility_name="semi_stable_seed",
         test_utility_name="semi_stable_range_maximality",
     )
-    return None if extension is None else simplification.lift(extension)
+    return prepared.lift(extension)
 
 
 def find_ideal_extension(
@@ -917,20 +925,19 @@ def find_stage_extension(
     )
     if prepared is None:
         return None
-    residual, simplification, residual_in, residual_out = prepared
-    problem = AfSatKernel(residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
     problem.add_conflict_free()
     problem.add_range_definition()
     extension = _range_maximal_extension(
         problem,
-        residual,
+        prepared.residual,
         base="conflict_free",
-        required_in=_optional_argument(residual, residual_in),
-        required_out=_optional_argument(residual, residual_out),
+        required_in=prepared.required_in,
+        required_out=prepared.required_out,
         seed_utility_name="stage_seed",
         test_utility_name="stage_range_maximality",
     )
-    return None if extension is None else simplification.lift(extension)
+    return prepared.lift(extension)
 
 
 def _complete_extension(
