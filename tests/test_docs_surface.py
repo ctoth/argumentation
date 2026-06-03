@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MARKDOWN_LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+\.md)\)")
 
 
 def test_readme_documents_new_package_surfaces() -> None:
@@ -131,3 +133,16 @@ def test_current_docs_do_not_cite_old_flat_source_paths() -> None:
                 offenders.append((path.name, old_path))
 
     assert offenders == []
+
+
+def test_docs_index_links_exist() -> None:
+    index_path = ROOT / "docs" / "index.md"
+    index = index_path.read_text(encoding="utf-8")
+    missing: list[str] = []
+
+    for link in MARKDOWN_LINK_RE.findall(index):
+        target = (index_path.parent / link).resolve()
+        if not target.exists():
+            missing.append(link)
+
+    assert missing == []

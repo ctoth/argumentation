@@ -25,6 +25,7 @@ details (all import paths changed in 0.3.0).
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Surface tour](#surface-tour)
+- [Documentation map](#documentation-map)
 - [Core: Dung, labellings, preferences, dispatch](#core)
 - [Structured: ASPIC+, ABA, accrual](#structured)
 - [Quantitative and bipolar: ranking, weighted, gradual, DF-QuAD](#quantitative-and-bipolar)
@@ -105,6 +106,23 @@ dispatch, the SAT encoder, the probabilistic kernel, and the ICCMA writer.
 
 `docs/architecture.md` covers the layered kernel-and-adapters design in depth.
 `docs/backends.md` documents the backend selection rule.
+
+## Documentation map
+
+The package docs are organized around the questions users and contributors
+actually need answered:
+
+| Question | Doc |
+|---|---|
+| What is the package, and how do I use the main surfaces? | this README |
+| Where does a module live, and what may it import? | [`docs/architecture.md`](docs/architecture.md) |
+| Which backend string means what? | [`docs/backends.md`](docs/backends.md) |
+| What is intentionally incomplete or out of scope? | [`docs/gaps.md`](docs/gaps.md) |
+| How do I prepare ICCMA data and run local benchmark slices? | [`docs/iccma-data.md`](docs/iccma-data.md), [`docs/iccma-2025-data.md`](docs/iccma-2025-data.md) |
+| How should solver-performance research be recorded? | [`docs/performance-research.md`](docs/performance-research.md) |
+
+[`docs/index.md`](docs/index.md) is the short landing page for the whole docs
+folder.
 
 ## Core
 

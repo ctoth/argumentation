@@ -17,6 +17,23 @@ The optional Z3 backend is tested by the default development environment. Keep
 the base package free of mandatory runtime dependencies unless a formal kernel
 module genuinely requires one.
 
+## Solver Performance Work
+
+Solver, routing, optimization, benchmark, and worker-process changes need an
+operational contract before a full benchmark gate is used as the first signal.
+Add at least one focused invariant that can fail early: bounded solver calls,
+route selection, residual-size reduction, skipped bad path, telemetry shape,
+or calibrated wall-clock budget.
+
+Use `tools/perf_calibrate.py` and `tests/performance_contracts.py` for opt-in
+wall-clock contracts. Deterministic route and telemetry contracts should run
+normally. If a benchmark misses, use `py-spy` against the real hot worker or
+solver process before declaring the experiment complete. A missed benchmark
+without profiler-backed diagnosis is only "promotion no-go; diagnosis
+incomplete."
+
+See `docs/performance-research.md` for the full workflow.
+
 ## Package layout
 
 `argumentation` is organized into layered subpackages. A module imports only

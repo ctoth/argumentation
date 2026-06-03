@@ -418,5 +418,8 @@ focused test pins the chosen behaviour.
   preparation tooling.
 - [`iccma-2025-data.md`](iccma-2025-data.md) — ICCMA 2025 data and
   native runner.
+- [`performance-research.md`](performance-research.md) — operational
+  contracts, calibration, profiling, and experiment records for solver
+  performance work.
 - [`../CHANGELOG.md`](../CHANGELOG.md) — release history, including the
   0.3.0 layered-subpackage reorganization.
