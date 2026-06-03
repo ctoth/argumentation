@@ -115,6 +115,7 @@ actually need answered:
 | Question | Doc |
 |---|---|
 | What is the package, and how do I use the main surfaces? | this README |
+| Are there small current examples for copy-paste use? | [`docs/examples.md`](docs/examples.md) |
 | Where does a module live, and what may it import? | [`docs/architecture.md`](docs/architecture.md) |
 | Which backend string means what? | [`docs/backends.md`](docs/backends.md) |
 | What is intentionally incomplete or out of scope? | [`docs/gaps.md`](docs/gaps.md) |

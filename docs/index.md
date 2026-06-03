@@ -13,6 +13,7 @@ Use this page as the stable map into the rest of the docs.
 | Need | Read |
 |---|---|
 | Package overview, install, and examples | [`../README.md`](../README.md) |
+| Copy-pasteable current API examples | [`examples.md`](examples.md) |
 | Layer contract and module catalogue | [`architecture.md`](architecture.md) |
 | Solver backend strings and capability policy | [`backends.md`](backends.md) |
 | Known limitations and closed historical gaps | [`gaps.md`](gaps.md) |
