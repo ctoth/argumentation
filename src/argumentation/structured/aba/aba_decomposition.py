@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
-from argumentation.structured.aba.aba_preprocessing import simplify_aba
+from argumentation.structured.aba.aba_preprocessing import _prepare_residual_requirements
 from argumentation.structured.aspic.aspic import Literal, Rule
 
 
@@ -87,32 +87,21 @@ def decomposed_prefsat_extension(
 ) -> AbaDecomposedPrefSatResult:
     from argumentation.structured.aba import aba_sat
 
-    simplification = simplify_aba(framework, semantics="preferred")
-    residual = simplification.residual
+    prepared = _prepare_residual_requirements(
+        framework,
+        semantics="preferred",
+        require_assumptions=require_assumptions,
+    )
+    residual = prepared.residual
     plan = plan_decomposed_prefsat(residual)
     telemetry = _base_telemetry(framework, plan)
 
-    projected_requirements = simplification.project_requirements(
-        required_in=require_assumptions,
-    )
-    if projected_requirements is None:
-        # A required assumption forced OUT by preprocessing (its contrary is
-        # forward-derivable from the grounded set alone) cannot appear in any
-        # preferred extension: every preferred set is conflict-free (Bondarenko
-        # et al. 1997, Def. 2.2, p.70) and contains the well-founded set (Thm.
-        # 6.4, p.90), whose theory derives that assumption's contrary -- so
-        # including it would break conflict-freeness. The query is therefore
-        # unsatisfiable. (Were this assumption left in residual_required, it
-        # would leak into the residual solver, which has no SAT variable for it
-        # -> KeyError.)
-        telemetry["decomp_validation_success"] = 0
-        telemetry["decomp_lifted_extension_size"] = 0
-        return AbaDecomposedPrefSatResult(extension=None, telemetry=telemetry)
-
-    residual_required, _ = projected_requirements
+    residual_required = prepared.projected_requirements
+    if residual_required is None:
+        return _unsatisfiable_required_result(telemetry)
 
     if plan.no_reduction_reason == "empty_residual":
-        extension = simplification.lift(frozenset())
+        extension = prepared.lift(frozenset())
         return _decomposed_result(
             framework,
             require_assumptions,
@@ -130,7 +119,7 @@ def decomposed_prefsat_extension(
             residual,
             require_assumptions=residual_required,
         )
-        extension = simplification.lift(result.extension)
+        extension = prepared.lift(result.extension)
         telemetry["decomp_full_instance_prefsat_calls"] = 1
         telemetry["decomp_solver_checks"] = _solver_checks(result.telemetry)
         return _decomposed_result(
@@ -154,7 +143,7 @@ def decomposed_prefsat_extension(
         residual_extension.update(result.extension)
         solver_checks += _solver_checks(result.telemetry)
 
-    extension = simplification.lift(residual_extension)
+    extension = prepared.lift(residual_extension)
     telemetry["decomp_prefsat_component_calls"] = len(component_results)
     telemetry["decomp_solver_checks"] = solver_checks
     return _decomposed_result(
@@ -164,6 +153,14 @@ def decomposed_prefsat_extension(
         telemetry,
         component_results=tuple(component_results),
     )
+
+
+def _unsatisfiable_required_result(
+    telemetry: dict[str, Any],
+) -> AbaDecomposedPrefSatResult:
+    telemetry["decomp_validation_success"] = 0
+    telemetry["decomp_lifted_extension_size"] = 0
+    return AbaDecomposedPrefSatResult(extension=None, telemetry=telemetry)
 
 
 def _decomposed_result(

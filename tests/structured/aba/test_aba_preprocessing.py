@@ -17,6 +17,7 @@ from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework
 from argumentation.structured.aba.aba_preprocessing import (
     GROUNDED_REDUCT_ABA_SEMANTICS,
+    _prepare_residual_requirements,
     grounded_assumption_set_via_supports,
     simplify_aba,
 )
@@ -196,6 +197,47 @@ def test_simplify_structural_invariants(framework: ABAFramework) -> None:
     )
     if s.is_trivial:
         assert s.residual is framework
+
+
+def test_prepare_residual_requirements_projects_fixed_in_requirement() -> None:
+    a, b = lit("a"), lit("b")
+    ca, cb = lit("ca"), lit("cb")
+    framework = _framework(
+        assumptions={a, b},
+        contrary={a: ca, b: cb},
+        rules=[Rule((a,), cb, "strict")],
+    )
+
+    prepared = _prepare_residual_requirements(
+        framework,
+        semantics="preferred",
+        require_assumptions={a},
+    )
+
+    assert not prepared.is_unsatisfiable
+    assert prepared.reduct.fixed_in == frozenset({a})
+    assert prepared.projected_requirements == frozenset()
+    assert prepared.lift(frozenset()) == frozenset({a})
+
+
+def test_prepare_residual_requirements_rejects_fixed_out_requirement() -> None:
+    a, b = lit("a"), lit("b")
+    ca, cb = lit("ca"), lit("cb")
+    framework = _framework(
+        assumptions={a, b},
+        contrary={a: ca, b: cb},
+        rules=[Rule((a,), cb, "strict")],
+    )
+
+    prepared = _prepare_residual_requirements(
+        framework,
+        semantics="preferred",
+        require_assumptions={b},
+    )
+
+    assert prepared.is_unsatisfiable
+    assert prepared.reduct.fixed_out == frozenset({b})
+    assert prepared.projected_requirements is None
 
 
 def test_grounded_via_supports_matches_native_on_random() -> None:

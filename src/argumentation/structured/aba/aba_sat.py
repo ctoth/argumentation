@@ -9,7 +9,10 @@ import time
 from typing import Any
 
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
-from argumentation.structured.aba.aba_preprocessing import _simplified_query_decision
+from argumentation.structured.aba.aba_preprocessing import (
+    _prepare_residual_requirements,
+    _simplified_query_decision,
+)
 from argumentation.structured.aba.aba_route_policy import (
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     native_cnf_prefsat_dense_shape,
@@ -528,20 +531,23 @@ def sat_support_extension(
             if require_assumptions <= native_result.extension:
                 return native_result.extension
             return None
-    if (
-        simplify
-        and require_derived is None
-        and require_not_derived is None
-        and not require_assumptions
-    ):
-        simplification = _aba_simplification(framework, semantics)
-        if not simplification.is_trivial:
+    if simplify and require_derived is None and require_not_derived is None:
+        prepared = _prepare_residual_requirements(
+            framework,
+            semantics=semantics,
+            require_assumptions=require_assumptions,
+        )
+        residual_required = prepared.projected_requirements
+        if residual_required is None:
+            return None
+        if not prepared.is_trivial:
             witness = sat_support_extension(
-                simplification.residual,
+                prepared.residual,
                 semantics,
+                require_assumptions=residual_required,
                 simplify=False,
             )
-            return None if witness is None else simplification.lift(witness)
+            return None if witness is None else prepared.lift(witness)
     if require_derived is not None and require_derived not in framework.language:
         raise ValueError(f"required literal is not in framework language: {require_derived!r}")
     if require_not_derived is not None and require_not_derived not in framework.language:

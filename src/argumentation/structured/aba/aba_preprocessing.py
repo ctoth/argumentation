@@ -47,6 +47,8 @@ Wave A validated its AF reduct.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from dataclasses import dataclass
 from itertools import chain
 
 from argumentation.core.reduct import SemanticReduct
@@ -85,6 +87,57 @@ def _simplified_query_decision(
     if query not in simplification.residual.language:
         return "outside_residual"
     return "residual"
+
+
+@dataclass(frozen=True)
+class _PreparedAbaResidual:
+    """ABA reduct plus requirements projected into the residual framework."""
+
+    reduct: SemanticReduct[ABAFramework, Literal]
+    projected_requirements: AssumptionSet | None
+
+    @property
+    def residual(self) -> ABAFramework:
+        return self.reduct.residual
+
+    @property
+    def is_trivial(self) -> bool:
+        return self.reduct.is_trivial
+
+    @property
+    def is_unsatisfiable(self) -> bool:
+        return self.projected_requirements is None
+
+    def lift(self, residual_extension: Iterable[Literal]) -> AssumptionSet:
+        return self.reduct.lift(residual_extension)
+
+
+def _prepare_residual_requirements(
+    framework: ABAFramework,
+    *,
+    semantics: str,
+    require_assumptions: Iterable[Literal] = frozenset(),
+    simplify: bool = True,
+) -> _PreparedAbaResidual:
+    """Prepare ABA residual solving and project required assumptions.
+
+    A required assumption fixed IN by the grounded reduct is already present in
+    every lifted extension, so it disappears from the residual requirement. A
+    required assumption fixed OUT is inconsistent with every lifted extension:
+    its contrary is derivable from the fixed IN part, and ABA extensions are
+    conflict-free. The residual solver should therefore never receive it.
+    """
+    reduct = (
+        simplify_aba(framework, semantics=semantics)
+        if simplify
+        else SemanticReduct(framework, framework, frozenset(), frozenset())
+    )
+    projection = reduct.project_requirements(required_in=require_assumptions)
+    residual_required = None if projection is None else projection[0]
+    return _PreparedAbaResidual(
+        reduct=reduct,
+        projected_requirements=residual_required,
+    )
 
 
 def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionSet:
