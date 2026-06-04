@@ -620,7 +620,7 @@ def test_solve_aba_single_extension_iccma_returns_verified_witness(monkeypatch) 
     framework = _flat_aba(1, frozenset())
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -644,7 +644,7 @@ def test_solve_aba_acceptance_iccma_returns_verified_answer(monkeypatch) -> None
     query = literal("a1")
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
