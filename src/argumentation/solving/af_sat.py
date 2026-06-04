@@ -16,6 +16,7 @@ from argumentation.core.dung import (
     range_of,
 )
 from argumentation.core.finite import is_acyclic
+from argumentation.core.optional_deps import load_z3
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
@@ -1609,11 +1610,7 @@ def _is_acyclic(framework: ArgumentationFramework) -> bool:
 
 
 def _load_z3():
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("SAT solving requires z3-solver") from exc
-    return z3
+    return load_z3("SAT solving")
 
 
 __all__ = [

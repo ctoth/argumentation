@@ -24,6 +24,7 @@ import re
 from typing import Literal, Mapping, Sequence
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.optional_deps import load_z3
 from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
 
@@ -580,10 +581,7 @@ def least_squares_update_labelling(
 
 
 def _linear_solver(arguments: frozenset[str]):
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("linear epistemic constraint reasoning requires z3-solver") from exc
+    z3 = load_z3("linear epistemic constraint reasoning")
 
     variables = {argument: z3.Real(argument) for argument in sorted(arguments)}
     solver = z3.Solver()

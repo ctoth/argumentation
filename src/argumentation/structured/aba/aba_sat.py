@@ -8,6 +8,7 @@ import importlib
 import time
 from typing import Any
 
+from argumentation.core.optional_deps import load_z3
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, _closure, derives
 from argumentation.structured.aba.aba_preprocessing import (
     _prepare_residual_requirements,
@@ -2413,11 +2414,7 @@ def _literal_key(literal: Literal) -> str:
 
 
 def _load_z3():
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("ABA stable SAT solving requires z3-solver") from exc
-    return z3
+    return load_z3("ABA stable SAT solving")
 
 
 def _load_pysat_solver():
