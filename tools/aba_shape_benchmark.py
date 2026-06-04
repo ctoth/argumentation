@@ -1050,12 +1050,10 @@ def _large_witness_validation(
     subtrack: str,
     witness: AssumptionSet,
 ) -> dict[str, Any]:
-    from argumentation.structured.aba import aba_sat
-
     semantics = solver_class("aba", subtrack).split("/")[-1]
     if not witness <= framework.assumptions:
         return {"status": "invalid", "check": f"{semantics}_large_witness_subset"}
-    closure = aba_sat._prefsat_closure(framework, witness)
+    closure = native_aba._closure(framework, witness)
     conflict_free = not any(
         framework.contrary[assumption] in closure
         for assumption in witness

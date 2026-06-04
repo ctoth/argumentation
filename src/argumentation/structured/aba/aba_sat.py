@@ -8,7 +8,7 @@ import importlib
 import time
 from typing import Any
 
-from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, _closure, derives
 from argumentation.structured.aba.aba_preprocessing import (
     _prepare_residual_requirements,
     _simplified_query_decision,
@@ -95,7 +95,7 @@ def real_prefsat_attack_edge_count(framework: ABAFramework) -> int:
     """Count singleton-closure attack edges without enumerating supports."""
     count = 0
     for source in framework.assumptions:
-        closure = _prefsat_closure(framework, frozenset({source}))
+        closure = _closure(framework, frozenset({source}))
         count += sum(
             1
             for target in framework.assumptions
@@ -901,7 +901,7 @@ class _NativeCnfPrefSatSolver:
             self.progress_events.append(event)
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
-        closure = _prefsat_closure(self.framework, extension)
+        closure = _closure(self.framework, extension)
         prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
@@ -1534,7 +1534,7 @@ class _RealPrefSatSolver:
             self.progress_events.append(event)
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
-        closure = _prefsat_closure(self.framework, extension)
+        closure = _closure(self.framework, extension)
         prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
@@ -2079,19 +2079,6 @@ def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix
         )
         clause_count += 1
     return derived, clause_count
-
-
-def _prefsat_closure(framework: ABAFramework, extension: AssumptionSet) -> frozenset[Literal]:
-    derived = set(extension)
-    changed = True
-    while changed:
-        changed = False
-        for rule in framework.rules:
-            if all(antecedent in derived for antecedent in rule.antecedents):
-                if rule.consequent not in derived:
-                    derived.add(rule.consequent)
-                    changed = True
-    return frozenset(derived)
 
 
 def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...]):
