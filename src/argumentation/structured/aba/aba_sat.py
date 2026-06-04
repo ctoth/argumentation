@@ -1955,76 +1955,31 @@ def sat_stable_acceptance(
     return counterexample is None, counterexample
 
 
-def _add_ranked_closure_constraints(z3, solver, framework, variables):
+def _emit_ranked_closure_constraints(
+    z3,
+    solver,
+    framework,
+    variables,
+    *,
+    derived_prefix: str,
+    rank_prefix: str,
+):
+    """Emit the shared Int ranked-closure Z3 constraints.
+
+    The plain and prefsat encoders differ only in the variable-name prefixes
+    used for the ``derived`` Bools and Int ``rank`` vars. This helper is the
+    single source for the constraint structure; it always returns the
+    ``derived`` map alongside the number of emitted clauses, and each caller
+    keeps or discards the tally to preserve its own return contract.
+    """
     literals = tuple(sorted(framework.language, key=repr))
     rank_bound = len(literals)
     derived = {
-        literal: z3.Bool(f"der_{_literal_key(literal)}")
+        literal: z3.Bool(f"{derived_prefix}{_literal_key(literal)}")
         for literal in literals
     }
     ranks = {
-        literal: z3.Int(f"rank_{_literal_key(literal)}")
-        for literal in literals
-    }
-    rules_by_consequent = _rules_by_consequent(framework, literals)
-
-    for literal in literals:
-        solver.add(ranks[literal] >= 0, ranks[literal] <= rank_bound)
-
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(derived[assumption] == variables[assumption])
-        solver.add(z3.Implies(variables[assumption], ranks[assumption] == 0))
-
-    for rule in sorted(framework.rules, key=repr):
-        antecedents = tuple(rule.antecedents)
-        if not antecedents:
-            solver.add(derived[rule.consequent])
-        else:
-            solver.add(
-                z3.Implies(
-                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
-                    derived[rule.consequent],
-                )
-            )
-
-    for literal in literals:
-        if literal in framework.assumptions:
-            continue
-        support_terms = []
-        for rule in rules_by_consequent[literal]:
-            antecedents = tuple(rule.antecedents)
-            if not antecedents:
-                support_terms.append(z3.BoolVal(True))
-                continue
-            support_terms.append(
-                z3.And(
-                    *(
-                        z3.And(
-                            derived[antecedent],
-                            ranks[antecedent] < ranks[literal],
-                        )
-                        for antecedent in antecedents
-                    )
-                )
-            )
-        solver.add(
-            z3.Implies(
-                derived[literal],
-                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
-            )
-        )
-    return derived
-
-
-def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix: str):
-    literals = tuple(sorted(framework.language, key=repr))
-    rank_bound = len(literals)
-    derived = {
-        literal: z3.Bool(f"{prefix}_derived_{_literal_key(literal)}")
-        for literal in literals
-    }
-    ranks = {
-        literal: z3.Int(f"{prefix}_rank_{_literal_key(literal)}")
+        literal: z3.Int(f"{rank_prefix}{_literal_key(literal)}")
         for literal in literals
     }
     rules_by_consequent = _rules_by_consequent(framework, literals)
@@ -2079,7 +2034,31 @@ def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix
             )
         )
         clause_count += 1
+
     return derived, clause_count
+
+
+def _add_ranked_closure_constraints(z3, solver, framework, variables):
+    derived, _clause_count = _emit_ranked_closure_constraints(
+        z3,
+        solver,
+        framework,
+        variables,
+        derived_prefix="der_",
+        rank_prefix="rank_",
+    )
+    return derived
+
+
+def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix: str):
+    return _emit_ranked_closure_constraints(
+        z3,
+        solver,
+        framework,
+        variables,
+        derived_prefix=f"{prefix}_derived_",
+        rank_prefix=f"{prefix}_rank_",
+    )
 
 
 def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...]):
