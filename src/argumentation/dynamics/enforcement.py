@@ -26,27 +26,11 @@ from typing import Callable, Literal
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    cf2_extensions,
-    complete_extensions,
-    grounded_extension,
-    ideal_extension,
-    preferred_extensions,
-    semi_stable_extensions,
-    stable_extensions,
-    stage_extensions,
+    SemanticsName,
+    extensions_for,
 )
 
 
-SemanticsName = Literal[
-    "grounded",
-    "complete",
-    "preferred",
-    "stable",
-    "semi-stable",
-    "stage",
-    "ideal",
-    "cf2",
-]
 EnforcementMode = Literal["credulous", "skeptical", "extension"]
 ExtensionVariant = Literal["strict", "non-strict"]
 ExpansionKind = Literal["normal", "strong", "weak"]
@@ -222,30 +206,6 @@ def is_weak_expansion(
         not (attacker in new_arguments and target in original.arguments)
         for attacker, target in expanded.defeats - original.defeats
     )
-
-
-def extensions_for(
-    framework: ArgumentationFramework,
-    semantics: SemanticsName,
-) -> tuple[frozenset[str], ...]:
-    """Return extensions for the supported Dung semantics."""
-    if semantics == "grounded":
-        return (grounded_extension(framework),)
-    if semantics == "complete":
-        return tuple(complete_extensions(framework))
-    if semantics == "preferred":
-        return tuple(preferred_extensions(framework))
-    if semantics == "stable":
-        return tuple(stable_extensions(framework))
-    if semantics == "semi-stable":
-        return tuple(semi_stable_extensions(framework))
-    if semantics == "stage":
-        return tuple(stage_extensions(framework))
-    if semantics == "ideal":
-        return (ideal_extension(framework),)
-    if semantics == "cf2":
-        return tuple(cf2_extensions(framework))
-    raise ValueError(f"unsupported semantics: {semantics}")
 
 
 def _credulously_accepted(extensions: tuple[frozenset[str], ...]) -> frozenset[str]:

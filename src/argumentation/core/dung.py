@@ -14,6 +14,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from itertools import combinations
+from typing import Literal
 
 from argumentation.core.finite import (
     extension_sort_key,
@@ -663,3 +664,46 @@ def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
             "admissible subset of the preferred-extension intersection"
         )
     return maximal[0]
+
+
+SemanticsName = Literal[
+    "grounded",
+    "complete",
+    "preferred",
+    "stable",
+    "semi-stable",
+    "stage",
+    "ideal",
+    "cf2",
+    "naive",
+]
+
+
+def extensions_for(
+    framework: ArgumentationFramework,
+    semantics: SemanticsName,
+) -> tuple[frozenset[str], ...]:
+    """Return extensions for the supported Dung semantics.
+
+    Single-extension semantics (grounded, ideal) are returned as a 1-tuple so
+    every semantics yields a uniform ``tuple[frozenset[str], ...]``.
+    """
+    if semantics == "grounded":
+        return (grounded_extension(framework),)
+    if semantics == "complete":
+        return tuple(complete_extensions(framework))
+    if semantics == "preferred":
+        return tuple(preferred_extensions(framework))
+    if semantics == "stable":
+        return tuple(stable_extensions(framework))
+    if semantics == "semi-stable":
+        return tuple(semi_stable_extensions(framework))
+    if semantics == "stage":
+        return tuple(stage_extensions(framework))
+    if semantics == "ideal":
+        return (ideal_extension(framework),)
+    if semantics == "cf2":
+        return tuple(cf2_extensions(framework))
+    if semantics == "naive":
+        return tuple(naive_extensions(framework))
+    raise ValueError(f"unsupported semantics: {semantics}")

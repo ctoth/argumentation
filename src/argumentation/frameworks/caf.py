@@ -16,21 +16,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Iterable, Literal, Mapping
+from typing import Iterable, Literal, Mapping, cast
 
 from argumentation.core.dung import (
     ArgumentationFramework,
+    SemanticsName,
     admissible,
-    cf2_extensions,
-    complete_extensions,
     conflict_free,
-    grounded_extension,
-    naive_extensions,
-    preferred_extensions,
+    extensions_for,
     range_of,
-    semi_stable_extensions,
-    stable_extensions,
-    stage_extensions,
 )
 
 
@@ -151,27 +145,27 @@ def extensions(
     raise ValueError(f"unsupported CAF view: {view}")
 
 
+_CAF_SEMANTICS: frozenset[str] = frozenset(
+    {
+        "grounded",
+        "complete",
+        "preferred",
+        "stable",
+        "semi-stable",
+        "stage",
+        "naive",
+        "cf2",
+    }
+)
+
+
 def _argument_extensions(
     framework: ArgumentationFramework,
     semantics: str,
 ) -> tuple[frozenset[str], ...]:
-    if semantics == "grounded":
-        return (grounded_extension(framework),)
-    if semantics == "complete":
-        return tuple(complete_extensions(framework))
-    if semantics == "preferred":
-        return tuple(preferred_extensions(framework))
-    if semantics == "stable":
-        return tuple(stable_extensions(framework))
-    if semantics == "semi-stable":
-        return tuple(semi_stable_extensions(framework))
-    if semantics == "stage":
-        return tuple(stage_extensions(framework))
-    if semantics == "naive":
-        return tuple(naive_extensions(framework))
-    if semantics == "cf2":
-        return tuple(cf2_extensions(framework))
-    raise ValueError(f"unsupported CAF semantics: {semantics}")
+    if semantics not in _CAF_SEMANTICS:
+        raise ValueError(f"unsupported CAF semantics: {semantics}")
+    return extensions_for(framework, cast(SemanticsName, semantics))
 
 
 def _project(caf: ClaimAugmentedAF, extension: frozenset[str]) -> frozenset[str]:

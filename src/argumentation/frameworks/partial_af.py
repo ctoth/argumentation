@@ -5,13 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations, product
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    grounded_extension,
-    preferred_extensions,
-    stable_extensions,
+    SemanticsName,
+    extensions_for,
 )
 
 AttackPair = tuple[str, str]
@@ -158,18 +157,17 @@ def merge_framework_edit_distance(
     )
 
 
+_COMPLETION_SEMANTICS: frozenset[str] = frozenset({"grounded", "preferred", "stable"})
+
+
 def _extensions_for_completion(
     completion: ArgumentationFramework,
     *,
     semantics: str,
 ) -> list[frozenset[str]]:
-    if semantics == "grounded":
-        return [grounded_extension(completion)]
-    if semantics == "preferred":
-        return [frozenset(extension) for extension in preferred_extensions(completion)]
-    if semantics == "stable":
-        return [frozenset(extension) for extension in stable_extensions(completion)]
-    raise ValueError(f"Unknown semantics: {semantics}")
+    if semantics not in _COMPLETION_SEMANTICS:
+        raise ValueError(f"Unknown semantics: {semantics}")
+    return list(extensions_for(completion, cast(SemanticsName, semantics)))
 
 
 def skeptically_accepted_arguments(

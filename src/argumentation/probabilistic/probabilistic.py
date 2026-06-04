@@ -15,7 +15,7 @@ import math
 import random as _random_mod
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from argumentation.probabilistic.probabilistic_components import connected_components
 
@@ -109,10 +109,8 @@ def _normalize_strategy(strategy: str) -> tuple[str, str]:
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    complete_extensions,
-    grounded_extension,
-    preferred_extensions,
-    stable_extensions,
+    SemanticsName,
+    extensions_for,
 )
 
 
@@ -454,19 +452,18 @@ def _exact_dp_supports_query(
     return False
 
 
+_PROBABILISTIC_SEMANTICS: frozenset[str] = frozenset(
+    {"grounded", "preferred", "stable", "complete"}
+)
+
+
 def _extensions_for_semantics(
     af: ArgumentationFramework,
     semantics: str,
 ) -> tuple[frozenset[str], ...]:
-    if semantics == "grounded":
-        return (grounded_extension(af),)
-    if semantics == "preferred":
-        return tuple(preferred_extensions(af))
-    if semantics == "stable":
-        return tuple(stable_extensions(af))
-    if semantics == "complete":
-        return tuple(complete_extensions(af))
-    raise ValueError(f"Unknown semantics: {semantics}")
+    if semantics not in _PROBABILISTIC_SEMANTICS:
+        raise ValueError(f"Unknown semantics: {semantics}")
+    return extensions_for(af, cast(SemanticsName, semantics))
 
 
 def _accepted_arguments_from_extensions(
