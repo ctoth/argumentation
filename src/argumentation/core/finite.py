@@ -211,3 +211,55 @@ def strongly_connected_components(
         components,
         key=lambda component: _ordered_key_values(component, key),
     )
+
+
+def is_acyclic(
+    graph: Mapping[T, Iterable[T]],
+    *,
+    key: Callable[[T], Any] | None = None,
+) -> bool:
+    """Return ``True`` iff a finite directed graph contains no cycle.
+
+    Uses an iterative post-order DFS (explicit stack) so a long chain of nodes
+    does not recurse one Python frame per edge and raise ``RecursionError``.
+    Each stack entry is ``(node, entered)``: the first pop with ``entered=False``
+    marks the node grey and re-pushes it as ``entered=True`` beneath its
+    children; the second pop (``entered=True``) marks it black. A grey node
+    reached again is a cycle. Roots and successors are iterated in sorted order
+    so the result does not depend on the graph's insertion order.
+    """
+    nodes = set(graph)
+    for successors in graph.values():
+        nodes.update(successors)
+
+    successors_by_node = {
+        node: _ordered_items(graph.get(node, ()), key)
+        for node in nodes
+    }
+
+    visiting: set[T] = set()
+    visited: set[T] = set()
+
+    for root in _ordered_items(nodes, key):
+        if root in visited:
+            continue
+        stack: list[tuple[T, bool]] = [(root, False)]
+        while stack:
+            node, entered = stack.pop()
+            if entered:
+                visiting.discard(node)
+                visited.add(node)
+                continue
+            if node in visited:
+                continue
+            if node in visiting:
+                return False
+            visiting.add(node)
+            stack.append((node, True))
+            for target in successors_by_node.get(node, ()):
+                if target in visiting:
+                    return False
+                if target not in visited:
+                    stack.append((target, False))
+
+    return True

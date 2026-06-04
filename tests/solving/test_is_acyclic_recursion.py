@@ -4,8 +4,10 @@ Both ``argumentation.solving.af_sat._is_acyclic`` and
 ``argumentation.core.labelling._is_acyclic`` used a recursive ``visit()`` closure
 that recursed one Python stack frame per graph edge along a path. A long acyclic
 chain (a0 -> a1 -> ... -> a_{N-1}) therefore raised ``RecursionError`` once N
-exceeded Python's recursion limit. These tests pin the iterative behaviour and the
-preserved semantics for both copies.
+exceeded Python's recursion limit. The traversal now lives once in
+``argumentation.core.finite.is_acyclic`` (an iterative explicit-stack DFS), which
+both former call sites delegate to. These tests pin the iterative behaviour and
+the preserved semantics of that single shared helper.
 """
 
 from __future__ import annotations
@@ -13,13 +15,21 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.core.labelling import _is_acyclic as labelling_is_acyclic
-from argumentation.solving.af_sat import _is_acyclic as af_sat_is_acyclic
+from argumentation.core.finite import is_acyclic as finite_is_acyclic
+
+
+def _is_acyclic(framework: ArgumentationFramework) -> bool:
+    """Adapt the shared graph helper to an ``ArgumentationFramework`` input."""
+    outgoing: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    for attacker, target in framework.defeats:
+        outgoing.setdefault(attacker, set()).add(target)
+    return finite_is_acyclic(outgoing)
+
 
 _IS_ACYCLIC = pytest.mark.parametrize(
     "is_acyclic",
-    [af_sat_is_acyclic, labelling_is_acyclic],
-    ids=["af_sat", "labelling"],
+    [_is_acyclic],
+    ids=["finite"],
 )
 
 
