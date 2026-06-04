@@ -182,7 +182,7 @@ not a diagnostic.)
 
 ## Commit
 
-`0924752` on `refactor/dedup`.
+`e253467` on `refactor/dedup`.
 
 ## Out of scope — noticed
 
