@@ -126,7 +126,7 @@ which showed the same 5 plus the now-resolved `_prefsat_closure` attribute error
 change introduced zero new pyright errors and removed one.
 
 ## Commit
-`c56600dd5dc6daa8212e7914c02eab859f9c0cdb` on `refactor/dedup`
+`ef261a13cc523240cd4f2df880c0d89255e29405` on `refactor/dedup`
 ("refactor: dedup naive _prefsat_closure into canonical _closure").
 
 ## Out of scope — noticed
