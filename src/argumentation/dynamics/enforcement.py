@@ -26,11 +26,32 @@ from typing import Callable, Literal
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    SemanticsName,
-    extensions_for,
+    extensions_for as _dung_extensions_for,
 )
 
 
+SemanticsName = Literal[
+    "grounded",
+    "complete",
+    "preferred",
+    "stable",
+    "semi-stable",
+    "stage",
+    "ideal",
+    "cf2",
+]
+_SUPPORTED_SEMANTICS: frozenset[str] = frozenset(
+    {
+        "grounded",
+        "complete",
+        "preferred",
+        "stable",
+        "semi-stable",
+        "stage",
+        "ideal",
+        "cf2",
+    }
+)
 EnforcementMode = Literal["credulous", "skeptical", "extension"]
 ExtensionVariant = Literal["strict", "non-strict"]
 ExpansionKind = Literal["normal", "strong", "weak"]
@@ -206,6 +227,21 @@ def is_weak_expansion(
         not (attacker in new_arguments and target in original.arguments)
         for attacker, target in expanded.defeats - original.defeats
     )
+
+
+def extensions_for(
+    framework: ArgumentationFramework,
+    semantics: SemanticsName,
+) -> tuple[frozenset[str], ...]:
+    """Return extensions for enforcement's supported Dung semantics.
+
+    Enforcement supports the 8 classic Dung semantics (no ``naive``); the
+    computation is delegated to ``core.dung.extensions_for`` while this guard
+    rejects any key outside enforcement's contract.
+    """
+    if semantics not in _SUPPORTED_SEMANTICS:
+        raise ValueError(f"unsupported semantics: {semantics}")
+    return _dung_extensions_for(framework, semantics)
 
 
 def _credulously_accepted(extensions: tuple[frozenset[str], ...]) -> frozenset[str]:

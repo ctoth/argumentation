@@ -53,10 +53,16 @@ frameworks + probabilistic + dynamics import it with no upward edge.
 
 ## STEP 3 — each caller delegates while preserving its contract
 
-- **`enforcement.py`**: removed its local `SemanticsName` Literal and `extensions_for` body; now imports
-  `SemanticsName, extensions_for` from `core.dung` (re-exported at module scope). Both names remain
-  importable from `argumentation.dynamics.enforcement`, so `dynamic.py:14` and the import-boundary test
-  stay green. enforcement's 8 keys are a subset of the union, so the core function serves them directly.
+- **`enforcement.py`**: keeps its OWN 8-key `SemanticsName` Literal (grounded, complete, preferred,
+  stable, semi-stable, stage, ideal, cf2 — **no `naive`**) and a `_SUPPORTED_SEMANTICS` frozenset of
+  those 8 keys. `extensions_for` is a guarded wrapper: it raises the original
+  `ValueError(f"unsupported semantics: {semantics}")` for any key outside the 8-key allow-set, otherwise
+  delegates the computation to `core.dung.extensions_for` (imported as `_dung_extensions_for`). Both
+  `SemanticsName` and `extensions_for` remain importable from `argumentation.dynamics.enforcement`, so
+  `dynamic.py:14` and the import-boundary test stay green, and `enforcement.SemanticsName` remains the
+  original 8-key type that `dynamic.py` depends on. (See the v2 fix note below — the first cut wrongly
+  re-exported core's 9-key helper, which made enforcement start accepting `naive`; that regression is
+  fixed.)
 - **`caf._argument_extensions`**: kept a `_CAF_SEMANTICS` frozenset allow-set = exactly caf's 8 keys
   (incl `naive`, **excl `ideal`**). On a key not in that set it raises the unchanged
   `ValueError(f"unsupported CAF semantics: {semantics}")`. Accepted keys delegate via
@@ -143,12 +149,65 @@ file as LF and treats the `\r` as trailing whitespace); it fires identically on 
 and is **not** introduced by this change. The reliable EOL signal is the byte check + numstat
 proportionality above.
 
+## Fix v2 — enforcement contract regression (Codex FAIL)
+
+Codex's behavioral verification caught one regression in the first cut: enforcement's `extensions_for`
+had **widened** its contract. The first cut re-exported `core.dung.extensions_for` (the 9-key union,
+incl `naive`) as `enforcement.extensions_for` and re-exported core's 9-key `SemanticsName`. At the parent
+(`2b02121`), enforcement's key set was the 8 classic semantics with **no `naive`**, and `naive` was
+rejected:
+```
+parent: enforcement naive contract-check: ERR ValueError msg=unsupported semantics: naive
+1st cut: enforcement naive contract-check: OK  type=tuple value=[['a'], ['b']]   # REGRESSION
+```
+
+Fix (same per-caller allow-set pattern already used by caf/partial_af/probabilistic, now applied to
+enforcement too):
+- enforcement keeps its OWN 8-key `SemanticsName` Literal (no `naive`) — NOT core's 9-key union. So
+  `dynamic.py:14`'s `from ...enforcement import SemanticsName` still gets the original 8-key type.
+- enforcement imports core's helper aliased as `_dung_extensions_for` and adds a `_SUPPORTED_SEMANTICS`
+  frozenset of its 8 keys. `enforcement.extensions_for` is a guarded wrapper that raises
+  `ValueError(f"unsupported semantics: {semantics}")` for any key outside the 8, else delegates to
+  `_dung_extensions_for`. The dispatch table still lives only in `core.dung`; enforcement adds only a
+  contract guard (not a duplicated dispatch).
+- `core.dung` is unchanged (keeps its 9-key `SemanticsName` + `extensions_for`).
+
+### enforcement behavioral proof (this fix, AF = `a -> b`)
+```
+$ uv run python -c "<probe over the 8 keys + naive + bogus>"
+grounded     -> OK type=tuple value=[['a']]
+complete     -> OK type=tuple value=[['a']]
+preferred    -> OK type=tuple value=[['a']]
+stable       -> OK type=tuple value=[['a']]
+semi-stable  -> OK type=tuple value=[['a']]
+stage        -> OK type=tuple value=[['a']]
+ideal        -> OK type=tuple value=[['a']]
+cf2          -> OK type=tuple value=[['a']]
+naive        -> ERR ValueError: unsupported semantics: naive      # matches parent
+bogus        -> ERR ValueError: unsupported semantics: bogus
+enforcement.SemanticsName members = ('grounded','complete','preferred','stable',
+                                     'semi-stable','stage','ideal','cf2')   # original 8, no naive
+```
+
+### re-verification of the fix
+```
+$ uv run python -m pyright src/argumentation/dynamics/enforcement.py src/argumentation/core/dung.py
+0 errors, 0 warnings, 0 informations
+
+$ uv run python -m pytest tests/test_import_boundaries.py tests/dynamics/test_dynamic.py -q
+11 passed
+
+$ uv run python -m pytest tests/dynamics tests/frameworks tests/probabilistic tests/core -q
+1059 passed
+```
+`git diff --numstat` for the fix (vs the first B5 commit): `38  2  src/argumentation/dynamics/enforcement.py`
+— two hunks (import block + the re-added guarded wrapper), pure CRLF (bare-LF=0), no whole-file churn.
+
 ## Commit
-The single commit on `refactor/dedup` titled
-`refactor: unify semantics dispatch into core.dung.extensions_for`
-(`6 files changed, 243 insertions(+), 93 deletions(-)` — the +243 includes this new report file;
-the 5 source files are +86/-93). Its hash is recorded in the task hand-off (it shifts on each
-`--amend`, so it is not hard-coded here).
+Two commits on `refactor/dedup`:
+1. `refactor: unify semantics dispatch into core.dung.extensions_for` — the structural dedup.
+2. The enforcement contract fix above. Hashes are recorded in the task hand-off (they shift on
+   `--amend`, so are not hard-coded here).
 
 ## Out of scope — noticed
 - The repo has no `.gitattributes`; the mixed CRLF/LF state (and `dung.py`'s in-file mix) is a latent
