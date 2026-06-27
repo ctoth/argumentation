@@ -42,6 +42,14 @@ candidates) — documented above.
 
 - `uv run ruff check` (7 changed files): All checks passed!
 - `uv run pyright` (7 changed files): 0 errors, 0 warnings, 0 informations
-- Targeted pytest tests/core tests/frameworks: pending
-- Full suite + lint-imports: pending
-- Commit hash: pending
+- Targeted `pytest tests/core tests/frameworks -q`: 958 passed in 19.22s
+- Full `uv run pytest -q`: 2892 passed, 3 skipped, 1 xfailed (baseline 2891 + the new
+  `test_maximal_sets_keeps_inclusion_maximal_members`)
+- `uv run lint-imports`: Contracts: 2 kept, 0 broken
+- Commit hash: `2f16dfc23c02dd7ff9804d4ab6b44c5ab93986fa`
+
+## New test
+
+`tests/core/test_finite.py::test_maximal_sets_keeps_inclusion_maximal_members` covers a
+nested chain, incomparable sets (order preserved), a mixed family, duplicates (kept),
+singletons, empty input, and the empty-set member.
