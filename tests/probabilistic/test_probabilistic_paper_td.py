@@ -4,7 +4,7 @@ import pytest
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
-from argumentation.probabilistic.probabilistic_treedecomp import (
+from argumentation.probabilistic.probabilistic_paper_td import (
     PaperTDLabel,
     PaperTDRow,
     compute_paper_exact_extension_probability,
