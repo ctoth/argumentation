@@ -148,6 +148,24 @@ def sorted_extensions(
     return tuple(sorted(values, key=lambda extension: extension_sort_key(extension, key=key)))
 
 
+def maximal_sets(candidates: Iterable[frozenset[T]]) -> list[frozenset[T]]:
+    """Return the inclusion-maximal members of ``candidates``.
+
+    Keep each member ``x`` for which no other member is a strict superset
+    (equivalently, ``x`` is not a strict subset ``x < other`` of any other
+    member). Input order is preserved and duplicates are NOT removed: equal
+    sets are not strict subsets of one another, so every copy survives.
+    Callers that need deduplication, sorting, or a tuple result should apply
+    that wrapping at the call site.
+    """
+    members = list(candidates)
+    return [
+        candidate
+        for candidate in members
+        if not any(candidate < other for other in members)
+    ]
+
+
 def strongly_connected_components(
     graph: Mapping[T, Iterable[T]],
     *,

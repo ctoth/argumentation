@@ -16,6 +16,7 @@ from argumentation.core.dung import (
 )
 from argumentation.core.finite import (
     extension_sort_key,
+    maximal_sets,
     normalize_binary_relation,
     predecessors_index,
     subsets_by_size,
@@ -419,12 +420,7 @@ def _maximal_sets(
             else predicate(candidate, framework)
         )
     ]
-    maximal = [
-        candidate
-        for candidate in admissible_sets
-        if not any(candidate < other for other in admissible_sets)
-    ]
-    return sorted(maximal, key=extension_sort_key)
+    return sorted(maximal_sets(admissible_sets), key=extension_sort_key)
 
 
 def d_preferred_extensions(

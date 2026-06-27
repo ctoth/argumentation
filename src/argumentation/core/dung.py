@@ -19,6 +19,7 @@ from typing import Literal
 from argumentation.core.finite import (
     extension_sort_key,
     iter_subsets_bitmask,
+    maximal_sets,
     normalize_binary_relation,
     predecessors_index,
     strongly_connected_components,
@@ -285,11 +286,7 @@ def preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[st
     Reference: Dung 1995, Definition 8.
     """
     completes = complete_extensions(framework)
-    return [
-        extension
-        for extension in completes
-        if not any(extension < other for other in completes)
-    ]
+    return maximal_sets(completes)
 
 
 def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -427,11 +424,7 @@ def naive_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
         for candidate in _all_subsets(framework.arguments)
         if conflict_free(candidate, framework.defeats)
     ]
-    return [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    return maximal_sets(candidates)
 
 
 def _component_defeated(
@@ -586,11 +579,7 @@ def prudent_preferred_extensions(framework: ArgumentationFramework) -> list[froz
         for candidate in _all_subsets(framework.arguments)
         if prudent_admissible(framework, candidate)
     ]
-    return [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    return maximal_sets(candidates)
 
 
 def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
@@ -653,11 +642,7 @@ def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
             attackers_index=attackers_index,
         )
     ]
-    maximal = [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    maximal = maximal_sets(candidates)
     if len(maximal) != 1:
         raise AssertionError(
             "ideal extension construction must have exactly one maximal "

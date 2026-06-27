@@ -26,6 +26,7 @@ from argumentation.core.dung import (
     extensions_for,
     range_of,
 )
+from argumentation.core.finite import maximal_sets
 
 
 CAFView = Literal["inherited", "claim_level"]
@@ -233,11 +234,7 @@ def _argument_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
 
 def _maximal_claim_sets(claim_sets: Iterable[frozenset[str]]) -> tuple[frozenset[str], ...]:
     projected = list(_deduplicate_claim_sets(claim_sets))
-    return tuple(
-        claim_set
-        for claim_set in projected
-        if not any(claim_set < other for other in projected)
-    )
+    return tuple(maximal_sets(projected))
 
 
 def _claim_range_maximal(

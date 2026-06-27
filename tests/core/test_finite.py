@@ -4,6 +4,7 @@ import pytest
 
 from argumentation.core.finite import (
     iter_subsets_bitmask,
+    maximal_sets,
     normalize_binary_relation,
     predecessors_index,
     sorted_extensions,
@@ -81,6 +82,39 @@ def test_sorted_extensions_support_repr_only_members() -> None:
         frozenset({b}),
         frozenset({a, b}),
     )
+
+
+def test_maximal_sets_keeps_inclusion_maximal_members() -> None:
+    # Nested chain: only the largest survives.
+    assert maximal_sets(
+        [frozenset({"a"}), frozenset({"a", "b"}), frozenset({"a", "b", "c"})]
+    ) == [frozenset({"a", "b", "c"})]
+
+    # Incomparable sets are all maximal; input order is preserved.
+    assert maximal_sets([frozenset({"a"}), frozenset({"b"})]) == [
+        frozenset({"a"}),
+        frozenset({"b"}),
+    ]
+
+    # Mixed: the strict subset is dropped, incomparable ones kept in order.
+    assert maximal_sets(
+        [frozenset({"a"}), frozenset({"a", "b"}), frozenset({"c"})]
+    ) == [frozenset({"a", "b"}), frozenset({"c"})]
+
+    # Duplicates are NOT removed: equal sets are not strict subsets.
+    assert maximal_sets([frozenset({"a"}), frozenset({"a"})]) == [
+        frozenset({"a"}),
+        frozenset({"a"}),
+    ]
+
+    # Singletons and the empty family.
+    assert maximal_sets([frozenset({"a"})]) == [frozenset({"a"})]
+    assert maximal_sets([]) == []
+
+    # An empty set is a strict subset of any non-empty member, so it drops out
+    # unless it is the only member.
+    assert maximal_sets([frozenset(), frozenset({"a"})]) == [frozenset({"a"})]
+    assert maximal_sets([frozenset()]) == [frozenset()]
 
 
 def test_strongly_connected_components_are_deterministic() -> None:

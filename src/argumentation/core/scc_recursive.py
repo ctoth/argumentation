@@ -62,7 +62,7 @@ from argumentation.core.dung import (
     preferred_extensions,
     stable_extensions,
 )
-from argumentation.core.finite import subsets_by_size
+from argumentation.core.finite import maximal_sets, subsets_by_size
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
@@ -132,7 +132,7 @@ def _base_preferred_in_c(
     af: ArgumentationFramework, c: frozenset[str]
 ) -> list[frozenset[str]]:
     completes = _base_complete_in_c(af, c)
-    return [e for e in completes if not any(e < other for other in completes)]
+    return maximal_sets(completes)
 
 
 def _flat_enumerate(
