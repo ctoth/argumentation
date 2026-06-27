@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict, deque
+from collections import Counter, defaultdict
 from typing import Iterable
 
 from argumentation.core.finite import strongly_connected_components
+from argumentation.structured.aba._closure import horn_closure
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import Literal
 
@@ -136,29 +137,7 @@ def _closure_probe_growth(
 
 
 def _closure_from(initial: Iterable[Literal], rules: tuple) -> frozenset[Literal]:
-    closure = set(initial)
-    waiting: defaultdict[Literal, list[int]] = defaultdict(list)
-    remaining: list[int] = []
-    consequents: list[Literal] = []
-    for index, rule in enumerate(rules):
-        antecedents = tuple(rule.antecedents)
-        remaining.append(len(antecedents))
-        consequents.append(rule.consequent)
-        for literal in antecedents:
-            waiting[literal].append(index)
-        if not antecedents:
-            closure.add(rule.consequent)
-    queue = deque(closure)
-    while queue:
-        literal = queue.popleft()
-        for rule_index in waiting.get(literal, ()):
-            remaining[rule_index] -= 1
-            if remaining[rule_index] == 0:
-                consequent = consequents[rule_index]
-                if consequent not in closure:
-                    closure.add(consequent)
-                    queue.append(consequent)
-    return frozenset(closure)
+    return horn_closure(initial, rules)
 
 
 def _scc_count(graph: dict[int, set[int]]) -> int:
