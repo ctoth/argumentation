@@ -149,7 +149,7 @@ def test_iccma_af_adapter_invokes_official_2023_cli_for_single_extension(monkeyp
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -186,7 +186,7 @@ def test_iccma_af_adapter_invokes_official_2023_cli_for_acceptance(monkeypatch) 
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -226,7 +226,7 @@ def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -264,7 +264,7 @@ def test_iccma_af_adapter_uses_local_stable_certificate_validation(monkeypatch) 
     framework = af(arguments, defeats)
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -284,7 +284,7 @@ def test_iccma_af_adapter_uses_local_stable_certificate_validation(monkeypatch) 
 
 def test_iccma_af_adapter_reports_missing_binary(monkeypatch) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: None,
     )
 
@@ -300,7 +300,7 @@ def test_iccma_af_adapter_reports_missing_binary(monkeypatch) -> None:
 
 def test_iccma_af_adapter_reports_solver_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -319,9 +319,39 @@ def test_iccma_af_adapter_reports_solver_error(monkeypatch) -> None:
     assert result.stderr == "bad input"
 
 
+def test_iccma_af_adapter_timeout_is_distinct_from_nonzero_and_protocol(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "argumentation.solver_adapters._commands.shutil.which",
+        lambda binary: binary,
+    )
+
+    def fake_run(command, *, capture_output, text, timeout, check):
+        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run",
+        fake_run,
+    )
+
+    result = solve_af_extensions(
+        af({"1"}, set()),
+        semantics="stable",
+        binary="fake-iccma-solver",
+        timeout_seconds=0.01,
+    )
+
+    assert isinstance(result, ICCMASolverError)
+    assert result.returncode == -1
+    assert result.reason == "solver exited with code -1"
+    assert result.stdout == "partial out"
+    assert result.stderr == "partial err"
+
+
 def test_iccma_af_adapter_reports_protocol_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -384,7 +414,7 @@ def test_iccma_af_capability_table_matches_official_2023_main_track(
 def test_iccma_af_rejects_unsupported_se_without_subprocess(monkeypatch) -> None:
     calls = []
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -408,7 +438,7 @@ def test_iccma_af_rejects_unsupported_se_without_subprocess(monkeypatch) -> None
 def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(monkeypatch) -> None:
     calls = []
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_af.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -438,7 +468,7 @@ def test_iccma_se_stable_witness_must_pass_local_certificate_check(size: int) ->
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_af.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -469,7 +499,7 @@ def test_iccma_dc_yes_stable_witness_must_pass_local_certificate_check(
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_af.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -502,7 +532,7 @@ def test_iccma_ds_no_stable_counterexample_must_pass_local_certificate_check(
     framework = af({str(index) for index in range(1, size + 1)}, set())
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_af.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -540,7 +570,7 @@ def test_iccma_source_derived_malformed_witnesses_are_protocol_errors(
     # ICCMA 2023 AF witness lines use indexed positive-integer arguments.
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_af.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -660,7 +690,7 @@ def test_iccma_aba_adapter_invokes_official_2023_cli_and_writes_numeric_aba(
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -696,7 +726,7 @@ def test_iccma_aba_adapter_invokes_official_2023_cli_and_writes_numeric_aba(
 
 def test_iccma_aba_adapter_missing_binary_is_typed_unavailable(monkeypatch) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: None,
     )
 
@@ -715,7 +745,7 @@ def test_iccma_aba_adapter_timeout_is_distinct_from_nonzero_and_protocol(
     monkeypatch,
 ) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -743,7 +773,7 @@ def test_iccma_aba_adapter_timeout_is_distinct_from_nonzero_and_protocol(
 
 def test_iccma_aba_adapter_nonzero_exit_is_process_error(monkeypatch) -> None:
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -771,7 +801,7 @@ def test_iccma_aba_adapter_invokes_acceptance_with_query_atom(monkeypatch) -> No
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -809,7 +839,7 @@ def test_iccma_aba_adapter_accepts_python_module_command(monkeypatch) -> None:
     calls: list[list[str]] = []
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
 
@@ -847,7 +877,7 @@ def test_iccma_aba_se_witness_must_be_protocol_valid_assumptions(size: int) -> N
     framework = aba_framework(size)
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_aba.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -876,7 +906,7 @@ def test_iccma_aba_generated_external_witnesses_validate_locally(size: int) -> N
     witness = " ".join(str(index) for index in range(1, size + 1))
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_aba.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(
@@ -905,7 +935,7 @@ def test_iccma_aba_malformed_witnesses_are_protocol_errors(
 ) -> None:
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setattr(
-            "argumentation.solver_adapters.iccma_aba.shutil.which",
+            "argumentation.solver_adapters._commands.shutil.which",
             lambda binary: binary,
         )
         monkeypatch.setattr(

@@ -26,7 +26,7 @@ solve only the residual and lift the answer back.
 
 The grounded assumption set is computed with a **support-mask fixpoint**
 (:func:`grounded_assumption_set_via_supports`), reusing the
-``aba_sat._SupportState`` machinery, because ``aba.grounded_extension`` /
+``aba_support_model._SupportState`` machinery, because ``aba.grounded_extension`` /
 ``aba.def_operator`` as written iterate ``_all_subsets`` (exponential). The
 brute-force ``aba.grounded_extension`` is kept untouched as the differential
 oracle.
@@ -151,7 +151,7 @@ def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionS
     against it, rather than recomputing attack relations inside every ``defends``
     check.
     """
-    from argumentation.structured.aba.aba_sat import _SupportState
+    from argumentation.structured.aba.aba_support_model import _SupportState
 
     state = _SupportState.from_framework(framework)
     n = len(state.assumptions)

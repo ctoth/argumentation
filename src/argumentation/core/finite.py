@@ -7,6 +7,7 @@ from typing import Any, TypeVar, cast
 
 
 T = TypeVar("T")
+U = TypeVar("U")
 
 
 def _ordered_items(
@@ -148,6 +149,42 @@ def sorted_extensions(
     return tuple(sorted(values, key=lambda extension: extension_sort_key(extension, key=key)))
 
 
+def maximal_by(
+    candidates: Iterable[T],
+    key: Callable[[T], frozenset[U]],
+) -> list[T]:
+    """Return members whose ``key(x)`` is not a strict subset of another's.
+
+    Generalizes :func:`maximal_sets` to rank members by a derived ``frozenset``
+    key rather than by the members themselves. Keep each member ``x`` for which
+    no other member ``y`` has ``key(x) < key(y)``. Input order is preserved and
+    duplicates are NOT removed: members with equal keys are not strict subsets
+    of one another, so every one survives. Callers that need deduplication,
+    sorting, projection, or a tuple result should apply that wrapping at the
+    call site.
+    """
+    members = list(candidates)
+    keys = [key(member) for member in members]
+    return [
+        member
+        for member, member_key in zip(members, keys)
+        if not any(member_key < other_key for other_key in keys)
+    ]
+
+
+def maximal_sets(candidates: Iterable[frozenset[T]]) -> list[frozenset[T]]:
+    """Return the inclusion-maximal members of ``candidates``.
+
+    Keep each member ``x`` for which no other member is a strict superset
+    (equivalently, ``x`` is not a strict subset ``x < other`` of any other
+    member). Input order is preserved and duplicates are NOT removed: equal
+    sets are not strict subsets of one another, so every copy survives.
+    Callers that need deduplication, sorting, or a tuple result should apply
+    that wrapping at the call site.
+    """
+    return maximal_by(candidates, lambda candidate: candidate)
+
+
 def strongly_connected_components(
     graph: Mapping[T, Iterable[T]],
     *,
@@ -211,3 +248,55 @@ def strongly_connected_components(
         components,
         key=lambda component: _ordered_key_values(component, key),
     )
+
+
+def is_acyclic(
+    graph: Mapping[T, Iterable[T]],
+    *,
+    key: Callable[[T], Any] | None = None,
+) -> bool:
+    """Return ``True`` iff a finite directed graph contains no cycle.
+
+    Uses an iterative post-order DFS (explicit stack) so a long chain of nodes
+    does not recurse one Python frame per edge and raise ``RecursionError``.
+    Each stack entry is ``(node, entered)``: the first pop with ``entered=False``
+    marks the node grey and re-pushes it as ``entered=True`` beneath its
+    children; the second pop (``entered=True``) marks it black. A grey node
+    reached again is a cycle. Roots and successors are iterated in sorted order
+    so the result does not depend on the graph's insertion order.
+    """
+    nodes = set(graph)
+    for successors in graph.values():
+        nodes.update(successors)
+
+    successors_by_node = {
+        node: _ordered_items(graph.get(node, ()), key)
+        for node in nodes
+    }
+
+    visiting: set[T] = set()
+    visited: set[T] = set()
+
+    for root in _ordered_items(nodes, key):
+        if root in visited:
+            continue
+        stack: list[tuple[T, bool]] = [(root, False)]
+        while stack:
+            node, entered = stack.pop()
+            if entered:
+                visiting.discard(node)
+                visited.add(node)
+                continue
+            if node in visited:
+                continue
+            if node in visiting:
+                return False
+            visiting.add(node)
+            stack.append((node, True))
+            for target in successors_by_node.get(node, ()):
+                if target in visiting:
+                    return False
+                if target not in visited:
+                    stack.append((target, False))
+
+    return True

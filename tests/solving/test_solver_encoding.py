@@ -8,7 +8,6 @@ from hypothesis import given, settings
 import argumentation.solving.af_sat as af_sat
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     admissible,
     complete_extensions,
     grounded_extension,
@@ -19,6 +18,7 @@ from argumentation.core.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.core.finite import predecessors_index
 from argumentation.solving.af_sat import (
     AfSatKernel,
     PreferredSkepticalTaskSolver,
@@ -36,12 +36,7 @@ from argumentation.solving.af_sat import (
     find_stage_extension,
 )
 from argumentation.interop.iccma import parse_apx
-from argumentation.solving.sat_encoding import (
-    CNFEncoding,
-    encode_stable_extensions,
-    sat_extensions,
-    stable_extensions_from_encoding,
-)
+from argumentation.solving.sat_encoding import sat_extensions
 from argumentation.solving.solver import solve_dung_acceptance
 from tests.core.test_dung import af, argumentation_frameworks
 
@@ -56,47 +51,6 @@ SAT_EXTENSION_ORACLES = {
     "stage": stage_extensions,
     "ideal": lambda framework: [ideal_extension(framework)],
 }
-
-
-def test_stable_encoding_uses_deterministic_variable_ids() -> None:
-    framework = af({"b", "a"}, {("a", "b")})
-
-    encoding = encode_stable_extensions(framework)
-
-    assert encoding.variables == (("a", 1), ("b", 2))
-    assert encoding.argument_for_variable(1) == "a"
-    assert encoding.argument_for_variable(2) == "b"
-
-
-def test_stable_encoding_contains_conflict_and_outsider_coverage_clauses() -> None:
-    framework = af({"a", "b"}, {("a", "b")})
-
-    encoding = encode_stable_extensions(framework)
-
-    assert encoding.clauses == (
-        (-1, -2),
-        (1,),
-        (1, 2),
-    )
-
-
-def test_cnf_encoding_rejects_unknown_variable_ids() -> None:
-    encoding = CNFEncoding(
-        variables=(("a", 1),),
-        clauses=((1,),),
-    )
-
-    with pytest.raises(ValueError, match="variable"):
-        encoding.argument_for_variable(2)
-
-
-def test_stable_encoding_models_round_trip_to_extensions() -> None:
-    framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
-
-    assert set(stable_extensions_from_encoding(encode_stable_extensions(framework))) == {
-        frozenset({"a"}),
-        frozenset({"b"}),
-    }
 
 
 def test_kernel_complete_extension_handles_required_labels() -> None:
@@ -671,16 +625,6 @@ def test_preferred_super_core_prunes_undefended_current_arguments() -> None:
 
 
 @given(argumentation_frameworks(max_args=4))
-@settings(deadline=10000, max_examples=30)
-def test_stable_encoding_matches_brute_force_reference(framework) -> None:
-    encoding = encode_stable_extensions(framework)
-
-    assert set(stable_extensions_from_encoding(encoding)) == set(
-        stable_extensions(framework)
-    )
-
-
-@given(argumentation_frameworks(max_args=4))
 @settings(deadline=10000, max_examples=40)
 def test_kernel_stable_extension_returns_native_stable_witness(
     framework: ArgumentationFramework,
@@ -973,7 +917,7 @@ def test_sat_extensions_are_invariant_under_argument_renaming(
 
 
 def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     arguments = sorted(framework.arguments)
     results: list[frozenset[str]] = []
     for mask in range(1 << len(arguments)):

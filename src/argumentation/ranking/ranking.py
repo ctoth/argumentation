@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from typing import Literal
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.core.finite import predecessors_index
+from argumentation.core.fixpoint import iterate_fixpoint
+from argumentation.ranking._graph import (
+    attack_relation as _attack_relation,
+    attackers as _attackers,
+)
 
 
 @dataclass(frozen=True)
@@ -52,36 +56,25 @@ def categoriser_scores(
     attackers = _attackers(framework)
     scores = {argument: 1.0 for argument in framework.arguments}
 
-    for iteration in range(1, max_iterations + 1):
-        updated = {
+    def update(current: dict[str, float]) -> dict[str, float]:
+        return {
             argument: (
                 1.0
                 if not attackers[argument]
-                else 1.0 / (1.0 + sum(scores[attacker] for attacker in attackers[argument]))
+                else 1.0 / (1.0 + sum(current[attacker] for attacker in attackers[argument]))
             )
             for argument in framework.arguments
         }
-        delta = max(
-            (abs(updated[argument] - scores[argument]) for argument in framework.arguments),
-            default=0.0,
-        )
-        scores = updated
-        if delta <= tolerance:
-            return _result(
-                scores,
-                higher_is_better=True,
-                tolerance=tolerance,
-                converged=True,
-                iterations=iteration,
-                semantics="categoriser",
-            )
 
+    outcome = iterate_fixpoint(
+        scores, update, tolerance=tolerance, max_iterations=max_iterations
+    )
     return _result(
-        scores,
+        outcome.scores,
         higher_is_better=True,
         tolerance=tolerance,
-        converged=False,
-        iterations=max_iterations,
+        converged=outcome.converged,
+        iterations=outcome.iterations,
         semantics="categoriser",
     )
 
@@ -196,31 +189,22 @@ def counting_ranking(
     _validate_iteration_parameters(tolerance, max_iterations)
     attackers = _attackers(framework)
     scores = {argument: 1.0 for argument in framework.arguments}
-    for iteration in range(1, max_iterations + 1):
-        updated = {
-            argument: 1.0 / (1.0 + damping * sum(scores[attacker] for attacker in attackers[argument]))
+
+    def update(current: dict[str, float]) -> dict[str, float]:
+        return {
+            argument: 1.0 / (1.0 + damping * sum(current[attacker] for attacker in attackers[argument]))
             for argument in framework.arguments
         }
-        delta = max(
-            (abs(updated[argument] - scores[argument]) for argument in framework.arguments),
-            default=0.0,
-        )
-        scores = updated
-        if delta <= tolerance:
-            return _result(
-                scores,
-                higher_is_better=True,
-                tolerance=tolerance,
-                converged=True,
-                iterations=iteration,
-                semantics="counting",
-            )
+
+    outcome = iterate_fixpoint(
+        scores, update, tolerance=tolerance, max_iterations=max_iterations
+    )
     return _result(
-        scores,
+        outcome.scores,
         higher_is_better=True,
         tolerance=tolerance,
-        converged=False,
-        iterations=max_iterations,
+        converged=outcome.converged,
+        iterations=outcome.iterations,
         semantics="counting",
     )
 
@@ -268,31 +252,22 @@ def h_categoriser_ranking(
     _validate_iteration_parameters(tolerance, max_iterations)
     attackers = _attackers(framework)
     scores = {argument: 1.0 for argument in framework.arguments}
-    for iteration in range(1, max_iterations + 1):
-        updated = {
-            argument: 1.0 / (1.0 + min(1.0, sum(scores[attacker] for attacker in attackers[argument])))
+
+    def update(current: dict[str, float]) -> dict[str, float]:
+        return {
+            argument: 1.0 / (1.0 + min(1.0, sum(current[attacker] for attacker in attackers[argument])))
             for argument in framework.arguments
         }
-        delta = max(
-            (abs(updated[argument] - scores[argument]) for argument in framework.arguments),
-            default=0.0,
-        )
-        scores = updated
-        if delta <= tolerance:
-            return _result(
-                scores,
-                higher_is_better=True,
-                tolerance=tolerance,
-                converged=True,
-                iterations=iteration,
-                semantics="h_categoriser",
-            )
+
+    outcome = iterate_fixpoint(
+        scores, update, tolerance=tolerance, max_iterations=max_iterations
+    )
     return _result(
-        scores,
+        outcome.scores,
         higher_is_better=True,
         tolerance=tolerance,
-        converged=False,
-        iterations=max_iterations,
+        converged=outcome.converged,
+        iterations=outcome.iterations,
         semantics="h_categoriser",
     )
 
@@ -330,16 +305,6 @@ def iterated_graded_ranking(
         iterations=threshold,
         semantics="iterated_graded",
     )
-
-
-def _attack_relation(
-    framework: ArgumentationFramework,
-) -> frozenset[tuple[str, str]]:
-    return framework.attacks if framework.attacks is not None else framework.defeats
-
-
-def _attackers(framework: ArgumentationFramework) -> dict[str, frozenset[str]]:
-    return predecessors_index(_attack_relation(framework), nodes=framework.arguments)
 
 
 def _result(

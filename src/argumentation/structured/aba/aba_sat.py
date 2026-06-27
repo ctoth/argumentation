@@ -4,11 +4,17 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-import importlib
 import time
 from typing import Any
 
-from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
+from argumentation.core.optional_deps import load_z3
+from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, _closure
+from argumentation.structured.aba.aba_bitset_closure import _BitsetHornClosure
+from argumentation.structured.aba.aba_support_model import (
+    _SupportState,
+    _minimal_supports,
+)
+from argumentation.structured.aba.aba_kernel import AssumptionKernel
 from argumentation.structured.aba.aba_preprocessing import (
     _prepare_residual_requirements,
     _simplified_query_decision,
@@ -95,7 +101,7 @@ def real_prefsat_attack_edge_count(framework: ABAFramework) -> int:
     """Count singleton-closure attack edges without enumerating supports."""
     count = 0
     for source in framework.assumptions:
-        closure = _prefsat_closure(framework, frozenset({source}))
+        closure = _closure(framework, frozenset({source}))
         count += sum(
             1
             for target in framework.assumptions
@@ -167,242 +173,6 @@ def should_use_native_cnf_prefsat(framework: ABAFramework) -> bool:
         assumptions=assumption_count,
         rule_density=(len(framework.rules) / assumption_count) if assumption_count else 0.0,
     )
-
-
-@dataclass(frozen=True)
-class AssumptionKernel:
-    """Reusable assumption-level solver state for flat ABA single-extension tasks."""
-
-    framework: ABAFramework
-    assumptions: tuple[Literal, ...]
-    literals: tuple[Literal, ...]
-    assumption_ids: dict[Literal, str]
-    literal_ids: dict[Literal, str]
-
-    @classmethod
-    def from_framework(cls, framework: ABAFramework) -> AssumptionKernel:
-        assumptions = tuple(sorted(framework.assumptions, key=repr))
-        literals = tuple(sorted(framework.language, key=repr))
-        return cls(
-            framework=framework,
-            assumptions=assumptions,
-            literals=literals,
-            assumption_ids={
-                assumption: f"a{index}"
-                for index, assumption in enumerate(assumptions)
-            },
-            literal_ids={
-                literal: f"l{index}"
-                for index, literal in enumerate(literals)
-            },
-        )
-
-    def stable_extension(
-        self,
-        *,
-        require_derived: Literal | None = None,
-        require_not_derived: Literal | None = None,
-    ) -> AssumptionSet | None:
-        if require_derived is not None and require_derived not in self.framework.language:
-            raise ValueError(f"required literal is not in framework language: {require_derived!r}")
-        if require_not_derived is not None and require_not_derived not in self.framework.language:
-            raise ValueError(
-                f"excluded literal is not in framework language: {require_not_derived!r}"
-            )
-        program = [*self._asp_facts(), *self._stable_program()]
-        if require_derived is not None:
-            program.append(f":- not derived({self.literal_ids[require_derived]}).")
-        if require_not_derived is not None:
-            program.append(f":- derived({self.literal_ids[require_not_derived]}).")
-
-        return self._solve_selected(program)
-
-    def admissible_extension(
-        self,
-        *,
-        require_assumptions: AssumptionSet = frozenset(),
-        require_any_assumption: AssumptionSet = frozenset(),
-        prefer_large: bool = False,
-        maximize: bool = False,
-    ) -> AssumptionSet | None:
-        self._validate_assumptions(require_assumptions)
-        self._validate_assumptions(require_any_assumption)
-        return self._solve_selected(
-            (
-                *self._asp_facts(),
-                *self._admissible_program(
-                    require_assumptions=require_assumptions,
-                    require_any_assumption=require_any_assumption,
-                    prefer_large=prefer_large,
-                    maximize=maximize,
-                ),
-            ),
-            optimize=maximize,
-        )
-
-    def preferred_extension(
-        self,
-        *,
-        require_assumptions: AssumptionSet = frozenset(),
-    ) -> AssumptionSet | None:
-        self._validate_assumptions(require_assumptions)
-        if not require_assumptions:
-            stable = self.stable_extension()
-            if stable is not None:
-                return stable
-        return self.admissible_extension(
-            require_assumptions=require_assumptions,
-            maximize=True,
-        )
-
-    def attacks(self, extension: AssumptionSet, assumption: Literal) -> bool:
-        if assumption not in self.framework.assumptions:
-            raise ValueError(f"unknown assumption: {assumption!r}")
-        return self.framework.contrary[assumption] in self.closure(extension)
-
-    def closure(self, extension: AssumptionSet) -> frozenset[Literal]:
-        derived = set(extension)
-        queue = list(derived)
-        waiting: defaultdict[Literal, list[int]] = defaultdict(list)
-        remaining: list[int] = []
-        consequents: list[Literal] = []
-
-        for index, rule in enumerate(sorted(self.framework.rules, key=repr)):
-            missing = 0
-            for antecedent in frozenset(rule.antecedents):
-                if antecedent not in derived:
-                    missing += 1
-                    waiting[antecedent].append(index)
-            remaining.append(missing)
-            consequents.append(rule.consequent)
-            if missing == 0 and rule.consequent not in derived:
-                derived.add(rule.consequent)
-                queue.append(rule.consequent)
-
-        while queue:
-            literal = queue.pop()
-            for rule_index in waiting.get(literal, ()):
-                remaining[rule_index] -= 1
-                if remaining[rule_index] == 0:
-                    consequent = consequents[rule_index]
-                    if consequent not in derived:
-                        derived.add(consequent)
-                        queue.append(consequent)
-        return frozenset(derived)
-
-    def _asp_facts(self) -> tuple[str, ...]:
-        facts: list[str] = []
-        for assumption in self.assumptions:
-            assumption_id = self.assumption_ids[assumption]
-            facts.append(f"assumption({assumption_id}).")
-            facts.append(
-                f"assumption_literal({assumption_id},{self.literal_ids[assumption]})."
-            )
-            facts.append(
-                f"contrary({assumption_id},{self.literal_ids[self.framework.contrary[assumption]]})."
-            )
-        for rule in sorted(self.framework.rules, key=repr):
-            head = self.literal_ids[rule.consequent]
-            body = ", ".join(
-                f"derived({self.literal_ids[antecedent]})"
-                for antecedent in sorted(rule.antecedents, key=repr)
-            )
-            if body:
-                facts.append(f"derived({head}) :- {body}.")
-            else:
-                facts.append(f"derived({head}).")
-        return tuple(facts)
-
-    def _stable_program(self) -> tuple[str, ...]:
-        constraints = [
-            "{ selected(A) } :- assumption(A).",
-            "derived(L) :- selected(A), assumption_literal(A,L).",
-            ":- selected(A), contrary(A,C), derived(C).",
-            ":- assumption(A), not selected(A), contrary(A,C), not derived(C).",
-        ]
-        return tuple((*constraints, "#show selected/1."))
-
-    def _admissible_program(
-        self,
-        *,
-        require_assumptions: AssumptionSet,
-        require_any_assumption: AssumptionSet,
-        prefer_large: bool,
-        maximize: bool,
-    ) -> tuple[str, ...]:
-        constraints = [
-            "{ selected(A) } :- assumption(A).",
-            "derived(L) :- selected(A), assumption_literal(A,L).",
-            "available(A) :- assumption(A), contrary(A,C), not derived(C).",
-            "attacker_derived(L) :- available(A), assumption_literal(A,L).",
-            ":- selected(A), contrary(A,C), derived(C).",
-            ":- selected(A), contrary(A,C), attacker_derived(C).",
-        ]
-        constraints.extend(self._attacker_closure_rules())
-        constraints.extend(
-            f"selected({self.assumption_ids[assumption]})."
-            for assumption in sorted(require_assumptions, key=repr)
-        )
-        if require_any_assumption:
-            constraints.append(
-                ":- "
-                + ", ".join(
-                    f"not selected({self.assumption_ids[assumption]})"
-                    for assumption in sorted(require_any_assumption, key=repr)
-                )
-                + "."
-            )
-        if prefer_large:
-            constraints.append("#heuristic selected(A) : assumption(A). [1@1,true]")
-        if maximize:
-            constraints.append("#maximize { 1,A : selected(A) }.")
-        return tuple((*constraints, "#show selected/1."))
-
-    def _attacker_closure_rules(self) -> tuple[str, ...]:
-        rules: list[str] = []
-        for rule in sorted(self.framework.rules, key=repr):
-            head = self.literal_ids[rule.consequent]
-            body = ", ".join(
-                f"attacker_derived({self.literal_ids[antecedent]})"
-                for antecedent in sorted(rule.antecedents, key=repr)
-            )
-            if body:
-                rules.append(f"attacker_derived({head}) :- {body}.")
-            else:
-                rules.append(f"attacker_derived({head}).")
-        return tuple(rules)
-
-    def _solve_selected(
-        self,
-        program: tuple[str, ...] | list[str],
-        *,
-        optimize: bool = False,
-    ) -> AssumptionSet | None:
-        clingo = _load_clingo()
-
-        selected: list[str] = []
-
-        def collect_model(model) -> None:
-            selected.clear()
-            selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
-
-        control = clingo.Control(["--models=0"] if optimize else ["--models=1"])
-        control.add("base", [], "\n".join(program))
-        control.ground([("base", [])])
-        result = control.solve(on_model=collect_model)
-        if not result.satisfiable:
-            return None
-        selected_ids = frozenset(selected)
-        return frozenset(
-            assumption
-            for assumption, assumption_id in self.assumption_ids.items()
-            if assumption_id in selected_ids
-        )
-
-    def _validate_assumptions(self, assumptions: AssumptionSet) -> None:
-        unknown = assumptions - self.framework.assumptions
-        if unknown:
-            raise ValueError(f"unknown assumptions: {sorted(unknown, key=repr)!r}")
 
 
 def support_acceptance(
@@ -901,7 +671,7 @@ class _NativeCnfPrefSatSolver:
             self.progress_events.append(event)
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
-        closure = _prefsat_closure(self.framework, extension)
+        closure = _closure(self.framework, extension)
         prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
@@ -1229,110 +999,6 @@ def _native_sparse_narrow_stable_extension(
     )
 
 
-def _native_sparse_narrow_fixedpoint_extension(
-    framework: ABAFramework,
-    semantics: str,
-    *,
-    require_assumptions: AssumptionSet,
-) -> NativeSparseNarrowSatResult | None:
-    if semantics not in {"preferred", "stable"}:
-        return None
-    telemetry = {
-        "clingo_solver_calls": 0,
-        "native_sparse_narrow_solver_checks": 1,
-        "native_sparse_narrow_candidate_models": 1,
-        "native_sparse_narrow_learned_clauses": 0,
-        "native_sparse_narrow_z3_main_checks": 0,
-        "native_sparse_narrow_closure_checks": 0,
-        "native_sparse_narrow_rule_firings": 0,
-        "native_sparse_narrow_fixedpoint_iterations": 0,
-        "prefsat_attacker_bitset_closure_checks": 0,
-        "prefsat_attacker_bitset_shrink_checks": 0,
-        "prefsat_attacker_bitset_rule_firings": 0,
-    }
-    closure = _BitsetHornClosure.from_framework(framework, telemetry)
-    assumptions = frozenset(framework.assumptions)
-    pruned = _conflict_pruned_extension(framework, closure, assumptions, telemetry)
-    if require_assumptions <= pruned and _is_stable_extension(framework, closure, pruned):
-        telemetry["native_sparse_narrow_closure_checks"] = telemetry[
-            "prefsat_attacker_bitset_closure_checks"
-        ]
-        telemetry["native_sparse_narrow_rule_firings"] = telemetry[
-            "prefsat_attacker_bitset_rule_firings"
-        ]
-        return NativeSparseNarrowSatResult(
-            extension=pruned,
-            telemetry=telemetry,
-            route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
-            | {"algorithm_detail": "conflict_pruned_stable_fixedpoint"},
-        )
-    current = frozenset()
-    undefeated = assumptions
-    while True:
-        defended = assumptions - _attacked_assumptions(framework, closure, undefeated)
-        telemetry["native_sparse_narrow_fixedpoint_iterations"] += 1
-        if defended == current:
-            extension = defended
-            break
-        current = defended
-        undefeated = assumptions - _attacked_assumptions(framework, closure, current)
-    required_unsatisfied = not require_assumptions <= extension
-    if required_unsatisfied:
-        extension = frozenset()
-    if not required_unsatisfied and not _is_stable_extension(framework, closure, extension):
-        return None
-    telemetry["native_sparse_narrow_closure_checks"] = telemetry[
-        "prefsat_attacker_bitset_closure_checks"
-    ]
-    telemetry["native_sparse_narrow_rule_firings"] = telemetry[
-        "prefsat_attacker_bitset_rule_firings"
-    ]
-    return NativeSparseNarrowSatResult(
-        extension=extension,
-        telemetry=telemetry,
-        route_metadata=_native_sparse_narrow_route_metadata(semantics, telemetry)
-        | {"algorithm_detail": "defended_assumption_fixedpoint"},
-    )
-
-
-def _conflict_pruned_extension(
-    framework: ABAFramework,
-    closure: _BitsetHornClosure,
-    assumptions: AssumptionSet,
-    telemetry: dict[str, int],
-) -> AssumptionSet:
-    current = assumptions
-    while True:
-        attacked = _attacked_assumptions(framework, closure, current)
-        telemetry["native_sparse_narrow_fixedpoint_iterations"] += 1
-        pruned = current - attacked
-        if pruned == current:
-            return current
-        current = pruned
-
-
-def _is_stable_extension(
-    framework: ABAFramework,
-    closure: _BitsetHornClosure,
-    extension: AssumptionSet,
-) -> bool:
-    attacked = _attacked_assumptions(framework, closure, extension)
-    return not bool(extension & attacked) and (framework.assumptions - extension) <= attacked
-
-
-def _attacked_assumptions(
-    framework: ABAFramework,
-    closure: _BitsetHornClosure,
-    extension: AssumptionSet,
-) -> AssumptionSet:
-    closure_mask = closure.closure_mask(extension)
-    return frozenset(
-        assumption
-        for assumption in framework.assumptions
-        if closure_mask & closure.literal_bits[framework.contrary[assumption]]
-    )
-
-
 class _RealPrefSatSolver:
     def __init__(self, framework: ABAFramework) -> None:
         self.z3 = _load_z3()
@@ -1534,7 +1200,7 @@ class _RealPrefSatSolver:
             self.progress_events.append(event)
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
-        closure = _prefsat_closure(self.framework, extension)
+        closure = _closure(self.framework, extension)
         prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
@@ -1561,331 +1227,6 @@ class _RealPrefSatSolver:
                 ),
             },
         )
-
-
-class _BitsetHornClosure:
-    def __init__(
-        self,
-        literal_bits: dict[Literal, int],
-        assumption_bits: dict[Literal, int],
-        waiting: dict[int, tuple[int, ...]],
-        remaining_counts: tuple[int, ...],
-        consequents: tuple[int, ...],
-        zero_consequents: tuple[int, ...],
-        telemetry: dict[str, int],
-    ) -> None:
-        self.literal_bits = literal_bits
-        self.assumption_bits = assumption_bits
-        self.waiting = waiting
-        self.remaining_counts = remaining_counts
-        self.consequents = consequents
-        self.zero_consequents = zero_consequents
-        self.telemetry = telemetry
-        self._closure_cache: dict[int, int] = {}
-
-    @classmethod
-    def from_framework(
-        cls,
-        framework: ABAFramework,
-        telemetry: dict[str, int],
-    ) -> _BitsetHornClosure:
-        literals = sorted(
-            set(framework.language)
-            | set(framework.assumptions)
-            | set(framework.contrary.values())
-            | {rule.consequent for rule in framework.rules}
-            | {antecedent for rule in framework.rules for antecedent in rule.antecedents},
-            key=repr,
-        )
-        literal_bits = {literal: 1 << index for index, literal in enumerate(literals)}
-        assumption_bits = {
-            assumption: literal_bits[assumption]
-            for assumption in sorted(framework.assumptions, key=repr)
-        }
-        waiting_lists: dict[int, list[int]] = defaultdict(list)
-        remaining_counts: list[int] = []
-        consequents: list[int] = []
-        zero_consequents: list[int] = []
-        for rule in sorted(framework.rules, key=repr):
-            antecedent_bits = tuple(
-                literal_bits[antecedent]
-                for antecedent in frozenset(rule.antecedents)
-            )
-            consequent = literal_bits[rule.consequent]
-            if antecedent_bits:
-                rule_index = len(remaining_counts)
-                remaining_counts.append(len(antecedent_bits))
-                consequents.append(consequent)
-                for bit in antecedent_bits:
-                    waiting_lists[bit].append(rule_index)
-            else:
-                zero_consequents.append(consequent)
-        waiting = {
-            bit: tuple(indices)
-            for bit, indices in waiting_lists.items()
-        }
-        return cls(
-            literal_bits,
-            assumption_bits,
-            waiting,
-            tuple(remaining_counts),
-            tuple(consequents),
-            tuple(zero_consequents),
-            telemetry,
-        )
-
-    def closure_mask(self, assumptions: AssumptionSet) -> int:
-        return self._closure_from_seed(self._assumption_mask(assumptions))
-
-    def contains(self, closure: int, literal: Literal) -> bool:
-        return bool(closure & self.literal_bits[literal])
-
-    def shrink_support(
-        self,
-        support: AssumptionSet,
-        conclusion: Literal,
-    ) -> AssumptionSet:
-        self.telemetry["prefsat_attacker_bitset_shrink_checks"] += 1
-        current = self._assumption_mask(support)
-        conclusion_bit = self.literal_bits[conclusion]
-        for assumption in sorted(support, key=repr):
-            reduced = current & ~self.assumption_bits[assumption]
-            if self._closure_from_seed(reduced) & conclusion_bit:
-                current = reduced
-        return frozenset(
-            assumption
-            for assumption, bit in self.assumption_bits.items()
-            if current & bit
-        )
-
-    def _assumption_mask(self, assumptions: AssumptionSet) -> int:
-        mask = 0
-        for assumption in assumptions:
-            mask |= self.assumption_bits[assumption]
-        return mask
-
-    def _closure_from_seed(self, seed: int) -> int:
-        cached = self._closure_cache.get(seed)
-        if cached is not None:
-            return cached
-        self.telemetry["prefsat_attacker_bitset_closure_checks"] += 1
-        closure = seed
-        remaining = list(self.remaining_counts)
-        queue = self._bits(seed)
-        for consequent in self.zero_consequents:
-            if not closure & consequent:
-                closure |= consequent
-                queue.append(consequent)
-        while queue:
-            bit = queue.pop()
-            for rule_index in self.waiting.get(bit, ()):
-                remaining[rule_index] -= 1
-                self.telemetry["prefsat_attacker_bitset_rule_firings"] += 1
-                if remaining[rule_index] == 0:
-                    consequent = self.consequents[rule_index]
-                    if not closure & consequent:
-                        closure |= consequent
-                        queue.append(consequent)
-        self._closure_cache[seed] = closure
-        return closure
-
-    def _bits(self, mask: int) -> list[int]:
-        bits: list[int] = []
-        remaining = mask
-        while remaining:
-            bit = remaining & -remaining
-            bits.append(bit)
-            remaining ^= bit
-        return bits
-
-
-class _AdmissibleCegarSolver:
-    """Reusable Z3 CEGAR solver for flat ABA admissible sets.
-
-    The query-independent encoding -- the ranked-closure constraints plus the
-    per-assumption conflict-freeness implications -- is built once. Each
-    :meth:`solve` call pushes the transient ``require_assumptions`` /
-    ``require_any_assumption`` hypotheses, runs the abstraction-refinement loop,
-    and pops. The defense-counterexample refinement clauses found during a call
-    are globally valid (true of every admissible set, regardless of the transient
-    hypotheses) and so are re-asserted at base level on the next call -- they
-    accumulate forever, which is exactly the incremental CEGAR contract.
-
-    This brings the preferred growth loop (``_sat_preferred_cegar_extension``) up
-    to the standard of the admissible path: it no longer rebuilds the
-    ``O(|literals| + |rules|)`` ranked-closure encoding once per grow-step.
-    """
-
-    def __init__(self, framework: ABAFramework) -> None:
-        self.z3 = _load_z3()
-        self.framework = framework
-        self.variables = {
-            assumption: self.z3.Bool(f"in_{_literal_key(assumption)}")
-            for assumption in sorted(framework.assumptions, key=repr)
-        }
-        self.solver = self.z3.Solver()
-        self.derived = _add_ranked_closure_constraints(
-            self.z3, self.solver, framework, self.variables
-        )
-        for assumption in sorted(framework.assumptions, key=repr):
-            self.solver.add(
-                self.z3.Implies(
-                    self.variables[assumption],
-                    self.z3.Not(self.derived[framework.contrary[assumption]]),
-                )
-            )
-        self._pending_permanent: list = []
-
-    def _flush_permanent(self) -> None:
-        for clause in self._pending_permanent:
-            self.solver.add(clause)
-        self._pending_permanent.clear()
-
-    def solve(
-        self,
-        *,
-        require_assumptions: AssumptionSet = frozenset(),
-        require_any_assumption: AssumptionSet = frozenset(),
-    ) -> AssumptionSet | None:
-        z3 = self.z3
-        self._flush_permanent()
-        self.solver.push()
-        try:
-            for assumption in sorted(require_assumptions, key=repr):
-                self.solver.add(self.variables[assumption])
-            if require_any_assumption:
-                self.solver.add(
-                    z3.Or(
-                        *(
-                            self.variables[assumption]
-                            for assumption in sorted(require_any_assumption, key=repr)
-                        )
-                    )
-                )
-            while self.solver.check() == z3.sat:
-                model = self.solver.model()
-                candidate = frozenset(
-                    assumption
-                    for assumption, variable in self.variables.items()
-                    if z3.is_true(model.evaluate(variable, model_completion=True))
-                )
-                closure = frozenset(
-                    literal
-                    for literal, variable in self.derived.items()
-                    if z3.is_true(model.evaluate(variable, model_completion=True))
-                )
-                counterexample = _defense_counterexample(self.framework, candidate, closure)
-                if counterexample is None:
-                    return candidate
-                target, attack_support = counterexample
-                if not attack_support:
-                    clause = z3.Not(self.variables[target])
-                else:
-                    clause = z3.Or(
-                        z3.Not(self.variables[target]),
-                        *(
-                            self.derived[self.framework.contrary[assumption]]
-                            for assumption in sorted(attack_support, key=repr)
-                        ),
-                    )
-                self._pending_permanent.append(clause)
-                self.solver.add(clause)
-            return None
-        finally:
-            self.solver.pop()
-
-
-def _sat_preferred_cegar_extension(
-    framework: ABAFramework,
-    *,
-    require_assumptions: AssumptionSet = frozenset(),
-) -> AssumptionSet | None:
-    solver = _AdmissibleCegarSolver(framework)
-    current = solver.solve(require_assumptions=require_assumptions)
-    if current is None:
-        return None
-    while True:
-        outside = framework.assumptions - current
-        if not outside:
-            return current
-        larger = solver.solve(
-            require_assumptions=current,
-            require_any_assumption=outside,
-        )
-        if larger is None:
-            return current
-        if not current < larger:
-            raise RuntimeError("ABA preferred CEGAR growth did not produce a strict superset")
-        current = larger
-
-
-def _sat_admissible_cegar_extension(
-    framework: ABAFramework,
-    *,
-    require_assumptions: AssumptionSet = frozenset(),
-    require_any_assumption: AssumptionSet = frozenset(),
-) -> AssumptionSet | None:
-    return _AdmissibleCegarSolver(framework).solve(
-        require_assumptions=require_assumptions,
-        require_any_assumption=require_any_assumption,
-    )
-
-
-def _defense_counterexample(
-    framework: ABAFramework,
-    candidate: AssumptionSet,
-    closure: frozenset[Literal],
-) -> tuple[Literal, AssumptionSet] | None:
-    counterexamples = _defense_counterexamples(framework, candidate, closure)
-    return counterexamples[0] if counterexamples else None
-
-
-def _defense_counterexamples(
-    framework: ABAFramework,
-    candidate: AssumptionSet,
-    closure: frozenset[Literal],
-) -> tuple[tuple[Literal, AssumptionSet], ...]:
-    counterattacked = frozenset(
-        assumption
-        for assumption in framework.assumptions
-        if framework.contrary[assumption] in closure
-    )
-    counterexamples: list[tuple[Literal, AssumptionSet]] = []
-    for target in sorted(candidate, key=repr):
-        attack_support = _attacker_support_not_counterattacked(
-            framework,
-            target,
-            counterattacked=counterattacked,
-        )
-        if attack_support is not None:
-            counterexamples.append((target, attack_support))
-    return tuple(counterexamples)
-
-
-def _attacker_support_not_counterattacked(
-    framework: ABAFramework,
-    target: Literal,
-    *,
-    counterattacked: AssumptionSet,
-) -> AssumptionSet | None:
-    available = framework.assumptions - counterattacked
-    conclusion = framework.contrary[target]
-    if not derives(framework, available, conclusion):
-        return None
-    return _shrink_attack_support(framework, available, conclusion)
-
-
-def _shrink_attack_support(
-    framework: ABAFramework,
-    support: AssumptionSet,
-    conclusion: Literal,
-) -> AssumptionSet:
-    current = set(support)
-    for assumption in sorted(support, key=repr):
-        reduced = frozenset(current - {assumption})
-        if derives(framework, reduced, conclusion):
-            current.remove(assumption)
-    return frozenset(current)
 
 
 def sat_stable_extension(
@@ -1954,76 +1295,31 @@ def sat_stable_acceptance(
     return counterexample is None, counterexample
 
 
-def _add_ranked_closure_constraints(z3, solver, framework, variables):
+def _emit_ranked_closure_constraints(
+    z3,
+    solver,
+    framework,
+    variables,
+    *,
+    derived_prefix: str,
+    rank_prefix: str,
+):
+    """Emit the shared Int ranked-closure Z3 constraints.
+
+    The plain and prefsat encoders differ only in the variable-name prefixes
+    used for the ``derived`` Bools and Int ``rank`` vars. This helper is the
+    single source for the constraint structure; it always returns the
+    ``derived`` map alongside the number of emitted clauses, and each caller
+    keeps or discards the tally to preserve its own return contract.
+    """
     literals = tuple(sorted(framework.language, key=repr))
     rank_bound = len(literals)
     derived = {
-        literal: z3.Bool(f"der_{_literal_key(literal)}")
+        literal: z3.Bool(f"{derived_prefix}{_literal_key(literal)}")
         for literal in literals
     }
     ranks = {
-        literal: z3.Int(f"rank_{_literal_key(literal)}")
-        for literal in literals
-    }
-    rules_by_consequent = _rules_by_consequent(framework, literals)
-
-    for literal in literals:
-        solver.add(ranks[literal] >= 0, ranks[literal] <= rank_bound)
-
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(derived[assumption] == variables[assumption])
-        solver.add(z3.Implies(variables[assumption], ranks[assumption] == 0))
-
-    for rule in sorted(framework.rules, key=repr):
-        antecedents = tuple(rule.antecedents)
-        if not antecedents:
-            solver.add(derived[rule.consequent])
-        else:
-            solver.add(
-                z3.Implies(
-                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
-                    derived[rule.consequent],
-                )
-            )
-
-    for literal in literals:
-        if literal in framework.assumptions:
-            continue
-        support_terms = []
-        for rule in rules_by_consequent[literal]:
-            antecedents = tuple(rule.antecedents)
-            if not antecedents:
-                support_terms.append(z3.BoolVal(True))
-                continue
-            support_terms.append(
-                z3.And(
-                    *(
-                        z3.And(
-                            derived[antecedent],
-                            ranks[antecedent] < ranks[literal],
-                        )
-                        for antecedent in antecedents
-                    )
-                )
-            )
-        solver.add(
-            z3.Implies(
-                derived[literal],
-                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
-            )
-        )
-    return derived
-
-
-def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix: str):
-    literals = tuple(sorted(framework.language, key=repr))
-    rank_bound = len(literals)
-    derived = {
-        literal: z3.Bool(f"{prefix}_derived_{_literal_key(literal)}")
-        for literal in literals
-    }
-    ranks = {
-        literal: z3.Int(f"{prefix}_rank_{_literal_key(literal)}")
+        literal: z3.Int(f"{rank_prefix}{_literal_key(literal)}")
         for literal in literals
     }
     rules_by_consequent = _rules_by_consequent(framework, literals)
@@ -2078,83 +1374,31 @@ def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix
             )
         )
         clause_count += 1
+
     return derived, clause_count
 
 
-def _prefsat_closure(framework: ABAFramework, extension: AssumptionSet) -> frozenset[Literal]:
-    derived = set(extension)
-    changed = True
-    while changed:
-        changed = False
-        for rule in framework.rules:
-            if all(antecedent in derived for antecedent in rule.antecedents):
-                if rule.consequent not in derived:
-                    derived.add(rule.consequent)
-                    changed = True
-    return frozenset(derived)
-
-
-def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
-    literals = tuple(sorted(framework.language, key=repr))
-    rank_bound = len(literals)
-    rank_bits = max(1, (rank_bound + 1).bit_length())
-    rank_bound_value = z3.BitVecVal(rank_bound, rank_bits)
-    derived = {
-        literal: z3.Bool(f"der_{_literal_key(literal)}")
-        for literal in literals
-    }
-    ranks = {
-        literal: z3.BitVec(f"rank_bv_{_literal_key(literal)}", rank_bits)
-        for literal in literals
-    }
-    rules_by_consequent = _rules_by_consequent(framework, literals)
-
-    for literal in literals:
-        solver.add(z3.ULE(ranks[literal], rank_bound_value))
-
-    for assumption in sorted(framework.assumptions, key=repr):
-        solver.add(derived[assumption] == variables[assumption])
-        solver.add(z3.Implies(variables[assumption], ranks[assumption] == z3.BitVecVal(0, rank_bits)))
-
-    for rule in sorted(framework.rules, key=repr):
-        antecedents = tuple(rule.antecedents)
-        if not antecedents:
-            solver.add(derived[rule.consequent])
-        else:
-            solver.add(
-                z3.Implies(
-                    z3.And(*(derived[antecedent] for antecedent in antecedents)),
-                    derived[rule.consequent],
-                )
-            )
-
-    for literal in literals:
-        if literal in framework.assumptions:
-            continue
-        support_terms = []
-        for rule in rules_by_consequent[literal]:
-            antecedents = tuple(rule.antecedents)
-            if not antecedents:
-                support_terms.append(z3.BoolVal(True))
-                continue
-            support_terms.append(
-                z3.And(
-                    *(
-                        z3.And(
-                            derived[antecedent],
-                            z3.ULT(ranks[antecedent], ranks[literal]),
-                        )
-                        for antecedent in antecedents
-                    )
-                )
-            )
-        solver.add(
-            z3.Implies(
-                derived[literal],
-                z3.Or(*support_terms) if support_terms else z3.BoolVal(False),
-            )
-        )
+def _add_ranked_closure_constraints(z3, solver, framework, variables):
+    derived, _clause_count = _emit_ranked_closure_constraints(
+        z3,
+        solver,
+        framework,
+        variables,
+        derived_prefix="der_",
+        rank_prefix="rank_",
+    )
     return derived
+
+
+def _prefsat_add_closure_constraints(z3, solver, framework, variables, *, prefix: str):
+    return _emit_ranked_closure_constraints(
+        z3,
+        solver,
+        framework,
+        variables,
+        derived_prefix=f"{prefix}_derived_",
+        rank_prefix=f"{prefix}_rank_",
+    )
 
 
 def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...]):
@@ -2165,160 +1409,6 @@ def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...])
         literal: tuple(rules)
         for literal, rules in grouped.items()
     }
-
-
-class _SupportState:
-    def __init__(
-        self,
-        framework: ABAFramework,
-        assumptions: tuple[Literal, ...],
-        supports: dict[Literal, frozenset[int]],
-    ) -> None:
-        self.framework = framework
-        self.assumptions = assumptions
-        self.index = {assumption: index for index, assumption in enumerate(assumptions)}
-        self.supports = supports
-        self.attack_supports = {
-            assumption: supports.get(framework.contrary[assumption], frozenset())
-            for assumption in assumptions
-        }
-
-    @classmethod
-    def from_framework(cls, framework: ABAFramework) -> _SupportState:
-        assumptions = tuple(sorted(framework.assumptions, key=repr))
-        index = {assumption: offset for offset, assumption in enumerate(assumptions)}
-        supports = {
-            literal: frozenset(
-                _support_mask(support, index)
-                for support in values
-            )
-            for literal, values in _minimal_supports(framework).items()
-        }
-        return cls(framework, assumptions, supports)
-
-    def extension(self, mask: int) -> AssumptionSet:
-        return frozenset(
-            assumption
-            for index, assumption in enumerate(self.assumptions)
-            if mask & (1 << index)
-        )
-
-    def derives_extension(self, extension: AssumptionSet, literal: Literal) -> bool:
-        return self.derives(_support_mask(extension, self.index), literal)
-
-    def derives(self, mask: int, literal: Literal) -> bool:
-        return any((support & mask) == support for support in self.supports.get(literal, ()))
-
-    def attacks(self, mask: int, assumption: Literal) -> bool:
-        return any(
-            (support & mask) == support
-            for support in self.attack_supports.get(assumption, ())
-        )
-
-    def conflict_free(self, mask: int) -> bool:
-        return not any(
-            mask & (1 << index) and self.attacks(mask, assumption)
-            for index, assumption in enumerate(self.assumptions)
-        )
-
-    def defends(self, mask: int, assumption: Literal) -> bool:
-        for attack_support in self.attack_supports.get(assumption, ()):
-            if attack_support == 0:
-                return False
-            if not any(
-                attack_support & (1 << index) and self.attacks(mask, target)
-                for index, target in enumerate(self.assumptions)
-            ):
-                return False
-        return True
-
-    def admissible(self, mask: int) -> bool:
-        return self.conflict_free(mask) and all(
-            not (mask & (1 << index)) or self.defends(mask, assumption)
-            for index, assumption in enumerate(self.assumptions)
-        )
-
-    def complete(self, mask: int) -> bool:
-        return self.admissible(mask) and all(
-            bool(mask & (1 << index)) == self.defends(mask, assumption)
-            for index, assumption in enumerate(self.assumptions)
-        )
-
-    def stable(self, mask: int) -> bool:
-        return self.conflict_free(mask) and all(
-            bool(mask & (1 << index)) or self.attacks(mask, assumption)
-            for index, assumption in enumerate(self.assumptions)
-        )
-
-
-def _support_mask(
-    support: AssumptionSet,
-    index: dict[Literal, int],
-) -> int:
-    mask = 0
-    for assumption in support:
-        mask |= 1 << index[assumption]
-    return mask
-
-
-def _minimal_supports(framework: ABAFramework) -> dict[Literal, frozenset[AssumptionSet]]:
-    supports: dict[Literal, set[AssumptionSet]] = {
-        literal: set() for literal in framework.language
-    }
-    for assumption in framework.assumptions:
-        supports[assumption].add(frozenset({assumption}))
-
-    changed = True
-    while changed:
-        changed = False
-        for rule in sorted(framework.rules, key=repr):
-            consequent_supports = _combine_supports(
-                tuple(supports[antecedent] for antecedent in rule.antecedents)
-            )
-            for support in consequent_supports:
-                if _add_minimal_support(supports[rule.consequent], support):
-                    changed = True
-
-    return {
-        literal: frozenset(values)
-        for literal, values in supports.items()
-    }
-
-
-def _combine_supports(
-    support_sets: tuple[set[AssumptionSet], ...],
-) -> set[AssumptionSet]:
-    if not support_sets:
-        return {frozenset()}
-    combined: set[AssumptionSet] = {frozenset()}
-    for choices in support_sets:
-        if not choices:
-            return set()
-        combined = {
-            frozenset(left | right)
-            for left in combined
-            for right in choices
-        }
-    return _minimal_set(combined)
-
-
-def _add_minimal_support(
-    supports: set[AssumptionSet],
-    candidate: AssumptionSet,
-) -> bool:
-    if any(existing <= candidate for existing in supports):
-        return False
-    supersets = {existing for existing in supports if candidate < existing}
-    supports.difference_update(supersets)
-    supports.add(candidate)
-    return True
-
-
-def _minimal_set(supports: set[AssumptionSet]) -> set[AssumptionSet]:
-    minimal: set[AssumptionSet] = set()
-    for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))):
-        _add_minimal_support(minimal, support)
-    return minimal
 
 
 def _any_support_selected(z3, variables, supports: frozenset[AssumptionSet]):
@@ -2489,11 +1579,7 @@ def _literal_key(literal: Literal) -> str:
 
 
 def _load_z3():
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("ABA stable SAT solving requires z3-solver") from exc
-    return z3
+    return load_z3("ABA stable SAT solving")
 
 
 def _load_pysat_solver():
@@ -2502,13 +1588,6 @@ def _load_pysat_solver():
     except ImportError as exc:
         raise RuntimeError("native ABA PrefSat solving requires python-sat") from exc
     return Solver
-
-
-def _load_clingo():
-    try:
-        return importlib.import_module("clingo")
-    except ImportError as exc:
-        raise RuntimeError("ABA assumption kernel requires clingo") from exc
 
 
 __all__ = [

@@ -11,10 +11,11 @@ from typing import Any
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     grounded_extension,
     range_of,
 )
+from argumentation.core.finite import is_acyclic, predecessors_index
+from argumentation.core.optional_deps import load_z3
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
@@ -120,7 +121,7 @@ class AfSatKernel:
             argument: self.z3.Bool(f"af_range_{index}")
             for index, argument in enumerate(self.arguments)
         }
-        self.attackers_index = _attackers_index(framework.defeats)
+        self.attackers_index = predecessors_index(framework.defeats)
         self._added: set[str] = set()
 
     @property
@@ -489,7 +490,7 @@ def explain_stable_unsat(
     solver = z3.Solver()
     arguments = tuple(sorted(residual.arguments))
     in_vars = {argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)}
-    attackers_index = _attackers_index(residual.defeats)
+    attackers_index = predecessors_index(residual.defeats)
     label_map: dict[str, tuple[str, object]] = {}
 
     def track(kind: str, payload: object, expression: object) -> None:
@@ -859,7 +860,7 @@ def find_semi_stable_extension(
     simplify: bool = True,
 ) -> frozenset[str] | None:
     prepared = _prepare(
-        framework, "semi_stable", simplify=simplify, require_in=require_in, require_out=require_out
+        framework, "semi-stable", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
@@ -940,7 +941,7 @@ def find_stage_extension(
     return prepared.lift(extension)
 
 
-def _complete_extension(
+def _run_extension(
     problem: AfSatKernel,
     *,
     required_in: frozenset[str] = frozenset(),
@@ -956,6 +957,15 @@ def _complete_extension(
     loop_index: int | None = None,
     learned_count: int | None = None,
 ) -> frozenset[str] | None:
+    """Push assumptions, check, and recover a model on the pre-encoded kernel.
+
+    Shared push/require/check/pop orchestration for both the complete and
+    conflict-free helpers. The base semantics (complete vs conflict-free) are
+    established on ``problem`` *before* this runs, so this helper is agnostic to
+    them: it only threads the per-call assumptions. ``require_any_in`` is a
+    no-op when empty, and ``loop_index``/``learned_count`` only annotate the
+    trace, so conflict-free callers that omit them are unaffected.
+    """
     problem.solver.push()
     try:
         problem.require_in(required_in)
@@ -986,6 +996,39 @@ def _complete_extension(
         return problem.model_extension()
     finally:
         problem.solver.pop()
+
+
+def _complete_extension(
+    problem: AfSatKernel,
+    *,
+    required_in: frozenset[str] = frozenset(),
+    required_out: frozenset[str] = frozenset(),
+    require_any_in: frozenset[str] = frozenset(),
+    required_range: frozenset[str] = frozenset(),
+    require_any_range: frozenset[str] = frozenset(),
+    required_range_size: int | None = None,
+    required_range_size_at_least: int | None = None,
+    excluded_exact: list[frozenset[str]] | None = None,
+    excluded_range_subsets: list[frozenset[str]] | None = None,
+    utility_name: str,
+    loop_index: int | None = None,
+    learned_count: int | None = None,
+) -> frozenset[str] | None:
+    return _run_extension(
+        problem,
+        required_in=required_in,
+        required_out=required_out,
+        require_any_in=require_any_in,
+        required_range=required_range,
+        require_any_range=require_any_range,
+        required_range_size=required_range_size,
+        required_range_size_at_least=required_range_size_at_least,
+        excluded_exact=excluded_exact,
+        excluded_range_subsets=excluded_range_subsets,
+        utility_name=utility_name,
+        loop_index=loop_index,
+        learned_count=learned_count,
+    )
 
 
 def _admissible_extension(
@@ -1192,7 +1235,7 @@ def _add_admissible_constraints(
     for attacker, target in sorted(conflict_relation):
         solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     defense_by_attacker: dict[str, Any] = {}
     undefended_attackers: set[str] = set()
     for argument in sorted(framework.arguments):
@@ -1397,9 +1440,7 @@ class RangeMaximalTaskSolver:
         return self.shortcut_probe_limit
 
     def _base_feasibility_utility_name(self) -> str:
-        if self.seed_utility_name.endswith("_seed"):
-            return f"{self.seed_utility_name.removesuffix('_seed')}_base_feasibility"
-        return f"{self.seed_utility_name}_base_feasibility"
+        return f"{_seed_label_base(self.seed_utility_name)}_base_feasibility"
 
     def _is_range_maximal(self, range_set: frozenset[str]) -> bool:
         outside = self.problem.framework.arguments - range_set
@@ -1467,16 +1508,23 @@ def _bounded_missing_sets(
             pending.append((index + 1, (*selected, arguments[index]), selected_size + 1))
 
 
+def _seed_label_base(seed_utility_name: str) -> str:
+    """Strip a trailing ``_seed`` from a telemetry utility-name label.
+
+    Telemetry-only: the result feeds ``SATCheck.utility_name`` trace labels and
+    has no effect on SAT semantics. ``str.removesuffix`` returns the string
+    unchanged when the suffix is absent, matching the prior explicit-``endswith``
+    branch byte-for-byte.
+    """
+    return seed_utility_name.removesuffix("_seed")
+
+
 def _max_range_utility(seed_utility_name: str, kind: str) -> str:
-    if seed_utility_name.endswith("_seed"):
-        return f"{seed_utility_name.removesuffix('_seed')}_max_range_{kind}"
-    return f"{seed_utility_name}_max_range_{kind}"
+    return f"{_seed_label_base(seed_utility_name)}_max_range_{kind}"
 
 
 def _range_shortcut_utility(seed_utility_name: str, kind: str) -> str:
-    if seed_utility_name.endswith("_seed"):
-        return f"{seed_utility_name.removesuffix('_seed')}_{kind}_range_shortcut"
-    return f"{seed_utility_name}_{kind}_range_shortcut"
+    return f"{_seed_label_base(seed_utility_name)}_{kind}_range_shortcut"
 
 
 def _base_extension(
@@ -1535,33 +1583,18 @@ def _conflict_free_extension(
     excluded_range_subsets: list[frozenset[str]] | None = None,
     utility_name: str,
 ) -> frozenset[str] | None:
-    problem.solver.push()
-    try:
-        problem.require_in(required_in)
-        problem.require_out(required_out)
-        problem.require_range(required_range)
-        problem.require_any_range(require_any_range)
-        range_bound, range_constraint = _apply_range_size_constraints(
-            problem,
-            required_range_size=required_range_size,
-            required_range_size_at_least=required_range_size_at_least,
-        )
-        if range_bound is None and required_range:
-            range_bound = len(required_range)
-            range_constraint = "contains"
-        for blocked in excluded_exact or []:
-            problem.exclude_exact_extension(blocked)
-        for blocked_range in excluded_range_subsets or []:
-            problem.exclude_range_subset(blocked_range)
-        if problem.check(
-            utility_name,
-            range_bound=range_bound,
-            range_constraint=range_constraint,
-        ) != "sat":
-            return None
-        return problem.model_extension()
-    finally:
-        problem.solver.pop()
+    return _run_extension(
+        problem,
+        required_in=required_in,
+        required_out=required_out,
+        required_range=required_range,
+        require_any_range=require_any_range,
+        required_range_size=required_range_size,
+        required_range_size_at_least=required_range_size_at_least,
+        excluded_exact=excluded_exact,
+        excluded_range_subsets=excluded_range_subsets,
+        utility_name=utility_name,
+    )
 
 
 def _apply_range_size_constraints(
@@ -1604,32 +1637,11 @@ def _is_acyclic(framework: ArgumentationFramework) -> bool:
     outgoing: dict[str, list[str]] = {argument: [] for argument in framework.arguments}
     for attacker, target in framework.defeats:
         outgoing[attacker].append(target)
-
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def visit(argument: str) -> bool:
-        if argument in visiting:
-            return False
-        if argument in visited:
-            return True
-        visiting.add(argument)
-        for target in outgoing.get(argument, []):
-            if not visit(target):
-                return False
-        visiting.remove(argument)
-        visited.add(argument)
-        return True
-
-    return all(visit(argument) for argument in framework.arguments)
+    return is_acyclic(outgoing)
 
 
 def _load_z3():
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("SAT solving requires z3-solver") from exc
-    return z3
+    return load_z3("SAT solving")
 
 
 __all__ = [

@@ -4,10 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-import os
 from pathlib import Path
-import shlex
-import shutil
 import subprocess
 import tempfile
 
@@ -18,6 +15,12 @@ from argumentation.core.solver_results import (
     SolverProcessError,
     SolverProtocolError,
     SolverUnavailable,
+)
+from argumentation.solver_adapters._commands import (
+    _problem_prefix,
+    _resolve_command,
+    _semantic_lines,
+    _timeout_stream,
 )
 
 
@@ -326,43 +329,6 @@ def _unsupported_problem(binary: str, problem: str) -> ICCMAABASolverUnavailable
     )
 
 
-def _resolve_command(binary: str) -> list[str] | None:
-    path = Path(binary)
-    if path.exists():
-        return [str(path)]
-    parts = _split_command(binary)
-    if not parts:
-        return None
-    executable = parts[0]
-    executable_path = Path(executable)
-    resolved = str(executable_path) if executable_path.exists() else shutil.which(executable)
-    if resolved is None:
-        return None
-    return [resolved, *parts[1:]]
-
-
-def _split_command(command: str) -> list[str]:
-    try:
-        parts = shlex.split(command, posix=os.name != "nt")
-    except ValueError:
-        return []
-    return [_strip_outer_quotes(part) for part in parts]
-
-
-def _strip_outer_quotes(value: str) -> str:
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-        return value[1:-1]
-    return value
-
-
-def _timeout_stream(value: str | bytes | None) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, bytes):
-        return value.decode("utf-8", errors="replace")
-    return value
-
-
 def _write_temp_aba(framework: ABAFramework) -> Path:
     with tempfile.NamedTemporaryFile(
         "w",
@@ -387,15 +353,3 @@ def _literal_by_id(framework: ABAFramework) -> dict[str, Literal]:
         str(index): literal
         for index, literal in enumerate(sorted(framework.language, key=repr), start=1)
     }
-
-
-def _problem_prefix(problem: str) -> str:
-    return problem.split("-", maxsplit=1)[0]
-
-
-def _semantic_lines(stdout: str) -> list[str]:
-    return [
-        line.strip()
-        for line in stdout.splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]

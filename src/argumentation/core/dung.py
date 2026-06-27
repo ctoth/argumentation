@@ -12,12 +12,16 @@ References:
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from itertools import combinations
+from typing import Literal
 
 from argumentation.core.finite import (
     extension_sort_key,
     iter_subsets_bitmask,
+    maximal_by,
+    maximal_sets,
     normalize_binary_relation,
     predecessors_index,
     strongly_connected_components,
@@ -48,38 +52,16 @@ class ArgumentationFramework:
 
     def __post_init__(self) -> None:
         arguments = frozenset(self.arguments)
-        defeats = _normalize_relation("defeats", self.defeats, arguments)
+        defeats = normalize_binary_relation("defeats", self.defeats, arguments)
         attacks = (
             None
             if self.attacks is None
-            else _normalize_relation("attacks", self.attacks, arguments)
+            else normalize_binary_relation("attacks", self.attacks, arguments)
         )
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "defeats", defeats)
         object.__setattr__(self, "attacks", attacks)
-
-
-def _normalize_relation(
-    name: str,
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> frozenset[tuple[str, str]]:
-    return normalize_binary_relation(name, relation, arguments)
-
-
-def _attackers_index(
-    defeats: frozenset[tuple[str, str]],
-) -> dict[str, frozenset[str]]:
-    """Build target -> attackers adjacency for a defeat relation."""
-    return predecessors_index(defeats)
-
-
-def _targets_index(
-    defeats: frozenset[tuple[str, str]],
-) -> dict[str, frozenset[str]]:
-    """Build source -> targets adjacency for a defeat relation."""
-    return successors_index(defeats)
 
 
 def attackers_of(
@@ -90,7 +72,7 @@ def attackers_of(
 ) -> frozenset[str]:
     """Return the set of all arguments that defeat `arg`."""
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     return attackers_index.get(arg, frozenset())
 
 
@@ -118,7 +100,7 @@ def defends(
 ) -> bool:
     """Check if s defends arg: for every attacker of arg, s counter-attacks it."""
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     for attacker in attackers_of(arg, defeats, attackers_index=attackers_index):
         if not any((d, attacker) in defeats for d in s):
             return False
@@ -137,7 +119,7 @@ def characteristic_fn(
     Reference: Dung 1995, Definition 17.
     """
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     return frozenset(
         a
         for a in all_args
@@ -178,7 +160,7 @@ def admissible(
     if not conflict_free(s, cf_relation):
         return False
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     for a in s:
         if not defends(
             s,
@@ -201,8 +183,8 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
     References:
         Dung 1995, Definition 20 + Theorem 25 (least fixed point).
     """
-    attackers_index = _attackers_index(framework.defeats)
-    targets_index = _targets_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
+    targets_index = successors_index(framework.defeats)
     live_attackers = {
         argument: len(attackers_index.get(argument, frozenset()))
         for argument in framework.arguments
@@ -253,7 +235,7 @@ def complete_extensions(
         complete_labellings,
     )
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidate_budget = (
         DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET
         if max_candidates is None
@@ -284,11 +266,7 @@ def preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[st
     Reference: Dung 1995, Definition 8.
     """
     completes = complete_extensions(framework)
-    return [
-        extension
-        for extension in completes
-        if not any(extension < other for other in completes)
-    ]
+    return maximal_sets(completes)
 
 
 def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -322,16 +300,7 @@ def _range_maximal_extensions(
     candidates: list[frozenset[str]],
     defeats: frozenset[tuple[str, str]],
 ) -> list[frozenset[str]]:
-    maximal: list[frozenset[str]] = []
-    ranges = {
-        candidate: range_of(candidate, defeats)
-        for candidate in candidates
-    }
-    for candidate in candidates:
-        candidate_range = ranges[candidate]
-        if not any(candidate_range < other_range for other_range in ranges.values()):
-            maximal.append(candidate)
-    return maximal
+    return maximal_by(candidates, lambda candidate: range_of(candidate, defeats))
 
 
 def semi_stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -375,7 +344,7 @@ def eager_extension(framework: ArgumentationFramework) -> frozenset[str]:
     if not semi_stables:
         return frozenset()
     intersection = frozenset.intersection(*semi_stables)
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidates = [
         candidate
         for candidate in _all_subsets(intersection)
@@ -426,11 +395,7 @@ def naive_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
         for candidate in _all_subsets(framework.arguments)
         if conflict_free(candidate, framework.defeats)
     ]
-    return [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    return maximal_sets(candidates)
 
 
 def _component_defeated(
@@ -451,10 +416,17 @@ def _component_defeated(
     )
 
 
-def _is_cf2_extension(
+def _is_scc_recursive_extension(
     framework: ArgumentationFramework,
     candidate: frozenset[str],
+    base_case_fn: Callable[[ArgumentationFramework], list[frozenset[str]]],
 ) -> bool:
+    """SCC-recursive extension membership test.
+
+    Shared by CF2 and stage2, which use the same component recursion and
+    differ only in the single-SCC base case (``base_case_fn``): naive
+    semantics for CF2, stage semantics for stage2.
+    """
     if not candidate <= framework.arguments:
         return False
 
@@ -463,15 +435,24 @@ def _is_cf2_extension(
         framework.defeats,
     )
     if len(components) <= 1:
-        return candidate in naive_extensions(framework)
+        return candidate in base_case_fn(framework)
 
     defeated = _component_defeated(framework, candidate, components)
     for component in components:
         sub_arguments = component - defeated
         subframework = _subframework(framework, sub_arguments)
-        if not _is_cf2_extension(subframework, candidate & component):
+        if not _is_scc_recursive_extension(
+            subframework, candidate & component, base_case_fn
+        ):
             return False
     return True
+
+
+def _is_cf2_extension(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    return _is_scc_recursive_extension(framework, candidate, naive_extensions)
 
 
 def cf2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -507,23 +488,7 @@ def _is_stage2_extension(
     framework: ArgumentationFramework,
     candidate: frozenset[str],
 ) -> bool:
-    if not candidate <= framework.arguments:
-        return False
-
-    components = _strongly_connected_components(
-        framework.arguments,
-        framework.defeats,
-    )
-    if len(components) <= 1:
-        return candidate in stage_extensions(framework)
-
-    defeated = _component_defeated(framework, candidate, components)
-    for component in components:
-        sub_arguments = component - defeated
-        subframework = _subframework(framework, sub_arguments)
-        if not _is_stage2_extension(subframework, candidate & component):
-            return False
-    return True
+    return _is_scc_recursive_extension(framework, candidate, stage_extensions)
 
 
 def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, str]]:
@@ -585,11 +550,7 @@ def prudent_preferred_extensions(framework: ArgumentationFramework) -> list[froz
         for candidate in _all_subsets(framework.arguments)
         if prudent_admissible(framework, candidate)
     ]
-    return [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    return maximal_sets(candidates)
 
 
 def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
@@ -599,7 +560,7 @@ def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[s
     semantics by iterating the prudent characteristic function from empty.
     """
     current: frozenset[str] = frozenset()
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     indirect = indirect_attacks(framework)
     while True:
         next_current = frozenset(
@@ -640,7 +601,7 @@ def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
     for extension in preferred[1:]:
         common.intersection_update(extension)
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidates = [
         candidate
         for candidate in _all_subsets(frozenset(common))
@@ -652,14 +613,53 @@ def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
             attackers_index=attackers_index,
         )
     ]
-    maximal = [
-        candidate
-        for candidate in candidates
-        if not any(candidate < other for other in candidates)
-    ]
+    maximal = maximal_sets(candidates)
     if len(maximal) != 1:
         raise AssertionError(
             "ideal extension construction must have exactly one maximal "
             "admissible subset of the preferred-extension intersection"
         )
     return maximal[0]
+
+
+SemanticsName = Literal[
+    "grounded",
+    "complete",
+    "preferred",
+    "stable",
+    "semi-stable",
+    "stage",
+    "ideal",
+    "cf2",
+    "naive",
+]
+
+
+def extensions_for(
+    framework: ArgumentationFramework,
+    semantics: SemanticsName,
+) -> tuple[frozenset[str], ...]:
+    """Return extensions for the supported Dung semantics.
+
+    Single-extension semantics (grounded, ideal) are returned as a 1-tuple so
+    every semantics yields a uniform ``tuple[frozenset[str], ...]``.
+    """
+    if semantics == "grounded":
+        return (grounded_extension(framework),)
+    if semantics == "complete":
+        return tuple(complete_extensions(framework))
+    if semantics == "preferred":
+        return tuple(preferred_extensions(framework))
+    if semantics == "stable":
+        return tuple(stable_extensions(framework))
+    if semantics == "semi-stable":
+        return tuple(semi_stable_extensions(framework))
+    if semantics == "stage":
+        return tuple(stage_extensions(framework))
+    if semantics == "ideal":
+        return (ideal_extension(framework),)
+    if semantics == "cf2":
+        return tuple(cf2_extensions(framework))
+    if semantics == "naive":
+        return tuple(naive_extensions(framework))
+    raise ValueError(f"unsupported semantics: {semantics}")

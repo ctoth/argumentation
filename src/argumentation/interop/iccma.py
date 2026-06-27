@@ -7,6 +7,8 @@ import re
 from argumentation.frameworks.adf import (
     AcceptanceCondition,
     AbstractDialecticalFramework,
+)
+from argumentation.frameworks.adf_io import (
     parse_iccma_formula,
     write_iccma_formula,
 )

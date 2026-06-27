@@ -11,7 +11,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.core.finite import predecessors_index
+from argumentation.ranking._graph import (
+    attack_relation as _attack_relation,
+    attackers as _attackers,
+)
 from argumentation.ranking.ranking import RankingResult
 
 RankingSemantics = Callable[[ArgumentationFramework], RankingResult]
@@ -291,16 +294,6 @@ def strict_addition_of_defense_branch(
             ):
                 return False
     return True
-
-
-def _attack_relation(
-    framework: ArgumentationFramework,
-) -> frozenset[tuple[str, str]]:
-    return framework.attacks if framework.attacks is not None else framework.defeats
-
-
-def _attackers(framework: ArgumentationFramework) -> dict[str, frozenset[str]]:
-    return predecessors_index(_attack_relation(framework), nodes=framework.arguments)
 
 
 def _same_pair_order(

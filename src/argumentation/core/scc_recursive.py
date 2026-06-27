@@ -53,7 +53,6 @@ from dataclasses import dataclass, field
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     _strongly_connected_components,
     _subframework,
     admissible,
@@ -62,7 +61,11 @@ from argumentation.core.dung import (
     preferred_extensions,
     stable_extensions,
 )
-from argumentation.core.finite import subsets_by_size
+from argumentation.core.finite import (
+    maximal_sets,
+    predecessors_index,
+    subsets_by_size,
+)
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
@@ -106,7 +109,7 @@ def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
 def _base_complete_in_c(
     af: ArgumentationFramework, c: frozenset[str]
 ) -> list[frozenset[str]]:
-    attackers_index = _attackers_index(af.defeats)
+    attackers_index = predecessors_index(af.defeats)
     out: list[frozenset[str]] = []
     for candidate in _all_subsets(af.arguments):
         if not candidate <= c:
@@ -132,7 +135,7 @@ def _base_preferred_in_c(
     af: ArgumentationFramework, c: frozenset[str]
 ) -> list[frozenset[str]]:
     completes = _base_complete_in_c(af, c)
-    return [e for e in completes if not any(e < other for other in completes)]
+    return maximal_sets(completes)
 
 
 def _flat_enumerate(
@@ -224,7 +227,7 @@ def _gf(
     if len(sccs) <= 1:
         return _base_solve(semantics, af, c)
 
-    attackers_index = _attackers_index(af.defeats)
+    attackers_index = predecessors_index(af.defeats)
     scc_of: dict[str, frozenset[str]] = {}
     for scc in sccs:
         for arg in scc:
@@ -269,10 +272,6 @@ def _gf(
 # --------------------------------------------------------------------------- #
 
 
-def _normalize_semantics(semantics: str) -> str:
-    return semantics.strip().lower().replace("_", "-")
-
-
 def scc_extensions(
     framework: ArgumentationFramework,
     semantics: str,
@@ -285,7 +284,6 @@ def scc_extensions(
     the framework is solved by the base function directly. The result is always
     identical to the flat path -- this is a transparent speedup.
     """
-    semantics = _normalize_semantics(semantics)
     if semantics not in SCC_RECURSIVE_SEMANTICS:
         raise ValueError(
             f"scc_extensions only handles {sorted(SCC_RECURSIVE_SEMANTICS)}, got {semantics!r}"

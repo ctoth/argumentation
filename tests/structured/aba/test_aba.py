@@ -7,6 +7,7 @@ from argumentation.structured.aba import aba as native_aba
 from argumentation.structured.aba import aba_decomposition
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_kernel import AssumptionKernel
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.solving.solver import (
@@ -286,35 +287,6 @@ def test_ranked_closure_matches_native_closure(
     assert ranked_closure == native_aba._closure(framework, selected)
 
 
-@given(flat_aba_frameworks(), st.data())
-@settings(deadline=10000, max_examples=40)
-def test_bitvec_ranked_closure_matches_native_closure(
-    framework: ABAFramework,
-    data: st.DataObject,
-) -> None:
-    assumptions = tuple(sorted(framework.assumptions, key=repr))
-    selected = data.draw(st.frozensets(st.sampled_from(assumptions)))
-    z3 = aba_sat._load_z3()
-    variables = {
-        assumption: z3.Bool(f"test_bv_in_{index}")
-        for index, assumption in enumerate(assumptions)
-    }
-    solver = z3.Solver()
-    derived = aba_sat._add_bitvec_ranked_closure_constraints(z3, solver, framework, variables)
-    for assumption, variable in variables.items():
-        solver.add(variable == (assumption in selected))
-
-    assert solver.check() == z3.sat
-    model = solver.model()
-    ranked_closure = frozenset(
-        literal
-        for literal, variable in derived.items()
-        if z3.is_true(model.evaluate(variable, model_completion=True))
-    )
-
-    assert ranked_closure == native_aba._closure(framework, selected)
-
-
 def test_rules_by_consequent_groups_rules_deterministically() -> None:
     a1 = literal("a1")
     a2 = literal("a2")
@@ -340,7 +312,7 @@ def test_rules_by_consequent_groups_rules_deterministically() -> None:
 
 def test_assumption_kernel_stable_witness_attacks_every_outsider() -> None:
     framework = _flat_aba(4, frozenset({(1, 2), (1, 3), (1, 4)}))
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     witness = kernel.stable_extension()
 
@@ -360,14 +332,14 @@ def test_assumption_kernel_stable_returns_none_when_no_stable_extension_exists()
         assumptions=frozenset({a}),
         contrary={a: ca},
     )
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     assert kernel.stable_extension() is None
 
 
 def test_assumption_kernel_preferred_grows_nonstable_admissible_witness() -> None:
     framework = _flat_aba(2, frozenset({(1, 1)}))
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     witness = kernel.preferred_extension()
 
@@ -384,7 +356,7 @@ def test_assumption_kernel_preferred_grows_nonstable_admissible_witness() -> Non
 def test_assumption_kernel_stable_matches_native_oracle(
     framework: ABAFramework,
 ) -> None:
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
     witness = kernel.stable_extension()
     native_extensions = native_aba.stable_extensions(framework)
 
@@ -399,7 +371,7 @@ def test_assumption_kernel_stable_matches_native_oracle(
 def test_assumption_kernel_preferred_matches_native_oracle(
     framework: ABAFramework,
 ) -> None:
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
     witness = kernel.preferred_extension()
 
     assert witness in native_aba.preferred_extensions(framework)
@@ -649,7 +621,7 @@ def test_solve_aba_single_extension_iccma_returns_verified_witness(monkeypatch) 
     framework = _flat_aba(1, frozenset())
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(
@@ -673,7 +645,7 @@ def test_solve_aba_acceptance_iccma_returns_verified_answer(monkeypatch) -> None
     query = literal("a1")
 
     monkeypatch.setattr(
-        "argumentation.solver_adapters.iccma_aba.shutil.which",
+        "argumentation.solver_adapters._commands.shutil.which",
         lambda binary: binary,
     )
     monkeypatch.setattr(

@@ -8,12 +8,14 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.frameworks.partial_af import (
-    EnumerationExceeded,
-    consensual_expand,
+from argumentation.frameworks.af_merging import (
     leximax_merge_frameworks,
     max_merge_frameworks,
     sum_merge_frameworks,
+)
+from argumentation.frameworks.partial_af import (
+    EnumerationExceeded,
+    consensual_expand,
 )
 
 

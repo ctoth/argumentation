@@ -41,7 +41,7 @@ Validity of the grounded reduct by semantics (the only reduction applied):
 * ``complete`` -- standard reduct result: ``complete(AF) = {G u E : E in complete(residual)}``.
 * ``preferred`` -- maximal complete; the offset ``G`` is constant so maximality transfers.
 * ``stable`` -- ``G`` is in every stable extension, ``G+`` in none; coverage transfers.
-* ``semi_stable`` -- semi-stable extensions are complete extensions (so contain ``G``,
+* ``semi-stable`` -- semi-stable extensions are complete extensions (so contain ``G``,
   exclude ``G+``) with maximal range; range = ``G u G+`` (constant) ``u`` residual-range,
   so maximality transfers.
 * ``stage`` -- NOT covered by the grounded reduct (see the NOTE on
@@ -60,10 +60,9 @@ from __future__ import annotations
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
-    _targets_index,
     grounded_extension,
 )
+from argumentation.core.finite import predecessors_index, successors_index
 from argumentation.core.reduct import SemanticReduct
 
 # Semantics for which the grounded reduct is semantics-preserving (see module docstring).
@@ -72,7 +71,7 @@ GROUNDED_REDUCT_SEMANTICS: frozenset[str] = frozenset(
         "complete",
         "preferred",
         "stable",
-        "semi_stable",
+        "semi-stable",
         "grounded",
         "ideal",
     }
@@ -131,7 +130,7 @@ def simplify_af(
     removal is). When ``semantics`` is ``None`` the grounded reduct is applied --
     callers are responsible for only calling this for supported semantics.
     """
-    apply_grounded = semantics is None or _normalize_semantics(semantics) in GROUNDED_REDUCT_SEMANTICS
+    apply_grounded = semantics is None or semantics in GROUNDED_REDUCT_SEMANTICS
 
     fixed_in: frozenset[str] = frozenset()
     fixed_out: frozenset[str] = frozenset()
@@ -144,7 +143,7 @@ def simplify_af(
     # Pure self-loop sink removal is sound for every supported semantics except
     # stable (a self-loop sink can never be covered, so it is the obstruction to a
     # stable extension existing -- deleting it would spuriously create one).
-    allow_sink_removal = semantics is None or _normalize_semantics(semantics) != "stable"
+    allow_sink_removal = semantics is None or semantics != "stable"
     if allow_sink_removal:
         sinks = _pure_self_loop_sinks(framework) - fixed_in
         fixed_out = fixed_out | sinks
@@ -188,8 +187,8 @@ def simplify_af(
 
 def isolated_arguments(framework: ArgumentationFramework) -> frozenset[str]:
     """Arguments with no incoming and no outgoing attacks (a diagnostic helper)."""
-    attackers = _attackers_index(framework.defeats)
-    targets = _targets_index(framework.defeats)
+    attackers = predecessors_index(framework.defeats)
+    targets = successors_index(framework.defeats)
     return frozenset(
         argument
         for argument in framework.arguments
@@ -202,10 +201,6 @@ def _attacked_by(
     defeats: frozenset[tuple[str, str]],
 ) -> frozenset[str]:
     return frozenset(target for attacker, target in defeats if attacker in arguments)
-
-
-def _normalize_semantics(semantics: str) -> str:
-    return semantics.strip().lower().replace("-", "_")
 
 
 __all__ = [

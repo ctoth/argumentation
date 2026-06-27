@@ -15,7 +15,7 @@ import math
 import random as _random_mod
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from argumentation.probabilistic.probabilistic_components import connected_components
 
@@ -109,10 +109,8 @@ def _normalize_strategy(strategy: str) -> tuple[str, str]:
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    complete_extensions,
-    grounded_extension,
-    preferred_extensions,
-    stable_extensions,
+    SemanticsName,
+    extensions_for,
 )
 
 
@@ -454,19 +452,18 @@ def _exact_dp_supports_query(
     return False
 
 
+_PROBABILISTIC_SEMANTICS: frozenset[str] = frozenset(
+    {"grounded", "preferred", "stable", "complete"}
+)
+
+
 def _extensions_for_semantics(
     af: ArgumentationFramework,
     semantics: str,
 ) -> tuple[frozenset[str], ...]:
-    if semantics == "grounded":
-        return (grounded_extension(af),)
-    if semantics == "preferred":
-        return tuple(preferred_extensions(af))
-    if semantics == "stable":
-        return tuple(stable_extensions(af))
-    if semantics == "complete":
-        return tuple(complete_extensions(af))
-    raise ValueError(f"Unknown semantics: {semantics}")
+    if semantics not in _PROBABILISTIC_SEMANTICS:
+        raise ValueError(f"Unknown semantics: {semantics}")
+    return extensions_for(af, cast(SemanticsName, semantics))
 
 
 def _accepted_arguments_from_extensions(
@@ -719,7 +716,7 @@ def _compute_probabilistic_acceptance(
             if requested_strategy != normalized_strategy else result
         )
     if normalized_strategy == "exact_dp":
-        from argumentation.probabilistic.probabilistic_treedecomp import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_grounded_td import supports_exact_dp
 
         if not _exact_dp_supports_query(
             query_kind=normalized_query_kind,
@@ -810,7 +807,7 @@ def _compute_probabilistic_acceptance(
 
     # Medium AF with low treewidth: exact DP (Popescu & Wallner 2024)
     # Per plan Section 2.4: estimate treewidth, use DP if below cutoff.
-    from argumentation.probabilistic.probabilistic_treedecomp import estimate_treewidth
+    from argumentation.probabilistic.probabilistic_treedecomp_construction import estimate_treewidth
 
     tw = estimate_treewidth(praf.framework)
     if (
@@ -820,7 +817,7 @@ def _compute_probabilistic_acceptance(
             inference_mode=normalized_inference_mode,
         )
     ):
-        from argumentation.probabilistic.probabilistic_treedecomp import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_grounded_td import supports_exact_dp
 
         if supports_exact_dp(praf, semantics):
             return _compute_exact_dp(
@@ -1261,7 +1258,7 @@ def _compute_exact_dp(
     dynamic programming on tree decompositions. Tractable for low-treewidth
     AFs (complexity O(3^k * n) where k is treewidth).
     """
-    from argumentation.probabilistic.probabilistic_treedecomp import compute_exact_dp
+    from argumentation.probabilistic.probabilistic_grounded_td import compute_exact_dp
 
     if query_kind != "argument_acceptance" or inference_mode != "credulous":
         raise ValueError("exact_dp currently only supports credulous argument acceptance")
@@ -1301,7 +1298,7 @@ def _compute_paper_td(
     if queried_set is None:
         raise ValueError("paper_td requires queried_set")
 
-    from argumentation.probabilistic.probabilistic_treedecomp import (
+    from argumentation.probabilistic.probabilistic_paper_td import (
         compute_paper_exact_extension_probability,
     )
 
@@ -1386,7 +1383,6 @@ def _compute_dfquad(
     *,
     strategy: str,
     tau: dict[str, float] | None = None,
-    supports: dict[tuple[str, str], float] | None = None,
 ) -> PrAFResult:
     """DF-QuAD gradual semantics for QBAFs.
 
@@ -1411,11 +1407,10 @@ def _compute_dfquad(
             "leave semantics at the default or use the dedicated DF-QuAD result."
         )
 
-    if supports is None:
-        supports = {}
-        for edge in praf.supports:
-            opinion = _support_opinion(praf, edge)
-            supports[edge] = _expectation(opinion)
+    supports: dict[tuple[str, str], float] = {}
+    for edge in praf.supports:
+        opinion = _support_opinion(praf, edge)
+        supports[edge] = _expectation(opinion)
 
     if strategy == "dfquad_quad":
         if tau is None:

@@ -12,13 +12,13 @@ construction time rather than deferred to a partial runtime path.
 
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
 from typing import Mapping, TypeAlias
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.finite import sorted_extensions, subsets_by_size
+from argumentation.structured.aba._closure import horn_closure
 from argumentation.structured.aspic.aspic import Literal, Rule
 
 
@@ -253,34 +253,7 @@ def _attacks(framework: ABAInput, attacker: AssumptionSet, target: AssumptionSet
 
 
 def _closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Literal]:
-    closure = set(premises)
-    queue = list(closure)
-    waiting: defaultdict[Literal, list[int]] = defaultdict(list)
-    remaining: list[int] = []
-    consequents: list[Literal] = []
-
-    for index, rule in enumerate(framework.rules):
-        missing = 0
-        for antecedent in frozenset(rule.antecedents):
-            if antecedent not in closure:
-                missing += 1
-                waiting[antecedent].append(index)
-        remaining.append(missing)
-        consequents.append(rule.consequent)
-        if missing == 0 and rule.consequent not in closure:
-            closure.add(rule.consequent)
-            queue.append(rule.consequent)
-
-    while queue:
-        literal = queue.pop()
-        for rule_index in waiting.get(literal, ()):
-            remaining[rule_index] -= 1
-            if remaining[rule_index] == 0:
-                consequent = consequents[rule_index]
-                if consequent not in closure:
-                    closure.add(consequent)
-                    queue.append(consequent)
-    return frozenset(closure)
+    return horn_closure(premises, framework.rules)
 
 
 def _supports_deriving(

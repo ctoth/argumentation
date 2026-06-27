@@ -7,6 +7,7 @@ from collections import deque
 from collections.abc import Mapping
 
 from argumentation.core.finite import predecessors_index
+from argumentation.core.fixpoint import iterate_fixpoint
 from argumentation.gradual.gradual import GradualStrengthResult, WeightedBipolarGraph
 
 
@@ -68,8 +69,8 @@ def dfquad_strengths(
 
     scores = _normalized_base_scores(graph, base_scores)
     weights = _normalized_support_weights(graph, support_weights)
-    attackers = _predecessors(graph.attacks, graph.arguments)
-    supporters = _predecessors(graph.supports, graph.arguments)
+    attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
+    supporters = predecessors_index(graph.supports, nodes=graph.arguments)
     order = _topological_order(graph)
 
     strengths = dict(scores)
@@ -92,38 +93,27 @@ def dfquad_strengths(
             integration_method="dfquad_topological",
         )
 
-    max_delta = 0.0
-    for iteration in range(1, max_iterations + 1):
-        updated = {}
+    def update(current: dict[str, float]) -> dict[str, float]:
+        updated: dict[str, float] = {}
         for argument in sorted(graph.arguments):
             updated[argument] = _dfquad_update(
                 argument,
                 scores,
-                strengths,
+                current,
                 attackers,
                 supporters,
                 weights,
             )
-        max_delta = max(
-            abs(updated[argument] - strengths[argument])
-            for argument in graph.arguments
-        )
-        strengths = updated
-        if max_delta <= tolerance:
-            return GradualStrengthResult(
-                strengths=dict(sorted(strengths.items())),
-                converged=True,
-                iterations=iteration,
-                max_delta=max_delta,
-                tolerance=tolerance,
-                integration_method="dfquad_fixed_point",
-            )
+        return updated
 
+    outcome = iterate_fixpoint(
+        strengths, update, tolerance=tolerance, max_iterations=max_iterations
+    )
     return GradualStrengthResult(
-        strengths=dict(sorted(strengths.items())),
-        converged=False,
-        iterations=max_iterations,
-        max_delta=max_delta,
+        strengths=dict(sorted(outcome.scores.items())),
+        converged=outcome.converged,
+        iterations=outcome.iterations,
+        max_delta=outcome.last_delta,
         tolerance=tolerance,
         integration_method="dfquad_fixed_point",
     )
@@ -224,13 +214,6 @@ def _topological_order(graph: WeightedBipolarGraph) -> list[str]:
             if not predecessors[successor]:
                 queue.append(successor)
     return order
-
-
-def _predecessors(
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    return predecessors_index(relation, nodes=arguments)
 
 
 def _validate_unit_interval(value: float, name: str) -> None:

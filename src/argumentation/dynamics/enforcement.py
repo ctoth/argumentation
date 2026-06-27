@@ -22,18 +22,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Callable, Literal
+from typing import Callable, Literal, get_args
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    cf2_extensions,
-    complete_extensions,
-    grounded_extension,
-    ideal_extension,
-    preferred_extensions,
-    semi_stable_extensions,
-    stable_extensions,
-    stage_extensions,
+    extensions_for as _dung_extensions_for,
 )
 
 
@@ -47,6 +40,7 @@ SemanticsName = Literal[
     "ideal",
     "cf2",
 ]
+_SUPPORTED_SEMANTICS: frozenset[str] = frozenset(get_args(SemanticsName))
 EnforcementMode = Literal["credulous", "skeptical", "extension"]
 ExtensionVariant = Literal["strict", "non-strict"]
 ExpansionKind = Literal["normal", "strong", "weak"]
@@ -228,24 +222,15 @@ def extensions_for(
     framework: ArgumentationFramework,
     semantics: SemanticsName,
 ) -> tuple[frozenset[str], ...]:
-    """Return extensions for the supported Dung semantics."""
-    if semantics == "grounded":
-        return (grounded_extension(framework),)
-    if semantics == "complete":
-        return tuple(complete_extensions(framework))
-    if semantics == "preferred":
-        return tuple(preferred_extensions(framework))
-    if semantics == "stable":
-        return tuple(stable_extensions(framework))
-    if semantics == "semi-stable":
-        return tuple(semi_stable_extensions(framework))
-    if semantics == "stage":
-        return tuple(stage_extensions(framework))
-    if semantics == "ideal":
-        return (ideal_extension(framework),)
-    if semantics == "cf2":
-        return tuple(cf2_extensions(framework))
-    raise ValueError(f"unsupported semantics: {semantics}")
+    """Return extensions for enforcement's supported Dung semantics.
+
+    Enforcement supports the 8 classic Dung semantics (no ``naive``); the
+    computation is delegated to ``core.dung.extensions_for`` while this guard
+    rejects any key outside enforcement's contract.
+    """
+    if semantics not in _SUPPORTED_SEMANTICS:
+        raise ValueError(f"unsupported semantics: {semantics}")
+    return _dung_extensions_for(framework, semantics)
 
 
 def _credulously_accepted(extensions: tuple[frozenset[str], ...]) -> frozenset[str]:

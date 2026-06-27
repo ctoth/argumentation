@@ -14,7 +14,7 @@ from argumentation.core.dung import (
     attackers_of,
     characteristic_fn,
 )
-from argumentation.core.finite import iter_subsets_bitmask
+from argumentation.core.finite import is_acyclic, iter_subsets_bitmask
 
 
 class Label(Enum):
@@ -320,24 +320,7 @@ def _is_acyclic(framework: ArgumentationFramework) -> bool:
     outgoing: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
     for attacker, target in framework.defeats:
         outgoing.setdefault(attacker, set()).add(target)
-
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def visit(argument: str) -> bool:
-        if argument in visiting:
-            return False
-        if argument in visited:
-            return True
-        visiting.add(argument)
-        for target in outgoing.get(argument, set()):
-            if not visit(target):
-                return False
-        visiting.remove(argument)
-        visited.add(argument)
-        return True
-
-    return all(visit(argument) for argument in sorted(framework.arguments))
+    return is_acyclic(outgoing)
 
 
 def _require_known_argument(framework: ArgumentationFramework, argument: str) -> None:

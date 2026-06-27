@@ -24,6 +24,7 @@ import re
 from typing import Literal, Mapping, Sequence
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.optional_deps import load_z3
 from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
 
@@ -580,10 +581,7 @@ def least_squares_update_labelling(
 
 
 def _linear_solver(arguments: frozenset[str]):
-    try:
-        import z3  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise RuntimeError("linear epistemic constraint reasoning requires z3-solver") from exc
+    z3 = load_z3("linear epistemic constraint reasoning")
 
     variables = {argument: z3.Real(argument) for argument in sorted(arguments)}
     solver = z3.Solver()
@@ -625,12 +623,37 @@ def _add_negated_linear_constraint(solver, variables, constraint: LinearAtomicCo
         raise ValueError(f"unsupported linear relation: {constraint.relation}")
 
 
+class EpistemicProjectionError(RuntimeError):
+    """Raised when the labelling projection fails to converge within its cap.
+
+    The Kaczmarz-style projection in :func:`_project_labelling` is iterative and
+    not guaranteed to reach the feasible region (e.g. for over-constrained or
+    ill-conditioned systems).  Rather than silently returning the last, still
+    infeasible point as if it were a valid labelling, the projection raises this
+    error carrying the achieved maximum constraint ``violation`` and the
+    ``iterations`` performed so the failure is loud and catchable.
+    """
+
+    def __init__(self, violation: float, iterations: int, tolerance: float) -> None:
+        self.violation = violation
+        self.iterations = iterations
+        self.tolerance = tolerance
+        super().__init__(
+            f"epistemic labelling projection did not converge: "
+            f"max violation {violation!r} exceeds tolerance {tolerance!r} "
+            f"after {iterations} iteration(s)"
+        )
+
+
 def _project_labelling(
     current: Mapping[str, float],
     constraints: Sequence[LinearAtomicConstraint],
+    max_iterations: int = 10_000,
 ) -> dict[str, float]:
+    tolerance = 1e-10
     point = {argument: float(value) for argument, value in current.items()}
-    for _ in range(10_000):
+    max_violation = float("inf")
+    for iteration in range(1, max_iterations + 1):
         max_violation = 0.0
         for constraint in constraints:
             violation = _constraint_violation(point, constraint)
@@ -642,9 +665,9 @@ def _project_labelling(
                 continue
             for argument, coefficient in constraint.coefficients.items():
                 point[argument] = point[argument] - (violation / norm) * coefficient
-        if max_violation <= 1e-10:
-            break
-    return point
+        if max_violation <= tolerance:
+            return point
+    raise EpistemicProjectionError(max_violation, max_iterations, tolerance)
 
 
 def _constraint_violation(

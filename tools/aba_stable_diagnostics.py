@@ -12,7 +12,8 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from argumentation.structured.aba import aba_sat
-from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba import ABAFramework, derives
+from argumentation.structured.aba.aba_support_model import _minimal_supports
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.interop.iccma import parse_aba
 
@@ -286,7 +287,7 @@ def _minimal_supports_worker(
     result_queue,
 ) -> None:
     try:
-        supports = aba_sat._minimal_supports(framework)
+        supports = _minimal_supports(framework)
     except BaseException as exc:  # pragma: no cover - child process diagnostic path
         result_queue.put({
             "status": "error",
@@ -303,9 +304,9 @@ def _minimal_supports_worker(
 def _add_forced_literal_constraints(z3, solver, framework, variables, assumption, enabled: bool) -> None:
     if not enabled:
         return
-    if aba_sat.derives(framework, frozenset(), framework.contrary[assumption]):
+    if derives(framework, frozenset(), framework.contrary[assumption]):
         solver.add(z3.Not(variables[assumption]))
-    elif not aba_sat.derives(framework, framework.assumptions, framework.contrary[assumption]):
+    elif not derives(framework, framework.assumptions, framework.contrary[assumption]):
         solver.add(variables[assumption])
 
 

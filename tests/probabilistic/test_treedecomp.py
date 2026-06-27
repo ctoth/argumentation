@@ -4,12 +4,14 @@ import pytest
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
-from argumentation.probabilistic.probabilistic_treedecomp import (
+from argumentation.probabilistic.probabilistic_grounded_td import (
     compute_exact_dp,
     compute_exact_dp_with_diagnostics,
+    supports_exact_dp,
+)
+from argumentation.probabilistic.probabilistic_treedecomp_construction import (
     compute_tree_decomposition,
     estimate_treewidth,
-    supports_exact_dp,
     to_nice_tree_decomposition,
     validate_tree_decomposition,
 )
