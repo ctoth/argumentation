@@ -111,7 +111,7 @@ def _check_simplification_shape(
 
 @pytest.mark.parametrize("framework", _BATTERY)
 def test_simplify_af_shape_on_battery(framework: ArgumentationFramework) -> None:
-    for semantics in ("complete", "preferred", "stable", "semi_stable", "stage", "grounded", "ideal", None):
+    for semantics in ("complete", "preferred", "stable", "semi-stable", "stage", "grounded", "ideal", None):
         simplification = simplify_af(framework, semantics=semantics)
         _check_simplification_shape(framework, simplification)
 
@@ -119,7 +119,7 @@ def test_simplify_af_shape_on_battery(framework: ArgumentationFramework) -> None
 @given(_random_af(max_args=5))
 @settings(deadline=None, max_examples=80)
 def test_simplify_af_shape_random(framework: ArgumentationFramework) -> None:
-    for semantics in ("complete", "preferred", "stable", "semi_stable", "stage", "grounded", "ideal"):
+    for semantics in ("complete", "preferred", "stable", "semi-stable", "stage", "grounded", "ideal"):
         _check_simplification_shape(framework, simplify_af(framework, semantics=semantics))
 
 
@@ -160,7 +160,7 @@ def _native_extensions(framework: ArgumentationFramework, semantics: str) -> set
         return set(preferred_extensions(framework))
     if semantics == "stable":
         return set(stable_extensions(framework))
-    if semantics == "semi_stable":
+    if semantics == "semi-stable":
         return set(semi_stable_extensions(framework))
     if semantics == "stage":
         return set(stage_extensions(framework))
@@ -175,7 +175,7 @@ _FINDERS = {
     "complete": find_complete_extension,
     "preferred": find_preferred_extension,
     "stable": find_stable_extension,
-    "semi_stable": find_semi_stable_extension,
+    "semi-stable": find_semi_stable_extension,
     "stage": find_stage_extension,
 }
 

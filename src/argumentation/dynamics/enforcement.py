@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from typing import Callable, Literal
+from typing import Callable, Literal, get_args
 
 from argumentation.core.dung import (
     ArgumentationFramework,
@@ -40,18 +40,7 @@ SemanticsName = Literal[
     "ideal",
     "cf2",
 ]
-_SUPPORTED_SEMANTICS: frozenset[str] = frozenset(
-    {
-        "grounded",
-        "complete",
-        "preferred",
-        "stable",
-        "semi-stable",
-        "stage",
-        "ideal",
-        "cf2",
-    }
-)
+_SUPPORTED_SEMANTICS: frozenset[str] = frozenset(get_args(SemanticsName))
 EnforcementMode = Literal["credulous", "skeptical", "extension"]
 ExtensionVariant = Literal["strict", "non-strict"]
 ExpansionKind = Literal["normal", "strong", "weak"]

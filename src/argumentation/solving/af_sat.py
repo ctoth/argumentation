@@ -860,7 +860,7 @@ def find_semi_stable_extension(
     simplify: bool = True,
 ) -> frozenset[str] | None:
     prepared = _prepare(
-        framework, "semi_stable", simplify=simplify, require_in=require_in, require_out=require_out
+        framework, "semi-stable", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None

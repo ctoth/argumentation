@@ -272,10 +272,6 @@ def _gf(
 # --------------------------------------------------------------------------- #
 
 
-def _normalize_semantics(semantics: str) -> str:
-    return semantics.strip().lower().replace("_", "-")
-
-
 def scc_extensions(
     framework: ArgumentationFramework,
     semantics: str,
@@ -288,7 +284,6 @@ def scc_extensions(
     the framework is solved by the base function directly. The result is always
     identical to the flat path -- this is a transparent speedup.
     """
-    semantics = _normalize_semantics(semantics)
     if semantics not in SCC_RECURSIVE_SEMANTICS:
         raise ValueError(
             f"scc_extensions only handles {sorted(SCC_RECURSIVE_SEMANTICS)}, got {semantics!r}"
