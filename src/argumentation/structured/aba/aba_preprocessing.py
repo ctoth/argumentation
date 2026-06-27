@@ -151,7 +151,7 @@ def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionS
     against it, rather than recomputing attack relations inside every ``defends``
     check.
     """
-    from argumentation.structured.aba.aba_sat import _SupportState
+    from argumentation.structured.aba.aba_support_model import _SupportState
 
     state = _SupportState.from_framework(framework)
     n = len(state.assumptions)

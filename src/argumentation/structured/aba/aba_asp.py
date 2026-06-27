@@ -13,7 +13,8 @@ from argumentation.structured.aba.aba_preprocessing import (
     GROUNDED_REDUCT_ABA_SEMANTICS,
     _simplified_query_decision,
 )
-from argumentation.structured.aba.aba_sat import _minimal_supports, support_extensions
+from argumentation.structured.aba.aba_sat import support_extensions
+from argumentation.structured.aba.aba_support_model import _minimal_supports
 from argumentation.structured.aspic.aspic import Literal
 
 
