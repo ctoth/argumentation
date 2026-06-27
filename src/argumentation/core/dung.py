@@ -19,6 +19,7 @@ from typing import Literal
 from argumentation.core.finite import (
     extension_sort_key,
     iter_subsets_bitmask,
+    maximal_by,
     maximal_sets,
     normalize_binary_relation,
     predecessors_index,
@@ -320,16 +321,7 @@ def _range_maximal_extensions(
     candidates: list[frozenset[str]],
     defeats: frozenset[tuple[str, str]],
 ) -> list[frozenset[str]]:
-    maximal: list[frozenset[str]] = []
-    ranges = {
-        candidate: range_of(candidate, defeats)
-        for candidate in candidates
-    }
-    for candidate in candidates:
-        candidate_range = ranges[candidate]
-        if not any(candidate_range < other_range for other_range in ranges.values()):
-            maximal.append(candidate)
-    return maximal
+    return maximal_by(candidates, lambda candidate: range_of(candidate, defeats))
 
 
 def semi_stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:

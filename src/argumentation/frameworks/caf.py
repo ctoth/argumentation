@@ -26,7 +26,7 @@ from argumentation.core.dung import (
     extensions_for,
     range_of,
 )
-from argumentation.core.finite import maximal_sets
+from argumentation.core.finite import maximal_by, maximal_sets
 
 
 CAFView = Literal["inherited", "claim_level"]
@@ -241,15 +241,8 @@ def _claim_range_maximal(
     caf: ClaimAugmentedAF,
     candidates: Iterable[frozenset[str]],
 ) -> tuple[frozenset[str], ...]:
-    pairs = [
-        (_project(caf, candidate), claim_range(caf, candidate))
-        for candidate in candidates
-    ]
-    return _deduplicate_claim_sets(
-        claim_set
-        for claim_set, claim_range in pairs
-        if not any(claim_range < other_range for _, other_range in pairs)
-    )
+    survivors = maximal_by(candidates, lambda candidate: claim_range(caf, candidate))
+    return _deduplicate_claim_sets(_project(caf, candidate) for candidate in survivors)
 
 
 def _deduplicate_claim_sets(

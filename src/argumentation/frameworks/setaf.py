@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
-from argumentation.core.finite import maximal_sets, sorted_extensions, subsets_by_size
+from argumentation.core.finite import (
+    maximal_by,
+    maximal_sets,
+    sorted_extensions,
+    subsets_by_size,
+)
 
 
 CollectiveAttack = tuple[frozenset[str], str]
@@ -148,11 +153,8 @@ def _range_maximal(
     candidates: tuple[frozenset[str], ...] | list[frozenset[str]],
     framework: SETAF,
 ) -> tuple[frozenset[str], ...]:
-    ranges = {candidate: range_of(framework, candidate) for candidate in candidates}
     return _sorted_extensions(
-        candidate
-        for candidate in candidates
-        if not any(ranges[candidate] < other_range for other_range in ranges.values())
+        maximal_by(candidates, lambda candidate: range_of(framework, candidate))
     )
 
 
