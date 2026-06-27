@@ -11,6 +11,8 @@ from argumentation.frameworks.adf import (
     ThreeValued,
     True_,
     classify_link,
+)
+from argumentation.frameworks.adf_io import (
     from_json,
     parse_iccma_formula,
     to_json,

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import product
-from typing import Any, Mapping, TypeAlias
+from typing import Mapping, TypeAlias
 
 from argumentation.core.dung import ArgumentationFramework
 
@@ -332,64 +332,6 @@ def adf_to_dung(framework: AbstractDialecticalFramework) -> ArgumentationFramewo
     return ArgumentationFramework(arguments=framework.statements, defeats=frozenset(defeats))
 
 
-def to_json(condition: AcceptanceCondition) -> dict[str, Any]:
-    condition = _canonical(condition)
-    if isinstance(condition, Atom):
-        return {"op": "Atom", "parent": condition.parent}
-    if isinstance(condition, _Not):
-        return {"op": "Not", "child": to_json(condition.child)}
-    if isinstance(condition, _And):
-        return {"op": "And", "children": [to_json(child) for child in condition.children]}
-    if isinstance(condition, _Or):
-        return {"op": "Or", "children": [to_json(child) for child in condition.children]}
-    if isinstance(condition, True_):
-        return {"op": "True"}
-    if isinstance(condition, False_):
-        return {"op": "False"}
-    raise TypeError(f"unknown acceptance condition: {condition!r}")
-
-
-def from_json(payload: Mapping[str, Any]) -> AcceptanceCondition:
-    op = payload.get("op")
-    if op == "Atom":
-        return Atom(str(payload["parent"]))
-    if op == "Not":
-        return Not(from_json(payload["child"]))
-    if op == "And":
-        return And(tuple(from_json(child) for child in payload["children"]))
-    if op == "Or":
-        return Or(tuple(from_json(child) for child in payload["children"]))
-    if op == "True":
-        return True_()
-    if op == "False":
-        return False_()
-    raise ValueError(f"unknown acceptance-condition JSON op: {op!r}")
-
-
-def write_iccma_formula(condition: AcceptanceCondition) -> str:
-    condition = _canonical(condition)
-    if isinstance(condition, Atom):
-        return condition.parent
-    if isinstance(condition, _Not):
-        return f"not({write_iccma_formula(condition.child)})"
-    if isinstance(condition, _And):
-        return "and(" + ",".join(write_iccma_formula(child) for child in condition.children) + ")"
-    if isinstance(condition, _Or):
-        return "or(" + ",".join(write_iccma_formula(child) for child in condition.children) + ")"
-    if isinstance(condition, True_):
-        return "true"
-    if isinstance(condition, False_):
-        return "false"
-    raise TypeError(f"unknown acceptance condition: {condition!r}")
-
-
-def parse_iccma_formula(text: str) -> AcceptanceCondition:
-    parser = _FormulaParser(text)
-    condition = parser.parse_condition()
-    parser.expect_end()
-    return condition
-
-
 def _canonical(condition: AcceptanceCondition) -> AcceptanceCondition:
     if isinstance(condition, _Not):
         return Not(condition.child)
@@ -455,6 +397,8 @@ def _replace_false_atoms(
 
 
 def _condition_sort_key(condition: AcceptanceCondition) -> str:
+    from argumentation.frameworks.adf_io import write_iccma_formula
+
     return write_iccma_formula(condition)
 
 
@@ -622,7 +566,6 @@ __all__ = [
     "classify_link",
     "complete_models",
     "dung_to_adf",
-    "from_json",
     "gamma",
     "grounded_interpretation",
     "interpretation_from_mapping",
@@ -630,9 +573,6 @@ __all__ = [
     "is_admissible",
     "is_complete",
     "model_models",
-    "parse_iccma_formula",
     "preferred_models",
     "stable_models",
-    "to_json",
-    "write_iccma_formula",
 ]
