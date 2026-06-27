@@ -12,6 +12,7 @@ References:
 from __future__ import annotations
 
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from itertools import combinations
 from typing import Literal
@@ -437,10 +438,17 @@ def _component_defeated(
     )
 
 
-def _is_cf2_extension(
+def _is_scc_recursive_extension(
     framework: ArgumentationFramework,
     candidate: frozenset[str],
+    base_case_fn: Callable[[ArgumentationFramework], list[frozenset[str]]],
 ) -> bool:
+    """SCC-recursive extension membership test.
+
+    Shared by CF2 and stage2, which use the same component recursion and
+    differ only in the single-SCC base case (``base_case_fn``): naive
+    semantics for CF2, stage semantics for stage2.
+    """
     if not candidate <= framework.arguments:
         return False
 
@@ -449,15 +457,24 @@ def _is_cf2_extension(
         framework.defeats,
     )
     if len(components) <= 1:
-        return candidate in naive_extensions(framework)
+        return candidate in base_case_fn(framework)
 
     defeated = _component_defeated(framework, candidate, components)
     for component in components:
         sub_arguments = component - defeated
         subframework = _subframework(framework, sub_arguments)
-        if not _is_cf2_extension(subframework, candidate & component):
+        if not _is_scc_recursive_extension(
+            subframework, candidate & component, base_case_fn
+        ):
             return False
     return True
+
+
+def _is_cf2_extension(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    return _is_scc_recursive_extension(framework, candidate, naive_extensions)
 
 
 def cf2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -493,23 +510,7 @@ def _is_stage2_extension(
     framework: ArgumentationFramework,
     candidate: frozenset[str],
 ) -> bool:
-    if not candidate <= framework.arguments:
-        return False
-
-    components = _strongly_connected_components(
-        framework.arguments,
-        framework.defeats,
-    )
-    if len(components) <= 1:
-        return candidate in stage_extensions(framework)
-
-    defeated = _component_defeated(framework, candidate, components)
-    for component in components:
-        sub_arguments = component - defeated
-        subframework = _subframework(framework, sub_arguments)
-        if not _is_stage2_extension(subframework, candidate & component):
-            return False
-    return True
+    return _is_scc_recursive_extension(framework, candidate, stage_extensions)
 
 
 def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, str]]:
