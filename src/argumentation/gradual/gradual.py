@@ -123,8 +123,8 @@ def quadratic_energy_strengths_discrete(
     if max_iterations <= 0:
         raise ValueError("max_iterations must be positive")
 
-    supporters = _predecessors(graph.supports, graph.arguments)
-    attackers = _predecessors(graph.attacks, graph.arguments)
+    supporters = predecessors_index(graph.supports, nodes=graph.arguments)
+    attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
     strengths = {
         argument: graph.initial_weights[argument]
         for argument in graph.arguments
@@ -232,8 +232,8 @@ def _quadratic_derivative(
     graph: WeightedBipolarGraph,
     strengths: Mapping[str, float],
 ) -> dict[str, float]:
-    supporters = _predecessors(graph.supports, graph.arguments)
-    attackers = _predecessors(graph.attacks, graph.arguments)
+    supporters = predecessors_index(graph.supports, nodes=graph.arguments)
+    attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
     derivative: dict[str, float] = {}
     for argument in graph.arguments:
         energy = sum(strengths[source] for source in supporters[argument])
@@ -414,13 +414,6 @@ def _normalize_relation(
         value=str,
         error_template="{name} must only reference declared arguments: {unknown!r}",
     )
-
-
-def _predecessors(
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    return predecessors_index(relation, nodes=arguments)
 
 
 def _without_attacks(

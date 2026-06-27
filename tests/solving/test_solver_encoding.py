@@ -8,7 +8,6 @@ from hypothesis import given, settings
 import argumentation.solving.af_sat as af_sat
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     admissible,
     complete_extensions,
     grounded_extension,
@@ -19,6 +18,7 @@ from argumentation.core.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.core.finite import predecessors_index
 from argumentation.solving.af_sat import (
     AfSatKernel,
     PreferredSkepticalTaskSolver,
@@ -917,7 +917,7 @@ def test_sat_extensions_are_invariant_under_argument_renaming(
 
 
 def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     arguments = sorted(framework.arguments)
     results: list[frozenset[str]] = []
     for mask in range(1 << len(arguments)):

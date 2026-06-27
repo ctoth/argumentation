@@ -38,34 +38,12 @@ class BipolarArgumentationFramework:
 
     def __post_init__(self) -> None:
         arguments = frozenset(self.arguments)
-        defeats = _normalize_relation("defeats", self.defeats, arguments)
-        supports = _normalize_relation("supports", self.supports, arguments)
+        defeats = normalize_binary_relation("defeats", self.defeats, arguments)
+        supports = normalize_binary_relation("supports", self.supports, arguments)
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "defeats", defeats)
         object.__setattr__(self, "supports", supports)
-
-
-def _normalize_relation(
-    name: str,
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> frozenset[tuple[str, str]]:
-    return normalize_binary_relation(name, relation, arguments)
-
-
-def _support_successors(supports: frozenset[tuple[str, str]]) -> dict[str, frozenset[str]]:
-    return successors_index(supports)
-
-
-def _support_predecessors(supports: frozenset[tuple[str, str]]) -> dict[str, frozenset[str]]:
-    return predecessors_index(supports)
-
-
-def _attackers_index(
-    defeats: frozenset[tuple[str, str]],
-) -> dict[str, frozenset[str]]:
-    return predecessors_index(defeats)
 
 
 def _closure_or_compute(
@@ -83,7 +61,7 @@ def support_closure(
 ) -> frozenset[str]:
     """Return the closure of ``args`` under direct support successors."""
     closure = set(args)
-    successors = _support_successors(supports)
+    successors = successors_index(supports)
     queue = list(args)
     while queue:
         current = queue.pop()
@@ -99,7 +77,7 @@ def _supported_targets(
     supports: frozenset[tuple[str, str]],
 ) -> frozenset[str]:
     supported: set[str] = set()
-    successors = _support_successors(supports)
+    successors = successors_index(supports)
     for source in args:
         seen: set[str] = set()
         queue = list(successors.get(source, frozenset()))
@@ -124,7 +102,7 @@ def cayrol_derived_defeats(
     supported and indirect defeats to a fixpoint.
     """
     support_reach: dict[str, frozenset[str]] = {}
-    successors = _support_successors(supports)
+    successors = successors_index(supports)
     for source in successors:
         seen = {source}
         queue = [source]
@@ -282,7 +260,7 @@ def defends(
     """Cayrol 2005, Definition 5: collective defence via set-defeat."""
     closure = _closure_or_compute(framework, defeat_closure)
     if attackers_index is None:
-        attackers_index = _attackers_index(closure)
+        attackers_index = predecessors_index(closure)
     attackers = attackers_index.get(arg, frozenset())
     for attacker in attackers:
         if not any((defender, attacker) in closure for defender in args):
@@ -300,7 +278,7 @@ def d_admissible(
         args,
         framework,
         defeat_closure,
-        _attackers_index(defeat_closure),
+        predecessors_index(defeat_closure),
     )
 
 
@@ -332,7 +310,7 @@ def s_admissible(
         args,
         framework,
         defeat_closure,
-        _attackers_index(defeat_closure),
+        predecessors_index(defeat_closure),
     )
 
 
@@ -364,7 +342,7 @@ def c_admissible(
         args,
         framework,
         defeat_closure,
-        _attackers_index(defeat_closure),
+        predecessors_index(defeat_closure),
     )
 
 
@@ -399,7 +377,7 @@ def _maximal_sets(
     predicate,
 ) -> list[frozenset[str]]:
     defeat_closure = derived_set_defeats(framework)
-    attackers_index = _attackers_index(defeat_closure)
+    attackers_index = predecessors_index(defeat_closure)
     closure_predicates = {
         d_admissible: _d_admissible,
         s_admissible: _s_admissible,
@@ -476,7 +454,7 @@ def characteristic_fn(
     """Return the Cayrol/Dung characteristic function over set-defeats."""
     closure = _closure_or_compute(framework, defeat_closure)
     if attackers_index is None:
-        attackers_index = _attackers_index(closure)
+        attackers_index = predecessors_index(closure)
     return frozenset(
         argument
         for argument in framework.arguments
@@ -513,7 +491,7 @@ def bipolar_complete_extensions(
 ) -> list[frozenset[str]]:
     """Return fixed points of the Cayrol characteristic function."""
     defeat_closure = derived_set_defeats(framework)
-    attackers_index = _attackers_index(defeat_closure)
+    attackers_index = predecessors_index(defeat_closure)
     completes = [
         candidate
         for candidate in _all_subsets(framework.arguments)

@@ -34,8 +34,8 @@ def equational_fixpoint(
     if max_iterations <= 0:
         raise ValueError("max_iterations must be positive")
 
-    attackers = _predecessors(graph.attacks, graph.arguments)
-    supporters = _predecessors(graph.supports, graph.arguments)
+    attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
+    supporters = predecessors_index(graph.supports, nodes=graph.arguments)
     strengths = {
         argument: graph.initial_weights[argument]
         for argument in graph.arguments
@@ -87,13 +87,6 @@ def _attack_value(values: list[float], *, scheme: EquationScheme) -> float:
     if scheme == "max":
         return 1.0 - max(values)
     return _product(1.0 - value for value in values)
-
-
-def _predecessors(
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    return predecessors_index(relation, nodes=arguments)
 
 
 def _product(values: Iterable[float]) -> float:

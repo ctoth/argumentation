@@ -60,10 +60,9 @@ from __future__ import annotations
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
-    _targets_index,
     grounded_extension,
 )
+from argumentation.core.finite import predecessors_index, successors_index
 from argumentation.core.reduct import SemanticReduct
 
 # Semantics for which the grounded reduct is semantics-preserving (see module docstring).
@@ -188,8 +187,8 @@ def simplify_af(
 
 def isolated_arguments(framework: ArgumentationFramework) -> frozenset[str]:
     """Arguments with no incoming and no outgoing attacks (a diagnostic helper)."""
-    attackers = _attackers_index(framework.defeats)
-    targets = _targets_index(framework.defeats)
+    attackers = predecessors_index(framework.defeats)
+    targets = successors_index(framework.defeats)
     return frozenset(
         argument
         for argument in framework.arguments

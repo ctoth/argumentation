@@ -52,38 +52,16 @@ class ArgumentationFramework:
 
     def __post_init__(self) -> None:
         arguments = frozenset(self.arguments)
-        defeats = _normalize_relation("defeats", self.defeats, arguments)
+        defeats = normalize_binary_relation("defeats", self.defeats, arguments)
         attacks = (
             None
             if self.attacks is None
-            else _normalize_relation("attacks", self.attacks, arguments)
+            else normalize_binary_relation("attacks", self.attacks, arguments)
         )
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "defeats", defeats)
         object.__setattr__(self, "attacks", attacks)
-
-
-def _normalize_relation(
-    name: str,
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> frozenset[tuple[str, str]]:
-    return normalize_binary_relation(name, relation, arguments)
-
-
-def _attackers_index(
-    defeats: frozenset[tuple[str, str]],
-) -> dict[str, frozenset[str]]:
-    """Build target -> attackers adjacency for a defeat relation."""
-    return predecessors_index(defeats)
-
-
-def _targets_index(
-    defeats: frozenset[tuple[str, str]],
-) -> dict[str, frozenset[str]]:
-    """Build source -> targets adjacency for a defeat relation."""
-    return successors_index(defeats)
 
 
 def attackers_of(
@@ -94,7 +72,7 @@ def attackers_of(
 ) -> frozenset[str]:
     """Return the set of all arguments that defeat `arg`."""
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     return attackers_index.get(arg, frozenset())
 
 
@@ -122,7 +100,7 @@ def defends(
 ) -> bool:
     """Check if s defends arg: for every attacker of arg, s counter-attacks it."""
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     for attacker in attackers_of(arg, defeats, attackers_index=attackers_index):
         if not any((d, attacker) in defeats for d in s):
             return False
@@ -141,7 +119,7 @@ def characteristic_fn(
     Reference: Dung 1995, Definition 17.
     """
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     return frozenset(
         a
         for a in all_args
@@ -182,7 +160,7 @@ def admissible(
     if not conflict_free(s, cf_relation):
         return False
     if attackers_index is None:
-        attackers_index = _attackers_index(defeats)
+        attackers_index = predecessors_index(defeats)
     for a in s:
         if not defends(
             s,
@@ -205,8 +183,8 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
     References:
         Dung 1995, Definition 20 + Theorem 25 (least fixed point).
     """
-    attackers_index = _attackers_index(framework.defeats)
-    targets_index = _targets_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
+    targets_index = successors_index(framework.defeats)
     live_attackers = {
         argument: len(attackers_index.get(argument, frozenset()))
         for argument in framework.arguments
@@ -257,7 +235,7 @@ def complete_extensions(
         complete_labellings,
     )
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidate_budget = (
         DEFAULT_COMPLETE_LABELLING_CANDIDATE_BUDGET
         if max_candidates is None
@@ -366,7 +344,7 @@ def eager_extension(framework: ArgumentationFramework) -> frozenset[str]:
     if not semi_stables:
         return frozenset()
     intersection = frozenset.intersection(*semi_stables)
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidates = [
         candidate
         for candidate in _all_subsets(intersection)
@@ -582,7 +560,7 @@ def prudent_grounded_extension(framework: ArgumentationFramework) -> frozenset[s
     semantics by iterating the prudent characteristic function from empty.
     """
     current: frozenset[str] = frozenset()
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     indirect = indirect_attacks(framework)
     while True:
         next_current = frozenset(
@@ -623,7 +601,7 @@ def ideal_extension(framework: ArgumentationFramework) -> frozenset[str]:
     for extension in preferred[1:]:
         common.intersection_update(extension)
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     candidates = [
         candidate
         for candidate in _all_subsets(frozenset(common))

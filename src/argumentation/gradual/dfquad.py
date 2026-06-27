@@ -69,8 +69,8 @@ def dfquad_strengths(
 
     scores = _normalized_base_scores(graph, base_scores)
     weights = _normalized_support_weights(graph, support_weights)
-    attackers = _predecessors(graph.attacks, graph.arguments)
-    supporters = _predecessors(graph.supports, graph.arguments)
+    attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
+    supporters = predecessors_index(graph.supports, nodes=graph.arguments)
     order = _topological_order(graph)
 
     strengths = dict(scores)
@@ -214,13 +214,6 @@ def _topological_order(graph: WeightedBipolarGraph) -> list[str]:
             if not predecessors[successor]:
                 queue.append(successor)
     return order
-
-
-def _predecessors(
-    relation: frozenset[tuple[str, str]],
-    arguments: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    return predecessors_index(relation, nodes=arguments)
 
 
 def _validate_unit_interval(value: float, name: str) -> None:

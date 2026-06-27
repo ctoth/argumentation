@@ -11,11 +11,10 @@ from typing import Any
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     grounded_extension,
     range_of,
 )
-from argumentation.core.finite import is_acyclic
+from argumentation.core.finite import is_acyclic, predecessors_index
 from argumentation.core.optional_deps import load_z3
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
@@ -122,7 +121,7 @@ class AfSatKernel:
             argument: self.z3.Bool(f"af_range_{index}")
             for index, argument in enumerate(self.arguments)
         }
-        self.attackers_index = _attackers_index(framework.defeats)
+        self.attackers_index = predecessors_index(framework.defeats)
         self._added: set[str] = set()
 
     @property
@@ -491,7 +490,7 @@ def explain_stable_unsat(
     solver = z3.Solver()
     arguments = tuple(sorted(residual.arguments))
     in_vars = {argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)}
-    attackers_index = _attackers_index(residual.defeats)
+    attackers_index = predecessors_index(residual.defeats)
     label_map: dict[str, tuple[str, object]] = {}
 
     def track(kind: str, payload: object, expression: object) -> None:
@@ -1194,7 +1193,7 @@ def _add_admissible_constraints(
     for attacker, target in sorted(conflict_relation):
         solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     defense_by_attacker: dict[str, Any] = {}
     undefended_attackers: set[str] = set()
     for argument in sorted(framework.arguments):

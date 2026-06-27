@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from argumentation.core.dung import (
     ArgumentationFramework,
-    _attackers_index,
     admissible,
     grounded_extension,
     ideal_extension,
     semi_stable_extensions,
     stage_extensions,
 )
+from argumentation.core.finite import predecessors_index
 
 
 def sat_extensions(
@@ -51,7 +51,7 @@ def sat_extensions(
 
 
 def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
-    attackers_index = _attackers_index(framework.defeats)
+    attackers_index = predecessors_index(framework.defeats)
     arguments = sorted(framework.arguments)
     results: list[frozenset[str]] = []
     for mask in range(1 << len(arguments)):
