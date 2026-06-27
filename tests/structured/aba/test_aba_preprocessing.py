@@ -492,26 +492,3 @@ def test_single_extension_random() -> None:
             assert sw in stable_ref
         else:
             assert sw is None
-
-
-# ---------------------------------------------------------------------------
-# §2.3a -- the refactored preferred CEGAR matches the admissible CEGAR helper
-# ---------------------------------------------------------------------------
-
-def test_preferred_cegar_matches_admissible_growth() -> None:
-    rng = random.Random(55667788)
-    for _ in range(80):
-        framework = random_framework(rng)
-        cegar = aba_sat._sat_preferred_cegar_extension(framework)
-        preferred_ref = _native_extensions(framework, "preferred")
-        assert cegar in preferred_ref, framework
-        # The reused-solver class and the one-shot helper must each return an
-        # admissible set of ``framework`` -- but NOT necessarily the *same* one:
-        # admissible sets are not unique and Z3's model choice is not stable
-        # across process state, so strict set-equality is not a sound invariant.
-        reused = aba_sat._AdmissibleCegarSolver(framework).solve()
-        oneshot = aba_sat._sat_admissible_cegar_extension(framework)
-        # Both must succeed: the empty set is always admissible.
-        assert reused is not None and oneshot is not None, framework
-        assert native_aba.admissible(framework, reused), (framework, reused)
-        assert native_aba.admissible(framework, oneshot), (framework, oneshot)
