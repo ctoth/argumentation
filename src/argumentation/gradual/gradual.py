@@ -8,6 +8,7 @@ from math import factorial
 from typing import Mapping
 
 from argumentation.core.finite import normalize_binary_relation, predecessors_index
+from argumentation.core.fixpoint import iterate_fixpoint
 
 
 @dataclass(frozen=True)
@@ -129,35 +130,25 @@ def quadratic_energy_strengths_discrete(
         for argument in graph.arguments
     }
 
-    for iteration in range(1, max_iterations + 1):
+    def update(current: dict[str, float]) -> dict[str, float]:
         updated: dict[str, float] = {}
         for argument in graph.arguments:
-            energy = sum(strengths[source] for source in supporters[argument])
-            energy -= sum(strengths[source] for source in attackers[argument])
+            energy = sum(current[source] for source in supporters[argument])
+            energy -= sum(current[source] for source in attackers[argument])
             updated[argument] = _equilibrium_strength(
                 graph.initial_weights[argument],
                 energy,
             )
-        max_delta = max(
-            (abs(updated[argument] - strengths[argument]) for argument in graph.arguments),
-            default=0.0,
-        )
-        strengths = updated
-        if max_delta <= tolerance:
-            return GradualStrengthResult(
-                strengths=dict(sorted(strengths.items())),
-                converged=True,
-                iterations=iteration,
-                max_delta=max_delta,
-                tolerance=tolerance,
-                integration_method="fixed_point_discrete",
-            )
+        return updated
 
+    outcome = iterate_fixpoint(
+        strengths, update, tolerance=tolerance, max_iterations=max_iterations
+    )
     return GradualStrengthResult(
-        strengths=dict(sorted(strengths.items())),
-        converged=False,
-        iterations=max_iterations,
-        max_delta=max_delta,
+        strengths=dict(sorted(outcome.scores.items())),
+        converged=outcome.converged,
+        iterations=outcome.iterations,
+        max_delta=outcome.last_delta,
         tolerance=tolerance,
         integration_method="fixed_point_discrete",
     )
