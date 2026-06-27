@@ -1314,16 +1314,6 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
     )
 
 
-def _compute_grounded_dp_component(
-    af: ArgumentationFramework,
-    p_arg: dict[str, float],
-    p_defeat: dict[tuple[str, str], float],
-) -> dict[str, float]:
-    return _compute_grounded_dp_component_result(
-        af, p_arg, p_defeat, component_index=0,
-    ).acceptance_probs
-
-
 def _compute_grounded_dp_component_result(
     af: ArgumentationFramework,
     p_arg: dict[str, float],

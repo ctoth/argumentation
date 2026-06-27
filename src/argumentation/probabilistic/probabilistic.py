@@ -1383,7 +1383,6 @@ def _compute_dfquad(
     *,
     strategy: str,
     tau: dict[str, float] | None = None,
-    supports: dict[tuple[str, str], float] | None = None,
 ) -> PrAFResult:
     """DF-QuAD gradual semantics for QBAFs.
 
@@ -1408,11 +1407,10 @@ def _compute_dfquad(
             "leave semantics at the default or use the dedicated DF-QuAD result."
         )
 
-    if supports is None:
-        supports = {}
-        for edge in praf.supports:
-            opinion = _support_opinion(praf, edge)
-            supports[edge] = _expectation(opinion)
+    supports: dict[tuple[str, str], float] = {}
+    for edge in praf.supports:
+        opinion = _support_opinion(praf, edge)
+        supports[edge] = _expectation(opinion)
 
     if strategy == "dfquad_quad":
         if tau is None:
