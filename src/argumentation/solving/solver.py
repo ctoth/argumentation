@@ -112,6 +112,19 @@ AcceptanceSolverResult = (
 )
 
 
+# Dung single-extension SAT finders keyed by semantics. Every finder shares the
+# (framework, *, trace_sink, metadata) signature, so the dispatch in
+# solve_dung_single_extension is one table lookup plus one try/except wrapper.
+_SAT_SINGLE_EXTENSION_FINDERS = {
+    "stable": find_stable_extension,
+    "complete": find_complete_extension,
+    "preferred": find_preferred_extension,
+    "semi-stable": find_semi_stable_extension,
+    "stage": find_stage_extension,
+    "ideal": find_ideal_extension,
+}
+
+
 def solve_adf_models(
     framework: AbstractDialecticalFramework,
     *,
@@ -333,65 +346,11 @@ def solve_dung_single_extension(
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
         trace_sink, metadata = _sat_trace(sat)
-        if semantics == "stable":
+        find_single = _SAT_SINGLE_EXTENSION_FINDERS.get(semantics)
+        if find_single is not None:
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=find_stable_extension(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                    ),
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "complete":
-            try:
-                return SingleExtensionSolverSuccess(
-                    extension=find_complete_extension(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                    ),
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "preferred":
-            try:
-                return SingleExtensionSolverSuccess(
-                    extension=find_preferred_extension(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                    ),
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "semi-stable":
-            try:
-                return SingleExtensionSolverSuccess(
-                    extension=find_semi_stable_extension(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                    ),
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "stage":
-            try:
-                return SingleExtensionSolverSuccess(
-                    extension=find_stage_extension(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                    ),
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "ideal":
-            try:
-                return SingleExtensionSolverSuccess(
-                    extension=find_ideal_extension(
+                    extension=find_single(
                         framework,
                         trace_sink=trace_sink,
                         metadata=metadata,
@@ -827,7 +786,8 @@ def _solve_native_dung_acceptance(
     return _solve_dung_acceptance_from_extensions(extensions, task, query)
 
 
-def _solve_sat_stable_acceptance(
+def _solve_sat_acceptance(
+    find_extension,
     framework: ArgumentationFramework,
     task: str,
     query: str,
@@ -835,8 +795,11 @@ def _solve_sat_stable_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> AcceptanceSolverSuccess:
+    """Credulous (require_in→witness) / skeptical (require_out→counterexample)
+    SAT acceptance against any find_*_extension finder sharing the
+    (framework, *, require_in/require_out, trace_sink, metadata) signature."""
     if task == "credulous":
-        witness = find_stable_extension(
+        witness = find_extension(
             framework,
             require_in=query,
             trace_sink=trace_sink,
@@ -847,7 +810,7 @@ def _solve_sat_stable_acceptance(
             witness=witness,
         )
     if task == "skeptical":
-        counterexample = find_stable_extension(
+        counterexample = find_extension(
             framework,
             require_out=query,
             trace_sink=trace_sink,
@@ -858,6 +821,24 @@ def _solve_sat_stable_acceptance(
             counterexample=counterexample,
         )
     raise ValueError(f"unsupported Dung acceptance task: {task}")
+
+
+def _solve_sat_stable_acceptance(
+    framework: ArgumentationFramework,
+    task: str,
+    query: str,
+    *,
+    trace_sink: SATTraceSink | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> AcceptanceSolverSuccess:
+    return _solve_sat_acceptance(
+        find_stable_extension,
+        framework,
+        task,
+        query,
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
 
 
 def _solve_sat_complete_acceptance(
@@ -868,29 +849,14 @@ def _solve_sat_complete_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> AcceptanceSolverSuccess:
-    if task == "credulous":
-        witness = find_complete_extension(
-            framework,
-            require_in=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=witness is not None,
-            witness=witness,
-        )
-    if task == "skeptical":
-        counterexample = find_complete_extension(
-            framework,
-            require_out=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=counterexample is None,
-            counterexample=counterexample,
-        )
-    raise ValueError(f"unsupported Dung acceptance task: {task}")
+    return _solve_sat_acceptance(
+        find_complete_extension,
+        framework,
+        task,
+        query,
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
 
 
 def _solve_sat_preferred_credulous_acceptance(
@@ -964,29 +930,14 @@ def _solve_sat_semi_stable_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> AcceptanceSolverSuccess:
-    if task == "credulous":
-        witness = find_semi_stable_extension(
-            framework,
-            require_in=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=witness is not None,
-            witness=witness,
-        )
-    if task == "skeptical":
-        counterexample = find_semi_stable_extension(
-            framework,
-            require_out=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=counterexample is None,
-            counterexample=counterexample,
-        )
-    raise ValueError(f"unsupported Dung acceptance task: {task}")
+    return _solve_sat_acceptance(
+        find_semi_stable_extension,
+        framework,
+        task,
+        query,
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
 
 
 def _solve_sat_stage_acceptance(
@@ -997,29 +948,14 @@ def _solve_sat_stage_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
 ) -> AcceptanceSolverSuccess:
-    if task == "credulous":
-        witness = find_stage_extension(
-            framework,
-            require_in=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=witness is not None,
-            witness=witness,
-        )
-    if task == "skeptical":
-        counterexample = find_stage_extension(
-            framework,
-            require_out=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-        )
-        return AcceptanceSolverSuccess(
-            answer=counterexample is None,
-            counterexample=counterexample,
-        )
-    raise ValueError(f"unsupported Dung acceptance task: {task}")
+    return _solve_sat_acceptance(
+        find_stage_extension,
+        framework,
+        task,
+        query,
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
 
 
 def _solve_dung_acceptance_from_extensions(
@@ -1063,10 +999,6 @@ def _solve_iccma_dung_single_extension(
         return SingleExtensionSolverSuccess(
             extension=result.witness if not result.output.no_extension else None,
         )
-    if isinstance(result, iccma_af.ICCMASolverUnavailable):
-        return result
-    if isinstance(result, iccma_af.ICCMASolverError):
-        return result
     return result
 
 
@@ -1087,10 +1019,6 @@ def _solve_iccma_aba_single_extension(
         return SingleExtensionSolverSuccess(
             extension=result.witness if not result.output.no_extension else None,
         )
-    if isinstance(result, iccma_aba.ICCMAABASolverUnavailable):
-        return result
-    if isinstance(result, iccma_aba.ICCMAABASolverError):
-        return result
     return result
 
 
@@ -1116,10 +1044,6 @@ def _solve_iccma_dung_acceptance(
             witness=result.witness if result.answer is True else None,
             counterexample=result.witness if result.answer is False else None,
         )
-    if isinstance(result, iccma_af.ICCMASolverUnavailable):
-        return result
-    if isinstance(result, iccma_af.ICCMASolverError):
-        return result
     return result
 
 
@@ -1144,10 +1068,6 @@ def _solve_iccma_aba_acceptance(
         return AcceptanceSolverSuccess(
             answer=result.answer is True,
         )
-    if isinstance(result, iccma_aba.ICCMAABASolverUnavailable):
-        return result
-    if isinstance(result, iccma_aba.ICCMAABASolverError):
-        return result
     return result
 
 
