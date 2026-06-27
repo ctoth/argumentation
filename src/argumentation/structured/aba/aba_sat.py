@@ -12,16 +12,9 @@ from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, _closu
 from argumentation.structured.aba.aba_bitset_closure import _BitsetHornClosure
 from argumentation.structured.aba.aba_support_model import (
     _SupportState,
-    _add_minimal_support,  # noqa: F401  re-exported for aba_sat.<name> compatibility
-    _combine_supports,  # noqa: F401  re-exported for aba_sat.<name> compatibility
-    _minimal_set,  # noqa: F401  re-exported for aba_sat.<name> compatibility
     _minimal_supports,
-    _support_mask,  # noqa: F401  re-exported for aba_sat.<name> compatibility
 )
-from argumentation.structured.aba.aba_kernel import (
-    AssumptionKernel,
-    _load_clingo,  # noqa: F401  re-exported so aba_sat._load_clingo still resolves
-)
+from argumentation.structured.aba.aba_kernel import AssumptionKernel
 from argumentation.structured.aba.aba_preprocessing import (
     _prepare_residual_requirements,
     _simplified_query_decision,

@@ -1,8 +1,8 @@
 """Brute-force minimal-support model for flat ABA enumeration.
 
 Leaf module: depends only on the ABA/ASPIC data types, never on ``aba_sat``.
-``aba_sat`` re-exports these symbols so existing ``aba_sat.<name>`` paths keep
-resolving.
+This module is the canonical home for these support-model symbols; consumers
+import them directly from here.
 """
 
 from __future__ import annotations

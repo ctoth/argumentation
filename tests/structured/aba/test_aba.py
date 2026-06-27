@@ -7,6 +7,7 @@ from argumentation.structured.aba import aba as native_aba
 from argumentation.structured.aba import aba_decomposition
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
+from argumentation.structured.aba.aba_kernel import AssumptionKernel
 from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.solving.solver import (
@@ -311,7 +312,7 @@ def test_rules_by_consequent_groups_rules_deterministically() -> None:
 
 def test_assumption_kernel_stable_witness_attacks_every_outsider() -> None:
     framework = _flat_aba(4, frozenset({(1, 2), (1, 3), (1, 4)}))
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     witness = kernel.stable_extension()
 
@@ -331,14 +332,14 @@ def test_assumption_kernel_stable_returns_none_when_no_stable_extension_exists()
         assumptions=frozenset({a}),
         contrary={a: ca},
     )
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     assert kernel.stable_extension() is None
 
 
 def test_assumption_kernel_preferred_grows_nonstable_admissible_witness() -> None:
     framework = _flat_aba(2, frozenset({(1, 1)}))
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
 
     witness = kernel.preferred_extension()
 
@@ -355,7 +356,7 @@ def test_assumption_kernel_preferred_grows_nonstable_admissible_witness() -> Non
 def test_assumption_kernel_stable_matches_native_oracle(
     framework: ABAFramework,
 ) -> None:
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
     witness = kernel.stable_extension()
     native_extensions = native_aba.stable_extensions(framework)
 
@@ -370,7 +371,7 @@ def test_assumption_kernel_stable_matches_native_oracle(
 def test_assumption_kernel_preferred_matches_native_oracle(
     framework: ABAFramework,
 ) -> None:
-    kernel = aba_sat.AssumptionKernel.from_framework(framework)
+    kernel = AssumptionKernel.from_framework(framework)
     witness = kernel.preferred_extension()
 
     assert witness in native_aba.preferred_extensions(framework)
