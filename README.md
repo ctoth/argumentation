@@ -7,8 +7,8 @@ objects and algorithms of computational argumentation theory: Dung abstract
 argumentation, ASPIC+ structured argumentation, ABA / ABA+, abstract
 dialectical frameworks, bipolar and value-based AFs, partial AFs with
 completion-based reasoning, AF revision, probabilistic and gradual semantics,
-ranking and weighted services, and pure-SAT and ASP encodings of the standard
-extension semantics. Every algorithm cites the paper, definition, and (where
+ranking and weighted services, and ASP encodings of the standard extension
+semantics plus a Z3-backed AF SAT kernel. Every algorithm cites the paper, definition, and (where
 useful) page that fixes its behaviour. The pure-Python implementations are the
 reference for package algorithms; solver adapters are typed boundaries around
 external tools.
@@ -101,8 +101,8 @@ dispatch, the SAT encoder, the probabilistic kernel, and the ICCMA writer.
 | [Probabilistic and epistemic](#probabilistic-and-epistemic) | `probabilistic.probabilistic`, `probabilistic.epistemic` | PrAFs over seven strategies (Monte Carlo, exact enum, tree-decomp DP, paper-faithful Popescu-Wallner, DF-QuAD), epistemic graphs with Z3-backed constraints |
 | [Specialized frameworks](#specialized-frameworks) | `frameworks.*` | Brewka-Woltran ADFs with typed acceptance ASTs, collective-attack SETAFs, claim-augmented AFs, Bench-Capon value-based, Atkinson AATS practical arguments |
 | [Dynamics and revision](#dynamics-revision-enforcement) | `frameworks.partial_af`, `dynamics.*` | Partial AFs and completions, Baumann/Diller revision, dynamic update streams, minimal-change enforcement, k-stable approximation |
-| [Encoding and interop](#encoding-and-interop) | `interop.iccma`, `solving.sat_encoding`, `solving.af_sat`, `structured.aspic.datalog_grounding`, `gradual.llm_surface` | ICCMA AF/ADF/ABA exchange, pure-Python SAT encodings, incremental AF SAT kernel, Gunray-grounded ASPIC+, QBAF adapter for argumentative LLM pipelines |
-| [Solver orchestration](#solver-surfaces) | `solving.*`, `solver_adapters/` | Typed solver tasks, capability detection, default backend routing, ICCMA / clingo subprocess adapters |
+| [Encoding and interop](#encoding-and-interop) | `interop.iccma`, `solving.sat_encoding`, `solving.af_sat`, `structured.aspic.datalog_grounding`, `gradual.llm_surface` | ICCMA AF/ADF/ABA exchange, in-package SAT-extension routing, incremental AF SAT kernel, Gunray-grounded ASPIC+, QBAF adapter for argumentative LLM pipelines |
+| [Solver orchestration](#solver-surfaces) | `solving.*`, `solver_adapters/` | Typed solver tasks, capability detection, `backend="auto"` routing, ICCMA / clingo subprocess adapters |
 
 `docs/architecture.md` covers the layered kernel-and-adapters design in depth.
 `docs/backends.md` documents the backend selection rule.
@@ -456,12 +456,13 @@ af = parse_af("p af 3\n1 2\n2 3\n")
 text = write_af(af)
 ```
 
-`argumentation.solving.sat_encoding` provides a pure-Python CNF encoding of
-stable extension semantics over one Boolean variable per argument; the
-encoding is solver-independent. `argumentation.solving.af_sat` provides a
-Z3-backed incremental SAT kernel for Dung AFs with telemetry (`SATCheck`,
-`SATTraceSink`, `AfSatKernel`). `argumentation.structured.aba.aba_sat`
-provides task-directed SAT enumeration for ABA.
+`argumentation.solving.sat_encoding` exposes `sat_extensions`, the `"sat"`
+backend's in-package routing helper over the native Dung/SCC enumerators (no
+external SAT solver and no standalone CNF apparatus). The Z3-backed
+incremental SAT kernel for Dung AFs with telemetry (`SATCheck`,
+`SATTraceSink`, `AfSatKernel`) lives in `argumentation.solving.af_sat`.
+`argumentation.structured.aba.aba_sat` provides task-directed SAT enumeration
+for ABA.
 
 `argumentation.structured.aspic.datalog_grounding` (requires the
 `[grounding]` extra) grounds a Gunray `DefeasibleTheory` into propositional
@@ -497,9 +498,11 @@ the ABA equivalent for that contract; `solve_dung_extensions(..., backend="iccma
 returns typed unavailable instead of pretending one witness enumerates every
 extension.
 
-`argumentation.solving.backends` exposes capability detection (`has_clingo`,
-`has_z3`) and `default_backend(...)` / `backend_choice_reason(...)` for
-routing decisions. `argumentation.core.solver_results` defines the typed
+Capability detection and backend auto-selection live inside
+`argumentation.solving.solver`: `backend="auto"` resolves per semantics/task
+through the `_auto_*` routing helpers (`_has_clingo()` gates the ASP-backed
+ABA paths). See `docs/backends.md` for the backend-string set and the routing
+table. `argumentation.core.solver_results` defines the typed
 `SolverUnavailable`, `SolverProcessError`, and `SolverProtocolError` returns.
 `argumentation.solving.solver_differential` provides
 `solver_capability_matrix` and task-aware comparison helpers across native,

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- `argumentation.solving.backends` — deleted. Capability detection and the
+  `backend="auto"` routing it once exposed (`has_clingo` / `has_z3` /
+  `default_backend` / `backend_choice_reason`) are folded into
+  `argumentation.solving.solver` (`_has_clingo()` plus the per-call `_auto_*`
+  resolvers). Import errors fail cleanly with `ModuleNotFoundError`.
+- The CNF apparatus in `argumentation.solving.sat_encoding` — removed. The
+  module now only exposes `sat_extensions`, a scan-based enumerator that routes
+  to the native Dung/SCC machinery; there is no longer a solver-independent
+  Boolean-per-argument CNF encoding.
+
+### Changed
+
+- `argumentation.probabilistic.probabilistic_treedecomp` was split into three
+  modules: `probabilistic_treedecomp_construction` (min-degree treewidth,
+  tree-decomposition, nice-tree-decomposition), `probabilistic_grounded_td`
+  (the adapted grounded edge-tracking `exact_dp` route), and
+  `probabilistic_paper_td` (paper-faithful Popescu & Wallner). The old facade
+  path raises `ModuleNotFoundError`.
+
 ### Documentation
 
 - Added a `docs/` landing page, executable examples, and contributor-facing

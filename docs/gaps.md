@@ -8,8 +8,8 @@ changelogs are in the appendix; the main body is current limitations only.
 | # | Limitation | Source |
 |---|---|---|
 | L1 | Non-flat ABA is out of scope. `ABAFramework` rejects rules whose heads are assumptions via `NotFlatABAError`. A future non-flat ABA workstream must own that distinct semantics. | `src/argumentation/structured/aba/aba.py` |
-| L2 | The `exact_dp` PrAF backend tracks full edge sets and forgotten arguments in tree-decomposition table keys. Asymptotic complexity is **not better** than brute-force enumeration; effective in practice for primal-graph treewidth <= ~15. This is *not* the full Popescu & Wallner I/O/U witness-table DP. | `src/argumentation/probabilistic/probabilistic_treedecomp.py` |
-| L3 | `exact_dp` accepts only grounded semantics on defeat-only PrAFs (no supports, attacks == defeats). Other configurations route to `mc` or `exact_enum`. | `src/argumentation/probabilistic/probabilistic_treedecomp.py` |
+| L2 | The `exact_dp` PrAF backend tracks full edge sets and forgotten arguments in tree-decomposition table keys. Asymptotic complexity is **not better** than brute-force enumeration; effective in practice for primal-graph treewidth <= ~15. This is *not* the full Popescu & Wallner I/O/U witness-table DP. | `src/argumentation/probabilistic/probabilistic_grounded_td.py` |
+| L3 | `exact_dp` accepts only grounded semantics on defeat-only PrAFs (no supports, attacks == defeats). Other configurations route to `mc` or `exact_enum`. | `src/argumentation/probabilistic/probabilistic_grounded_td.py` |
 | L4 | The `paper_td` Popescu & Wallner backend is opt-in only and supports `query_kind="extension_probability"` exclusively. The auto-router does not select it. | `src/argumentation/probabilistic/probabilistic.py` |
 | L5 | The ABA+ ASP backend is not implemented. Calls return a typed `unavailable_backend` result with reason "ABA+ ASP backend is not implemented". | `src/argumentation/structured/aba/aba_asp.py` |
 | L6 | The ASPIC+ clingo backend supports grounded semantics only. Non-grounded queries return `unavailable_backend`. | `notes/workstream-asp-backend-2026-05-01.md:22-24` |
