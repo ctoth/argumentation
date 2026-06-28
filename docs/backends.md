@@ -1,58 +1,58 @@
 # Backend selection
 
-`argumentation.solving.backends` exposes capability detection and the default
-backend selection policy. Solver entry points consume the chosen backend
-string; `default_backend(...)` is a policy function, not a forced dispatch
-layer — callers may always override with an explicit `backend=` argument.
+Solver entry points take a `backend=` string and route the query to a package
+or external backend. There is no separate backend-policy module: capability
+detection and auto-selection both live inside
+`argumentation.solving.solver`. Callers either pass an explicit backend string
+(`native`, `sat`, `asp`, `iccma`, …) or pass `backend="auto"` and let `solver`
+choose per semantics/task.
 
 ## Capability detection
 
-```python
-from argumentation.solving.backends import has_clingo, has_z3
+Capability detection is internal to `solver`; it is not surfaced as a public
+function.
 
-has_clingo()   # True if `clingo` is on PATH or the `clingo` Python package is importable
-has_z3()       # True if `z3-solver` is installed (the [z3] extra)
-```
+- clingo: `argumentation.solving.solver._has_clingo()` returns `True` when the
+  `clingo` Python package is importable (`importlib.util.find_spec("clingo")`).
+  It is consulted only by the `auto` ABA routing (see below).
+- z3: the SAT kernel lazily imports `z3` through
+  `argumentation.core.optional_deps.load_z3(feature)`, which raises a
+  feature-specific `RuntimeError` ("… requires z3-solver") when the `[z3]`
+  extra is not installed. There is no standalone `has_z3()` probe; an
+  unavailable z3 surfaces as `SolverBackendUnavailable` at solve time.
 
 When `clingo` is available only as a Python package, the subprocess adapter
 invokes the current Python executable with `-m clingo`
 (`solver_adapters/clingo.py:_resolve_command`).
 
-## Default backend rule
+## Auto selection (`backend="auto"`)
+
+`backend="auto"` is the default on the `solve_dung_*` / `solve_aba_*` entry
+points. The chosen string is resolved by per-call helpers in
+`argumentation.solving.solver`:
+
+| Entry point | Resolver | `auto` behaviour |
+|---|---|---|
+| `solve_dung_extensions` | `_auto_dung_extension_backend` | `sat` for `complete`/`stable`, else `native` |
+| `solve_dung_single_extension` | `_auto_dung_single_backend` | `sat` for `complete`/`ideal`/`preferred`/`semi-stable`/`stable`/`stage`, else `native` |
+| `solve_dung_acceptance` | `_auto_dung_acceptance_backend` | `sat` for `complete`/`ideal`/`semi-stable`/`stable`/`stage` and credulous/skeptical `preferred`, else `native` |
+| `solve_aba_*` | `_auto_aba_backend` / `_auto_aba_backend_for_framework` | `asp` when `_has_clingo()` and the semantics/task qualifies; otherwise `sat` for `complete`/`preferred`/`stable`, else `native`. `_auto_aba_backend_for_framework` additionally promotes some single-extension shapes to `sat`. |
+
+An explicit non-`auto` backend string is passed through unchanged by every
+resolver, so `backend="native"` (etc.) always overrides the policy.
+
+A query with `backend="auto"` end to end:
 
 ```python
-from argumentation.solving.backends import default_backend, backend_choice_reason
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.solving.solver import solve_dung_extensions
 
-backend: str = default_backend(
-    semantics="grounded",
-    theory_size=42,
-    has_preferences=False,
-    weakest_link=False,
-)
+af = ArgumentationFramework({"a", "b"}, {("a", "b"), ("b", "a")})
+result = solve_dung_extensions(af, semantics="stable", backend="auto")
+# auto -> "sat" for stable; result is an ExtensionEnumerationSuccess
+print(sorted(tuple(sorted(e)) for e in result.extensions))
+# [('a',), ('b',)]
 ```
-
-Current rule (implemented in `src/argumentation/solving/backends.py`):
-
-```text
-if weakest_link:                       materialized_reference
-if semantics == "grounded":            asp
-if theory_size > 30 and has_clingo():  asp
-if has_z3():                           sat
-else:                                  materialized_reference
-```
-
-Notes:
-
-- The grounded branch returns `"asp"` unconditionally — it is **not**
-  guarded by `has_clingo()`. A caller without clingo will receive
-  `SolverUnavailable` at solve time, not at policy time.
-- `has_preferences` is currently unused (`del has_preferences` at
-  `backends.py:24`). It is reserved for future preference-aware routing.
-- `weakest_link` is a boolean indicating ASPIC+ weakest-link defeat; when
-  set it forces `materialized_reference`.
-
-`backend_choice_reason(...)` returns a debug string with the inputs plus
-observed `has_clingo`/`has_z3` values, useful for routing diagnostics.
 
 ## Backend identifiers
 

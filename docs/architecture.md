@@ -150,12 +150,15 @@ in dedicated docs (see [See also](#see-also)).
 - `argumentation.probabilistic.probabilistic_components` — Connected component
   decomposition over the primitive semantic dependency graph (Hunter &
   Thimm 2017, Proposition 18).
-- `argumentation.probabilistic.probabilistic_treedecomp` — Min-degree
-  treewidth estimation, tree decomposition computation,
-  nice-tree-decomposition conversion, and an adapted grounded edge-tracking
-  DP. Exact for the supported grounded route, but not the full Popescu &
-  Wallner I/O/U witness-table DP. See `gaps.md` for the asymptotic
-  limitation.
+- `argumentation.probabilistic.probabilistic_treedecomp_construction` —
+  Min-degree treewidth estimation, tree decomposition computation, and
+  nice-tree-decomposition conversion.
+- `argumentation.probabilistic.probabilistic_grounded_td` — An adapted grounded edge-tracking
+  DP (`supports_exact_dp`, the `exact_dp` route). Exact for the supported
+  grounded route, but not the full Popescu & Wallner I/O/U witness-table DP.
+  See `gaps.md` for the asymptotic limitation.
+- `argumentation.probabilistic.probabilistic_paper_td` — The paper-faithful
+  Popescu & Wallner tree-decomposition DP.
 - `argumentation.probabilistic.epistemic` — Hunter-style epistemic language
   and belief distributions, labelled epistemic graphs with
   positive/negative/dependent labels, Potyka-style linear atomic constraints
@@ -200,11 +203,9 @@ in dedicated docs (see [See also](#see-also)).
 - `argumentation.solving.solver_differential` — Hosts
   `solver_capability_matrix` and task-aware comparison helpers for native,
   ICCMA, SAT, clingo, ADF, SETAF, and unsupported backend combinations.
-- `argumentation.solving.backends` — Capability detection (`has_clingo`,
-  `has_z3`), `default_backend(...)` policy, and `backend_choice_reason(...)`
-  diagnostics. See [`backends.md`](backends.md).
-- `argumentation.solving.sat_encoding` — Solver-independent CNF encoding of
-  stable extensions, plus a reference scan-based enumerator.
+- `argumentation.solving.sat_encoding` — `sat_extensions`, the `"sat"`
+  backend's scan-based enumerator that routes each semantics to the native
+  Dung/SCC machinery (no standalone CNF encoding).
 - `argumentation.solving.af_sat` — Incremental Z3-backed SAT kernel for Dung
   AF acceptance with telemetry (`AfSatKernel`, `SATCheck`, `SATTraceSink`).
 - `argumentation.solving.iccma_cli` — Argparse `main(argv)` for the ICCMA
@@ -243,7 +244,7 @@ upward:
 4. **`interop`** — exchange-format I/O over the framework layers.
 5. **`solver_adapters`** — external-solver subprocess adapters.
 6. **`solving`** — solver orchestration (`solver`, `solver_differential`,
-   `backends`, `sat_encoding`, `af_sat`, `iccma_cli`).
+   `sat_encoding`, `af_sat`, `iccma_cli`).
 7. **`semantics`** — the topmost generic dispatcher.
 
 The DAG is enforced mechanically by `import-linter`. The
@@ -280,10 +281,12 @@ ABA, ADF, SETAF, and ASPIC+ have their own native execution paths through
 `argumentation.solving.solver`; the SAT backend for AFs uses
 `argumentation.solving.af_sat` and the ASP backends for ABA / ASPIC+ route
 through `argumentation.structured.aba.aba_asp` /
-`argumentation.structured.aspic.aspic_encoding`. The `default_backend(...)`
-policy function in `argumentation.solving.backends` picks among these without
-forcing dispatch — see [`backends.md`](backends.md) for the rule body and the
-canonical backend-string set.
+`argumentation.structured.aspic.aspic_encoding`. With `backend="auto"`,
+`argumentation.solving.solver` picks among these per semantics/task through
+its `_auto_*` routing helpers (`_has_clingo()` gates the ASP-backed ABA
+paths), never forcing dispatch — an explicit `backend=` always overrides. See
+[`backends.md`](backends.md) for the routing table and the canonical
+backend-string set.
 
 ## Solver contracts
 

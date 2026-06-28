@@ -33,7 +33,7 @@ layout.
 | ABA / ABA+ | `argumentation.structured.aba.aba`, `argumentation.structured.aba.aba_sat`, `argumentation.structured.aba.aba_asp`, `argumentation.structured.aba.aba_incremental` | Flat ABA reference algorithms, task-directed SAT enumeration, optional clingo paths, incremental preferred solving. |
 | Specialized AFs | `argumentation.frameworks.adf`, `argumentation.frameworks.setaf`, `argumentation.frameworks.caf`, `argumentation.frameworks.vaf`, `argumentation.frameworks.partial_af` | ADF, collective attack, claim-augmented, value-based, and partial-AF semantics. |
 | Quantitative | `argumentation.gradual.*`, `argumentation.ranking.*`, `argumentation.core.bipolar` | Gradual strength, DF-QuAD, equational scoring, rankings, weighted systems, bipolar support. |
-| Probabilistic | `argumentation.probabilistic.probabilistic`, `argumentation.probabilistic.probabilistic_treedecomp`, `argumentation.probabilistic.epistemic` | PrAF routing, exact enumeration, Monte Carlo, tree-decomposition routes, epistemic constraints. |
+| Probabilistic | `argumentation.probabilistic.probabilistic`, `argumentation.probabilistic.probabilistic_treedecomp_construction`, `argumentation.probabilistic.probabilistic_grounded_td`, `argumentation.probabilistic.probabilistic_paper_td`, `argumentation.probabilistic.epistemic` | PrAF routing, exact enumeration, Monte Carlo, tree-decomposition routes, epistemic constraints. |
 | Dynamics | `argumentation.dynamics.af_revision`, `argumentation.dynamics.dynamic`, `argumentation.dynamics.enforcement`, `argumentation.dynamics.approximate` | AF revision, update streams, brute-force enforcement oracle, bounded approximations. |
 
 ## Deep Dives
