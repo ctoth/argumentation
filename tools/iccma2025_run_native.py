@@ -383,7 +383,12 @@ def run_or_skip(
     problem, _semantics = split_subtrack(task["subtrack"])
     if problem in {"DC", "DS"}:
         path = resolve_instance_path(config.root, instance)
-        if find_query_path(path) is None:
+        query_path = (
+            Path(str(path) + ".query")
+            if normalized_instance_kind(instance) == "aba"
+            else find_query_path(path)
+        )
+        if query_path is None or not query_path.exists():
             return {**base, "status": "skipped", "reason": "missing_query"}
     job = {
         "root": str(config.root),

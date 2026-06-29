@@ -143,6 +143,51 @@ def test_run_or_skip_skips_missing_acceptance_query_before_worker(
     assert row["reason"] == "missing_query"
 
 
+def test_run_or_skip_uses_aba_query_sidecar_for_decision_task(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    instance_path = tmp_path / "extracted" / "instances" / "case.aba"
+    instance_path.parent.mkdir(parents=True)
+    instance_path.write_text("p aba 1\na 1\nc 1 2\n", encoding="utf-8")
+    Path(str(instance_path) + ".query").write_text("1\n", encoding="utf-8")
+
+    seen_jobs: list[dict[str, object]] = []
+
+    def record_run_child(job, *, timeout_seconds):
+        seen_jobs.append(job)
+        return {
+            "status": "solved",
+            "reason": None,
+            "answer": "true",
+            "error": None,
+        }
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_child", record_run_child)
+    config = RunConfig(
+        root=tmp_path,
+        backend="auto",
+        iccma_binary=None,
+        max_af_arguments=20,
+        max_aba_assumptions=10,
+        timeout_seconds=5.0,
+        progress=False,
+        event_log_path=None,
+    )
+    instance = {
+        "kind": "aba",
+        "relative_path": "case.aba",
+        "assumptions": 1,
+    }
+    task = {"track": "aba", "subtrack": "DS-PR", "instance_kind": "aba"}
+
+    row = run_or_skip(config, instance, task)
+
+    assert seen_jobs
+    assert row["status"] == "solved"
+    assert row["reason"] is None
+
+
 def test_run_native_filters_exact_instance_and_subtrack_before_solving(
     tmp_path,
     monkeypatch,
