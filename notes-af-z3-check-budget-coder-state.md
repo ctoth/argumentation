@@ -91,5 +91,11 @@ Then solver.py + harness edits per checkpoint 2 plan; run tests.
 - Suite-minus-aspic running (task bltd9p2xh -> logs-af-z3budget-suite-minus-aspic.log); aspic-included run (be6wms2xq) still grinding same proptest (~80+ min, pre-existing).
 - Remaining: suite-minus-aspic result; commit record+notes+compare script; write reports/af-z3-check-budget-coder.md; SendMessage summary to main.
 
+## Checkpoint 11 (wrap-up)
+- Suite-minus-aspic: 2 failed, 2792 passed, 4 skipped, 1 xfailed in 249.18s. Both failures exonerated: test_docs_surface offender text present in `git show main:docs/argumentation-package-boundary.md` (pre-existing on main; my diff touches no docs); test_collapsed_profile_summary passes on immediate rerun (flaky tie-break ordering). git diff main --stat confirms diff touches only af_sat.py, solver.py, iccma2025_run_native.py + 2 new test files.
+- Commit efe9e70: experiment record + compare script + these notes.
+- reports/af-z3-check-budget-coder.md written; line citations grep-verified and corrected (af_sat finders :465/:484 etc., solver.py _sat_options :533, _sat_check_timeout :541, tables :952/:961).
+- Remaining: commit report (+ probe script? leave probe uncommitted — scratch; actually commit it? It's referenced in report as "uncommitted scratch" — leave), final ward/precommit check?, SendMessage 5-line summary to main. Aspic-inclusive full-suite run still grinding in background (will report as-is).
+
 ## Current blocker
-Waiting on suite-minus-aspic run.
+None.
