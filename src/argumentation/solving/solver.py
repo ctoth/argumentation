@@ -19,6 +19,7 @@ from argumentation.structured.aba.aba_sat import (
     support_extensions as sat_aba_support_extensions,
 )
 from argumentation.solving.af_sat import (
+    AfSatCheckTimeout,
     SATTraceSink,
     find_complete_extension,
     find_ideal_extension,
@@ -77,11 +78,18 @@ class ICCMAConfig:
 
 @dataclass(frozen=True)
 class SATConfig:
-    """Configuration for package-native or externally supplied SAT solving."""
+    """Configuration for package-native or externally supplied SAT solving.
+
+    ``check_budget_seconds`` is an optional per-check Z3 time budget (seconds,
+    ``None`` = unlimited). When the budget is exhausted the SAT layer raises a
+    structured timeout instead of collapsing Z3 ``unknown`` into a sat/unsat
+    answer.
+    """
 
     require_external: bool = False
     trace_sink: SATTraceSink | None = None
     metadata: Mapping[str, object] | None = None
+    check_budget_seconds: float | None = None
 
 
 ExtensionSolverSuccess = ExtensionEnumerationSuccess
@@ -345,7 +353,7 @@ def solve_dung_single_extension(
     if backend == "sat":
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
-        trace_sink, metadata = _sat_trace(sat)
+        trace_sink, metadata, check_budget_seconds = _sat_options(sat)
         find_single = _SAT_SINGLE_EXTENSION_FINDERS.get(semantics)
         if find_single is not None:
             try:
@@ -354,8 +362,11 @@ def solve_dung_single_extension(
                         framework,
                         trace_sink=trace_sink,
                         metadata=metadata,
+                        check_budget_seconds=check_budget_seconds,
                     ),
                 )
+            except AfSatCheckTimeout as exc:
+                return _sat_check_timeout(exc, semantics)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         extensions = sat_extensions(framework, semantics)
@@ -392,80 +403,20 @@ def solve_dung_acceptance(
     if backend == "sat":
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
-        trace_sink, metadata = _sat_trace(sat)
-        if semantics == "stable":
+        trace_sink, metadata, check_budget_seconds = _sat_options(sat)
+        solve_dedicated = _dedicated_sat_acceptance_solver(semantics, task)
+        if solve_dedicated is not None:
             try:
-                return _solve_sat_stable_acceptance(
+                return solve_dedicated(
                     framework,
                     task,
                     query,
                     trace_sink=trace_sink,
                     metadata=metadata,
+                    check_budget_seconds=check_budget_seconds,
                 )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "complete":
-            try:
-                return _solve_sat_complete_acceptance(
-                    framework,
-                    task,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "preferred" and task == "credulous":
-            try:
-                return _solve_sat_preferred_credulous_acceptance(
-                    framework,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "preferred" and task == "skeptical":
-            try:
-                return _solve_sat_preferred_skeptical_acceptance(
-                    framework,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "ideal":
-            try:
-                return _solve_sat_ideal_acceptance(
-                    framework,
-                    task,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "semi-stable":
-            try:
-                return _solve_sat_semi_stable_acceptance(
-                    framework,
-                    task,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        if semantics == "stage":
-            try:
-                return _solve_sat_stage_acceptance(
-                    framework,
-                    task,
-                    query,
-                    trace_sink=trace_sink,
-                    metadata=metadata,
-                )
+            except AfSatCheckTimeout as exc:
+                return _sat_check_timeout(exc, semantics)
             except RuntimeError as exc:
                 return _sat_runtime_unavailable(exc)
         return _solve_dung_acceptance_from_extensions(
@@ -579,10 +530,24 @@ def _external_sat_unavailable() -> SolverBackendUnavailable:
     )
 
 
-def _sat_trace(sat: SATConfig | None) -> tuple[SATTraceSink | None, Mapping[str, object] | None]:
+def _sat_options(
+    sat: SATConfig | None,
+) -> tuple[SATTraceSink | None, Mapping[str, object] | None, float | None]:
     if sat is None:
-        return None, None
-    return sat.trace_sink, sat.metadata
+        return None, None, None
+    return sat.trace_sink, sat.metadata, sat.check_budget_seconds
+
+
+def _sat_check_timeout(exc: AfSatCheckTimeout, semantics: str) -> SolverBackendTimeout:
+    return SolverBackendTimeout(
+        backend="sat",
+        problem=f"AF-{semantics}",
+        message=str(exc),
+        metadata={
+            "utility_name": exc.utility_name,
+            "check_budget_seconds": exc.check_budget_seconds,
+        },
+    )
 
 
 def _sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
@@ -794,16 +759,19 @@ def _solve_sat_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     """Credulous (require_in→witness) / skeptical (require_out→counterexample)
     SAT acceptance against any find_*_extension finder sharing the
-    (framework, *, require_in/require_out, trace_sink, metadata) signature."""
+    (framework, *, require_in/require_out, trace_sink, metadata,
+    check_budget_seconds) signature."""
     if task == "credulous":
         witness = find_extension(
             framework,
             require_in=query,
             trace_sink=trace_sink,
             metadata=metadata,
+            check_budget_seconds=check_budget_seconds,
         )
         return AcceptanceSolverSuccess(
             answer=witness is not None,
@@ -815,6 +783,7 @@ def _solve_sat_acceptance(
             require_out=query,
             trace_sink=trace_sink,
             metadata=metadata,
+            check_budget_seconds=check_budget_seconds,
         )
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
@@ -830,6 +799,7 @@ def _solve_sat_stable_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     return _solve_sat_acceptance(
         find_stable_extension,
@@ -838,6 +808,7 @@ def _solve_sat_stable_acceptance(
         query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
 
 
@@ -848,6 +819,7 @@ def _solve_sat_complete_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     return _solve_sat_acceptance(
         find_complete_extension,
@@ -856,21 +828,26 @@ def _solve_sat_complete_acceptance(
         query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
 
 
 def _solve_sat_preferred_credulous_acceptance(
     framework: ArgumentationFramework,
+    task: str,
     query: str,
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
+    del task  # dispatch guarantees task == "credulous"
     witness = find_preferred_extension(
         framework,
         require_in=query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
     return AcceptanceSolverSuccess(
         answer=witness is not None,
@@ -880,16 +857,20 @@ def _solve_sat_preferred_credulous_acceptance(
 
 def _solve_sat_preferred_skeptical_acceptance(
     framework: ArgumentationFramework,
+    task: str,
     query: str,
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
+    del task  # dispatch guarantees task == "skeptical"
     answer = is_preferred_skeptically_accepted(
         framework,
         query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
     return AcceptanceSolverSuccess(
         answer=answer,
@@ -903,11 +884,13 @@ def _solve_sat_ideal_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     extension = find_ideal_extension(
         framework,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
     if task == "credulous":
         return AcceptanceSolverSuccess(
@@ -929,6 +912,7 @@ def _solve_sat_semi_stable_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     return _solve_sat_acceptance(
         find_semi_stable_extension,
@@ -937,6 +921,7 @@ def _solve_sat_semi_stable_acceptance(
         query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
 
 
@@ -947,6 +932,7 @@ def _solve_sat_stage_acceptance(
     *,
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> AcceptanceSolverSuccess:
     return _solve_sat_acceptance(
         find_stage_extension,
@@ -955,7 +941,33 @@ def _solve_sat_stage_acceptance(
         query,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     )
+
+
+# Dung SAT acceptance helpers keyed by semantics. Every helper shares the
+# (framework, task, query, *, trace_sink, metadata, check_budget_seconds)
+# signature; preferred is task-specific, so it is dispatched separately in
+# _dedicated_sat_acceptance_solver.
+_SAT_ACCEPTANCE_SOLVERS = {
+    "stable": _solve_sat_stable_acceptance,
+    "complete": _solve_sat_complete_acceptance,
+    "ideal": _solve_sat_ideal_acceptance,
+    "semi-stable": _solve_sat_semi_stable_acceptance,
+    "stage": _solve_sat_stage_acceptance,
+}
+
+
+def _dedicated_sat_acceptance_solver(semantics: str, task: str):
+    """Return the dedicated SAT acceptance helper, or None for the
+    enumeration fallback."""
+    if semantics == "preferred":
+        if task == "credulous":
+            return _solve_sat_preferred_credulous_acceptance
+        if task == "skeptical":
+            return _solve_sat_preferred_skeptical_acceptance
+        return None
+    return _SAT_ACCEPTANCE_SOLVERS.get(semantics)
 
 
 def _solve_dung_acceptance_from_extensions(

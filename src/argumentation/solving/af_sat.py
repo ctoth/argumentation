@@ -20,6 +20,38 @@ from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
 
+class AfSatCheckTimeout(TimeoutError):
+    """Z3 returned ``unknown`` on an AF SAT check (per-check budget exhausted).
+
+    Mirrors the ABA ``ClingoSolveTimeout`` convention: budget exhaustion is a
+    structured timeout signal, never a sat/unsat answer.
+    """
+
+    def __init__(
+        self,
+        utility_name: str,
+        *,
+        check_budget_seconds: float | None = None,
+    ) -> None:
+        self.utility_name = utility_name
+        self.check_budget_seconds = check_budget_seconds
+        budget = (
+            f" (check budget {check_budget_seconds}s)"
+            if check_budget_seconds is not None
+            else ""
+        )
+        super().__init__(
+            f"Z3 returned unknown on AF SAT check {utility_name!r}{budget}"
+        )
+
+
+def _apply_check_budget(solver: Any, check_budget_seconds: float | None) -> None:
+    """Set the z3 per-check ``timeout`` parameter (milliseconds) when budgeted."""
+    if check_budget_seconds is None:
+        return
+    solver.set("timeout", max(1, int(check_budget_seconds * 1000)))
+
+
 @dataclass(frozen=True)
 class SATCheck:
     """Telemetry for one SAT solver check."""
@@ -102,12 +134,15 @@ class AfSatKernel:
         *,
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
+        check_budget_seconds: float | None = None,
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
+        self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
         self.solver = self.z3.Solver()
+        _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
         self.in_vars = {
             argument: self.z3.Bool(f"af_in_{index}")
@@ -344,6 +379,11 @@ class AfSatKernel:
                     metadata=self.metadata,
                 )
             )
+        if result not in ("sat", "unsat"):
+            raise AfSatCheckTimeout(
+                utility_name,
+                check_budget_seconds=self.check_budget_seconds,
+            )
         return result
 
     def model_extension(self) -> frozenset[str]:
@@ -430,13 +470,19 @@ def find_stable_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
-    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        prepared.residual,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_stable_coverage()
     problem.require_in(prepared.required_in)
     problem.require_out(prepared.required_out)
@@ -452,6 +498,7 @@ def explain_stable_unsat(
     require_out: str | None = None,
     simplify: bool = True,
     metadata: Mapping[str, object] | None = None,
+    check_budget_seconds: float | None = None,
 ) -> StableUnsatExplanation:
     """Return a tracked-clause explanation for stable-extension SAT/UNSAT.
 
@@ -488,6 +535,7 @@ def explain_stable_unsat(
     residual = prepared.residual
     z3 = _load_z3()
     solver = z3.Solver()
+    _apply_check_budget(solver, check_budget_seconds)
     arguments = tuple(sorted(residual.arguments))
     in_vars = {argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)}
     attackers_index = predecessors_index(residual.defeats)
@@ -587,13 +635,19 @@ def find_complete_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "complete", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
-    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        prepared.residual,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_complete_labelling()
     extension = _complete_extension(
         problem,
@@ -612,13 +666,19 @@ def find_preferred_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "preferred", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
-    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        prepared.residual,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_complete_labelling()
     result = _find_preferred_extension_body(
         problem,
@@ -673,6 +733,7 @@ def is_preferred_skeptically_accepted(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> bool:
     """Decide preferred skeptical acceptance using CDAS admissibility checks."""
     _optional_argument(framework, query)
@@ -693,6 +754,7 @@ def is_preferred_skeptically_accepted(
         framework,
         trace_sink=trace_sink,
         metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
     ).decide(query)
 
 
@@ -716,10 +778,12 @@ class PreferredSkepticalTaskSolver:
         *,
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
+        check_budget_seconds: float | None = None,
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
+        self.check_budget_seconds = check_budget_seconds
 
     def decide(self, query: str) -> bool:
         required_query = _optional_argument(self.framework, query)
@@ -731,6 +795,7 @@ class PreferredSkepticalTaskSolver:
             self.framework,
             trace_sink=self.trace_sink,
             metadata=self.metadata,
+            check_budget_seconds=self.check_budget_seconds,
         ).compute()
         if required_query and required_query <= super_core:
             return True
@@ -739,6 +804,7 @@ class PreferredSkepticalTaskSolver:
             self.framework,
             trace_sink=self.trace_sink,
             metadata=self.metadata,
+            check_budget_seconds=self.check_budget_seconds,
         )
         extension_problem.add_complete_labelling()
         seed = _complete_extension(
@@ -754,6 +820,7 @@ class PreferredSkepticalTaskSolver:
             required_in=required_query,
             trace_sink=self.trace_sink,
             metadata=self.metadata,
+            check_budget_seconds=self.check_budget_seconds,
         )
         loop_index = 0
         while True:
@@ -825,16 +892,19 @@ class PreferredSuperCoreSolver:
         *,
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
+        check_budget_seconds: float | None = None,
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
+        self.check_budget_seconds = check_budget_seconds
 
     def compute(self) -> frozenset[str]:
         problem = AfSatKernel(
             self.framework,
             trace_sink=self.trace_sink,
             metadata=self.metadata,
+            check_budget_seconds=self.check_budget_seconds,
         )
         problem.add_admissible_labelling()
         current = self.framework.arguments
@@ -859,13 +929,19 @@ def find_semi_stable_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "semi-stable", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
-    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        prepared.residual,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_complete_labelling()
     problem.add_range_definition()
     extension = _range_maximal_extension(
@@ -886,6 +962,7 @@ def find_ideal_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str]:
     if simplify:
         simplification = simplify_af(framework, semantics="ideal")
@@ -895,9 +972,15 @@ def find_ideal_extension(
                 trace_sink=trace_sink,
                 metadata=metadata,
                 simplify=False,
+                check_budget_seconds=check_budget_seconds,
             )
             return simplification.lift(residual_ideal)
-    problem = AfSatKernel(framework, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        framework,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_admissible_labelling()
     current = framework.arguments
     while True:
@@ -921,13 +1004,19 @@ def find_stage_extension(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
+    check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "stage", simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
-    problem = AfSatKernel(prepared.residual, trace_sink=trace_sink, metadata=metadata)
+    problem = AfSatKernel(
+        prepared.residual,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
     problem.add_conflict_free()
     problem.add_range_definition()
     extension = _range_maximal_extension(
@@ -1084,12 +1173,15 @@ class _PreferredSkepticalAttackerSolver:
         required_in: frozenset[str],
         trace_sink: SATTraceSink | None,
         metadata: Mapping[str, object] | None,
+        check_budget_seconds: float | None = None,
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
+        self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
         self.solver = self.z3.Solver()
+        _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
         self.attacker_vars = {
             argument: self.z3.Bool(f"af_cdas_attacker_{index}")
@@ -1137,6 +1229,11 @@ class _PreferredSkepticalAttackerSolver:
                     learned_count=self.learned_count,
                     metadata=self.metadata,
                 )
+            )
+        if result not in ("sat", "unsat"):
+            raise AfSatCheckTimeout(
+                "preferred_skeptical_adm_ext_att",
+                check_budget_seconds=self.check_budget_seconds,
             )
         return extension
 
@@ -1646,6 +1743,7 @@ def _load_z3():
 
 
 __all__ = [
+    "AfSatCheckTimeout",
     "AfSatKernel",
     "PreferredSkepticalTaskSolver",
     "PreferredSuperCoreSolver",
