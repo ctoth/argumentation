@@ -931,14 +931,49 @@ def find_semi_stable_extension(
     simplify: bool = True,
     check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
+    return _find_range_maximal_task_extension(
+        framework,
+        semantics="semi-stable",
+        base="complete",
+        label="semi_stable",
+        require_in=require_in,
+        require_out=require_out,
+        trace_sink=trace_sink,
+        metadata=metadata,
+        simplify=simplify,
+        check_budget_seconds=check_budget_seconds,
+    )
+
+
+def _find_range_maximal_task_extension(
+    framework: ArgumentationFramework,
+    *,
+    semantics: str,
+    base: str,
+    label: str,
+    require_in: str | None,
+    require_out: str | None,
+    trace_sink: SATTraceSink | None,
+    metadata: Mapping[str, object] | None,
+    simplify: bool,
+    check_budget_seconds: float | None,
+) -> frozenset[str] | None:
+    """Shared preprocessing + fragment dispatch + range-maximal search.
+
+    Both range-maximal semantics (semi-stable on the complete base, stage on
+    the conflict-free base) run the same pipeline: semantics-aware
+    simplification, the acyclic fragment dispatch, and only then the SAT
+    kernel with the range-maximal CEGAR loop (which itself starts with the
+    stable-first dispatch).
+    """
     prepared = _prepare(
-        framework, "semi-stable", simplify=simplify, require_in=require_in, require_out=require_out
+        framework, semantics, simplify=simplify, require_in=require_in, require_out=require_out
     )
     if prepared is None:
         return None
     handled, acyclic_answer = _acyclic_fragment_answer(
         prepared,
-        utility_name="semi_stable_acyclic_grounded",
+        utility_name=f"{label}_acyclic_grounded",
         trace_sink=trace_sink,
         metadata=metadata,
     )
@@ -950,16 +985,21 @@ def find_semi_stable_extension(
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
     )
-    problem.add_complete_labelling()
+    if base == "complete":
+        problem.add_complete_labelling()
+    elif base == "conflict_free":
+        problem.add_conflict_free()
+    else:
+        raise ValueError(f"unknown SAT base semantics: {base!r}")
     problem.add_range_definition()
     extension = _range_maximal_extension(
         problem,
         prepared.residual,
-        base="complete",
+        base=base,
         required_in=prepared.required_in,
         required_out=prepared.required_out,
-        seed_utility_name="semi_stable_seed",
-        test_utility_name="semi_stable_range_maximality",
+        seed_utility_name=f"{label}_seed",
+        test_utility_name=f"{label}_range_maximality",
     )
     return prepared.lift(extension)
 
@@ -1014,37 +1054,18 @@ def find_stage_extension(
     simplify: bool = True,
     check_budget_seconds: float | None = None,
 ) -> frozenset[str] | None:
-    prepared = _prepare(
-        framework, "stage", simplify=simplify, require_in=require_in, require_out=require_out
-    )
-    if prepared is None:
-        return None
-    handled, acyclic_answer = _acyclic_fragment_answer(
-        prepared,
-        utility_name="stage_acyclic_grounded",
+    return _find_range_maximal_task_extension(
+        framework,
+        semantics="stage",
+        base="conflict_free",
+        label="stage",
+        require_in=require_in,
+        require_out=require_out,
         trace_sink=trace_sink,
         metadata=metadata,
-    )
-    if handled:
-        return prepared.lift(acyclic_answer)
-    problem = AfSatKernel(
-        prepared.residual,
-        trace_sink=trace_sink,
-        metadata=metadata,
+        simplify=simplify,
         check_budget_seconds=check_budget_seconds,
     )
-    problem.add_conflict_free()
-    problem.add_range_definition()
-    extension = _range_maximal_extension(
-        problem,
-        prepared.residual,
-        base="conflict_free",
-        required_in=prepared.required_in,
-        required_out=prepared.required_out,
-        seed_utility_name="stage_seed",
-        test_utility_name="stage_range_maximality",
-    )
-    return prepared.lift(extension)
 
 
 def _run_extension(
@@ -1668,7 +1689,7 @@ class RangeMaximalTaskSolver:
                 required_out=required_out,
                 required_range=required_range,
                 excluded_range_subsets=excluded_range_subsets,
-                utility_name=_range_shortcut_utility(self.seed_utility_name, "high"),
+                utility_name=_high_range_shortcut_utility(self.seed_utility_name),
             )
             probes += 1
             if witness is not None:
@@ -1769,8 +1790,8 @@ def _max_range_utility(seed_utility_name: str, kind: str) -> str:
     return f"{_seed_label_base(seed_utility_name)}_max_range_{kind}"
 
 
-def _range_shortcut_utility(seed_utility_name: str, kind: str) -> str:
-    return f"{_seed_label_base(seed_utility_name)}_{kind}_range_shortcut"
+def _high_range_shortcut_utility(seed_utility_name: str) -> str:
+    return f"{_seed_label_base(seed_utility_name)}_high_range_shortcut"
 
 
 def _base_extension(
