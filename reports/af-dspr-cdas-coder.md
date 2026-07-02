@@ -136,8 +136,11 @@ question, resolved empirically in favour of the paper.
 
 - `934d998` Remove AdmSup maximisation from DS-PR CDAS decide loop
   (src/argumentation/solving/af_sat.py, tests/solving/test_solver_encoding.py)
-- experiment record + tooling + this report: hash recorded in the final
-  commit of this branch (see `git log exp/af-dspr-cdas`).
+- `ae9bb15` Record AF DS-PR CDAS alignment experiment result
+  (experiments/2026-07-02-af-dspr-cdas-blocking.md,
+  scripts/compare_dspr_runs.py, reports/af-dspr-cdas-coder.md)
+- Working-tree leftovers: only untracked benchmark logs
+  (`logs/af-dspr-cdas-*.log`), intentionally uncommitted.
 
 ## Promotion recommendation (recommend-only)
 
