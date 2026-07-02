@@ -769,6 +769,7 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
         SATConfig,
         SingleExtensionSolverSuccess,
         SolverBackendError,
+        SolverBackendTimeout,
         SolverBackendUnavailable,
         SolverProtocolError,
         solve_dung_acceptance,
@@ -810,6 +811,11 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
             event_log_path=job.get("event_log_path"),
         ),
         metadata=sat_trace_metadata(instance=instance, task=task),
+        # Same safety-margin convention as the ABA clingo solve budget in
+        # solve_aba_job (max(0.1, solver_timeout_seconds - 1.0)):
+        # leave one second below the outer subprocess wall-clock kill so the
+        # in-process Z3 budget fires first and yields a clean timeout row.
+        check_budget_seconds=max(0.1, float(job["solver_timeout_seconds"]) - 1.0),
     )
     if problem == "SE":
         result = solve_dung_single_extension(
@@ -828,6 +834,8 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
             return unavailable_result(result.reason, result.install_hint)
         if isinstance(result, SolverBackendError):
             return solver_error_result(result.reason, result.details)
+        if isinstance(result, SolverBackendTimeout):
+            return solver_timeout_row(result)
         if isinstance(result, SolverProtocolError):
             return protocol_error_result(result.reason, result.details)
         raise TypeError(f"unknown solver result: {result!r}")
@@ -849,6 +857,8 @@ def solve_af_job(job: dict[str, Any]) -> dict[str, Any]:
         return unavailable_result(result.reason, result.install_hint)
     if isinstance(result, SolverBackendError):
         return solver_error_result(result.reason, result.details)
+    if isinstance(result, SolverBackendTimeout):
+        return solver_timeout_row(result)
     if isinstance(result, SolverProtocolError):
         return protocol_error_result(result.reason, result.details)
     raise TypeError(f"unknown solver result: {result!r}")
@@ -981,18 +991,7 @@ def solve_aba_job(job: dict[str, Any]) -> dict[str, Any]:
         if isinstance(result, SolverBackendError):
             return solver_error_result(result.reason, result.details)
         if isinstance(result, SolverBackendTimeout):
-            return with_solver_metadata(
-                {
-                    "status": "timeout",
-                    "reason": result.reason,
-                    "answer": None,
-                    "extension_count": None,
-                    "witness_size": None,
-                    "witness": [],
-                    "error": None,
-                },
-                result.metadata,
-            )
+            return solver_timeout_row(result)
         if isinstance(result, SolverProtocolError):
             return protocol_error_result(result.reason, result.details)
         raise TypeError(f"unknown solver result: {result!r}")
@@ -1106,6 +1105,22 @@ def solved_acceptance(result) -> dict[str, Any]:
         "witness": extension_to_text(witness),
         "error": None,
     }
+
+
+def solver_timeout_row(result) -> dict[str, Any]:
+    """Map a SolverBackendTimeout into a clean in-process timeout row."""
+    return with_solver_metadata(
+        {
+            "status": "timeout",
+            "reason": result.reason,
+            "answer": None,
+            "extension_count": None,
+            "witness_size": None,
+            "witness": [],
+            "error": None,
+        },
+        result.metadata,
+    )
 
 
 def unavailable_result(reason: str, install_hint: str) -> dict[str, Any]:
