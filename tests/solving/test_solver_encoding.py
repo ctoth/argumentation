@@ -250,6 +250,21 @@ def test_preferred_skeptical_learning_store_traces_witness_regions() -> None:
     assert checks[-1].learned_count == 1
 
 
+def test_preferred_skeptical_decide_loop_has_no_admissible_superset_maximisation() -> None:
+    """Thimm 2021 Algorithm 2 (CDAS) never maximises the extended set (no AdmSup)."""
+    framework = af(
+        {"a", "b", "c", "q"},
+        {("a", "b"), ("b", "a"), ("a", "c"), ("b", "c"), ("c", "q")},
+    )
+    checks: list[SATCheck] = []
+
+    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is True
+
+    utility_names = [check.utility_name for check in checks]
+    assert "preferred_skeptical_extend_attacker" in utility_names
+    assert "preferred_skeptical_extend_attacker_maximal" not in utility_names
+
+
 def test_preferred_skeptical_seed_unsat_skips_maximal_growth() -> None:
     framework = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("b", "b")})
     checks: list[SATCheck] = []

@@ -697,7 +697,18 @@ def is_preferred_skeptically_accepted(
 
 
 class PreferredSkepticalTaskSolver:
-    """CDAS-style skeptical preferred acceptance solver for one AF."""
+    """CDAS skeptical preferred acceptance solver for one AF.
+
+    The decide loop is Algorithm 2 (CDAS) of Thimm/Cerutti/Vallati, IJCAI-21:
+    seed = ``AdmExt(AF, {query})``; then repeat ``AdmExtAtt`` (an admissible
+    attacker of an admissible query-superset, excluding attackers contained in
+    any stored witness) -> unsat means accepted; ``AdmExt(attacker | {query})``
+    -> unsat means rejected; otherwise store the extended witness. Complete
+    extensions stand in for admissible ones (existence-equivalent via Dung's
+    fundamental lemma). The shortcut ladder and the super-core precheck are
+    answer-preserving additions in front of the paper's loop; the loop itself
+    performs no ``AdmSup`` maximisation.
+    """
 
     def __init__(
         self,
@@ -753,16 +764,6 @@ class PreferredSkepticalTaskSolver:
                 extension_problem,
                 required_in=attacker | required_query,
                 utility_name="preferred_skeptical_extend_attacker",
-                loop_index=loop_index,
-                learned_count=attacker_problem.learned_count,
-            )
-            if extended is None:
-                return False
-            extended = _grow_preferred(
-                extension_problem,
-                self.framework,
-                extended,
-                utility_name="preferred_skeptical_extend_attacker_maximal",
                 loop_index=loop_index,
                 learned_count=attacker_problem.learned_count,
             )
