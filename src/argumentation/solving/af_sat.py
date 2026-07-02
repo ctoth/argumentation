@@ -936,6 +936,14 @@ def find_semi_stable_extension(
     )
     if prepared is None:
         return None
+    handled, acyclic_answer = _acyclic_fragment_answer(
+        prepared,
+        utility_name="semi_stable_acyclic_grounded",
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
+    if handled:
+        return prepared.lift(acyclic_answer)
     problem = AfSatKernel(
         prepared.residual,
         trace_sink=trace_sink,
@@ -1011,6 +1019,14 @@ def find_stage_extension(
     )
     if prepared is None:
         return None
+    handled, acyclic_answer = _acyclic_fragment_answer(
+        prepared,
+        utility_name="stage_acyclic_grounded",
+        trace_sink=trace_sink,
+        metadata=metadata,
+    )
+    if handled:
+        return prepared.lift(acyclic_answer)
     problem = AfSatKernel(
         prepared.residual,
         trace_sink=trace_sink,
@@ -1411,6 +1427,77 @@ def _range_maximal_extension(
     )
 
 
+def _emit_fragment_shortcut(
+    trace_sink: SATTraceSink | None,
+    framework: ArgumentationFramework,
+    *,
+    utility_name: str,
+    extension: frozenset[str] | None,
+    metadata: Mapping[str, object] | None,
+) -> None:
+    """Emit an oracle-free fragment-dispatch decision into the SAT trace."""
+    if trace_sink is None:
+        return
+    trace_sink(
+        SATCheck(
+            utility_name=utility_name,
+            result="sat" if extension is not None else "unsat",
+            elapsed_ms=0.0,
+            assumptions_count=0,
+            argument_count=len(framework.arguments),
+            attack_count=len(framework.defeats),
+            model_extension_size=None if extension is None else len(extension),
+            model_extension_fingerprint=(
+                None if extension is None else _extension_fingerprint(extension)
+            ),
+            metadata=metadata,
+        )
+    )
+
+
+def _acyclic_fragment_answer(
+    prepared: _PreparedAfSat,
+    *,
+    utility_name: str,
+    trace_sink: SATTraceSink | None,
+    metadata: Mapping[str, object] | None,
+) -> tuple[bool, frozenset[str] | None]:
+    """Dvořák 2014 acyclic-fragment dispatch for semi-stable and stage tasks.
+
+    Derivation (experiments/2026-07-02-af-sststg-shortcuts.md, Derivation 2):
+    a finite acyclic AF is well-founded, so its grounded extension is the
+    unique complete extension and is stable (Dung 1995, Theorem 30). Hence it
+    is also the unique semi-stable extension, and — because a stable
+    extension has full range, strictly dominating every other conflict-free
+    range — the unique stage extension. Gated on the conflict relation
+    equalling the defeat relation: ``grounded_extension`` is defeat-based
+    while the kernel's conflict-freeness is attack-based, so the equalities
+    above are only established for ``attacks is None or attacks == defeats``.
+
+    Returns ``(handled, answer)``; when ``handled`` is False the caller must
+    fall back to the range-maximal SAT loop.
+    """
+    residual = prepared.residual
+    if residual.attacks is not None and residual.attacks != residual.defeats:
+        return False, None
+    if not _is_acyclic(residual):
+        return False, None
+    grounded = grounded_extension(residual)
+    satisfied = (
+        prepared.required_in <= grounded
+        and prepared.required_out.isdisjoint(grounded)
+    )
+    answer = grounded if satisfied else None
+    _emit_fragment_shortcut(
+        trace_sink,
+        residual,
+        utility_name=utility_name,
+        extension=answer,
+        metadata=metadata,
+    )
+    return True, answer
+
+
 class RangeMaximalTaskSolver:
     """Exact range-maximal search for stage and semi-stable tasks."""
 
@@ -1447,6 +1534,12 @@ class RangeMaximalTaskSolver:
             )
             if feasible is None:
                 return None
+        decided, stable_answer = self._stable_first(
+            required_in=required_in,
+            required_out=required_out,
+        )
+        if decided:
+            return stable_answer
         blocked_ranges: list[frozenset[str]] = []
         while True:
             seed = self._seed_extension(
@@ -1496,6 +1589,56 @@ class RangeMaximalTaskSolver:
             utility_name=_max_range_utility(self.seed_utility_name, "exact"),
         )
 
+    def _stable_first(
+        self,
+        *,
+        required_in: frozenset[str],
+        required_out: frozenset[str],
+    ) -> tuple[bool, frozenset[str] | None]:
+        """Dvořák 2014 stable-first dispatch for stage and semi-stable tasks.
+
+        Derivation (experiments/2026-07-02-af-sststg-shortcuts.md,
+        Derivation 1): a full-range base extension is exactly a stable
+        extension, and when one exists the range-maximal base extensions are
+        exactly the full-range ones. So a query-constrained full-range
+        witness is a valid answer outright, and when only the unconstrained
+        full-range probe succeeds the query answer is decided as ``None``.
+        Unlike the bounded high-range probes this dispatch also runs in the
+        dense-graph regime (``_shortcut_probe_limit() == 0``).
+
+        Returns ``(decided, answer)``; when ``decided`` is False no stable
+        extension exists and the caller falls back to the range-maximal loop.
+        """
+        full_range = frozenset(self.problem.arguments)
+        witness = _base_extension(
+            self.problem,
+            base=self.base,
+            required_in=required_in,
+            required_out=required_out,
+            required_range=full_range,
+            utility_name=self._stable_first_utility_name("witness"),
+        )
+        if witness is not None:
+            return True, witness
+        if not required_in and not required_out:
+            # The witness probe doubled as the unconstrained existence check:
+            # no stable extension exists at all.
+            return False, None
+        unconstrained = _base_extension(
+            self.problem,
+            base=self.base,
+            required_range=full_range,
+            utility_name=self._stable_first_utility_name("global"),
+        )
+        if unconstrained is not None:
+            # Stable extensions exist, so every range-maximal extension has
+            # full range; the witness probe proved none satisfies the query.
+            return True, None
+        return False, None
+
+    def _stable_first_utility_name(self, kind: str) -> str:
+        return f"{_seed_label_base(self.seed_utility_name)}_stable_first_{kind}"
+
     def _high_range_shortcut(
         self,
         *,
@@ -1509,10 +1652,15 @@ class RangeMaximalTaskSolver:
         for missing in _bounded_missing_sets(
             arguments,
             depth=self.shortcut_depth,
-            limit=probe_limit,
+            limit=probe_limit + 1,
         ):
+            if not missing:
+                # The full-range (depth-0) probe is subsumed by the
+                # stable-first dispatch in find_extension: once it fails,
+                # later loop iterations only add blocking constraints, so it
+                # can never succeed again.
+                continue
             required_range = frozenset(arguments) - missing
-            kind = "full" if not missing else "high"
             witness = _base_extension(
                 self.problem,
                 base=self.base,
@@ -1520,7 +1668,7 @@ class RangeMaximalTaskSolver:
                 required_out=required_out,
                 required_range=required_range,
                 excluded_range_subsets=excluded_range_subsets,
-                utility_name=_range_shortcut_utility(self.seed_utility_name, kind),
+                utility_name=_range_shortcut_utility(self.seed_utility_name, "high"),
             )
             probes += 1
             if witness is not None:

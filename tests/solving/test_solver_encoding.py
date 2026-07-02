@@ -329,11 +329,12 @@ def test_kernel_range_maximal_search_traces_range_checks() -> None:
 
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
-    assert "stage_full_range_shortcut" in utility_names
+    assert "stage_stable_first_witness" in utility_names
     assert "stage_high_range_shortcut" in utility_names
     assert "stage_max_range_at_least" in utility_names
     assert "stage_max_range_exact" in utility_names
     assert "stage_seed" not in utility_names
+    assert "stage_full_range_shortcut" not in utility_names
 
 
 def test_kernel_traces_every_sat_check_with_utility_metadata() -> None:
@@ -427,45 +428,145 @@ def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
         check
         for check in checks
         if check.utility_name
-        in {"stage_full_range_shortcut", "stage_max_range_exact"}
+        in {"stage_stable_first_witness", "stage_max_range_exact"}
         and check.result == "sat"
     ]
     assert deciding_checks
     deciding_check = deciding_checks[-1]
     expected_range_size = (
         len(framework.arguments)
-        if deciding_check.utility_name == "stage_full_range_shortcut"
+        if deciding_check.utility_name == "stage_stable_first_witness"
         else deciding_check.range_bound
     )
     assert len(range_of(witness, framework.defeats)) == expected_range_size
     utility_names = [check.utility_name for check in checks]
     assert utility_names.count("stage_seed") == 0
     assert (
-        "stage_full_range_shortcut" in utility_names
+        "stage_stable_first_witness" in utility_names
         or "stage_max_range_at_least" in utility_names
     )
 
 
-def test_stage_full_range_shortcut_runs_before_cardinality_search() -> None:
-    framework = af({"a", "b"}, {("a", "b")})
+def test_stage_stable_first_witness_runs_before_cardinality_search() -> None:
+    framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
     checks: list[SATCheck] = []
 
-    assert find_stage_extension(framework, trace_sink=checks.append) == frozenset({"a"})
+    witness = find_stage_extension(framework, trace_sink=checks.append)
 
+    assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
-    assert utility_names[0] == "stage_full_range_shortcut"
+    assert utility_names[0] == "stage_stable_first_witness"
     assert "stage_max_range_at_least" not in utility_names
 
 
-def test_semi_stable_full_range_shortcut_runs_before_cardinality_search() -> None:
-    framework = af({"a", "b"}, {("a", "b")})
+def test_semi_stable_stable_first_witness_runs_before_cardinality_search() -> None:
+    framework = af({"a", "b"}, {("a", "b"), ("b", "a")})
     checks: list[SATCheck] = []
 
-    assert find_semi_stable_extension(framework, trace_sink=checks.append) == frozenset({"a"})
+    witness = find_semi_stable_extension(framework, trace_sink=checks.append)
 
+    assert witness in set(semi_stable_extensions(framework))
     utility_names = [check.utility_name for check in checks]
-    assert utility_names[0] == "semi_stable_full_range_shortcut"
+    assert utility_names[0] == "semi_stable_stable_first_witness"
     assert "semi_stable_max_range_at_least" not in utility_names
+
+
+def test_semi_stable_stable_first_global_decides_constrained_query() -> None:
+    # sem(F) = {{a}} (stable), but {b} is a complete extension, so the base
+    # feasibility check passes and only the global stable probe can decide
+    # require_in="b" as None without entering the range-maximal loop.
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("a", "c"), ("c", "c")})
+    checks: list[SATCheck] = []
+
+    assert not any(
+        "b" in extension for extension in semi_stable_extensions(framework)
+    )
+    assert find_semi_stable_extension(
+        framework,
+        require_in="b",
+        trace_sink=checks.append,
+        simplify=False,
+    ) is None
+
+    assert [check.utility_name for check in checks] == [
+        "semi_stable_base_feasibility",
+        "semi_stable_stable_first_witness",
+        "semi_stable_stable_first_global",
+    ]
+
+
+def test_stage_stable_first_global_decides_constrained_query() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("a", "c"), ("c", "c")})
+    checks: list[SATCheck] = []
+
+    assert not any(
+        "b" in extension for extension in stage_extensions(framework)
+    )
+    assert find_stage_extension(
+        framework,
+        require_in="b",
+        trace_sink=checks.append,
+        simplify=False,
+    ) is None
+
+    assert [check.utility_name for check in checks] == [
+        "stage_base_feasibility",
+        "stage_stable_first_witness",
+        "stage_stable_first_global",
+    ]
+
+
+def test_semi_stable_acyclic_af_answers_from_grounded() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c")})
+    grounded = grounded_extension(framework)
+    checks: list[SATCheck] = []
+
+    witness = find_semi_stable_extension(
+        framework, trace_sink=checks.append, simplify=False
+    )
+
+    assert witness == grounded == frozenset({"a", "c"})
+    assert witness in set(semi_stable_extensions(framework))
+    assert [check.utility_name for check in checks] == ["semi_stable_acyclic_grounded"]
+    assert find_semi_stable_extension(framework, require_in="b", simplify=False) is None
+    assert find_semi_stable_extension(
+        framework, require_out="b", simplify=False
+    ) == grounded
+
+
+def test_stage_acyclic_af_answers_from_grounded() -> None:
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c")})
+    grounded = grounded_extension(framework)
+    checks: list[SATCheck] = []
+
+    witness = find_stage_extension(framework, trace_sink=checks.append)
+
+    assert witness == grounded == frozenset({"a", "c"})
+    assert witness in set(stage_extensions(framework))
+    assert [check.utility_name for check in checks] == ["stage_acyclic_grounded"]
+    assert find_stage_extension(framework, require_in="b") is None
+    assert find_stage_extension(framework, require_out="b") == grounded
+
+
+def test_acyclic_shortcut_requires_conflict_relation_to_match_defeats() -> None:
+    # When ``attacks`` differs from ``defeats`` the kernel's conflict-freeness
+    # is attack-based while the grounded extension is defeat-based, so the
+    # acyclic dispatch must not fire even on a defeat-acyclic framework.
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b")}),
+        attacks=frozenset({("a", "b"), ("b", "a")}),
+    )
+    checks: list[SATCheck] = []
+
+    witness = find_semi_stable_extension(
+        framework, trace_sink=checks.append, simplify=False
+    )
+
+    assert witness == frozenset({"a"})
+    utility_names = [check.utility_name for check in checks]
+    assert "semi_stable_acyclic_grounded" not in utility_names
+    assert utility_names
 
 
 def test_stage_high_range_shortcut_runs_before_cardinality_search() -> None:
@@ -477,19 +578,25 @@ def test_stage_high_range_shortcut_runs_before_cardinality_search() -> None:
     assert witness in set(stage_extensions(framework))
     utility_names = [check.utility_name for check in checks]
     assert utility_names[:2] == [
-        "stage_full_range_shortcut",
+        "stage_stable_first_witness",
         "stage_high_range_shortcut",
     ]
     assert "stage_max_range_at_least" not in utility_names
 
 
 def test_high_range_shortcut_respects_global_max_for_query_witnesses() -> None:
-    framework = af({"a", "b"}, {("a", "b")})
+    # Cyclic core (3-cycle) with a universally-attacked query argument: no
+    # stable extension exists, so the stable-first probes fall through, and
+    # the query seed {d} is rejected by the global range-maximality test.
+    framework = af(
+        {"a", "b", "c", "d"},
+        {("a", "b"), ("b", "c"), ("c", "a"), ("a", "d"), ("b", "d"), ("c", "d")},
+    )
     checks: list[SATCheck] = []
 
     assert find_stage_extension(
         framework,
-        require_in="b",
+        require_in="d",
         trace_sink=checks.append,
     ) is None
 
@@ -519,7 +626,10 @@ def test_large_dense_range_tasks_use_bounded_high_range_probe_budget() -> None:
 
 
 def test_constrained_range_task_checks_base_feasibility_before_range_search() -> None:
-    framework = af({"a", "b"}, {("a", "b")})
+    # Odd cycle: the only complete extension is the empty set, so a
+    # require_in query is infeasible at the base level and must be rejected
+    # before any range search or stable-first probe runs.
+    framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
     checks: list[SATCheck] = []
 
     assert find_semi_stable_extension(
@@ -532,6 +642,7 @@ def test_constrained_range_task_checks_base_feasibility_before_range_search() ->
     utility_names = [check.utility_name for check in checks]
     assert utility_names[0] == "semi_stable_base_feasibility"
     assert "semi_stable_max_range_at_least" not in utility_names
+    assert "semi_stable_stable_first_witness" not in utility_names
 
 
 def test_kernel_conflict_free_constraints_reject_internal_attack() -> None:
