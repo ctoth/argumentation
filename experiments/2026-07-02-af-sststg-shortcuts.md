@@ -182,14 +182,31 @@ the binary-search seed machinery, blocking clauses, preprocessing
 
 ## Fast Contracts
 
-(to be filled after implementation)
+All run on the experiment branch (worktree venv):
 
-- `uv run pytest tests/solving`
-- `uv run pytest tests/interop`
-- Trace-test updates preserve assertion strength (same coverage of the new
-  intended sequence); differential gates
-  `tests/solving/test_solver_encoding.py` (native-oracle property tests for
-  sem/stg) and `tests/solving/test_solver_differential.py` unmodified.
+- TDD: 8 RED tests/updated trace tests failed before the implementation
+  commit, all green after. New tests cover: stable-first witness routing
+  (mutual-attack fixture, first check is `*_stable_first_witness`),
+  stable-first global deciding a constrained query as None with the exact
+  3-check trace (`base_feasibility, stable_first_witness,
+  stable_first_global`), acyclic dispatch answers (chain fixture, SE +
+  require_in + require_out, sem AND stage), and the `attacks != defeats`
+  gate (shortcut must NOT fire).
+- `uv run pytest tests/solving` -> `224 passed, 3 skipped in 4.82s` (the 3
+  pre-existing environment-conditional skips: ICCMA_AF_SOLVER /
+  ASPFORABA_SOLVER / ICCMA 2017 data).
+- `uv run pytest tests/interop` -> `57 passed in 1.88s`.
+- After the refactor commit (shared `_find_range_maximal_task_extension`),
+  both suites re-run together: `281 passed, 3 skipped in 5.58s`.
+- Trace-test updates preserve assertion strength: fixtures that were acyclic
+  (`a->b`) were replaced with cyclic ones so the loop paths stay covered
+  (odd 3-cycle for base-feasibility-first; 3-cycle + universally-attacked
+  query argument for the global-max regression test, trace hand-verified);
+  the `*_full_range_shortcut` assertions became `*_stable_first_witness`
+  assertions plus an explicit `not in` pin that the old label is gone.
+  Differential gates (native-oracle hypothesis property tests for sem/stg in
+  `tests/solving/test_solver_encoding.py` and
+  `tests/solving/test_solver_differential.py`) are unmodified and green.
 
 ## Metric Gate
 
