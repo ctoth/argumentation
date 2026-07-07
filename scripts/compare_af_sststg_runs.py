@@ -34,9 +34,11 @@ def load_rows(path: Path) -> dict[tuple[str, str, str], dict]:
 
 
 def row_line(row: dict) -> str:
+    elapsed = row.get("elapsed_seconds")
+    elapsed_text = f"{float(elapsed):.3f}s" if elapsed is not None else "n/a"
     return (
         f"status={row['status']} answer={row.get('answer')} "
-        f"elapsed={float(row['elapsed_seconds']):.3f}s reason={row.get('reason')}"
+        f"elapsed={elapsed_text} reason={row.get('reason')}"
     )
 
 
@@ -59,7 +61,9 @@ def witness_is_stable(framework, witness_text: str | None) -> bool | None:
     """True iff the witness is conflict-free with full range (a stable ext)."""
     if framework is None or witness_text is None:
         return None
-    witness = frozenset(witness_text.split())
+    # extension_to_text in tools/iccma2025_run_native.py serializes each
+    # argument with repr(), so tokens carry quotes; strip them.
+    witness = frozenset(token.strip("'\"") for token in witness_text.split())
     if not witness <= framework.arguments:
         return False
     conflicts = framework.attacks if framework.attacks is not None else framework.defeats

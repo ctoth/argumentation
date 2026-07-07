@@ -2,7 +2,10 @@
 
 Date: 2026-07-02
 
-Status: in progress (derivations written before implementation, per protocol).
+Status: measured on experiment branch; all correctness and metric gates
+pass, no kill criterion triggered. Promotion is a recommendation only.
+(Derivations were written and committed before implementation, per
+protocol.)
 
 Experiment branch: `exp/af-sststg-shortcuts` (off main at `57da538`)
 
@@ -219,18 +222,101 @@ only.**
 uv run tools/iccma2025_run_native.py --root C:\Users\Q\code\argumentation\data\iccma\2025 --only-subtrack DC-SST --only-subtrack DS-SST --only-subtrack SE-SST --backend auto --max-af-arguments 320 --timeout-seconds 15 --label af-sststg-<baseline|shortcuts>
 ```
 
-Baseline label `af-sststg-baseline` run on unmodified main (57da538) before
-any edit. Kill criteria: any baseline-solved row lost or answer changed;
->10% total-time regression on baseline-solved rows. Named target rows to
-report individually: `ER_300_50_8` DS-SST (hard @120s in recalibration),
+Baseline label `af-sststg-baseline` run on unmodified main (57da538). Kill
+criteria: any baseline-solved row lost or answer changed; >10% total-time
+regression on baseline-solved rows. Named target rows to report
+individually: `ER_300_50_8` DS-SST (hard @120s in recalibration),
 `ER_200_20_3` DS-SST (solved 79.6s@120s), crusti DS-SST family.
 
-(results to be filled)
+**Baseline provenance disclosure.** The first baseline attempt was started
+before any edit but ran concurrently with the implementation edits in the
+same worktree; the runner's pool workers import the editable install, so 185
+rows errored mid-run (`name '_acyclic_fragment_answer' is not defined`).
+That run was discarded and the baseline rerun on pristine `main` (detached
+HEAD at 57da538, `git status` clean, zero edits of any kind during the run).
+The candidate run executed entirely on the final committed branch code with
+no source edits in flight. Lesson recorded: never edit sources in a worktree
+while a benchmark is running from its editable install.
+
+### Results (both runs 1610 rows, zero errors)
+
+Comparison: `uv run scripts/compare_af_sststg_runs.py
+runs/iccma-2025-af-sststg-baseline.json
+runs/iccma-2025-af-sststg-shortcuts.json <data root>`
+
+| metric | baseline (main 57da538) | candidate (shortcuts) | gate |
+| --- | --- | --- | --- |
+| rows | 1610 | 1610 | — |
+| solved | 576 | 578 | must not drop: PASS |
+| timeout | 44 | 42 | — |
+| skipped (`af_argument_cap>320`) | 990 | 990 | — |
+| solved lost / gained | — | 0 / 2 | PASS |
+| answer mismatches (576 commonly solved) | — | 0 | PASS |
+| commonly-solved elapsed | 591.04 s | 568.04 s (−3.89%) | within +10%: PASS |
+| solved by subtrack | DC 242 / DS 222 / SE 112 | DC 242 / DS 224 / SE 112 | — |
+
+Gained rows: `AFs/n256p5q2_e.af` DS-SST on both tracks (main + heuristics),
+baseline `timeout>15.0` → solved in ~8.2 s. Its candidate trace contains
+only `semi_stable_base_feasibility` and `semi_stable_stable_first_witness`
+checks — the stable-first dispatch decided it without entering the
+range-maximal loop.
+
+Named target rows:
+
+| row | baseline | candidate |
+| --- | --- | --- |
+| `ER_200_20_3` DS-SST (main) | timeout>15.0 (15.008 s) | timeout>15.0 (15.020 s) |
+| `ER_200_20_3` DS-SST (heuristics) | timeout>15.0 (15.009 s) | timeout>15.0 (15.014 s) |
+| `ER_300_50_8` DS-SST (main) | timeout>15.0 (15.017 s) | timeout>15.0 (15.016 s) |
+| `ER_300_50_8` DS-SST (heuristics) | timeout>15.0 (15.022 s) | timeout>15.0 (15.009 s) |
+| crusti DS-SST family (19 instances × 2 tracks) | skipped `af_argument_cap>320` | skipped `af_argument_cap>320` |
+
+`ER_200_20_3` was solved at 79.6 s under the 120 s recalibration budget, so
+timeout at 15 s on both sides is expected; the shortcuts neither solved nor
+regressed it. The crusti DS-SST instances all exceed the 320-argument cap of
+this gate's command and are skipped identically on both sides — they are
+outside what this experiment can claim anything about.
+
+SE witness audit: 16 commonly-solved SE-SST rows changed witness (expected:
+the stable-first probe and the extra push/pop cycles change which model Z3
+returns). `scripts/verify_sststg_se_witnesses.py` verified BOTH sides of all
+16 rows independently (conflict-free + complete checked polynomially;
+range-maximality via one SAT call each): 32/32 OK, `failures: 0` — 7 rows
+full-range (stable) witnesses, 9 rows (`mainkwt_*`) genuinely non-stable
+range-maximal witnesses from the unchanged fallback loop.
+
+Shortcut firing stats over the candidate run (`utility_name` counts):
+`semi_stable_stable_first_witness` 452, `semi_stable_stable_first_global`
+74, `semi_stable_acyclic_grounded` 21, vs `semi_stable_high_range_shortcut`
+1248, `semi_stable_max_range_at_least` 641, `semi_stable_range_maximality`
+84. All labels are `semi_stable_*`: the ICCMA 2025 data root has no STG
+subtrack rows, so stage is exercised by the test suite only (as stated
+above).
 
 ## Interpretation
 
-(to be filled)
+- Both shortcuts are sound by derivation and by measurement: zero answer
+  changes across 576 commonly-solved rows, zero lost rows, and all 16
+  changed SE witnesses independently verified as semi-stable extensions.
+- The stable-first dispatch is the workhorse: it decided enough rows outright
+  (452 witness probes + 74 global-decides) to cut commonly-solved time by
+  3.89% and to newly solve the two `n256p5q2_e.af` DS-SST rows that
+  previously timed out inside the range-maximal loop.
+- The acyclic dispatch fired 21 times. For SST it is mostly subsumed by the
+  grounded-reduct preprocessing (acyclic residuals are usually empty); its
+  real payoff is for stage (no grounded reduct) — covered by tests, not by
+  bench rows.
+- The hard recalibration targets (`ER_300_50_8`, `ER_200_20_3` DS-SST)
+  remain timeouts at 15 s: they are dominated by the binary-search loop,
+  which this experiment deliberately did not touch. The crusti family is out
+  of scope at cap 320.
 
 ## Decision
 
-(to be filled)
+Recommend promotion (recommend-only). Kill criteria evaluated: no
+baseline-solved row lost (0), no answer changed (0 of 576), total time on
+baseline-solved rows improved (−3.89%, threshold was +10% regression). Two
+rows gained. Correctness gates green (`tests/solving` 224 passed / 3
+pre-existing skips, `tests/interop` 57 passed), differential native-oracle
+property tests unmodified and green, trace tests updated with preserved
+strength.
