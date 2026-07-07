@@ -42,6 +42,7 @@ from argumentation.core.dung import (
     stable_extensions,
     stage_extensions,
 )
+from argumentation.structured.aba.aba_route_policy import large_dense_flat_aba_shape
 from argumentation.structured.aba.aba_route_policy import sparse_narrow_native_sat_shape
 from argumentation.solving.sat_encoding import (
     sat_extensions,
@@ -503,19 +504,11 @@ def _auto_aba_backend_for_framework(
         and semantics == "stable"
         and task == "single-extension"
         and isinstance(framework, ABAFramework)
-        and _is_large_dense_flat_aba(framework)
+        and large_dense_flat_aba_shape(framework)
+        and sparse_narrow_native_sat_shape(framework)
     ):
         return "sat"
     return _auto_aba_backend(backend, semantics, task=task)
-
-
-def _is_large_dense_flat_aba(framework: ABAFramework) -> bool:
-    assumptions = len(framework.assumptions)
-    if assumptions <= 150:
-        return False
-    if any(rule.consequent in framework.assumptions for rule in framework.rules):
-        return False
-    return (len(framework.rules) / assumptions) > 25.0
 
 
 def _has_clingo() -> bool:

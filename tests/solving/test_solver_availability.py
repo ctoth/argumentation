@@ -68,6 +68,59 @@ def _large_dense_aba_framework() -> ABAFramework:
     )
 
 
+def _large_dense_non_sparse_narrow_aba_framework() -> ABAFramework:
+    """Mirror the ICCMA aba_2000 shape: large dense flat, but not sparse-narrow.
+
+    Fails sparse_narrow_native_sat_shape for the same reasons as
+    ABAs/aba_2000_0.1_5_5_1.aba: assumptions < 700, rule bodies wider than 2,
+    and shared contrary targets (multiplicity 3).
+    """
+    assumptions = tuple(_literal(f"a{index}") for index in range(200))
+    contraries = {
+        assumptions[index]: _literal(f"ca{index // 3}") for index in range(200)
+    }
+    heads = tuple(
+        _literal(f"h{index}_{offset}") for index in range(200) for offset in range(26)
+    )
+    rules = frozenset(
+        Rule(
+            tuple(assumptions[(index + step) % 200] for step in range(5)),
+            heads[index * 26 + offset],
+            "strict",
+        )
+        for index in range(200)
+        for offset in range(26)
+    )
+    return ABAFramework(
+        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        rules=rules,
+        assumptions=frozenset(assumptions),
+        contrary=contraries,
+    )
+
+
+def _sparse_narrow_large_dense_aba_framework() -> ABAFramework:
+    """Mirror the ICCMA abcgen shape: sparse-narrow AND large dense flat."""
+    assumptions = tuple(_literal(f"a{index}") for index in range(700))
+    contraries = {
+        assumptions[index]: _literal(f"ca{index}") for index in range(700)
+    }
+    heads = tuple(
+        _literal(f"h{index}_{offset}") for index in range(700) for offset in range(26)
+    )
+    rules = frozenset(
+        Rule((assumptions[index],), heads[index * 26 + offset], "strict")
+        for index in range(700)
+        for offset in range(26)
+    )
+    return ABAFramework(
+        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        rules=rules,
+        assumptions=frozenset(assumptions),
+        contrary=contraries,
+    )
+
+
 NATIVE_EXTENSION_ORACLES = {
     "complete": complete_extensions,
     "grounded": lambda framework: [grounded_extension(framework)],
@@ -127,23 +180,59 @@ def test_default_aba_stable_single_extension_uses_multishot_when_clingo_availabl
     assert result.extension is not None
 
 
-def test_large_dense_aba_stable_single_extension_auto_uses_sat_not_clingo(
+def test_large_dense_aba_stable_single_extension_auto_uses_asp_when_not_sparse_narrow(
     monkeypatch,
 ) -> None:
     framework = _large_dense_aba_framework()
     witness = frozenset({min(framework.assumptions, key=repr)})
 
-    def forbidden_asp(*args, **kwargs):
-        raise AssertionError("large dense ABA stable auto route should use SAT")
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError(
+            "large dense non-sparse-narrow ABA stable auto route should use clingo"
+        )
 
     monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
-    monkeypatch.setattr(solver_module, "_solve_asp_aba_single_extension", forbidden_asp)
-    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", lambda framework: witness)
+    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", forbidden_sat)
+    monkeypatch.setattr(
+        solver_module,
+        "_solve_asp_aba_single_extension",
+        lambda *args, **kwargs: SingleExtensionSolverSuccess(extension=witness),
+    )
 
     result = solve_aba_single_extension(framework, semantics="stable")
 
     assert isinstance(result, SingleExtensionSolverSuccess)
     assert result.extension == witness
+
+
+def test_stable_single_extension_auto_backend_is_asp_for_large_dense_non_sparse_narrow(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+
+    backend = solver_module._auto_aba_backend_for_framework(
+        "auto",
+        "stable",
+        task="single-extension",
+        framework=_large_dense_non_sparse_narrow_aba_framework(),
+    )
+
+    assert backend == "asp"
+
+
+def test_stable_single_extension_auto_backend_stays_sat_for_sparse_narrow(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+
+    backend = solver_module._auto_aba_backend_for_framework(
+        "auto",
+        "stable",
+        task="single-extension",
+        framework=_sparse_narrow_large_dense_aba_framework(),
+    )
+
+    assert backend == "sat"
 
 
 def test_default_aba_acceptance_uses_multishot_when_clingo_available(

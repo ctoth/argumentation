@@ -39,6 +39,16 @@ def native_cnf_prefsat_dense_shape(
     )
 
 
+def large_dense_flat_aba_shape(framework: Any) -> bool:
+    """Framework-level view of the dense shape gate used by auto routing."""
+    assumptions = len(framework.assumptions)
+    return native_cnf_prefsat_dense_shape(
+        is_flat=_is_flat_aba(framework),
+        assumptions=assumptions,
+        rule_density=(len(framework.rules) / assumptions) if assumptions else 0.0,
+    )
+
+
 def sparse_narrow_native_sat_shape(
     framework: Any,
     *,

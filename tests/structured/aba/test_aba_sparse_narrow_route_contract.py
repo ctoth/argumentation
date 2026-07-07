@@ -8,6 +8,7 @@ from argumentation.solving import solver
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aba.aba_sat import NativeSparseNarrowSatResult
 from argumentation.structured.aba.aba_route_policy import (
+    large_dense_flat_aba_shape,
     SPARSE_NARROW_NATIVE_SAT_PAGE_IMAGES,
     sparse_narrow_native_sat_shape,
 )
@@ -60,6 +61,41 @@ def test_sparse_narrow_route_rejects_locator_metadata() -> None:
 
     assert sparse_narrow_native_sat_shape(framework, locator_metadata=left)
     assert sparse_narrow_native_sat_shape(framework, locator_metadata=right)
+
+
+def test_large_dense_flat_aba_shape_requires_high_rule_density() -> None:
+    assert large_dense_flat_aba_shape(dense_flat_framework(200, rules_per_assumption=26))
+    assert not large_dense_flat_aba_shape(dense_flat_framework(200, rules_per_assumption=4))
+
+
+def test_large_dense_flat_aba_shape_requires_more_than_150_assumptions() -> None:
+    assert not large_dense_flat_aba_shape(dense_flat_framework(100, rules_per_assumption=26))
+
+
+def dense_flat_framework(assumptions: int, *, rules_per_assumption: int) -> ABAFramework:
+    assumption_literals = tuple(lit(f"a{index}") for index in range(assumptions))
+    heads = tuple(
+        lit(f"h{index}_{offset}")
+        for index in range(assumptions)
+        for offset in range(rules_per_assumption)
+    )
+    rules = frozenset(
+        Rule((assumption_literals[index],), heads[index * rules_per_assumption + offset], "strict")
+        for index in range(assumptions)
+        for offset in range(rules_per_assumption)
+    )
+    contraries = {
+        assumption: lit(f"c{index}")
+        for index, assumption in enumerate(assumption_literals)
+    }
+    return ABAFramework(
+        language=frozenset(assumption_literals)
+        | frozenset(heads)
+        | frozenset(contraries.values()),
+        assumptions=frozenset(assumption_literals),
+        contrary=contraries,
+        rules=rules,
+    )
 
 
 def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(monkeypatch) -> None:
