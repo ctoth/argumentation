@@ -305,6 +305,29 @@ def test_simplify_aba_stable_polynomial_on_minimal_support_blowup() -> None:
     assert s.residual.assumptions == frozenset()
 
 
+@pytest.mark.timeout(60)
+def test_asp_stable_single_extension_polynomial_on_minimal_support_blowup() -> None:
+    """The full production asp path must not re-enter the blow-up after simplify.
+
+    Regression for the second half of the aba_2000 SE-ST hang: with the
+    grounded fixpoint fixed, ``_solve_simplified`` still built
+    ``encode_aba_theory(original)`` with ``include_supports=True``, running the
+    exponential ``_minimal_supports`` enumeration on the original framework for
+    support facts the asp backend never consumes.
+    """
+    levels = 12
+    framework = _layered_choice_blowup_framework(levels)
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="stable",
+        task="single-extension",
+    )
+    assert result.status == "success"
+    assert result.witness == framework.assumptions - {lit("t")}
+    assert result.metadata["preprocessing"] == "grounded_reduct_aba"
+
+
 def test_aba_plus_is_no_op() -> None:
     a, b = lit("a"), lit("b")
     ca, cb = lit("ca"), lit("cb")

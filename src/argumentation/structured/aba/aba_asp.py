@@ -433,7 +433,13 @@ def _solve_simplified(
         collect_clingo_statistics=collect_clingo_statistics,
         clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
     )
-    encoding = encode_aba_theory(original)
+    # Reporting-only encoding of the ORIGINAL framework (the residual solve above
+    # builds its own). Support facts are exponential to enumerate and unused by
+    # the asp/clingo backends, so only include them where the backend needs them
+    # (mirrors the needs_support_facts gate in solve_aba_with_backend).
+    encoding = encode_aba_theory(
+        original, include_supports=backend not in {"asp", "clingo"}
+    )
     if residual_result.status != "success":
         return _failure_result(
             status=residual_result.status,
@@ -483,7 +489,9 @@ def _solve_simplified_ds_pr(
 
     original = simplification.original
     residual = simplification.residual
-    encoding = encode_aba_theory(original)
+    # Reporting-only encoding; the caller gates this path on backend in
+    # {"asp", "clingo"}, which never consumes the exponential support facts.
+    encoding = encode_aba_theory(original, include_supports=False)
     metadata = {
         "encoding": encoding.metadata["encoding"],
         "solver": "clingo_multishot",
