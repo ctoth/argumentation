@@ -18,7 +18,7 @@ from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework
 from argumentation.structured.aba.aba_preprocessing import (
     GROUNDED_REDUCT_ABA_SEMANTICS,
     _prepare_residual_requirements,
-    grounded_assumption_set_via_supports,
+    grounded_assumption_set_via_closures,
     simplify_aba,
 )
 from argumentation.structured.aba.aba_asp import solve_aba_with_backend
@@ -185,7 +185,7 @@ ALL = battery()
 def test_simplify_structural_invariants(framework: ABAFramework) -> None:
     s = simplify_aba(framework, semantics="complete")
     assert s.fixed_in == native_aba.grounded_extension(framework)
-    assert s.fixed_in == grounded_assumption_set_via_supports(framework)
+    assert s.fixed_in == grounded_assumption_set_via_closures(framework)
     assert s.fixed_in.isdisjoint(s.fixed_out)
     survivors = s.residual.assumptions
     assert survivors.isdisjoint(s.fixed_in)
@@ -240,13 +240,69 @@ def test_prepare_residual_requirements_rejects_fixed_out_requirement() -> None:
     assert prepared.projected_requirements is None
 
 
-def test_grounded_via_supports_matches_native_on_random() -> None:
+def test_grounded_via_closures_matches_native_on_random() -> None:
     rng = random.Random(20260512)
     for _ in range(200):
         framework = random_framework(rng)
-        assert grounded_assumption_set_via_supports(framework) == native_aba.grounded_extension(
+        assert grounded_assumption_set_via_closures(framework) == native_aba.grounded_extension(
             framework
         )
+
+
+def _layered_choice_blowup_framework(levels: int) -> ABAFramework:
+    """Flat ABA whose minimal-support count is 3**levels, grounded set = all but one.
+
+    ``q_0`` is a fact; each ``q_i`` is derivable from ``q_{i-1}`` plus any one of
+    three per-level assumptions, so ``q_levels`` has ``3**levels`` minimal
+    supports. The choice assumptions are unattacked (grounded), and the single
+    extra assumption ``t`` has contrary ``q_levels`` (fixed out). Any algorithm
+    that enumerates minimal supports blows up combinatorially here; the grounded
+    def-operator fixpoint itself is answerable in a handful of forward closures.
+    """
+    q = [lit(f"q{i}") for i in range(levels + 1)]
+    choices: list[Literal] = []
+    rules: list[Rule] = [Rule((), q[0], "strict")]
+    contrary: dict[Literal, Literal] = {}
+    for i in range(1, levels + 1):
+        for tag in ("x", "y", "z"):
+            choice = lit(f"{tag}{i}")
+            choices.append(choice)
+            contrary[choice] = lit(f"c_{tag}{i}")
+            rules.append(Rule((choice, q[i - 1]), q[i], "strict"))
+    t = lit("t")
+    contrary[t] = q[levels]
+    return _framework(
+        assumptions=set(choices) | {t},
+        contrary=contrary,
+        rules=rules,
+    )
+
+
+@pytest.mark.timeout(60)
+def test_grounded_via_closures_polynomial_on_minimal_support_blowup() -> None:
+    """Regression: aba_2000_0.1_5_5_{1,6} SE-ST hang (exp 4B).
+
+    The grounded assumption set must be computable without enumerating minimal
+    supports: on this 3**12-minimal-support framework the enumeration-based
+    implementation runs for days, starving the pre-solve simplification pass
+    (observed as simplify_aba(stable) exceeding a 200s cap while the clingo
+    solve itself takes 0.4s).
+    """
+    levels = 12
+    framework = _layered_choice_blowup_framework(levels)
+    grounded = grounded_assumption_set_via_closures(framework)
+    assert grounded == framework.assumptions - {lit("t")}
+
+
+@pytest.mark.timeout(60)
+def test_simplify_aba_stable_polynomial_on_minimal_support_blowup() -> None:
+    """The full simplify_aba(stable) path must also avoid the blow-up."""
+    levels = 12
+    framework = _layered_choice_blowup_framework(levels)
+    s = simplify_aba(framework, semantics="stable")
+    assert s.fixed_in == framework.assumptions - {lit("t")}
+    assert s.fixed_out == frozenset({lit("t")})
+    assert s.residual.assumptions == frozenset()
 
 
 def test_aba_plus_is_no_op() -> None:

@@ -36,7 +36,7 @@ from typing import Any
 from argumentation.core.finite import sorted_extensions
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
 from argumentation.structured.aba.aba_asp import ABAEncoding, encode_aba_theory
-from argumentation.structured.aba.aba_preprocessing import grounded_assumption_set_via_supports
+from argumentation.structured.aba.aba_preprocessing import grounded_assumption_set_via_closures
 from argumentation.structured.aspic.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
@@ -461,12 +461,14 @@ class AbaIncrementalSolver:
         return self._solve_one(ctl, telemetry=telemetry)
 
     def grounded_extension(self) -> AssumptionSet:
-        # Use the polynomial support-mask fixpoint rather than ``aba.grounded_extension``
-        # -- the latter's ``_all_subsets`` blow-up is exponential, and it historically
-        # also dropped the empty attacker set (now fixed in ``aba._defends``).  The
-        # support-based primitive is the C2a reference of record and handles
-        # fact-contrary frameworks correctly (returns a conflict-free set).
-        return grounded_assumption_set_via_supports(self.framework)
+        # Use the polynomial forward-closure fixpoint rather than
+        # ``aba.grounded_extension`` -- the latter's ``_all_subsets`` blow-up is
+        # exponential, and it historically also dropped the empty attacker set
+        # (now fixed in ``aba._defends``).  The closure-based primitive is the
+        # C2a reference of record (rewritten from minimal supports to Horn
+        # closures in exp 4B) and handles fact-contrary frameworks correctly
+        # (returns a conflict-free set).
+        return grounded_assumption_set_via_closures(self.framework)
 
     # -- preferred: Algorithm 1 / Algorithm 4 (CEGAR loop) -----------------
 

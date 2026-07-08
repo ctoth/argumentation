@@ -24,10 +24,12 @@ solve only the residual and lift the answer back.
   ``fixed_in`` and so is dropped. No further proof-system rewriting.
 * **Lift.** ``residual_extension | fixed_in``.
 
-The grounded assumption set is computed with a **support-mask fixpoint**
-(:func:`grounded_assumption_set_via_supports`), reusing the
-``aba_support_model._SupportState`` machinery, because ``aba.grounded_extension`` /
-``aba.def_operator`` as written iterate ``_all_subsets`` (exponential). The
+The grounded assumption set is computed with a **forward-closure fixpoint**
+(:func:`grounded_assumption_set_via_closures`), iterating the ``def`` operator
+with two Horn closures per round, because ``aba.grounded_extension`` /
+``aba.def_operator`` as written iterate ``_all_subsets`` (exponential), and the
+earlier support-mask fixpoint enumerated minimal derivation supports (worst-case
+exponential in rule-body width; the aba_2000 SE-ST pre-solve hang). The
 brute-force ``aba.grounded_extension`` is kept untouched as the differential
 oracle.
 
@@ -140,53 +142,43 @@ def _prepare_residual_requirements(
     )
 
 
-def grounded_assumption_set_via_supports(framework: ABAFramework) -> AssumptionSet:
-    """Compute the grounded assumption set with a polynomial support-mask fixpoint.
+def grounded_assumption_set_via_closures(framework: ABAFramework) -> AssumptionSet:
+    """Compute the grounded assumption set with a polynomial forward-closure fixpoint.
 
-    Equivalent to ``aba.grounded_extension`` on flat ABA but without the
-    exponential ``_all_subsets`` blow-up of ``aba.def_operator``: it iterates the
-    ``def`` operator over the precomputed minimal derivation supports, the same
-    cost class as the rest of the SAT path. Implementation note: each outer round
-    computes ``attacked_by(S)`` once and tests each candidate's attack supports
-    against it, rather than recomputing attack relations inside every ``defends``
-    check.
+    Equivalent to ``aba.grounded_extension`` on flat ABA but without exponential
+    enumeration: it iterates the ``def`` operator using two Horn closures per
+    round instead of precomputed minimal derivation supports (whose count is
+    worst-case exponential in rule-body width -- the aba_2000 SE-ST pre-solve
+    hang, exp 4B).
+
+    Per round, for the current candidate set ``S``:
+
+    * ``attacked_by(S) = {b : contrary(b) in Th(S)}`` -- one closure;
+    * ``a`` is defended by ``S`` iff every assumption set deriving
+      ``contrary(a)`` contains an attacked assumption; by monotonicity of
+      ``Th`` that holds iff ``contrary(a) not in Th(assumptions - attacked_by(S))``
+      -- one more closure.
+
+    Both closures are linear in total rule-body size, and the monotone fixpoint
+    takes at most ``|assumptions| + 1`` rounds.
     """
-    from argumentation.structured.aba.aba_support_model import _SupportState
-
-    state = _SupportState.from_framework(framework)
-    n = len(state.assumptions)
-    if n == 0:
-        return frozenset()
-    # For each assumption index, the integer masks of its minimal attack supports
-    # (the assumption sets that forward-derive its contrary).
-    attack_support_masks: list[tuple[int, ...]] = [
-        tuple(state.attack_supports.get(assumption, ()))
-        for assumption in state.assumptions
-    ]
-    selected = 0
+    assumptions = framework.assumptions
+    selected: AssumptionSet = frozenset()
     while True:
-        # attacked := { b : some minimal attack support of b is a subset of selected }
-        attacked = 0
-        for index in range(n):
-            for support in attack_support_masks[index]:
-                if (support & selected) == support:
-                    attacked |= 1 << index
-                    break
-        next_selected = selected
-        for index in range(n):
-            if next_selected & (1 << index):
-                continue
-            supports = attack_support_masks[index]
-            # An empty attack support is an unblockable attack -> never defended.
-            defended = True
-            for support in supports:
-                if support == 0 or (support & attacked) == 0:
-                    defended = False
-                    break
-            if defended:
-                next_selected |= 1 << index
+        closure_of_selected = _forward_closure(framework, selected)
+        attacked = frozenset(
+            assumption
+            for assumption in assumptions
+            if framework.contrary[assumption] in closure_of_selected
+        )
+        survivor_closure = _forward_closure(framework, assumptions - attacked)
+        next_selected = selected | frozenset(
+            assumption
+            for assumption in assumptions
+            if framework.contrary[assumption] not in survivor_closure
+        )
         if next_selected == selected:
-            return state.extension(selected)
+            return selected
         selected = next_selected
 
 
@@ -271,7 +263,7 @@ def simplify_aba(
     ):
         return SemanticReduct(framework, framework, frozenset(), frozenset())
 
-    grounded = grounded_assumption_set_via_supports(framework)
+    grounded = grounded_assumption_set_via_closures(framework)
     closure = _forward_closure(framework, grounded)
     fixed_in = grounded
     fixed_out = frozenset(
@@ -296,6 +288,6 @@ def _normalize_semantics(semantics: str) -> str:
 
 __all__ = [
     "GROUNDED_REDUCT_ABA_SEMANTICS",
-    "grounded_assumption_set_via_supports",
+    "grounded_assumption_set_via_closures",
     "simplify_aba",
 ]
