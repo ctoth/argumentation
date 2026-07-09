@@ -26,42 +26,48 @@ instead of accumulating metaphor-driven APIs.
 The package contains the formal kernels:
 
 ```text
-argumentation.dung
-argumentation.aspic
-argumentation.bipolar
-argumentation.partial_af
-argumentation.af_revision
-argumentation.probabilistic
-argumentation.probabilistic_components
-argumentation.dfquad
-argumentation.gradual
-argumentation.matt_toni
-argumentation.equational
-argumentation.gradual_principles
-argumentation.probabilistic_treedecomp
+argumentation.core.dung
+argumentation.structured.aspic.aspic
+argumentation.core.bipolar
+argumentation.frameworks.partial_af
+argumentation.dynamics.af_revision
+argumentation.probabilistic.probabilistic
+argumentation.probabilistic.probabilistic_components
+argumentation.gradual.dfquad
+argumentation.gradual.gradual
+argumentation.ranking.matt_toni
+argumentation.gradual.equational
+argumentation.gradual.gradual_principles
+argumentation.probabilistic.probabilistic_treedecomp_construction
+argumentation.probabilistic.probabilistic_paper_td
+argumentation.probabilistic.probabilistic_grounded_td
 argumentation.semantics
-argumentation.preference
-argumentation.solver
+argumentation.core.preference
+argumentation.solving.solver
 ```
 
-The core source files are:
+The core source files are (post package-decomposition paths; the original
+flat `probabilistic_treedecomp` module was split into construction, paper-TD,
+and grounded-TD modules):
 
-- `argumentation/src/argumentation/dung.py`
-- `argumentation/src/argumentation/aspic.py`
-- `argumentation/src/argumentation/bipolar.py`
-- `argumentation/src/argumentation/partial_af.py`
-- `argumentation/src/argumentation/af_revision.py`
-- `argumentation/src/argumentation/probabilistic.py`
-- `argumentation/src/argumentation/probabilistic_components.py`
-- `argumentation/src/argumentation/dfquad.py`
-- `argumentation/src/argumentation/gradual.py`
-- `argumentation/src/argumentation/matt_toni.py`
-- `argumentation/src/argumentation/equational.py`
-- `argumentation/src/argumentation/gradual_principles.py`
-- `argumentation/src/argumentation/probabilistic_treedecomp.py`
+- `argumentation/src/argumentation/core/dung.py`
+- `argumentation/src/argumentation/structured/aspic/aspic.py`
+- `argumentation/src/argumentation/core/bipolar.py`
+- `argumentation/src/argumentation/frameworks/partial_af.py`
+- `argumentation/src/argumentation/dynamics/af_revision.py`
+- `argumentation/src/argumentation/probabilistic/probabilistic.py`
+- `argumentation/src/argumentation/probabilistic/probabilistic_components.py`
+- `argumentation/src/argumentation/gradual/dfquad.py`
+- `argumentation/src/argumentation/gradual/gradual.py`
+- `argumentation/src/argumentation/ranking/matt_toni.py`
+- `argumentation/src/argumentation/gradual/equational.py`
+- `argumentation/src/argumentation/gradual/gradual_principles.py`
+- `argumentation/src/argumentation/probabilistic/probabilistic_treedecomp_construction.py`
+- `argumentation/src/argumentation/probabilistic/probabilistic_paper_td.py`
+- `argumentation/src/argumentation/probabilistic/probabilistic_grounded_td.py`
 - `argumentation/src/argumentation/semantics.py`
-- `argumentation/src/argumentation/preference.py`
-- `argumentation/src/argumentation/solver.py`
+- `argumentation/src/argumentation/core/preference.py`
+- `argumentation/src/argumentation/solving/solver.py`
 
 The implementation workstream cut directly to the external package: the
 `argumentation` repo owns the kernel modules and kernel tests, propstore depends
