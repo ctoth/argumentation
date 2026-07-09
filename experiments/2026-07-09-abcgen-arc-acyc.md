@@ -206,8 +206,63 @@ Re-baselined on THIS tree (scout numbers were from an older branch):
 
 ## Interpretation
 
-(filled after runs)
+Mechanism result (microbench, c25 = the scout's probe instance):
+
+| variant | checks | per-solve seconds | total |
+|---|---:|---|---:|
+| baseline loop-formula CEGAR (b446dfb) | 6 | 15.3, 14.1, 55.9, 14.1, 71.7, 108.6 (growing; 191 loop formulas) | 280.7s |
+| iter 1: edge-cycle CEGAR (08e19cd) | 12 | 1.2 … 46.5 (still trending up; 11 cycle clauses) | 178.3s |
+| iter 2: eager all-cycles (9ca0b56) | **1** | 56.0 (single solve, 0 CEGAR) | **56.0s** |
+
+The static intra-SCC edge graphs are tiny (c25: 194 edges / 92 elementary
+cycles; c35s: ~800 edges / 718-822 cycles, enumerable in ≤0.02s), so full
+eager cycle blocking is essentially free and removes the iteration mechanism
+entirely: the per-solve profile is flat by construction. Encoding volume never
+exploded (build ≤0.6s), so the IPASIR-UP propagator fallback was not needed.
+Witnesses closure-verified (the raise-on-bug founded check never fired);
+exactness property tests and the new unfounded-cycle fixtures pass.
+
+Cell results (t120, runner auto backend, baseline = pristine b446dfb):
+
+| cell | baseline | fixed |
+|---|---|---|
+| SE-ST c25 | timeout | timeout — **routes to clingo, not this solver** |
+| SE-ST c35_asms30 | timeout | timeout (this solver; its ONE solve takes 522s) |
+| SE-PR c25 | timeout | **solved 65.3s (witness 76)** |
+| SE-PR c35_asms35 | timeout | timeout (this solver) |
+
+Two mandate premises did not survive contact with current main:
+
+1. **Routing:** SE-ST single-extension goes to `sat` only for
+   `large_dense_flat_aba_shape` (rule density > 25) AND sparse-narrow
+   (`solving/solver.py:487`, set deliberately by
+   `experiments/2026-07-07-aba-sest-clingo-route.md`). abcgen c25's density is
+   20.7, so SE-ST c25 goes to clingo and cannot be flipped by any change to
+   this solver. (SE-PR c25 rides the sparse-narrow preferred gate and DID
+   flip.)
+2. **Instance scale:** on c35 the wall after the fix is a single hard CDCL
+   solve (522s), not CEGAR degradation — the giant-SCC/instance-hardness wall
+   the stop rule anticipated. Two implementation iterations were used; the
+   profile no longer grows, so the stop rule's growth trigger is not met, and
+   no third encoding iteration was attempted.
+
+Guard (SE-ST t15 slice, exp-4B command): baseline (detached b446dfb)
+241 solved / 79 timeout on the 320 ABA rows. Fixed-run comparison recorded in
+reports/abcgen-arc-acyc-coder.md §6.
 
 ## Decision
 
-(filled after runs)
+Keep the eager arc-acyclic foundedness encoding on this branch and recommend
+promotion, with caveats (recommend-only; no merge from this worktree):
+
+- The mechanism goal is achieved: loop-formula CEGAR deleted, per-solve
+  profile flat, c25 stable witness 280.7s → 56.0s (5x), SE-PR c25 frontier
+  cell flips timeout → solved 65.3s, nothing lost (guard tables in the coder
+  report).
+- The two remaining abcgen timeouts need DIFFERENT variables, out of scope
+  here: (a) a routing-gate experiment so abcgen-shaped SE-ST rows
+  (sparse-narrow, density ≤ 25, cycle-heavy) reach the native stable solver
+  instead of clingo — clingo also times out on them, so the gate currently
+  picks a loser; (b) for c35-scale single-solve hardness, escalate to
+  SCC-decomposition / cutset preprocessing (queue items 5 and 9), per the
+  scout's stop-rule recommendation.
