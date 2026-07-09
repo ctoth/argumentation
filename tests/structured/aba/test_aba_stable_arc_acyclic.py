@@ -78,4 +78,5 @@ def test_stable_solver_reports_arc_acyclicity_telemetry() -> None:
 
     assert result.telemetry["native_sparse_narrow_acyc_recursive_rules"] == 2
     assert result.telemetry["native_sparse_narrow_acyc_edges"] == 2
-    assert result.telemetry["native_sparse_narrow_edge_cycle_clauses"] >= 0
+    assert result.telemetry["native_sparse_narrow_acyc_eager_cycle_clauses"] == 1
+    assert result.telemetry["native_sparse_narrow_edge_cycle_clauses"] == 0

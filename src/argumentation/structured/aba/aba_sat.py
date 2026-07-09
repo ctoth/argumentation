@@ -749,6 +749,63 @@ def _iterative_tarjan_scc(adjacency: list[list[int]]) -> list[int]:
     return scc_index
 
 
+_EAGER_CYCLE_CLAUSE_CAP = 20000
+_EAGER_CYCLE_STEP_CAP = 2000000
+
+
+def _enumerate_elementary_edge_cycles(
+    edges: list[tuple[Literal, Literal]],
+    *,
+    cycle_cap: int = _EAGER_CYCLE_CLAUSE_CAP,
+    step_cap: int = _EAGER_CYCLE_STEP_CAP,
+) -> list[tuple[tuple[Literal, Literal], ...]] | None:
+    """All elementary cycles of the edge digraph, or None if a cap trips.
+
+    Deterministic root-ordered DFS (roots and successors ordered by repr);
+    each cycle is reported once, rooted at its repr-least node. The step cap
+    bounds worst-case exploration so pathological graphs fall back to the
+    lazy cycle CEGAR instead of stalling the encoder.
+    """
+    adjacency: dict[Literal, list[Literal]] = defaultdict(list)
+    nodes: set[Literal] = set()
+    for source, target in edges:
+        adjacency[source].append(target)
+        nodes.update((source, target))
+    for targets in adjacency.values():
+        targets.sort(key=repr)
+    rank = {node: index for index, node in enumerate(sorted(nodes, key=repr))}
+
+    cycles: list[tuple[tuple[Literal, Literal], ...]] = []
+    steps = 0
+    for root in sorted(nodes, key=repr):
+        path = [root]
+        on_path = {root}
+        pending = [iter(adjacency.get(root, ()))]
+        while pending:
+            successor = next(pending[-1], None)
+            if successor is None:
+                on_path.discard(path.pop())
+                pending.pop()
+                continue
+            steps += 1
+            if steps > step_cap:
+                return None
+            if rank[successor] < rank[root]:
+                continue
+            if successor == root:
+                cycle_nodes = [*path, root]
+                cycles.append(tuple(zip(cycle_nodes, cycle_nodes[1:])))
+                if len(cycles) > cycle_cap:
+                    return None
+                continue
+            if successor in on_path:
+                continue
+            path.append(successor)
+            on_path.add(successor)
+            pending.append(iter(adjacency.get(successor, ())))
+    return cycles
+
+
 def _first_directed_edge_cycle(
     edges: list[tuple[Literal, Literal]],
 ) -> tuple[tuple[Literal, Literal], ...] | None:
@@ -820,6 +877,7 @@ class _NativeSparseNarrowStableSolver:
             "native_sparse_narrow_loop_formulas": 0,
             "native_sparse_narrow_acyc_recursive_rules": 0,
             "native_sparse_narrow_acyc_edges": 0,
+            "native_sparse_narrow_acyc_eager_cycle_clauses": 0,
             "native_sparse_narrow_edge_cycle_clauses": 0,
             "native_sparse_narrow_solve_times_ms": [],
             "prefsat_attacker_bitset_closure_checks": 0,
@@ -966,6 +1024,16 @@ class _NativeSparseNarrowStableSolver:
                 demanding_rules[(atom, rule.consequent)].append(just)
         for edge, variable in self.edge_vars.items():
             self._add_clause([-variable, *demanding_rules[edge]])
+        cycles = _enumerate_elementary_edge_cycles(list(self.edge_vars))
+        if cycles is not None:
+            for cycle in cycles:
+                self._add_clause([-self.edge_vars[edge] for edge in cycle])
+            self.telemetry["native_sparse_narrow_acyc_eager_cycle_clauses"] = len(cycles)
+            return
+        # Cap tripped: block 2-cycles eagerly, longer cycles lazily in the
+        # solve loop's edge-cycle CEGAR.
+        self.telemetry["native_sparse_narrow_acyc_eager_cycle_clauses"] = -1
+        for edge, variable in self.edge_vars.items():
             source, target = edge
             reciprocal = self.edge_vars.get((target, source))
             if reciprocal is not None and repr(source) < repr(target):
