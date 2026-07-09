@@ -700,6 +700,90 @@ class _NativeCnfPrefSatSolver:
         )
 
 
+def _iterative_tarjan_scc(adjacency: list[list[int]]) -> list[int]:
+    """Tarjan SCC indices for an adjacency-list digraph, without recursion."""
+    node_count = len(adjacency)
+    indices = [-1] * node_count
+    lowlink = [0] * node_count
+    on_stack = [False] * node_count
+    scc_index = [-1] * node_count
+    stack: list[int] = []
+    counter = 0
+    scc_count = 0
+    for root in range(node_count):
+        if indices[root] != -1:
+            continue
+        work: list[tuple[int, int]] = [(root, 0)]
+        while work:
+            node, next_child = work.pop()
+            if next_child == 0:
+                indices[node] = counter
+                lowlink[node] = counter
+                counter += 1
+                stack.append(node)
+                on_stack[node] = True
+            descended = False
+            successors = adjacency[node]
+            for position in range(next_child, len(successors)):
+                successor = successors[position]
+                if indices[successor] == -1:
+                    work.append((node, position + 1))
+                    work.append((successor, 0))
+                    descended = True
+                    break
+                if on_stack[successor]:
+                    lowlink[node] = min(lowlink[node], indices[successor])
+            if descended:
+                continue
+            if lowlink[node] == indices[node]:
+                while True:
+                    member = stack.pop()
+                    on_stack[member] = False
+                    scc_index[member] = scc_count
+                    if member == node:
+                        break
+                scc_count += 1
+            if work:
+                parent = work[-1][0]
+                lowlink[parent] = min(lowlink[parent], lowlink[node])
+    return scc_index
+
+
+def _first_directed_edge_cycle(
+    edges: list[tuple[Literal, Literal]],
+) -> tuple[tuple[Literal, Literal], ...] | None:
+    """First directed cycle among the given edges, as a tuple of edges."""
+    adjacency: dict[Literal, list[Literal]] = defaultdict(list)
+    for source, target in edges:
+        adjacency[source].append(target)
+    for targets in adjacency.values():
+        targets.sort(key=repr)
+
+    state: dict[Literal, int] = {}
+    for root in sorted(adjacency, key=repr):
+        if state.get(root):
+            continue
+        state[root] = 1
+        path = [root]
+        pending = [iter(adjacency[root])]
+        while path:
+            successor = next(pending[-1], None)
+            if successor is None:
+                state[path.pop()] = 2
+                pending.pop()
+                continue
+            successor_state = state.get(successor, 0)
+            if successor_state == 2:
+                continue
+            if successor_state == 1:
+                cycle_nodes = path[path.index(successor):] + [successor]
+                return tuple(zip(cycle_nodes, cycle_nodes[1:]))
+            state[successor] = 1
+            path.append(successor)
+            pending.append(iter(adjacency.get(successor, ())))
+    return None
+
+
 class _NativeSparseNarrowStableSolver:
     def __init__(self, framework: ABAFramework) -> None:
         solver_class = _load_pysat_solver()
@@ -734,6 +818,9 @@ class _NativeSparseNarrowStableSolver:
             "native_sparse_narrow_closure_checks": 0,
             "native_sparse_narrow_rule_firings": 0,
             "native_sparse_narrow_loop_formulas": 0,
+            "native_sparse_narrow_acyc_recursive_rules": 0,
+            "native_sparse_narrow_acyc_edges": 0,
+            "native_sparse_narrow_edge_cycle_clauses": 0,
             "native_sparse_narrow_solve_times_ms": [],
             "prefsat_attacker_bitset_closure_checks": 0,
             "prefsat_attacker_bitset_shrink_checks": 0,
@@ -749,11 +836,35 @@ class _NativeSparseNarrowStableSolver:
             for rule in self.rules
             if not rule.antecedents
         )
-        self._support_vars_by_head: dict[Literal, list[int]] = defaultdict(list)
+        self._internal_atoms_by_rule = self._build_arc_shape()
+        self.just_vars = {
+            rule: self._new_var()
+            for rule in sorted(self._internal_atoms_by_rule, key=repr)
+        }
+        self.edge_vars = {
+            edge: self._new_var()
+            for edge in sorted(
+                {
+                    (atom, rule.consequent)
+                    for rule, atoms in self._internal_atoms_by_rule.items()
+                    for atom in atoms
+                },
+                key=repr,
+            )
+        }
+        self.telemetry["native_sparse_narrow_acyc_recursive_rules"] = len(self.just_vars)
+        self.telemetry["native_sparse_narrow_acyc_edges"] = len(self.edge_vars)
+        self._completion_options_by_head: dict[Literal, list[int]] = defaultdict(list)
         for rule, variable in self.support_vars.items():
-            self._support_vars_by_head[rule.consequent].append(variable)
+            self._completion_options_by_head[rule.consequent].append(
+                self.just_vars.get(rule, variable)
+            )
         self._add_completion_clauses()
-        self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
+        self._add_arc_acyclic_clauses()
+        self.solver.set_phases(
+            [self.in_vars[assumption] for assumption in self.assumptions]
+            + [-variable for variable in self.edge_vars.values()]
+        )
 
     def _new_var(self) -> int:
         variable = self._next_var
@@ -785,7 +896,7 @@ class _NativeSparseNarrowStableSolver:
         for literal in self.literals:
             if literal in self._zero_rule_heads:
                 continue
-            support_options = list(self._support_vars_by_head.get(literal, ()))
+            support_options = list(self._completion_options_by_head.get(literal, ()))
             if literal in self.in_vars:
                 support_options.append(self.in_vars[literal])
             if support_options:
@@ -800,6 +911,65 @@ class _NativeSparseNarrowStableSolver:
             selected = self.in_vars[assumption]
             self._add_clause([-selected, -contrary])
             self._add_clause([selected, contrary])
+
+    def _build_arc_shape(self) -> dict[Rule, tuple[Literal, ...]]:
+        """Map each recursive rule to its body atoms inside the head's SCC.
+
+        A rule is recursive iff its body node shares an SCC with its head in
+        the bipartite atom/body dependency graph; only such rules can take
+        part in unfounded (cyclic) self-support, so only they need the
+        arc-justification machinery (see
+        experiments/2026-07-09-abcgen-arc-acyc.md for the derivation).
+        """
+        literal_index = {literal: index for index, literal in enumerate(self.literals)}
+        body_rules = [rule for rule in self.rules if rule.antecedents]
+        adjacency: list[list[int]] = [
+            [] for _ in range(len(self.literals) + len(body_rules))
+        ]
+        for offset, rule in enumerate(body_rules):
+            body_node = len(self.literals) + offset
+            adjacency[body_node].append(literal_index[rule.consequent])
+            for antecedent in rule.antecedents:
+                adjacency[literal_index[antecedent]].append(body_node)
+        scc_index = _iterative_tarjan_scc(adjacency)
+        internal_atoms_by_rule: dict[Rule, tuple[Literal, ...]] = {}
+        for offset, rule in enumerate(body_rules):
+            head_scc = scc_index[literal_index[rule.consequent]]
+            if scc_index[len(self.literals) + offset] != head_scc:
+                continue
+            internal_atoms_by_rule[rule] = tuple(
+                sorted(
+                    (
+                        antecedent
+                        for antecedent in rule.antecedents
+                        if scc_index[literal_index[antecedent]] == head_scc
+                    ),
+                    key=repr,
+                )
+            )
+        return internal_atoms_by_rule
+
+    def _add_arc_acyclic_clauses(self) -> None:
+        demanding_rules: dict[tuple[Literal, Literal], list[int]] = defaultdict(list)
+        for rule, internal_atoms in sorted(self._internal_atoms_by_rule.items(), key=lambda item: repr(item[0])):
+            just = self.just_vars[rule]
+            support = self.support_vars[rule]
+            edge_variables = [
+                self.edge_vars[(atom, rule.consequent)]
+                for atom in internal_atoms
+            ]
+            self._add_clause([-just, support])
+            for edge_variable in edge_variables:
+                self._add_clause([-just, edge_variable])
+            self._add_clause([just, -support, *[-variable for variable in edge_variables]])
+            for atom in internal_atoms:
+                demanding_rules[(atom, rule.consequent)].append(just)
+        for edge, variable in self.edge_vars.items():
+            self._add_clause([-variable, *demanding_rules[edge]])
+            source, target = edge
+            reciprocal = self.edge_vars.get((target, source))
+            if reciprocal is not None and repr(source) < repr(target):
+                self._add_clause([-variable, -reciprocal])
 
     def stable_extension(
         self,
@@ -816,20 +986,32 @@ class _NativeSparseNarrowStableSolver:
             if not solved:
                 return None
             self.telemetry["native_sparse_narrow_candidate_models"] += 1
-            extension = self._model_extension()
-            loop_formulas = self._unsupported_derived_loop_formulas(extension)
-            if not loop_formulas:
+            cycle = self._selected_edge_cycle()
+            if cycle is None:
+                extension = self._model_extension()
+                self._verify_founded_model(extension)
                 self._sync_closure_telemetry()
                 return extension
-            for loop_formula in loop_formulas:
-                self._add_clause(loop_formula)
-            self.telemetry["native_sparse_narrow_loop_formulas"] += len(loop_formulas)
+            self._add_clause([-self.edge_vars[edge] for edge in cycle])
+            self.telemetry["native_sparse_narrow_edge_cycle_clauses"] += 1
             self._sync_closure_telemetry()
 
-    def _unsupported_derived_loop_formulas(
-        self,
-        extension: AssumptionSet,
-    ) -> list[list[int]]:
+    def _selected_edge_cycle(self) -> tuple[tuple[Literal, Literal], ...] | None:
+        model = _positive_solver_model(self.solver)
+        selected = [
+            edge
+            for edge, variable in self.edge_vars.items()
+            if variable in model
+        ]
+        return _first_directed_edge_cycle(selected)
+
+    def _verify_founded_model(self, extension: AssumptionSet) -> None:
+        """Raise if the model derives anything outside the true Horn closure.
+
+        The derivation in experiments/2026-07-09-abcgen-arc-acyc.md proves
+        this cannot happen once the selected edges are acyclic; a failure
+        here is an encoding bug, never a legitimate answer.
+        """
         closure = self._closure.closure_mask(extension)
         model = _positive_solver_model(self.solver)
         derived = 0
@@ -837,88 +1019,17 @@ class _NativeSparseNarrowStableSolver:
             if variable in model:
                 derived |= self._closure.literal_bits[literal]
         unsupported = derived & ~closure
-        if not unsupported:
-            return []
-        unsupported_literals = frozenset(
-            self._literal_by_bit[bit]
-            for bit in self._bits(unsupported)
-        )
-        components = self._unsupported_components(unsupported_literals)
-        return [
-            self._loop_formula_for(component)
-            for component in components
-        ]
-
-    def _unsupported_components(
-        self,
-        unsupported_literals: frozenset[Literal],
-    ) -> list[frozenset[Literal]]:
-        adjacency: dict[Literal, list[Literal]] = {
-            literal: []
-            for literal in unsupported_literals
-        }
-        for rule in self.rules:
-            if rule.consequent not in unsupported_literals:
-                continue
-            adjacency[rule.consequent].extend(
-                antecedent
-                for antecedent in rule.antecedents
-                if antecedent in unsupported_literals
+        if unsupported:
+            unfounded = sorted(
+                (
+                    repr(self._literal_by_bit[bit])
+                    for bit in self._bits(unsupported)
+                ),
             )
-
-        index = 0
-        stack: list[Literal] = []
-        on_stack: set[Literal] = set()
-        indices: dict[Literal, int] = {}
-        lowlinks: dict[Literal, int] = {}
-        components: list[frozenset[Literal]] = []
-
-        def strongconnect(literal: Literal) -> None:
-            nonlocal index
-            indices[literal] = index
-            lowlinks[literal] = index
-            index += 1
-            stack.append(literal)
-            on_stack.add(literal)
-            for successor in adjacency[literal]:
-                if successor not in indices:
-                    strongconnect(successor)
-                    lowlinks[literal] = min(lowlinks[literal], lowlinks[successor])
-                elif successor in on_stack:
-                    lowlinks[literal] = min(lowlinks[literal], indices[successor])
-            if lowlinks[literal] != indices[literal]:
-                return
-            component: set[Literal] = set()
-            while True:
-                item = stack.pop()
-                on_stack.remove(item)
-                component.add(item)
-                if item == literal:
-                    break
-            components.append(frozenset(component))
-
-        for literal in sorted(unsupported_literals, key=repr):
-            if literal not in indices:
-                strongconnect(literal)
-        return components
-
-    def _loop_formula_for(self, component: frozenset[Literal]) -> list[int]:
-        external_supports: list[int] = []
-        for literal in component:
-            if literal in self.in_vars:
-                external_supports.append(self.in_vars[literal])
-        for rule, variable in self.support_vars.items():
-            if rule.consequent not in component:
-                continue
-            if not any(antecedent in component for antecedent in rule.antecedents):
-                external_supports.append(variable)
-        return [
-            *(
-                -self.derived_vars[literal]
-                for literal in sorted(component, key=repr)
-            ),
-            *external_supports,
-        ]
+            raise RuntimeError(
+                "arc-acyclic stable encoding produced an unfounded model: "
+                + ", ".join(unfounded)
+            )
 
     def _bits(self, mask: int) -> list[int]:
         bits: list[int] = []
