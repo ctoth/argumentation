@@ -36,6 +36,17 @@ def hot_frames(lines: list[str]) -> dict[str, Counter[str]]:
     return {"exclusive": exclusive, "inclusive": inclusive}
 
 
+def top_frames(counter: Counter[str], limit: int) -> list[tuple[str, int]]:
+    """Top ``limit`` frames by samples, ties broken by frame name.
+
+    ``Counter.most_common`` breaks ties by insertion order, which for counters
+    built from ``set(frames)`` iteration is PYTHONHASHSEED-dependent; the
+    frame-name secondary key keeps output deterministic across seeds.
+    """
+    ranked = sorted(counter.items(), key=lambda item: (-item[1], item[0]))
+    return ranked[:limit]
+
+
 def serializable_top(
     counter: Counter[str],
     limit: int,
@@ -48,7 +59,7 @@ def serializable_top(
             "share": round(samples / total_samples, 6) if total_samples else 0.0,
             "frame": frame,
         }
-        for frame, samples in counter.most_common(limit)
+        for frame, samples in top_frames(counter, limit)
     ]
 
 
