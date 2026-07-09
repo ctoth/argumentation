@@ -37,13 +37,19 @@ def no_attack_framework(size: int) -> ABAFramework:
     )
 
 
-def large_dense_stable_framework() -> ABAFramework:
-    assumptions = tuple(lit(f"a{index}") for index in range(151))
+def dense_flat_stable_framework(size: int) -> ABAFramework:
+    """Large dense flat ABA: distinct contraries, width-1 rules, 26 rules/assumption.
+
+    At ``size < 700`` this is large-dense but NOT sparse-narrow (fails the
+    ``sparse_narrow_native_sat_shape`` assumption floor); at ``size >= 700`` it
+    also satisfies the sparse-narrow shape.
+    """
+    assumptions = tuple(lit(f"a{index}") for index in range(size))
     contraries = {assumption: lit(f"ca{index}") for index, assumption in enumerate(assumptions)}
-    heads = tuple(lit(f"h{index}_{offset}") for index in range(151) for offset in range(26))
+    heads = tuple(lit(f"h{index}_{offset}") for index in range(size) for offset in range(26))
     rules = frozenset(
         Rule((assumptions[index],), heads[index * 26 + offset], "strict")
-        for index in range(151)
+        for index in range(size)
         for offset in range(26)
     )
     return ABAFramework(
@@ -52,6 +58,14 @@ def large_dense_stable_framework() -> ABAFramework:
         assumptions=frozenset(assumptions),
         contrary=contraries,
     )
+
+
+def large_dense_stable_framework() -> ABAFramework:
+    return dense_flat_stable_framework(151)
+
+
+def sparse_narrow_stable_framework() -> ABAFramework:
+    return dense_flat_stable_framework(700)
 
 
 def test_calibration_payload_has_expected_shape() -> None:
@@ -121,21 +135,40 @@ def test_no_attack_preferred_has_bounded_solver_calls() -> None:
     assert telemetry.outer_iterations <= 1
 
 
-def test_large_dense_stable_auto_route_uses_sat_without_asp(monkeypatch) -> None:
+def test_large_dense_stable_auto_route_uses_asp_when_not_sparse_narrow(monkeypatch) -> None:
     framework = large_dense_stable_framework()
     witness = frozenset({min(framework.assumptions, key=repr)})
 
-    def forbidden_asp(*args, **kwargs):
-        raise AssertionError("large dense stable route should use SAT")
+    def forbidden_sat(*args, **kwargs):
+        raise AssertionError(
+            "large dense non-sparse-narrow stable route should use clingo ASP"
+        )
 
     monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
-    monkeypatch.setattr(solver_module, "_solve_asp_aba_single_extension", forbidden_asp)
-    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", lambda framework: witness)
+    monkeypatch.setattr(solver_module, "sat_aba_stable_extension", forbidden_sat)
+    monkeypatch.setattr(
+        solver_module,
+        "_solve_asp_aba_single_extension",
+        lambda *args, **kwargs: SingleExtensionSolverSuccess(extension=witness),
+    )
 
     result = solve_aba_single_extension(framework, semantics="stable")
 
     assert isinstance(result, SingleExtensionSolverSuccess)
     assert result.extension == witness
+
+
+def test_sparse_narrow_stable_auto_route_uses_sat_without_asp(monkeypatch) -> None:
+    monkeypatch.setattr(solver_module, "_has_clingo", lambda: True)
+
+    backend = solver_module._auto_aba_backend_for_framework(
+        "auto",
+        "stable",
+        task="single-extension",
+        framework=sparse_narrow_stable_framework(),
+    )
+
+    assert backend == "sat"
 
 
 def test_opt_in_wall_clock_smoke_contract() -> None:
