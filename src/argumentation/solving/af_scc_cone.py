@@ -47,6 +47,15 @@ CONE_SEMANTICS: frozenset[str] = frozenset({"complete", "preferred", "stable"})
 # require_in complete-labelling check).
 CONE_SAT_ENGINE = "sat-core"
 
+# DS-PR routes through the cone only when the cone is large enough that the
+# flat CDAS solver is at risk (its kernel-build/solve pathologies start well
+# above this size). On small cones the multi-check CDAS loop is
+# high-variance under the non-incremental sat-core engine (measured on
+# BA_160_80_2, cone 232 defeats: 95-97 s vs <1 s flat) while the measured
+# cone wins start at mainkwt-sized cones (22-24k defeats, ~11 s vs >15 s
+# flat). Single-check semantics (complete, stable) are unaffected.
+PREFERRED_CONE_MIN_DEFEATS = 15_000
+
 
 @dataclass
 class _ConeTelemetry:
@@ -210,6 +219,11 @@ def solve_cone_acceptance(
             check_budget_seconds=check_budget_seconds,
         )
     if semantics == "preferred":
+        if len(cone_framework.defeats) < PREFERRED_CONE_MIN_DEFEATS:
+            LAST_CONE.notes.append(
+                "preferred cone below defeat threshold -> flat CDAS"
+            )
+            return None
         LAST_CONE.conclusive = True
         return AcceptanceSuccess(
             answer=is_preferred_skeptically_accepted(

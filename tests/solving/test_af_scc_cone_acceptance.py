@@ -243,6 +243,38 @@ def test_least_complete_closure_extends_cone_extension_without_touching_cone() -
     assert closure & frozenset({"a1", "a2"}) == frozenset({"a1"})
 
 
+# ── preferred cone threshold ────────────────────────────────────────
+
+
+def test_small_preferred_cone_falls_back_to_flat() -> None:
+    # DS-PR on small cones keeps the flat CDAS solver: measured on
+    # BA_160_80_2 (cone 232 defeats) the cone CDAS loop is high-variance and
+    # cost a previously-solved t15 row, while flat solves it in <1 s.
+    result = solve_dung_acceptance(
+        CHAIN_AF, semantics="preferred", task="skeptical", query="c1", backend="auto"
+    )
+    native = solve_dung_acceptance(
+        CHAIN_AF, semantics="preferred", task="skeptical", query="c1", backend="native"
+    )
+    assert result.answer == native.answer
+    assert LAST_CONE.conclusive is None
+    assert any("threshold" in note for note in LAST_CONE.notes)
+
+
+def test_preferred_cone_used_above_threshold(monkeypatch) -> None:
+    import argumentation.solving.af_scc_cone as af_scc_cone
+
+    monkeypatch.setattr(af_scc_cone, "PREFERRED_CONE_MIN_DEFEATS", 0)
+    result = solve_dung_acceptance(
+        CHAIN_AF, semantics="preferred", task="skeptical", query="c1", backend="auto"
+    )
+    native = solve_dung_acceptance(
+        CHAIN_AF, semantics="preferred", task="skeptical", query="c1", backend="native"
+    )
+    assert result.answer == native.answer
+    assert LAST_CONE.conclusive is True
+
+
 # ── sat-core kernel engine (used by the cone path) ──────────────────
 
 

@@ -179,6 +179,23 @@ inconclusive by the one-sided rule ⇒ flat fallback (the DS-ST crusti cells
 are NOT expected to flip; this is the derivation's predicted limit, not a
 bug).
 
+**DS-PR small-cone threshold (kill-criterion fix, measured).** The first t15
+slice run lost one baseline-solved instance, BA_160_80_2 (161 args / 289
+defeats; cone 123 / 232): the multi-check CDAS loop under the
+*non-incremental* sat-core engine took 95–97 s (twice, consistent) where the
+flat smt path takes <1 s, and cone+smt is high-variance (0.23 s and 26.7 s
+across runs — the loop's attacker choices are model-dependent). The measured
+cone wins for DS-PR start at mainkwt-sized cones (22–24 k defeats: ~11 s
+under either engine vs flat t15 timeout) and the sat-core requirement starts
+at crusti-sized cones (40 k+). DS-PR therefore routes through the cone only
+when the cone has ≥ `PREFERRED_CONE_MIN_DEFEATS = 15 000` defeats; smaller
+cones keep the flat CDAS path byte-for-byte. Complete/stable are single
+checks with no loop variance and keep the cone at every size. Also noted:
+three of the first run's "gained" rows (ER_200_20_5, WS_300_16_90_30,
+n192p5q2_ve) have cone = whole graph, are never routed, and moved on pure
+t15 run-to-run variance of the unchanged flat path — t15 borderline rows are
+noisy in both directions.
+
 **Why not per-SCC GF recursion with per-SCC kernels at solve time** (decision
 recorded for the reviewer): (i) certifying a NO answer (both scc DC-CO gate
 cells are NO) under per-SCC choice search requires exhausting the cross
