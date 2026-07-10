@@ -122,6 +122,12 @@ def categoriser_ranking(
     )
 
 
+# Besnard and Hunter's h-categoriser is the Categoriser semantics exposed
+# above. Keep both literature names on one implementation so their recurrences
+# cannot diverge again.
+h_categoriser_ranking = categoriser_ranking
+
+
 def burden_numbers(
     framework: ArgumentationFramework,
     *,
@@ -382,37 +388,6 @@ def tuples_ranking(
     return TupleRankingResult(
         values=dict(sorted(values.items())),
         preorder=preorder,
-    )
-
-
-def h_categoriser_ranking(
-    framework: ArgumentationFramework,
-    *,
-    tolerance: float = 1e-9,
-    max_iterations: int = 10_000,
-) -> RankingResult:
-    """Compute h-Categoriser scores with capped attacker aggregation."""
-
-    _validate_iteration_parameters(tolerance, max_iterations)
-    attackers = _attackers(framework)
-    scores = {argument: 1.0 for argument in framework.arguments}
-
-    def update(current: dict[str, float]) -> dict[str, float]:
-        return {
-            argument: 1.0 / (1.0 + min(1.0, sum(current[attacker] for attacker in attackers[argument])))
-            for argument in framework.arguments
-        }
-
-    outcome = iterate_fixpoint(
-        scores, update, tolerance=tolerance, max_iterations=max_iterations
-    )
-    return _result(
-        outcome.scores,
-        higher_is_better=True,
-        tolerance=tolerance,
-        converged=outcome.converged,
-        iterations=outcome.iterations,
-        semantics="h_categoriser",
     )
 
 
