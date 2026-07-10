@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import csv
 from dataclasses import dataclass
 import hashlib
@@ -90,6 +91,7 @@ class RunConfig:
     profile_worker_subtracks: frozenset[str] = frozenset()
     only_instances: frozenset[str] = frozenset()
     only_subtracks: frozenset[str] = frozenset()
+    jobs: int = 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -149,6 +151,15 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="Run only this subtrack; repeat to run multiple subtracks.",
     )
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help=(
+            "Rows to run concurrently (each in its own worker subprocess); "
+            "default 1 keeps the exact serial row loop for contention-free timings."
+        ),
+    )
     args = parser.parse_args(argv)
     if args.event_log_path is not None:
         args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -168,6 +179,7 @@ def main(argv: list[str] | None = None) -> int:
         profile_worker_subtracks=frozenset(args.profile_worker_subtrack),
         only_instances=frozenset(args.only_instance),
         only_subtracks=frozenset(args.only_subtrack),
+        jobs=args.jobs,
     )
     rows = run_native(config)
     output_dir = config.root / "runs"
@@ -183,6 +195,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {json_path}")
     print(f"wrote {csv_path}")
     print(f"wrote {summary_path}")
+    if config.jobs > 1:
+        print(
+            f"caveat: {config.jobs} rows ran concurrently; per-row elapsed times "
+            "include CPU contention noise (use --jobs 1 for contention-free timings)"
+        )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 
@@ -223,16 +240,43 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         if not config.only_subtracks or str(task["subtrack"]) in config.only_subtracks
     ]
     log_run_event(config, "iccma_jobs_built", jobs=len(jobs))
-    rows: list[dict[str, Any]] = []
-    for index, (instance, task) in enumerate(jobs, start=1):
-        if config.progress:
-            log_row_start(config, instance, task, index=index, total=len(jobs))
-        row = run_or_skip(config, instance, task)
-        rows.append(row)
-        if config.progress:
-            log_progress(config, row, index=index, total=len(jobs))
+    rows = run_rows_in_job_order(config, jobs)
     log_run_event(config, "iccma_run_rows_complete", rows=len(rows))
     return rows
+
+
+def run_rows_in_job_order(
+    config: RunConfig,
+    jobs: list[tuple[dict[str, Any], dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Run every (instance, task) row, keeping results in job order.
+
+    With ``config.jobs`` > 1 up to that many rows run concurrently, each in
+    its own worker subprocess with the same per-row command and wall-clock
+    timeout kill as the serial loop; futures are collected in submit order so
+    the output keeps manifest/job order no matter which rows finish first.
+    """
+    total = len(jobs)
+
+    def run_row(index: int, instance: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
+        if config.progress:
+            log_row_start(config, instance, task, index=index, total=total)
+        row = run_or_skip(config, instance, task)
+        if config.progress:
+            log_progress(config, row, index=index, total=total)
+        return row
+
+    if config.jobs <= 1:
+        return [
+            run_row(index, instance, task)
+            for index, (instance, task) in enumerate(jobs, start=1)
+        ]
+    with ThreadPoolExecutor(max_workers=config.jobs) as pool:
+        futures = [
+            pool.submit(run_row, index, instance, task)
+            for index, (instance, task) in enumerate(jobs, start=1)
+        ]
+        return [future.result() for future in futures]
 
 
 def infer_contest_tag(root: Path) -> str:
@@ -342,13 +386,20 @@ def log_run_event(config: RunConfig, event_name: str, **fields: Any) -> None:
     emit_json_event(config.event_log_path, event)
 
 
+# Serializes progress/event JSONL writes from concurrent row threads so lines
+# never interleave; worker subprocesses appending to the same event log rely
+# on small single-write appends instead (cross-process, out of lock reach).
+_EMIT_JSON_EVENT_LOCK = threading.Lock()
+
+
 def emit_json_event(path: Path | str | None, event: dict[str, Any]) -> None:
     line = json.dumps(event, sort_keys=True)
-    if path is None:
-        print(line, file=sys.stderr, flush=True)
-        return
-    with Path(path).open("a", encoding="utf-8") as handle:
-        handle.write(line + "\n")
+    with _EMIT_JSON_EVENT_LOCK:
+        if path is None:
+            print(line, file=sys.stderr, flush=True)
+            return
+        with Path(path).open("a", encoding="utf-8") as handle:
+            handle.write(line + "\n")
 
 
 def run_or_skip(
