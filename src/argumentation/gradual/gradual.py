@@ -63,6 +63,18 @@ class GradualStrengthResult:
     integration_method: str
 
 
+class GradualConvergenceError(RuntimeError):
+    """A final gradual result was requested from a non-converged solve."""
+
+    def __init__(self, operation: str, result: GradualStrengthResult) -> None:
+        super().__init__(
+            f"{operation} did not converge after {result.iterations} iterations "
+            f"(residual {result.max_delta} exceeds tolerance {result.tolerance})"
+        )
+        self.operation = operation
+        self.result = result
+
+
 @dataclass(frozen=True)
 class RevisedImpactResult:
     """Revised direct-impact attribution for one target argument."""
