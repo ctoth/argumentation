@@ -130,6 +130,12 @@ frontier cell), ideal (directional but a different solver, not a frontier
 cell), semi-stable and stage (NOT directional — range-maximality peeks
 downstream; unsound on the cone). These keep their existing paths.
 
+Frameworks carrying a separate pre-preference attack layer
+(`ArgumentationFramework.attacks` set and different from `defeats`) are also
+not routed: there conflict-freeness ranges over `attacks` while defense
+ranges over `defeats` (Modgil & Prakken Def 14), and the derivations above
+cover pure Dung frameworks only. ICCMA AF inputs have `attacks = None`.
+
 ### Correctness of the SAT base-solve substitution
 
 `GF` restricted to the cone collapses, by Def 20 applied to `F|U`, to

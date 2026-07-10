@@ -51,6 +51,7 @@ from argumentation.core.scc_recursive import (
     SCC_RECURSIVE_SEMANTICS,
     scc_extensions,
 )
+from argumentation.solving.af_scc_cone import solve_cone_acceptance
 from argumentation.frameworks.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.core.solver_results import (
@@ -394,6 +395,7 @@ def solve_dung_acceptance(
     """Solve Dung credulous or skeptical acceptance queries."""
     if query not in framework.arguments:
         raise ValueError(f"query argument is not in framework: {query!r}")
+    requested_backend = backend
     backend = _auto_dung_acceptance_backend(backend, semantics, task)
     if backend == "iccma":
         if iccma is None:
@@ -405,6 +407,26 @@ def solve_dung_acceptance(
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
         trace_sink, metadata, check_budget_seconds = _sat_options(sat)
+        if requested_backend == "auto":
+            # Query-directed SCC-cone path (sound per the derivations in
+            # experiments/2026-07-10-af-scc-acceptance.md); None means the
+            # cone does not apply or is inconclusive -> flat path below.
+            try:
+                cone_result = solve_cone_acceptance(
+                    framework,
+                    semantics=semantics,
+                    task=task,
+                    query=query,
+                    trace_sink=trace_sink,
+                    metadata=metadata,
+                    check_budget_seconds=check_budget_seconds,
+                )
+            except AfSatCheckTimeout as exc:
+                return _sat_check_timeout(exc, semantics)
+            except RuntimeError as exc:
+                return _sat_runtime_unavailable(exc)
+            if cone_result is not None:
+                return cone_result
         solve_dedicated = _dedicated_sat_acceptance_solver(semantics, task)
         if solve_dedicated is not None:
             try:
