@@ -76,9 +76,15 @@ would be WRONG.
 Lemmas 1+2 give `{E ∩ U : E ∈ CE(F)} = CE(F|U)`, both sides nonempty, and
 `q ∈ U`. Hence:
 - DC-CO: `q` in some complete extension of `F` ⟺ `q` in some complete
-  extension of `F|U`.
+  extension of `F|U`. Decided by one SAT check on the cone.
 - DS-CO: `q` in every complete extension of `F` ⟺ `q` in every complete
-  extension of `F|U`. (No vacuity gap: `CE` is never empty.)
+  extension of `F|U`. (No vacuity gap: `CE` is never empty.) Moreover DS-CO
+  is grounded membership (`q` in every complete extension iff `q ∈ GE`,
+  grounded = least complete), and grounded is directional
+  (`GE(F) ∩ U = GE(F|U)`), so the cone path decides it **polynomially**:
+  answer = `q ∈ GE(F|U)`; the NO counterexample is `GE(F)` itself (the least
+  complete extension of `F`, computed by the same closure worklist from the
+  empty seed). No SAT at all.
 
 **Witness lifting (kept because the ICCMA CLI prints certificates).** A cone
 witness `E'` is not a full-AF extension. Since `U` is unattacked, `E'` is
@@ -148,6 +154,30 @@ built on `AfSatKernel.add_complete_labelling` / `add_stable_coverage`. No new
 encodings, no `(AF, C)`-restricted base calls are ever needed at solve time
 (the top-level call has `C = A|U`, and Def 18 injection is exhausted by the
 proofs above).
+
+**Solver-engine substitution (iteration 2, measured).** Iteration 1 kept the
+default Z3 solver and the crusti cells still timed out: on the crusti_175
+cone (1400 args / 92 016 attacks) the kernel build was 13 s and the
+*unconstrained* check 1.9 s, but the `require_in(q)` complete-labelling check
+took 265 s — the default SMT core, not the encoding or the build, was the
+sink. The same formula under Z3's CDCL sat core (`Tactic('sat').solver()`)
+decides in 1.6 s (`QF_FD` similar; the admissible encoding is *slower* under
+both engines). The cone path therefore constructs its kernels with
+`engine="sat-core"` (`AfSatKernel(engine=...)`, threaded through the finders
+and the CDAS sub-solvers with default `"smt"`, so every flat path is
+byte-for-byte unchanged). This is answer-preserving by construction: the same
+formula is decided, only the decision procedure differs. The sat core does
+not support the pseudo-Boolean range constraints used by semi-stable/stage —
+which are not routed through the cone.
+
+Measured per-cell cone checks with the sat core (probes, this machine):
+crusti_175 DC-CO 1.6 s sat; crusti_225 DC-CO 24.5 s sat; scc_7481 DC-CO
+0.39 s unsat; scc_3605 DC-CO 80 s unsat after a 24 s build (the
+909-node/248 k-attack single-SCC cone is the marginal cell; the reference
+SCC solver needed 43 s); crusti_225 DS-ST stable `require_out` sat in 21 s ⇒
+inconclusive by the one-sided rule ⇒ flat fallback (the DS-ST crusti cells
+are NOT expected to flip; this is the derivation's predicted limit, not a
+bug).
 
 **Why not per-SCC GF recursion with per-SCC kernels at solve time** (decision
 recorded for the reviewer): (i) certifying a NO answer (both scc DC-CO gate

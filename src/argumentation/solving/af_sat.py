@@ -52,6 +52,15 @@ def _apply_check_budget(solver: Any, check_budget_seconds: float | None) -> None
     solver.set("timeout", max(1, int(check_budget_seconds * 1000)))
 
 
+def _make_solver(z3: Any, engine: str) -> Any:
+    """Construct the Z3 solver object for ``engine`` ("smt" or "sat-core")."""
+    if engine == "smt":
+        return z3.Solver()
+    if engine == "sat-core":
+        return z3.Tactic("sat").solver()
+    raise ValueError(f"unknown AF SAT engine: {engine!r}")
+
+
 @dataclass(frozen=True)
 class SATCheck:
     """Telemetry for one SAT solver check."""
@@ -126,7 +135,13 @@ class StableUnsatExplanation:
 
 
 class AfSatKernel:
-    """Reusable SAT state for one Dung AF."""
+    """Reusable SAT state for one Dung AF.
+
+    ``engine`` selects the Z3 solver core: ``"smt"`` (default, the general
+    solver) or ``"sat-core"`` (the CDCL-style ``Tactic('sat')`` solver, which
+    is orders of magnitude faster on the purely propositional labelling
+    encodings but does not support pseudo-Boolean range constraints).
+    """
 
     def __init__(
         self,
@@ -135,13 +150,14 @@ class AfSatKernel:
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
         check_budget_seconds: float | None = None,
+        engine: str = "smt",
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
-        self.solver = self.z3.Solver()
+        self.solver = _make_solver(self.z3, engine)
         _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
         self.in_vars = {
@@ -471,6 +487,7 @@ def find_stable_extension(
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
     check_budget_seconds: float | None = None,
+    engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
@@ -482,6 +499,7 @@ def find_stable_extension(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=engine,
     )
     problem.add_stable_coverage()
     problem.require_in(prepared.required_in)
@@ -636,6 +654,7 @@ def find_complete_extension(
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
     check_budget_seconds: float | None = None,
+    engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "complete", simplify=simplify, require_in=require_in, require_out=require_out
@@ -647,6 +666,7 @@ def find_complete_extension(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=engine,
     )
     problem.add_complete_labelling()
     extension = _complete_extension(
@@ -734,6 +754,7 @@ def is_preferred_skeptically_accepted(
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
     check_budget_seconds: float | None = None,
+    engine: str = "smt",
 ) -> bool:
     """Decide preferred skeptical acceptance using CDAS admissibility checks."""
     _optional_argument(framework, query)
@@ -755,6 +776,7 @@ def is_preferred_skeptically_accepted(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=engine,
     ).decide(query)
 
 
@@ -779,11 +801,13 @@ class PreferredSkepticalTaskSolver:
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
         check_budget_seconds: float | None = None,
+        engine: str = "smt",
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
+        self.engine = engine
 
     def decide(self, query: str) -> bool:
         required_query = _optional_argument(self.framework, query)
@@ -796,6 +820,7 @@ class PreferredSkepticalTaskSolver:
             trace_sink=self.trace_sink,
             metadata=self.metadata,
             check_budget_seconds=self.check_budget_seconds,
+            engine=self.engine,
         ).compute()
         if required_query and required_query <= super_core:
             return True
@@ -805,6 +830,7 @@ class PreferredSkepticalTaskSolver:
             trace_sink=self.trace_sink,
             metadata=self.metadata,
             check_budget_seconds=self.check_budget_seconds,
+            engine=self.engine,
         )
         extension_problem.add_complete_labelling()
         seed = _complete_extension(
@@ -821,6 +847,7 @@ class PreferredSkepticalTaskSolver:
             trace_sink=self.trace_sink,
             metadata=self.metadata,
             check_budget_seconds=self.check_budget_seconds,
+            engine=self.engine,
         )
         loop_index = 0
         while True:
@@ -893,11 +920,13 @@ class PreferredSuperCoreSolver:
         trace_sink: SATTraceSink | None = None,
         metadata: Mapping[str, object] | None = None,
         check_budget_seconds: float | None = None,
+        engine: str = "smt",
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
+        self.engine = engine
 
     def compute(self) -> frozenset[str]:
         problem = AfSatKernel(
@@ -905,6 +934,7 @@ class PreferredSuperCoreSolver:
             trace_sink=self.trace_sink,
             metadata=self.metadata,
             check_budget_seconds=self.check_budget_seconds,
+            engine=self.engine,
         )
         problem.add_admissible_labelling()
         current = self.framework.arguments
@@ -1211,13 +1241,14 @@ class _PreferredSkepticalAttackerSolver:
         trace_sink: SATTraceSink | None,
         metadata: Mapping[str, object] | None,
         check_budget_seconds: float | None = None,
+        engine: str = "smt",
     ) -> None:
         self.framework = framework
         self.trace_sink = trace_sink
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
-        self.solver = self.z3.Solver()
+        self.solver = _make_solver(self.z3, engine)
         _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
         self.attacker_vars = {

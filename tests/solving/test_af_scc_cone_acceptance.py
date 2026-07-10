@@ -243,6 +243,49 @@ def test_least_complete_closure_extends_cone_extension_without_touching_cone() -
     assert closure & frozenset({"a1", "a2"}) == frozenset({"a1"})
 
 
+# ── sat-core kernel engine (used by the cone path) ──────────────────
+
+
+def test_kernel_sat_core_engine_matches_native_oracle() -> None:
+    from argumentation.solving.af_sat import AfSatKernel
+
+    extensions = complete_extensions(CHAIN_AF)
+    for argument in sorted(CHAIN_AF.arguments):
+        kernel = AfSatKernel(CHAIN_AF, engine="sat-core")
+        kernel.add_complete_labelling()
+        kernel.require_in(frozenset({argument}))
+        expected = (
+            "sat" if any(argument in ext for ext in extensions) else "unsat"
+        )
+        assert kernel.check(f"probe_{argument}") == expected
+
+
+def test_kernel_rejects_unknown_engine() -> None:
+    import pytest
+
+    from argumentation.solving.af_sat import AfSatKernel
+
+    with pytest.raises(ValueError):
+        AfSatKernel(CHAIN_AF, engine="cnf")
+
+
+def test_cone_path_uses_sat_core_engine() -> None:
+    solve_dung_acceptance(
+        CHAIN_AF, semantics="complete", task="credulous", query="c1", backend="auto"
+    )
+    assert LAST_CONE.engine == "sat-core"
+
+
+def test_ds_complete_on_cone_is_grounded_membership_no_sat() -> None:
+    # DS-CO == grounded membership; the cone path answers it without SAT.
+    result = solve_dung_acceptance(
+        CHAIN_AF, semantics="complete", task="skeptical", query="c1", backend="auto"
+    )
+    assert result.answer is False
+    assert LAST_CONE.fired is True
+    assert any("grounded" in note for note in LAST_CONE.notes)
+
+
 # ── property: cone-routed auto path == native oracle ────────────────
 
 
