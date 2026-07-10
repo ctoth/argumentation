@@ -98,32 +98,26 @@ def burden_numbers(
     iterations: int,
     tolerance: float = 1e-9,
 ) -> RankingResult:
-    """Compute final Burden numbers.
+    """Compute Burden numbers at a selected iteration.
 
     Bonzon et al. 2016, Definitions 15-16 use ``Bur_0(a)=1`` and
     ``Bur_i(a)=1+sum(1/Bur_{i-1}(attacker))`` for later steps. Lower burden is
-    more acceptable.
+    more acceptable. This numeric API does not perform the paper's
+    lexicographic sequence comparison; use :func:`burden_ranking` for that.
     """
 
-    if iterations < 0:
-        raise ValueError("iterations must be non-negative")
-    if tolerance <= 0.0:
-        raise ValueError("tolerance must be positive")
-
-    attackers = _attackers(framework)
-    scores = {argument: 1.0 for argument in framework.arguments}
-
-    for _ in range(iterations):
-        scores = {
-            argument: 1.0 + sum(1.0 / scores[attacker] for attacker in attackers[argument])
-            for argument in framework.arguments
-        }
+    sequences, converged = _burden_sequences(
+        framework,
+        iterations=iterations,
+        tolerance=tolerance,
+    )
+    scores = {argument: sequence[-1] for argument, sequence in sequences.items()}
 
     return _result(
         scores,
         higher_is_better=False,
         tolerance=tolerance,
-        converged=True,
+        converged=converged,
         iterations=iterations,
         semantics="burden",
     )
@@ -135,7 +129,60 @@ def burden_ranking(
     iterations: int,
     tolerance: float = 1e-9,
 ) -> RankingResult:
-    return burden_numbers(framework, iterations=iterations, tolerance=tolerance)
+    """Rank arguments by their complete Burden-number prefixes."""
+
+    scores, converged = _burden_sequences(
+        framework,
+        iterations=iterations,
+        tolerance=tolerance,
+    )
+    ordered_values = sorted(set(scores.values()))
+    ranking = tuple(
+        frozenset(argument for argument, value in scores.items() if value == tier_value)
+        for tier_value in ordered_values
+    )
+    return RankingResult(
+        scores=dict(sorted(scores.items())),
+        ranking=ranking,
+        converged=converged,
+        iterations=iterations,
+        semantics="burden",
+    )
+
+
+def _burden_sequences(
+    framework: ArgumentationFramework,
+    *,
+    iterations: int,
+    tolerance: float,
+) -> tuple[dict[str, tuple[float, ...]], bool]:
+    if iterations < 0:
+        raise ValueError("iterations must be non-negative")
+    if tolerance <= 0.0:
+        raise ValueError("tolerance must be positive")
+
+    attackers = _attackers(framework)
+    current = {argument: 1.0 for argument in framework.arguments}
+    sequences = {argument: [1.0] for argument in framework.arguments}
+    converged = False
+    for _ in range(iterations):
+        previous = current
+        current = {
+            argument: 1.0
+            + sum(1.0 / previous[attacker] for attacker in attackers[argument])
+            for argument in framework.arguments
+        }
+        for argument, value in current.items():
+            sequences[argument].append(value)
+        converged = all(
+            abs(current[argument] - previous[argument]) <= tolerance
+            for argument in framework.arguments
+        )
+
+    return (
+        {argument: tuple(values) for argument, values in sequences.items()},
+        converged,
+    )
 
 
 def discussion_based_ranking(
