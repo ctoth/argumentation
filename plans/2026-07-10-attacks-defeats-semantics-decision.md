@@ -157,6 +157,7 @@ Use exact current test paths during execution.
 - Structured naive correction: `c666720`.
 - Mixed-relation stage rejection: `ebce2ee`.
 - Mixed-relation CF2/stage2 rejection: `f928589`.
+- Generative relation-policy contracts: `baadeba`.
 - The paper-reader skill found the Dung, Modgil-Prakken, and Gaggl paper
   artifacts already complete; the adjudication reread the cited page images
   directly and did not mutate paper artifacts.
@@ -167,8 +168,14 @@ Use exact current test paths during execution.
   defeat-based defense.
 - Stage rejects distinct relations before range computation; stage2 and CF2
   reject before SCC decomposition. No relation is silently copied or selected.
+- Hypothesis now proves over generated frameworks that a single relation
+  preserves naive, admissible, stage, stage2, and CF2 behavior when represented
+  as identical `attacks` and `defeats`, and that structured naive extensions are
+  exactly the maximal attack-conflict-free sets when preference filtering makes
+  the two relations differ.
+- `uv run pytest -q tests/core/test_dung_relation_policy.py`: 10 passed.
 - `uv run pytest -q tests -k "naive or admissible or stage or cf2 or aspic"`:
-  208 passed, 2826 deselected.
+  209 passed, 2827 deselected.
 - `uv run pyright src`: 0 errors, 0 warnings.
 - `uv run lint-imports`: 2 contracts kept, 0 broken.
-- Calibrated full gate: 3030 passed, 3 skipped, 1 xfailed in 293.23s.
+- Calibrated full gate: 3032 passed, 3 skipped, 1 xfailed in 292.85s.

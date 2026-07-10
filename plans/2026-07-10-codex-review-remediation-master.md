@@ -164,7 +164,7 @@ Every focused plan is completed; none is deferred.
 | Duplicate ABA contraries | Corrected | `5428603`, `653b0fb`, `9f2aaf5`; both parse sites check uniqueness before assignment |
 | Discarded gradual convergence | Corrected | `065b4d8`, `322c40a`; every audited final-value extraction follows a convergence check |
 | Two reported repository-gate failures | Invalidated by current-tree evidence | Phase 0 record: the one-second timeout reserve and reorganized documentation paths were already correct; untouched baseline passed |
-| `attacks` / `defeats` ambiguity | Adjudicated and enforced | `fffa976`, `c666720`, `ebce2ee`, `f928589`; page-image-backed decision table and exact extension contracts |
+| `attacks` / `defeats` ambiguity | Adjudicated and enforced | `fffa976`, `c666720`, `ebce2ee`, `f928589`, `baadeba`; page-image-backed decision table plus distinguishing and generative extension contracts |
 
 Cross-cutting scans found no disproved weighted discussion formula, decimal
 Tuple* path, capped h-Categoriser recurrence, false iterated-graded export,
@@ -174,10 +174,36 @@ score extraction. No compatibility shim, relation adapter, or second semantic
 path was introduced.
 
 Release and migration coverage is committed in `CHANGELOG.md`, `README.md`, and
-`docs/gaps.md` (`182a68d`). The final gates on the fully documented tree are:
+`docs/gaps.md` (`182a68d`). A current-state completion audit additionally
+verified that every cited page image exists in its canonical paper directory,
+that the RED commits modify tests/plans before their corresponding production
+commits, and that Hypothesis captures the general paper properties for ranking,
+ADF classification, gradual convergence, and relation policy. Deterministic
+parser and solver-route contracts remain example-based because their required
+properties are exact diagnostics and bounded dispatch rather than generated
+paper laws.
+
+The audit also reconciled the temporary
+`argumentation-switch-backup-20260710` directory: 65 missing ignored paper
+binaries were restored to their canonical local paper directories, all 30
+remaining text files were byte-identical to the tracked repository copies, and
+the redundant external backup was removed. No source or plan work remains
+outside Git.
+
+Current plan-specific gates on `baadeba` passed:
+
+- repository-gate evidence: 26 passed;
+- ranking: 35 passed;
+- ADF file: 9 passed; cross-suite selector: 5 passed;
+- solving: 260 passed, 2 skipped; taxonomy selector: 15 passed;
+- ABA parser: 15 passed; full ABA package: 1355 passed;
+- gradual: 56 passed, 1 xfailed; selector: 12 passed; and
+- relation policy: 10 passed; broad semantics selector: 209 passed.
+
+The final gates on the fully documented tree are:
 
 - `uv run pytest -q --timeout=120 --timeout-method=thread --session-timeout=360`:
-  3030 passed, 3 skipped, 1 xfailed in 298.50s.
+  3032 passed, 3 skipped, 1 xfailed in 292.85s.
 - `uv run pyright src`: 0 errors, 0 warnings.
 - `uv run lint-imports`: 2 contracts kept, 0 broken.
 - `git diff --check`: clean.
