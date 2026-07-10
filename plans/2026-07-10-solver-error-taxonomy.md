@@ -36,6 +36,31 @@ Before adding any exception type:
 
 Record the chosen taxonomy in this plan before implementation.
 
+## Taxonomy Decision
+
+Inventory on current `main` found these existing owners:
+
+- `SolverUnavailable` is the public result for an absent optional package or
+  an unavailable configured backend.
+- `SolverProcessError`, `SolverTimeout`, and `SolverProtocolError` already own
+  subprocess exit, timeout, and malformed-output failures respectively.
+- SAT implementation invariants in `af_sat.py` and `aba_sat.py` use ordinary
+  `RuntimeError`; those errors must retain their traceback and must not be
+  converted or retried.
+- ASPIC/Clingo and ICCMA adapters already return the precise process,
+  unavailable, and protocol result variants. They do not share the unsafe
+  `RuntimeError` conversion and require no new conversion layer.
+- `core/optional_deps.py` is the single owner that knows a Python import failed
+  because an optional package is absent. The native ABA PrefSat loader is the
+  only additional direct optional-package import boundary.
+
+No existing exception represents optional Python-package absence. The chosen
+internal signal is therefore one narrow `OptionalDependencyUnavailable`
+exception owned by `core/optional_deps.py`. It carries the package name and
+exact installation guidance. Public solver entry points catch only that type
+and convert it to the existing `SolverUnavailable` result. No general solver
+exception hierarchy, message sniffing, adapter, or fallback is introduced.
+
 ## Required Behavioral Matrix
 
 | Cause | Required public outcome |
