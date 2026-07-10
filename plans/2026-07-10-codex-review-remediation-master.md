@@ -187,8 +187,8 @@ The audit also reconciled the temporary
 `argumentation-switch-backup-20260710` directory: 65 missing ignored paper
 binaries were restored to their canonical local paper directories, all 30
 remaining text files were byte-identical to the tracked repository copies, and
-the redundant external backup was removed. No source or plan work remains
-outside Git.
+the redundant external backup was removed. No source or plan work from this
+remediation workstream remains outside `main`'s Git history.
 
 Current plan-specific gates on `baadeba` passed:
 
@@ -200,13 +200,17 @@ Current plan-specific gates on `baadeba` passed:
 - gradual: 56 passed, 1 xfailed; selector: 12 passed; and
 - relation policy: 10 passed; broad semantics selector: 209 passed.
 
-The final gates on the fully documented tree are:
+The final repository gates on `baadeba` were:
 
 - `uv run pytest -q --timeout=120 --timeout-method=thread --session-timeout=360`:
   3032 passed, 3 skipped, 1 xfailed in 292.85s.
 - `uv run pyright src`: 0 errors, 0 warnings.
 - `uv run lint-imports`: 2 contracts kept, 0 broken.
 - `git diff --check`: clean.
+
+After only these two Markdown plan records changed, `uv run pytest -q
+tests/test_docs_surface.py` passed 7 tests and `git diff --check` remained
+clean before the completion-audit commit.
 
 All kept work is committed directly on `main`. The tracked worktree is clean;
 the pre-existing unrelated untracked logs, notes, prompts, reports, scripts,
