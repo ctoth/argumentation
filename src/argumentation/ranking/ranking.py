@@ -40,6 +40,36 @@ class RankingResult:
         return self.rank_index(left) == self.rank_index(right)
 
 
+@dataclass(frozen=True)
+class TupleValuation:
+    """Cayrol--Lagasquie-Schiex attack and defense branch lengths."""
+
+    defense_lengths: tuple[int, ...]
+    attack_lengths: tuple[int, ...]
+    infinite_defense_zeros: bool = False
+
+
+@dataclass(frozen=True)
+class TupleRankingResult:
+    """The partial preorder induced by exact Tuple* valuations."""
+
+    values: dict[str, TupleValuation]
+    preorder: frozenset[tuple[str, str]]
+    semantics: str = "tuples_star"
+
+    def at_least_as_acceptable(self, left: str, right: str) -> bool:
+        return (left, right) in self.preorder
+
+    def strictly_prefers(self, left: str, right: str) -> bool:
+        return (left, right) in self.preorder and (right, left) not in self.preorder
+
+    def equivalent(self, left: str, right: str) -> bool:
+        return (left, right) in self.preorder and (right, left) in self.preorder
+
+    def incomparable(self, left: str, right: str) -> bool:
+        return (left, right) not in self.preorder and (right, left) not in self.preorder
+
+
 def categoriser_scores(
     framework: ArgumentationFramework,
     *,
@@ -275,33 +305,83 @@ def counting_ranking(
 
 def tuples_ranking(
     framework: ArgumentationFramework,
-    *,
-    max_depth: int | None = None,
-    tolerance: float = 1e-9,
-) -> RankingResult:
-    """Compute tuple-style path rankings."""
+) -> TupleRankingResult:
+    """Compute exact Tuple* valuations for an acyclic framework.
+
+    Bonzon et al. 2016, Definition 17 and Algorithm 1: values preserve the
+    multiset of even defense-branch and odd attack-branch lengths. Their
+    cautious comparison induces a partial preorder, not a total ranking.
+    """
 
     attackers = _attackers(framework)
-    depth = max_depth if max_depth is not None else max(len(framework.arguments), 1)
-    scores: dict[str, float] = {}
+    memo: dict[str, tuple[int, ...]] = {}
+    visiting: set[str] = set()
+
+    def branch_lengths(argument: str) -> tuple[int, ...]:
+        if argument in memo:
+            return memo[argument]
+        if argument in visiting:
+            raise ValueError("Tuple* ranking is defined only for acyclic frameworks")
+        visiting.add(argument)
+        direct_attackers = attackers[argument]
+        if not direct_attackers:
+            lengths = (0,)
+        else:
+            lengths = tuple(
+                sorted(
+                    length + 1
+                    for attacker in direct_attackers
+                    for length in branch_lengths(attacker)
+                )
+            )
+        visiting.remove(argument)
+        memo[argument] = lengths
+        return lengths
+
+    values: dict[str, TupleValuation] = {}
     for argument in framework.arguments:
-        total = 0.0
-        frontier = {argument}
-        for level in range(1, depth + 1):
-            next_frontier = {attacker for target in frontier for attacker in attackers[target]}
-            if not next_frontier:
-                break
-            sign = -1.0 if level % 2 == 1 else 1.0
-            total += sign * len(next_frontier) / (10.0**level)
-            frontier = next_frontier
-        scores[argument] = total
-    return _result(
-        scores,
-        higher_is_better=True,
-        tolerance=tolerance,
-        converged=True,
-        iterations=depth,
-        semantics="tuples",
+        lengths = branch_lengths(argument)
+        if lengths == (0,):
+            values[argument] = TupleValuation(
+                defense_lengths=(),
+                attack_lengths=(),
+                infinite_defense_zeros=True,
+            )
+        else:
+            values[argument] = TupleValuation(
+                defense_lengths=tuple(length for length in lengths if length % 2 == 0),
+                attack_lengths=tuple(length for length in lengths if length % 2 == 1),
+            )
+
+    def defense_count(value: TupleValuation) -> float:
+        if value.infinite_defense_zeros:
+            return float("inf")
+        return float(len(value.defense_lengths))
+
+    def at_least_as_acceptable(left: TupleValuation, right: TupleValuation) -> bool:
+        if left == right:
+            return True
+
+        left_defenses = defense_count(left)
+        right_defenses = defense_count(right)
+        left_attacks = len(left.attack_lengths)
+        right_attacks = len(right.attack_lengths)
+        if left_defenses == right_defenses and left_attacks == right_attacks:
+            return (
+                left.defense_lengths <= right.defense_lengths
+                and left.attack_lengths >= right.attack_lengths
+            )
+        return left_defenses >= right_defenses and left_attacks <= right_attacks
+
+    preorder = frozenset(
+        (left, right)
+        for left in framework.arguments
+        for right in framework.arguments
+        if at_least_as_acceptable(values[left], values[right])
+    )
+    return TupleRankingResult(
+        values=dict(sorted(values.items())),
+        preorder=preorder,
     )
 
 
