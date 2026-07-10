@@ -58,7 +58,7 @@ def test_categoriser_scores_match_bonzon_running_example() -> None:
 def test_burden_numbers_match_bonzon_running_example_steps() -> None:
     burdens = burden_numbers(_bonzon_example(), iterations=2)
 
-    assert burdens.converged is True
+    assert burdens.converged is False
     assert burdens.semantics == "burden"
     assert burdens.iterations == 2
     assert burdens.scores == pytest.approx({
@@ -70,14 +70,47 @@ def test_burden_numbers_match_bonzon_running_example_steps() -> None:
     })
 
     ranking = burden_ranking(_bonzon_example(), iterations=2)
+    assert ranking.scores == {
+        "a": (1.0, 3.0, 2.5),
+        "b": (1.0, 1.0, 1.0),
+        "c": (1.0, 2.0, 2.0),
+        "d": (1.0, 2.0, pytest.approx(1.3333333333)),
+        "e": (1.0, 3.0, pytest.approx(1.8333333333)),
+    }
     assert ranking.ranking == (
         frozenset({"b"}),
         frozenset({"d"}),
-        frozenset({"e"}),
         frozenset({"c"}),
+        frozenset({"e"}),
         frozenset({"a"}),
     )
     assert ranking.strictly_prefers("d", "c")
+    assert ranking.strictly_prefers("c", "e")
+    assert ranking.converged is False
+
+
+def _burden_sequences(
+    framework: ArgumentationFramework,
+    *,
+    iterations: int,
+) -> dict[str, tuple[float, ...]]:
+    """Test oracle for Amgoud--Ben-Naim 2013, page-010.png, Defs. 12-13."""
+
+    current = {argument: 1.0 for argument in framework.arguments}
+    sequences = {argument: [1.0] for argument in framework.arguments}
+    for _ in range(iterations):
+        current = {
+            argument: 1.0
+            + sum(
+                1.0 / current[attacker]
+                for attacker, target in framework.defeats
+                if target == argument
+            )
+            for argument in framework.arguments
+        }
+        for argument, value in current.items():
+            sequences[argument].append(value)
+    return {argument: tuple(values) for argument, values in sequences.items()}
 
 
 def test_ranking_keeps_unattacked_arguments_above_attacked_arguments() -> None:
@@ -210,6 +243,26 @@ def _small_acyclic_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
         ),
         st.sets(st.sampled_from(possible_attacks)),
     )
+
+
+@given(_small_acyclic_frameworks())
+def test_burden_ranking_matches_lexicographic_sequence_property(
+    framework: ArgumentationFramework,
+) -> None:
+    # Four iterations are sufficient to propagate through and then stabilize
+    # every attack chain in a four-node DAG.
+    result = burden_ranking(framework, iterations=4)
+    expected = _burden_sequences(framework, iterations=4)
+
+    for argument in framework.arguments:
+        assert result.scores[argument] == pytest.approx(expected[argument])
+    assert result.converged is True
+    for left in framework.arguments:
+        for right in framework.arguments:
+            if expected[left] < expected[right]:
+                assert result.strictly_prefers(left, right)
+            elif expected[left] == expected[right]:
+                assert result.equivalent(left, right)
 
 
 @given(_small_acyclic_frameworks())
