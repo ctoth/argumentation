@@ -4,6 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+import argumentation.ranking.ranking as ranking_module
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.ranking.ranking import (
     RankingResult,
@@ -14,7 +15,6 @@ from argumentation.ranking.ranking import (
     counting_ranking,
     discussion_based_ranking,
     h_categoriser_ranking,
-    iterated_graded_ranking,
     tuples_ranking,
 )
 
@@ -220,7 +220,6 @@ def test_discussion_ranking_marks_a_bounded_cycle_as_truncated() -> None:
         discussion_based_ranking,
         counting_ranking,
         h_categoriser_ranking,
-        iterated_graded_ranking,
     ],
 )
 def test_additional_ranking_semantics_return_total_preorders(semantic) -> None:
@@ -230,6 +229,13 @@ def test_additional_ranking_semantics_return_total_preorders(semantic) -> None:
     assert set(result.scores) == _bonzon_example().arguments
     assert set().union(*result.ranking) == _bonzon_example().arguments
     assert all(result.equivalent(argument, argument) for argument in _bonzon_example().arguments)
+
+
+def test_false_scalar_iterated_graded_paper_export_is_absent() -> None:
+    # Grossi--Modgil 2015 defines argument rankings through graded defense,
+    # neutrality, and extension semantics. A local weighted attacker/defender
+    # count is not that semantic and must not retain its paper name.
+    assert not hasattr(ranking_module, "iterated_graded_ranking")
 
 
 def _small_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
