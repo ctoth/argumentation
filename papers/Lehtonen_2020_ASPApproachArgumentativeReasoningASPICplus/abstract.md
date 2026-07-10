@@ -1,0 +1,11 @@
+# Abstract
+
+## Original Text (Verbatim)
+
+A major research direction in AI argumentation is the study and development of practical computational techniques for reasoning in different argumentation formalisms. Compared to abstract argumentation, developing algorithmic techniques for different structured argumentation formalisms, such as assumption-based argumentation and the general ASPIC+ framework, is more challenging. At present, there is a lack of efficient approaches to reasoning in ASPIC+. We develop a direct declarative approach based on answer set programming (ASP) to reasoning in an instantiation of the ASPIC+ framework. We establish formal foundations for direct declarative encodings for reasoning in ASPIC+ without preferences for several central argumentation semantics, and detail ASP encodings of semantics for which reasoning about acceptance is NP-hard in ASPIC+. Empirically, the ASP approach scales up to frameworks of significant size, thereby answering the current lack of practical computational approaches to reasoning in ASPIC+ and providing a promising base for capturing further generalizations within ASPIC+.
+
+---
+
+## Our Interpretation
+
+This is the ASPIC+ sibling of the ASPforABA work (`Lehtonen_2021_DeclarativeAlgorithmsComplexityABA`): the same Helsinki/TU-Wien group applies the same "reason at the level of defeasible elements, encode directly in ASP" recipe to the richer rule-based formalism ASPIC+. The technical move is to rephrase ASPIC+ semantics not over the (potentially exponentially many) arguments but over **assumptions** = pairs `(P, D)` of ordinary premises and defeasible rules, prove a correspondence between σ-assumptions and σ-extensions of the corresponding AF, and then encode those assumption-level conditions as composable ASP modules (`common` + per-semantics add-ons for stable/admissible/complete, ASPRIN for preferred). It was fetched as a bonus alongside ASPforABA because it is the closest open-access description of the same group's ASP-encoding methodology and shows how the three ASPIC+ attack forms (undercut, rebut, undermine) are encoded — useful if the project's structured-argumentation work ever extends beyond ABA toward ASPIC+. It does **not** yet handle preferences.

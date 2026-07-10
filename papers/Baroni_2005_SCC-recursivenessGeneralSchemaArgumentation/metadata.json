@@ -1,0 +1,15 @@
+{
+  "cite_key": "baroni2005scc",
+  "title": "SCC-recursiveness: a general schema for argumentation semantics",
+  "authors": [
+    "Pietro Baroni",
+    "Massimiliano Giacomin",
+    "Giovanni Guida"
+  ],
+  "year": "2005",
+  "arxiv_id": null,
+  "doi": "10.1016/j.artint.2005.05.006",
+  "abstract": "In argumentation theory, Dung's abstract framework provides a unifying view of several alternative semantics based on the notion of extension. In this context, we propose a general recursive schema for argumentation semantics, based on decomposition along the strongly connected components of the argumentation framework. We introduce the fundamental notion of SCC-recursiveness and we show that all Dung's admissibility-based semantics are SCC-recursive, and therefore a special case of our schema. On these grounds, we argue that the concept of SCC-recursiveness plays a fundamental role in the study and definition of argumentation semantics. In particular, the space of SCC-recursive semantics provides an ideal basis for the investigation of new proposals: starting from the analysis of several examples where Dung's preferred semantics gives rise to questionable results, we introduce four novel SCC-recursive semantics, able to overcome the limitations of preferred semantics, while differing in other respects.",
+  "url": "https://doi.org/10.1016/j.artint.2005.05.006",
+  "pdf_url": null
+}

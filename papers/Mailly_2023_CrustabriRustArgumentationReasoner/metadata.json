@@ -1,0 +1,16 @@
+{
+  "cite_key": "lagniez2023crustabri",
+  "title": "Crustabri (ICCMA 2023 solver description)",
+  "authors": [
+    "Jean-Marie Lagniez",
+    "Emmanuel Lonca",
+    "Jean-Guy Mailly"
+  ],
+  "year": "2023",
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": null,
+  "url": "https://iccma2023.github.io/solvers.html",
+  "pdf_url": null,
+  "note": "STUB. Full system-description PDF not available open-access (see notes.md). Solver code: https://github.com/crillab/crustabri"
+}

@@ -194,3 +194,10 @@ This paper is directly relevant to SAT-backed abstract-argumentation solvers. It
 - Nofal, Dunne, and Atkinson 2012 for the strongest dedicated preferred-extension enumeration comparator. *(p.4, p.21)*
 - Egly, Gaggl, and Woltran 2008 for ASPARTIX as the ASP-based translation approach. *(p.4, p.21)*
 - Wallner, Weissenbacher, and Woltran 2013 for related advanced SAT techniques for argumentation. *(p.18, p.21)*
+
+## Provenance note: the "Cerutti_2014_SCC_SAT_PreferredExtensions.pdf" duplicate
+The file `papers/Cerutti_2014_SCC_SAT_PreferredExtensions.pdf` (kept in the collection per the never-silently-dedupe house rule) is the **same paper as this one** — the arXiv:1310.4986 technical report "Computing Preferred Extensions in Abstract Argumentation: a SAT-based Approach" — under a misleading filename. Despite "SCC_SAT" in the name, it contains **no** SCC-recursive algorithm: Algorithm 1 (PrefSat) is a flat depth-first search over complete-labelling SAT encodings. SCC decomposition appears only as a single future-work sentence (p.20):
+
+> "We are also currently working to integrate the proposed approach into the SCC-recursive schema introduced in [7] to encompass several semantics (including grounded, preferred and stable semantics). More specifically, the approach proposed in this paper can be applied to the sub-frameworks involved in the base-case of the recursion: since such local application decreases the number of variables involved, we expect a dramatic performance increase."
+
+The actual SCC-recursive schema (base + recursive case, parent-context injection) lives in Baroni, Giacomin & Guida 2005 [7], ingested at [SCC-recursiveness: a general schema for argumentation semantics](../Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation/notes.md). That combination — PrefSat's complete-labelling SAT base function applied per-SCC under Baroni's schema — is the precedent for this project's SCC-into-SAT acceptance experiment.

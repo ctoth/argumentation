@@ -1,0 +1,11 @@
+{
+  "cite_key": "niskanen2025reasoning",
+  "title": "Reasoning in Assumption-Based Argumentation via SAT",
+  "authors": ["Andreas Niskanen", "Masood Feyzbakhsh Rankooh", "Tuomo Lehtonen", "Matti Järvisalo"],
+  "year": "2025",
+  "arxiv_id": null,
+  "doi": null,
+  "abstract": "The dominant approaches for solving NP-hard reasoning problems in computational argumentation are declarative—namely, Boolean satisfiability (SAT) in the case of abstract argumentation and answer set programming (ASP) in the case of structured formalisms such as assumption-based argumentation (ABA). ASP is particularly suited for the commonly-studied logic programming variant of ABA as acyclic derivations in ABA can be naturally modelled in ASP. In this work, we develop and evaluate various alternative approaches to realizing SAT-based reasoning for ABA, motivated by the success of SAT solvers in the realm of abstract argumentation. In contrast to ASP, non-trivial encodings or extensions to SAT solvers are needed to efficiently handle the acyclicity constraint underlying ABA reasoning. We develop and evaluate both advanced encodings and user-defined propagation mechanisms for realizing efficient SAT-based reasoning in ABA. As a result, we provide a first SAT-based ABA reasoner that can outperform the current state-of-the-art ASP approach to ABA.",
+  "url": "https://proceedings.kr.org/2025/68/",
+  "pdf_url": "https://proceedings.kr.org/2025/68/kr2025-0068-niskanen-et-al.pdf"
+}

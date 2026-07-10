@@ -1,0 +1,14 @@
+{
+  "cite_key": "niskanen2020mutoksia",
+  "title": "mu-toksia: An Efficient Abstract Argumentation Reasoner",
+  "authors": [
+    "Andreas Niskanen",
+    "Matti Järvisalo"
+  ],
+  "year": "2020",
+  "arxiv_id": null,
+  "doi": "10.24963/kr.2020/82",
+  "abstract": "We describe the mu-toksia argumentation reasoning system. The system supports a range of different reasoning tasks over both standard and dynamic abstract argumentation frameworks under essentially all central argumentation semantics, covering all tracks and reasoning tasks considered in the most recent International Competition on Computational Models of Argumentation (ICCMA 2019). mu-toksia ranked first in all reasoning tasks in the main track of ICCMA 2019, and has been shown to scale noticeably better on the dynamic track tasks than its current competitors. In this paper, we provide an overview of mu-toksia and its algorithmic and implementation-level details, and provide further empirical evidence beyond ICCMA 2019 on the efficiency of mu-toksia compared to related systems.",
+  "url": "https://proceedings.kr.org/2020/82/",
+  "pdf_url": "https://proceedings.kr.org/2020/82/kr2020-0082-niskanen-et-al.pdf"
+}

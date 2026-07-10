@@ -1,0 +1,4 @@
+---
+tags: [assumption-based-argumentation, sat, structured-argumentation, acyclicity, benchmarks]
+---
+This paper presents the first purely SAT-based reasoning approaches for flat logic-programming assumption-based argumentation (ABA), encoding the derivation-acyclicity constraint four ways: a level-based clause encoding, a compact vertex-elimination encoding, a graph-based acyclicity user propagator, and an unfounded-set source-pointer propagator, all on CaDiCaL via IPASIR-UP. Empirically the vertex-elimination (SAT-VE) and unfounded-set (SAT-UFS) variants match or beat the state-of-the-art ASP system ASPforABA on the ICCMA23 ABA benchmarks and a new CLUSTERED generator, including ~50% more solved instances on the beyond-NP ideal-extension task. It is the direct reference design for this project's ABA SAT encodings (aba_sat.py eager arc-acyclic stable, aba_acyc_sat.py cone/acyclicity prototype) and its source repo names the "100ba" branch shorthand.
