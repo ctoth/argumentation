@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -75,3 +75,21 @@ Use exact current paths discovered during execution.
 - Valid ABA round trips remain stable.
 - No parallel parser or compatibility path was introduced.
 - The fix is committed independently of every other remediation family.
+
+## Execution Record
+
+- Compact/numeric RED matrix and serializer contracts: `5428603`.
+- Compact parser uniqueness enforcement: `653b0fb`.
+- Numeric parser uniqueness enforcement: `9f2aaf5`.
+- Both different-value and identical duplicate declarations now raise the
+  existing `ValueError` contract with the assumption token and later ABA line.
+- Different assumptions may still share one contrary, and both serializers
+  emit exactly one contrary declaration per assumption.
+- The parser audit found exactly two accepted contrary-map construction sites,
+  both in `interop/iccma.py`; no parser helper or parallel path was added.
+- The plan's stale `tests/aba` path was replaced by the current repository gate:
+  `uv run pytest -q tests/structured/aba` (1355 passed).
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- A calibrated rerun of the full gate with 120 seconds per test and 360 seconds
+  per session passed: 3014 passed, 3 skipped, 1 xfailed in 288.34s.
