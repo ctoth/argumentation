@@ -279,17 +279,30 @@ def counting_ranking(
     tolerance: float = 1e-9,
     max_iterations: int = 10_000,
 ) -> RankingResult:
-    """Compute damped counting scores."""
+    """Compute Pu et al.'s normalized counting-model scores.
+
+    Delobelle and Villata 2019, Definition 5 writes the value as the limit of
+    the alternating matrix series ``sum((-damping * M/N) ** i * 1)``. Iterating
+    ``v = 1 - damping * (M/N) * v`` computes the same partial sums.
+    """
 
     if not 0.0 < damping < 1.0:
         raise ValueError("damping must be between 0 and 1")
     _validate_iteration_parameters(tolerance, max_iterations)
     attackers = _attackers(framework)
+    normalization = max(
+        (len(values) for values in attackers.values()),
+        default=0,
+    )
+    normalization = max(normalization, 1)
     scores = {argument: 1.0 for argument in framework.arguments}
 
     def update(current: dict[str, float]) -> dict[str, float]:
         return {
-            argument: 1.0 / (1.0 + damping * sum(current[attacker] for attacker in attackers[argument]))
+            argument: 1.0
+            - damping
+            * sum(current[attacker] for attacker in attackers[argument])
+            / normalization
             for argument in framework.arguments
         }
 
