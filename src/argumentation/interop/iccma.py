@@ -221,7 +221,13 @@ def _parse_compact_aba(text: str) -> ABAFramework:
             assumptions.add(_aba_literal(atoms, parts[1]))
             continue
         if parts[0] == "c" and len(parts) == 3:
-            contraries[_aba_literal(atoms, parts[1])] = _aba_literal(atoms, parts[2])
+            assumption = _aba_literal(atoms, parts[1])
+            if assumption in contraries:
+                raise ValueError(
+                    f"duplicate contrary for assumption {parts[1]!r} "
+                    f"at ABA line {line_number}"
+                )
+            contraries[assumption] = _aba_literal(atoms, parts[2])
             continue
         if parts[0] == "r" and len(parts) >= 2:
             rules.add(
