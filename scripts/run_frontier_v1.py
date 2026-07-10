@@ -20,12 +20,21 @@ Chunk by subtrack (each chunk writes its own output file):
 Aggregate chunk outputs into one summary:
 
     uv run scripts/run_frontier_v1.py --aggregate out1.json out2.json ...
+
+Rows are dispatched to a worker pool (``--jobs``, default min(8, cpu-2));
+each row still runs in its own subprocess with its own wall-clock timeout,
+and the output file lists rows in manifest order regardless of completion
+order.  The scoreboard tolerates the CPU-contention noise this adds to
+per-row elapsed times, but timing-sensitive gates should pass ``--jobs 1``
+for contention-free serial timings.
 """
 
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -57,16 +66,21 @@ def select_rows(
     ]
 
 
+def default_jobs() -> int:
+    return max(1, min(8, (os.cpu_count() or 1) - 2))
+
+
 def run_rows(
     rows: list[dict[str, Any]],
     *,
     timeout_seconds: float,
     backend: str,
     data_root: Path,
+    jobs: int = 1,
 ) -> list[dict[str, Any]]:
-    results: list[dict[str, Any]] = []
     total = len(rows)
-    for index, row in enumerate(rows, start=1):
+
+    def run_row(index: int, row: dict[str, Any]) -> dict[str, Any]:
         result = run_selected(
             root=data_root,
             relative_path=str(row["relative_path"]).replace("/", "\\"),
@@ -78,26 +92,42 @@ def run_rows(
             track=str(row["track"]),
             instance_kind=str(row["instance_kind"]),
         )
-        results.append({"source": row, "result": result})
-        print(
-            json.dumps(
-                {
-                    "event": "frontier_row",
-                    "index": index,
-                    "total": total,
-                    "subtrack": row["subtrack"],
-                    "relative_path": row["relative_path"],
-                    "recal_class": row.get("recal_class"),
-                    "status": result.get("status"),
-                    "answer": result.get("answer"),
-                    "reason": result.get("reason"),
-                },
-                sort_keys=True,
-            ),
-            file=sys.stderr,
-            flush=True,
-        )
-    return results
+        _print_row_event(index=index, total=total, row=row, result=result)
+        return {"source": row, "result": result}
+
+    if jobs <= 1:
+        return [run_row(index, row) for index, row in enumerate(rows, start=1)]
+    with ThreadPoolExecutor(max_workers=jobs) as pool:
+        # Collect futures in submit order so the output keeps manifest
+        # order no matter which rows finish first.
+        futures = [
+            pool.submit(run_row, index, row)
+            for index, row in enumerate(rows, start=1)
+        ]
+        return [future.result() for future in futures]
+
+
+def _print_row_event(
+    *, index: int, total: int, row: dict[str, Any], result: dict[str, Any]
+) -> None:
+    print(
+        json.dumps(
+            {
+                "event": "frontier_row",
+                "index": index,
+                "total": total,
+                "subtrack": row["subtrack"],
+                "relative_path": row["relative_path"],
+                "recal_class": row.get("recal_class"),
+                "status": result.get("status"),
+                "answer": result.get("answer"),
+                "reason": result.get("reason"),
+            },
+            sort_keys=True,
+        ),
+        file=sys.stderr,
+        flush=True,
+    )
 
 
 def summarize_by_class(results: list[dict[str, Any]]) -> dict[str, Any]:
@@ -157,6 +187,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
+        "--jobs",
+        type=int,
+        default=default_jobs(),
+        help=(
+            "Rows to run concurrently (each in its own subprocess); "
+            "use 1 for contention-free serial timings."
+        ),
+    )
+    parser.add_argument(
         "--aggregate",
         type=Path,
         nargs="+",
@@ -179,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout_seconds=args.timeout_seconds,
         backend=args.backend,
         data_root=args.root,
+        jobs=args.jobs,
     )
     summary = summarize_by_class(results)
     payload = {
@@ -197,6 +237,11 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print(f"wrote {output_path}")
+    if args.jobs > 1:
+        print(
+            f"caveat: {args.jobs} rows ran concurrently; per-row elapsed times "
+            "include CPU contention noise (use --jobs 1 for timing-sensitive gates)"
+        )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 
