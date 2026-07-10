@@ -1,0 +1,203 @@
+# AF query-directed SCC-cone acceptance (exp 6A)
+
+Date: 2026-07-10 (started 2026-07-09)
+
+Status: derivation committed before any code (this commit). Results sections
+filled in after the metric gate.
+
+Experiment branch: `exp/af-scc-acceptance` (from `main` @ `5dd6a03`).
+
+## Hypothesis
+
+Routing Dung DC/DS acceptance through the query's SCC ancestor cone — solve
+`AF|cone` with the existing `af_sat` kernels instead of the whole graph — flips
+the crusti/scc frontier cells (query cone is 1.6–25% of the graph; the flat
+kernel build alone exceeds the 120 s budget on crusti), with answers matching
+the ICCMA-2025 reference table, and without regressing the DS-PR cap320 t15
+slice.
+
+## Derivations per semantics (before code)
+
+Setting: finite AF `F = (A, R)`. For a query `q ∈ A`, let `S(q)` be the SCC of
+`q` and define the **ancestor cone**
+
+```
+U = ⋃ { S ∈ SCCS(F) : S = S(q) or S reaches S(q) in the condensation DAG }.
+```
+
+**Lemma 0 (the cone is unattacked).** No attack enters `U` from outside:
+if `(b, a) ∈ R` and `a ∈ U` then `b ∈ U`. Proof: `SCC(b)` reaches `SCC(a)`
+which reaches `S(q)`, so `SCC(b) ⊆ U`. ∎
+
+All semantics below are SCC-recursive with the base functions of
+[BG&G05] Thm 43 (complete `CE(·,·)`, preferred `PE(·,·)`, stable
+`SE(·,·) = SE(·)`, grounded `GE(·,·)`). Two facts from Def 18/20 drive
+everything; both hinge on Lemma 0 plus footnote 3 of the paper (the
+`D/U/P` context of an SCC `S` depends only on `E ∩ sccanc(S)`).
+
+**Lemma 1 (projection — every SCC-recursive semantics, including stable).**
+If `E ∈ E_σ(F)` then `E ∩ U ∈ E_σ(F|U)`.
+Proof: `F|U` has exactly the SCCs of `F` contained in `U`, with the same
+condensation order and the same restricted sub-frameworks. By Def 20,
+`E ∈ E_σ(F)` iff for every SCC `S` the choice `E ∩ S` lies in
+`GF(F↓UP(S,E), U(S,E) ∩ C)`. For `S ⊆ U` the sets `D/U/UP(S,E)` and the
+threaded `C` depend only on `E ∩ sccanc(S) ⊆ E ∩ U` (Lemma 0: all parents of
+cone SCCs are cone SCCs). These are literally the per-SCC conditions of
+Def 20 evaluated for `E ∩ U` on `F|U`, so all of them hold. ∎
+
+(Elementary double-check for complete, no schema needed: `E ∩ U` is
+conflict-free; admissible because attackers of cone members lie in `U`
+(Lemma 0) and their defenders against cone attackers lie in `U` too; the
+fixpoint condition holds because a node of `U` defended by `E ∩ U` in `F|U`
+is defended by `E` in `F` — its `F`-attackers all lie in `U` — hence is in
+`E`.)
+
+**Lemma 2 (lifting — complete and preferred, NOT stable).**
+If `E' ∈ E_σ(F|U)`, `σ ∈ {complete, preferred}`, then there is
+`E ∈ E_σ(F)` with `E ∩ U = E'`.
+Proof: extend `E'` over the SCCs outside `U` in topological order; at each
+SCC pick any element of `GF(F↓UP(S,·), U(S,·) ∩ C)` given the partial choice
+on its ancestors. Each such call is nonempty: for complete,
+`CE(AF, C) ∋ GE(AF, C)` (grounded-in-C always exists, [BG&G05] Prop 42/44);
+for preferred, `PE(AF, C)` is the set of ⊆-maximal elements of the nonempty
+finite `CE(AF, C)`. The assembled `E` satisfies all per-SCC Def 20 conditions
+(cone SCCs: identical to `E'`'s conditions on `F|U` by the Lemma 1 argument;
+outer SCCs: by construction), so `E ∈ E_σ(F)`, and no outer choice alters
+`E ∩ U = E'` (directionality). ∎
+For **stable** this fails: `SE(AF, C) = SE(AF)` can be empty, so a cone-stable
+extension need not extend. Concrete counterexample used as a unit test:
+`A = {p, q, x, y, z}`, `R = {(p,q), (x,y), (y,z), (z,x)}`, query `q`:
+`U = {p, q}`, `SE(F|U) = {{p}}` (a `q`-free cone-stable extension exists),
+but `SE(F) = ∅` so DS-ST(F, q) is vacuously YES — a naive cone answer of NO
+would be WRONG.
+
+### Complete — DC-CO and DS-CO: cone-equivalent (sound both ways)
+
+Lemmas 1+2 give `{E ∩ U : E ∈ CE(F)} = CE(F|U)`, both sides nonempty, and
+`q ∈ U`. Hence:
+- DC-CO: `q` in some complete extension of `F` ⟺ `q` in some complete
+  extension of `F|U`.
+- DS-CO: `q` in every complete extension of `F` ⟺ `q` in every complete
+  extension of `F|U`. (No vacuity gap: `CE` is never empty.)
+
+**Witness lifting (kept because the ICCMA CLI prints certificates).** A cone
+witness `E'` is not a full-AF extension. Since `U` is unattacked, `E'` is
+admissible in `F`; the least complete extension of `F` containing it is the
+characteristic-function closure `E = lfp_{X ⊇ E'} F_F(X)` (Dung's fundamental
+lemma). Moreover `E ∩ U = E'`: inductively, a cone node defended by
+`X = E' ∪ (outside-U nodes)` in `F` has all its attackers and their defenders
+inside `U` (Lemma 0), so it is defended by `E'` in `F|U` and already in `E'`
+(`E'` complete on `F|U`). So the closure is a valid DC-CO witness
+(contains `q`) and a valid DS-CO counterexample (still avoids `q`).
+Polynomial worklist, no SAT.
+
+### Preferred — DS-PR: cone-equivalent (sound both ways); DC-PR left flat
+
+Lemmas 1+2 give `{E ∩ U : E ∈ PE(F)} = PE(F|U)`, both nonempty. Hence
+DS-PR(F, q) ⟺ DS-PR(F|U, q), decided by the existing CDAS solver
+(`is_preferred_skeptically_accepted`) on the cone. The existing DS-PR path
+returns no counterexample certificate, so the cone path returning
+answer-only is contract-identical.
+
+DC-PR is equally sound on the cone, but the flat path returns a *preferred*
+extension of the full AF as witness and lifting a cone-preferred witness to a
+full preferred extension would need downstream maximisation (more SAT, on the
+part of the graph we are trying to avoid). DC-PR is not a frontier cell; it
+keeps the flat path. (DC-PR ≡ DC-CO semantically, so the DC-CO routing covers
+the decision-only use case at complete semantics.)
+
+### Stable — one-sided only (weak directionality); fall back otherwise
+
+Lemma 1 holds for stable; Lemma 2 does not. Derived sound rules:
+
+- **DS-ST cone-YES rule:** if no `E' ∈ SE(F|U)` avoids `q` (SAT on the cone
+  kernel with `require_out(q)` is unsat — this includes `SE(F|U) = ∅`), then
+  every `E ∈ SE(F)` satisfies `q ∈ E ∩ U ⊆ E` (projection), and if
+  `SE(F) = ∅` the answer is vacuously YES anyway ⇒ answer **YES**.
+- **DC-ST cone-NO rule:** if no `E' ∈ SE(F|U)` contains `q`
+  (`require_in(q)` unsat on the cone), then no `E ∈ SE(F)` contains `q`
+  (projection) ⇒ answer **NO**.
+- **Sat outcomes are inconclusive** (the cone extension may fail to extend —
+  counterexample above) ⇒ fall back to the existing flat path unchanged.
+  DS-ST is therefore NOT dropped: the sound one-sided cone check is wired,
+  with flat fallback; conclusive cone answers need no certificate (the CLI
+  prints witnesses only for credulous-YES / skeptical-NO).
+
+### Not routed
+
+Grounded (directional but its native path is already polynomial and not a
+frontier cell), ideal (directional but a different solver, not a frontier
+cell), semi-stable and stage (NOT directional — range-maximality peeks
+downstream; unsound on the cone). These keep their existing paths.
+
+### Correctness of the SAT base-solve substitution
+
+`GF` restricted to the cone collapses, by Def 20 applied to `F|U`, to
+`GF(F|U, args(F|U)) = E_σ(F|U)` — i.e. "GF recursion restricted to the cone"
+IS the semantics of the cone framework. The cone decision is therefore
+delegated to the existing, already-tested SAT realizations of `CE`/`PE`/`SE`
+on a whole framework: `find_complete_extension` /
+`is_preferred_skeptically_accepted` (CDAS) / `find_stable_extension`, all
+built on `AfSatKernel.add_complete_labelling` / `add_stable_coverage`. No new
+encodings, no `(AF, C)`-restricted base calls are ever needed at solve time
+(the top-level call has `C = A|U`, and Def 18 injection is exhausted by the
+proofs above).
+
+**Why not per-SCC GF recursion with per-SCC kernels at solve time** (decision
+recorded for the reviewer): (i) certifying a NO answer (both scc DC-CO gate
+cells are NO) under per-SCC choice search requires exhausting the cross
+product of per-SCC extension sets — exponential in cone depth, unbounded
+per-SCC counts; (ii) intra-SCC attacks dominate these instances, so splitting
+the cone kernel into per-SCC kernels does not reduce total encoded clauses —
+there is no build-time win to buy; (iii) the plan's stated targets of the
+per-SCC mechanics — the `2^16` subset-enumeration cliff of
+`scc_recursive._base_solve` and the measured 61 s+ whole-graph kernel builds —
+are both eliminated by the cone restriction + SAT substitution itself
+(cone = 1.6–25% of nodes on the frontier instances; SAT, never subset
+enumeration). The per-SCC condensation machinery (Def 17) is what *computes*
+the cone; the Def 18 D/U/P analysis is what *proves* the cone sound.
+
+## Single Variable
+
+One new routing branch: `solve_dung_acceptance` with `backend="auto"`,
+`semantics ∈ {complete, preferred, stable}`, `task ∈ {credulous, skeptical}`
+(preferred: skeptical only) tries the SCC-cone path first, and only when the
+query's ancestor cone is a proper subset of the arguments (single-SCC
+frameworks and cone-spanning queries keep the flat path byte-for-byte).
+Explicit `backend="sat"` / `"native"` / `"iccma"` behavior is unchanged.
+Nothing on the flat solvers, kernels, or encodings changed.
+
+## Fast Contracts
+
+(filled in after implementation)
+
+## Metric Gate
+
+Baseline first, on unmodified `main` @ `5dd6a03` (same worktree, same
+machine):
+
+```powershell
+uv run scripts/run_frontier_v1.py --label af-scc-acceptance-baseline `
+  --subtrack DS-PR --subtrack DC-CO --subtrack DS-ST
+uv run tools/iccma2025_run_native.py --root <worktree>/data/iccma/2025 `
+  --only-subtrack DS-PR --backend auto --max-af-arguments 320 `
+  --timeout-seconds 15 --label af-scc-acceptance-t15-baseline
+```
+
+After, same commands with labels `af-scc-acceptance-fixed` /
+`af-scc-acceptance-t15-fixed`.
+
+SUCCESS = ≥5 of the 7 in-scope frontier cells flip with answers matching the
+reference table (DS-PR crusti 125/175/225 = NO; DC-CO crusti 175/225 = YES;
+DC-CO scc_3605/scc_7481 = NO). DS-PR t15 slice: no lost rows, no answer
+changes, >10% common-time regression = kill.
+
+(results filled in after the runs)
+
+## Interpretation
+
+(filled in after the metric gate)
+
+## Decision
+
+(filled in after the metric gate)
