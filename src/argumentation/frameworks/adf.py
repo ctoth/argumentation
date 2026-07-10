@@ -296,14 +296,25 @@ def classify_link(
     if parent not in framework.statements or child not in framework.statements:
         raise ValueError("classify_link arguments must be declared statements")
     if (parent, child) not in framework.links:
-        return LinkType.NEITHER
-    polarity = _structural_polarity(framework.acceptance_conditions[child], parent, positive=True)
-    if polarity == {True}:
-        return LinkType.SUPPORTING
-    if polarity == {False}:
-        return LinkType.ATTACKING
-    if polarity == {True, False}:
+        return LinkType.UNDEFINED
+
+    condition = framework.acceptance_conditions[child]
+    other_parents = sorted(framework.parents(child) - {parent})
+    supporting = True
+    attacking = True
+    for values in product((False, True), repeat=len(other_parents)):
+        assignment = dict(zip(other_parents, values, strict=True))
+        without_parent = condition.evaluate(assignment | {parent: False})
+        with_parent = condition.evaluate(assignment | {parent: True})
+        supporting &= not without_parent or with_parent
+        attacking &= not with_parent or without_parent
+
+    if supporting and attacking:
         return LinkType.BOTH
+    if supporting:
+        return LinkType.SUPPORTING
+    if attacking:
+        return LinkType.ATTACKING
     return LinkType.NEITHER
 
 
@@ -452,24 +463,6 @@ def _all_interpretations(statements: frozenset[str]) -> tuple[Interpretation, ..
 
 def _interpretation_sort_key(interpretation: Interpretation) -> tuple[tuple[str, str], ...]:
     return tuple(sorted((statement, value.value) for statement, value in interpretation))
-
-
-def _structural_polarity(
-    condition: AcceptanceCondition,
-    parent: str,
-    *,
-    positive: bool,
-) -> set[bool]:
-    if isinstance(condition, Atom):
-        return {positive} if condition.parent == parent else set()
-    if isinstance(condition, _Not):
-        return _structural_polarity(condition.child, parent, positive=not positive)
-    if isinstance(condition, (_And, _Or)):
-        result: set[bool] = set()
-        for child in condition.children:
-            result |= _structural_polarity(child, parent, positive=positive)
-        return result
-    return set()
 
 
 def _dung_attackers_from_condition(condition: AcceptanceCondition) -> frozenset[str] | None:
