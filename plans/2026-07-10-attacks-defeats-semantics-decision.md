@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -58,7 +58,7 @@ Complete this table before production edits:
 Allowed verdicts are `current behavior correct`, `implementation defect`, or
 `unsupported input must be rejected`. Do not use “probably.”
 
-### Distinguishing Current-Tree Result
+### Pre-Remediation Distinguishing Result
 
 For arguments `{a, b}`, full attacks `{(a, b)}`, and no surviving defeats,
 current `main` returns:
@@ -150,3 +150,25 @@ Use exact current test paths during execution.
 - All semantics use their established relation without a silent fallback.
 - No relation adapter or duplicate semantic path was introduced.
 - The focused and full gates pass, and the verdict is committed repo-locally.
+
+## Execution Record
+
+- Paper-backed decision table and RED policy contracts: `fffa976`.
+- Structured naive correction: `c666720`.
+- Mixed-relation stage rejection: `ebce2ee`.
+- Mixed-relation CF2/stage2 rejection: `f928589`.
+- The paper-reader skill found the Dung, Modgil-Prakken, and Gaggl paper
+  artifacts already complete; the adjudication reread the cited page images
+  directly and did not mutate paper artifacts.
+- Pure Dung and identical-relation frameworks retain exact naive, admissible,
+  stage, and CF2 extension sets on the distinguishing two-argument graph.
+- Structured naive is now maximal over attack-conflict-free sets, while
+  structured admissibility preserves attack-based conflict-freedom and
+  defeat-based defense.
+- Stage rejects distinct relations before range computation; stage2 and CF2
+  reject before SCC decomposition. No relation is silently copied or selected.
+- `uv run pytest -q tests -k "naive or admissible or stage or cf2 or aspic"`:
+  208 passed, 2826 deselected.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- Calibrated full gate: 3030 passed, 3 skipped, 1 xfailed in 293.23s.
