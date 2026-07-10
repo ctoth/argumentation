@@ -101,6 +101,70 @@ def test_categoriser_non_convergence_is_result_data() -> None:
     assert set(result.scores) == _bonzon_example().arguments
 
 
+def _discussion_sequence(
+    framework: ArgumentationFramework,
+    argument: str,
+    *,
+    max_length: int,
+) -> tuple[int, ...]:
+    """Test oracle for Amgoud--Ben-Naim 2013, page-009.png, Defs. 10-11."""
+
+    multiplicities = {argument: 1}
+    sequence: list[int] = []
+    for length in range(1, max_length + 1):
+        count = sum(multiplicities.values())
+        sequence.append(-count if length % 2 == 1 else count)
+        next_multiplicities: dict[str, int] = {}
+        for target, multiplicity in multiplicities.items():
+            for attacker, attacked in framework.defeats:
+                if attacked == target:
+                    next_multiplicities[attacker] = (
+                        next_multiplicities.get(attacker, 0) + multiplicity
+                    )
+        multiplicities = next_multiplicities
+    return tuple(sequence)
+
+
+def test_discussion_ranking_counts_linear_discussions_with_multiplicity() -> None:
+    # Both roots have two direct attackers. The two length-three discussions
+    # for ``a`` merge at d, while ``x`` has only one. A set frontier loses that
+    # multiplicity and incorrectly ties the arguments.
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c", "d", "x", "y", "z", "w"}),
+        defeats=frozenset({
+            ("b", "a"),
+            ("c", "a"),
+            ("d", "b"),
+            ("d", "c"),
+            ("y", "x"),
+            ("z", "x"),
+            ("w", "y"),
+        }),
+    )
+
+    result = discussion_based_ranking(framework, max_depth=3)
+
+    assert result.scores["a"] == (-1, 2, -2)
+    assert result.scores["x"] == (-1, 2, -1)
+    assert result.strictly_prefers("a", "x")
+    assert result.converged is True
+    assert result.iterations == 3
+
+
+def test_discussion_ranking_marks_a_bounded_cycle_as_truncated() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b"), ("b", "a")}),
+    )
+
+    result = discussion_based_ranking(framework, max_depth=4)
+
+    assert result.scores["a"] == (-1, 1, -1, 1)
+    assert result.scores["b"] == (-1, 1, -1, 1)
+    assert result.converged is False
+    assert result.iterations == 4
+
+
 @pytest.mark.parametrize(
     "semantic",
     [
@@ -130,6 +194,45 @@ def _small_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
         ),
         st.sets(st.sampled_from(possible_attacks), max_size=8),
     )
+
+
+def _small_acyclic_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
+    arguments = ("a", "b", "c", "d")
+    possible_attacks = [
+        (arguments[left], arguments[right])
+        for left in range(len(arguments))
+        for right in range(left + 1, len(arguments))
+    ]
+    return st.builds(
+        lambda attacks: ArgumentationFramework(
+            arguments=frozenset(arguments),
+            defeats=frozenset(attacks),
+        ),
+        st.sets(st.sampled_from(possible_attacks)),
+    )
+
+
+@given(_small_acyclic_frameworks())
+def test_discussion_ranking_matches_linear_discussion_count_property(
+    framework: ArgumentationFramework,
+) -> None:
+    # In a four-node DAG every linear discussion has length at most four.
+    # The exact signed sequence, including path multiplicity, is the semantic
+    # object compared by Definition 11 on Amgoud--Ben-Naim page-009.png.
+    result = discussion_based_ranking(framework, max_depth=4)
+    expected = {
+        argument: _discussion_sequence(framework, argument, max_length=4)
+        for argument in framework.arguments
+    }
+
+    assert result.scores == expected
+    assert result.converged is True
+    for left in framework.arguments:
+        for right in framework.arguments:
+            if expected[left] < expected[right]:
+                assert result.strictly_prefers(left, right)
+            elif expected[left] == expected[right]:
+                assert result.equivalent(left, right)
 
 
 @given(_small_frameworks())

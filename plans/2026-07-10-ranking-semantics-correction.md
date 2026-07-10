@@ -53,6 +53,26 @@ Before production edits:
 A new generic ranking interface, adapter, or parallel result hierarchy is not
 the default solution.
 
+### Recorded decision — 2026-07-10
+
+- `RankingResult.scores` will be broadened in place to hold either a numeric
+  value or an exact finite lexicographic tuple. Discussion-based and
+  burden-based rankings will expose their comparison tuples directly; they will
+  not publish an invented scalar score.
+- `burden_numbers` remains the explicit API for callers that want only the
+  numeric value at a selected iteration. `burden_ranking` will use the complete
+  prefix from step zero through the requested bound and report whether that
+  prefix has stabilized.
+- Bonzon 2016 page image `page-004.png` states that Tuple* can leave arguments
+  incomparable and is defined there for acyclic frameworks. It therefore
+  cannot use `RankingResult`, whose `ranking` is a total preorder and whose
+  `equivalent` method would conflate incomparability with equality. The Tuple*
+  slice will use one specific result that exposes exact tupled values and the
+  paper comparison relation; the false scalar `tuples_ranking` contract will be
+  removed rather than wrapped.
+- Numeric semantics continue to return floats. No generic ranking adapter or
+  compatibility hierarchy will be introduced.
+
 ## Phase 2: Discussion-Based Semantics
 
 ### Red contracts
