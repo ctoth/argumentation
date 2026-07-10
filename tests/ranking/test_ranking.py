@@ -203,7 +203,6 @@ def test_discussion_ranking_marks_a_bounded_cycle_as_truncated() -> None:
     [
         discussion_based_ranking,
         counting_ranking,
-        tuples_ranking,
         h_categoriser_ranking,
         iterated_graded_ranking,
     ],
@@ -243,6 +242,101 @@ def _small_acyclic_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
         ),
         st.sets(st.sampled_from(possible_attacks)),
     )
+
+
+def _branch_lengths(framework: ArgumentationFramework, argument: str) -> tuple[int, ...]:
+    attackers = tuple(
+        attacker for attacker, target in framework.defeats if target == argument
+    )
+    if not attackers:
+        return (0,)
+    return tuple(
+        sorted(
+            length + 1
+            for attacker in attackers
+            for length in _branch_lengths(framework, attacker)
+        )
+    )
+
+
+def test_tuples_ranking_preserves_exact_branch_tuples_and_incomparability() -> None:
+    # Bonzon 2016 page-004.png, Definition 17 and Algorithm 1. ``a`` has
+    # [(2),(1)]; ``x`` has [(2,2),(1,1)]. More defenses and more attacks are
+    # conflicting criteria, so neither argument outranks the other.
+    framework = ArgumentationFramework(
+        arguments=frozenset({
+            "a",
+            "a_direct",
+            "a_mid",
+            "a_deep",
+            "x",
+            "x_direct_1",
+            "x_direct_2",
+            "x_mid_1",
+            "x_mid_2",
+            "x_deep_1",
+            "x_deep_2",
+        }),
+        defeats=frozenset({
+            ("a_direct", "a"),
+            ("a_mid", "a"),
+            ("a_deep", "a_mid"),
+            ("x_direct_1", "x"),
+            ("x_direct_2", "x"),
+            ("x_mid_1", "x"),
+            ("x_mid_2", "x"),
+            ("x_deep_1", "x_mid_1"),
+            ("x_deep_2", "x_mid_2"),
+        }),
+    )
+
+    result = tuples_ranking(framework)
+
+    assert result.values["a"].defense_lengths == (2,)
+    assert result.values["a"].attack_lengths == (1,)
+    assert result.values["x"].defense_lengths == (2, 2)
+    assert result.values["x"].attack_lengths == (1, 1)
+    assert result.incomparable("a", "x")
+    assert not result.equivalent("a", "x")
+    assert result.values["a_direct"].infinite_defense_zeros is True
+
+
+def test_tuples_ranking_rejects_cyclic_frameworks() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset({("a", "b"), ("b", "a")}),
+    )
+
+    with pytest.raises(ValueError, match="acyclic"):
+        tuples_ranking(framework)
+
+
+@given(_small_acyclic_frameworks())
+def test_tuples_ranking_matches_branch_multisets_and_is_a_partial_preorder(
+    framework: ArgumentationFramework,
+) -> None:
+    result = tuples_ranking(framework)
+
+    for argument in framework.arguments:
+        lengths = _branch_lengths(framework, argument)
+        value = result.values[argument]
+        if lengths == (0,):
+            assert value.infinite_defense_zeros is True
+            assert value.defense_lengths == ()
+            assert value.attack_lengths == ()
+        else:
+            assert value.infinite_defense_zeros is False
+            assert value.defense_lengths == tuple(length for length in lengths if length % 2 == 0)
+            assert value.attack_lengths == tuple(length for length in lengths if length % 2 == 1)
+
+    for left in framework.arguments:
+        assert result.at_least_as_acceptable(left, left)
+        for middle in framework.arguments:
+            for right in framework.arguments:
+                if result.at_least_as_acceptable(
+                    left, middle
+                ) and result.at_least_as_acceptable(middle, right):
+                    assert result.at_least_as_acceptable(left, right)
 
 
 @given(_small_acyclic_frameworks())
