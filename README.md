@@ -136,7 +136,11 @@ folder.
 prudent-semantics helpers. The `ArgumentationFramework` dataclass tracks both
 a pre-preference `attacks` relation (used by conflict-freeness) and the
 post-preference `defeats` relation (used by defence), following Modgil &
-Prakken (2018) Def 14.
+Prakken (2018) Def 14. Structured naive semantics is maximal over the full
+attack-conflict-free sets. Stage, stage2, and CF2 follow single-relation Dung
+definitions and reject a framework whose `attacks` and `defeats` are distinct;
+pass a pure Dung framework (`attacks=None`) or identical relations for those
+semantics.
 
 `argumentation.core.labelling` exposes the three-valued IN / OUT / UNDEC
 labelling and a bridge from extensions to labellings:
@@ -473,7 +477,11 @@ owns the defeasible-theory schema — rather than redefining one.
 `argumentation.gradual.llm_surface` is a dependency-free adapter for
 argumentative LLM pipelines: callers supply propositions and attack/support
 edges, the package computes QBAF strengths, Shapley-style attack
-explanations, and contestation witnesses.
+explanations, and contestation witnesses. Final explanation, contestation, and
+impact surfaces raise `GradualConvergenceError` with the underlying iteration,
+residual, and tolerance metadata when a required gradual solve does not
+converge; direct low-level strength functions still return bounded
+`GradualStrengthResult` values for explicit inspection.
 
 The package ships with prebuilt clingo `.lp` encodings under
 `argumentation.encodings/` (admissible/complete/stable for AF, ASPIC+, and

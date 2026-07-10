@@ -22,6 +22,7 @@ changelogs are in the appendix; the main body is current limitations only.
 | L13 | `accrual.py` provides Prakken-style weak/strong applicability checks and accrual envelopes only. There is no enumeration of subset accruals and no comparator over accruals. | `src/argumentation/core/accrual.py` |
 | L14 | `af_sat` (Dung) and `aba_sat` paths are different code paths despite the shared name. `af_sat` requires Z3 (the `[z3]` extra); `aba_sat` is pure-Python bitmask enumeration. | `src/argumentation/solving/af_sat.py`, `src/argumentation/structured/aba/aba_sat.py` |
 | L15 | `iccma_cli` is a thin solver-protocol shim. The package does not own application-level CLI presentation, source calibration, persistent storage, or repository workflow. | `src/argumentation/solving/iccma_cli.py` |
+| L16 | Stage, stage2, and CF2 are defined only for a single relation. They reject `ArgumentationFramework` values whose pre-preference `attacks` differ from preference-filtered `defeats`; the cited papers do not define a mixed-relation range or SCC recursion. | `src/argumentation/core/dung.py` |
 
 ## Non-goals
 

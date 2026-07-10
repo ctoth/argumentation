@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GradualConvergenceError`, carrying the original `GradualStrengthResult`, is
+  raised when explanation, contestation, revised-impact, Shapley-impact, or
+  attack-sensitivity APIs would otherwise present a non-converged iterate as a
+  final value.
+- `OptionalDependencyUnavailable` distinguishes a genuinely absent optional
+  Python package from solver invariant and implementation failures.
+
 ### Removed
 
+- `iterated_graded_ranking` — removed because the exported implementation was
+  not the Grossi-Modgil iterated graded semantics its name claimed.
 - `argumentation.solving.backends` — deleted. Capability detection and the
   `backend="auto"` routing it once exposed (`has_clingo` / `has_z3` /
   `default_backend` / `backend_choice_reason`) are folded into
@@ -21,12 +32,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Discussion, burden, Tuple*, h-Categoriser, and counting rankings now implement
+  their cited recurrences and comparison domains rather than scalar or capped
+  heuristic substitutes.
+- Structured naive semantics uses the full pre-preference attack relation.
+  Stage, stage2, and CF2 now reject frameworks carrying distinct attack and
+  defeat relations because their cited definitions require one relation;
+  ordinary Dung and identical-relation frameworks are unchanged.
+- Both compact and numeric ABA parsers reject repeated contrary declarations,
+  including textually identical repeats, and identify the duplicated
+  assumption and later source line.
 - `argumentation.probabilistic.probabilistic_treedecomp` was split into three
   modules: `probabilistic_treedecomp_construction` (min-degree treewidth,
   tree-decomposition, nice-tree-decomposition), `probabilistic_grounded_td`
   (the adapted grounded edge-tracking `exact_dp` route), and
   `probabilistic_paper_td` (paper-faithful Popescu & Wallner). The old facade
   path raises `ModuleNotFoundError`.
+
+### Fixed
+
+- ADF link classification now follows acceptance-condition behavior over every
+  assignment of the other parents, making it invariant under Boolean syntax.
+- Solver entry points convert only typed optional-dependency absence to
+  `SolverUnavailable`; SAT/ABA invariant `RuntimeError`s retain their original
+  traceback and are not retried or mislabeled as missing Z3.
+- High-level gradual APIs and derived impact calculations no longer discard
+  convergence metadata.
 
 ### Documentation
 
