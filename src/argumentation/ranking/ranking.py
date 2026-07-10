@@ -7,10 +7,7 @@ from typing import Literal
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.fixpoint import iterate_fixpoint
-from argumentation.ranking._graph import (
-    attack_relation as _attack_relation,
-    attackers as _attackers,
-)
+from argumentation.ranking._graph import attackers as _attackers
 
 
 @dataclass(frozen=True)
@@ -388,41 +385,6 @@ def tuples_ranking(
     return TupleRankingResult(
         values=dict(sorted(values.items())),
         preorder=preorder,
-    )
-
-
-def iterated_graded_ranking(
-    framework: ArgumentationFramework,
-    *,
-    max_threshold: int | None = None,
-    tolerance: float = 1e-9,
-) -> RankingResult:
-    """Compute an iterated graded score from defended attacker thresholds."""
-
-    attackers = _attackers(framework)
-    threshold = max_threshold if max_threshold is not None else max(len(framework.arguments), 1)
-    scores: dict[str, float] = {}
-    for argument in framework.arguments:
-        attacker_count = len(attackers[argument])
-        defender_count = sum(
-            1
-            for defender, target in _attack_relation(framework)
-            if target in attackers[argument] and defender != argument
-        )
-        score = 0.0
-        for grade in range(1, threshold + 1):
-            if attacker_count < grade:
-                score += 1.0
-            if defender_count >= grade:
-                score += 0.5
-        scores[argument] = score
-    return _result(
-        scores,
-        higher_is_better=True,
-        tolerance=tolerance,
-        converged=True,
-        iterations=threshold,
-        semantics="iterated_graded",
     )
 
 
