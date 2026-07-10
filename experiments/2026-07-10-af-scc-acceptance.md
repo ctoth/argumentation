@@ -222,7 +222,33 @@ Nothing on the flat solvers, kernels, or encodings changed.
 
 ## Fast Contracts
 
-(filled in after implementation)
+TDD sequence (RED confirmed before each implementation step):
+
+1. `tests/solving/test_af_scc_cone_acceptance.py` — new module, 22 tests:
+   cone-extraction units (ancestor closure on a hand-built SCC chain),
+   routing telemetry (auto fires the cone, explicit `backend="sat"` and
+   single-SCC frameworks do not), the stable vacuity trap (`p→q` plus a
+   disconnected 3-cycle: DS-ST must stay vacuously YES through the fallback,
+   DC-ST cone-NO is conclusive), witness lifting (DC-CO witnesses and DS-CO
+   counterexamples must be complete extensions of the FULL framework),
+   attacks-layer guard (`attacks != defeats` keeps the flat path), sat-core
+   kernel oracle equivalence, unknown-engine rejection, DS-CO
+   grounded-membership (no SAT), DS-PR small-cone threshold fallback, and
+   Hypothesis property tests (auto == native oracle for complete /
+   preferred-skeptical / stable × credulous/skeptical over random multi-SCC
+   AFs; certificates verified against the native enumerator).
+2. Suites: `uv run pytest tests/solving tests/core` = **1108 passed,
+   3 skipped** (skips pre-existing/environmental). `uv run pyright` on
+   changed files: 0 errors. `ruff check` on changed files: clean (one
+   pre-existing F401 in solver.py is untouched, verified present on main).
+3. Full CI-equivalent (pytest -q --timeout=600, pyright src, lint-imports,
+   uv build) run before the final commit — results recorded below.
+
+Method note: benchmark runs and test-suite runs were interleaved with care —
+no test suite or probe ran while a benchmark was in flight, except ~25 s of
+pytest during the discarded first baseline attempt (that run was killed and
+fully rerun from a detached checkout of unmodified main; see Failure
+Analysis).
 
 ## Metric Gate
 
