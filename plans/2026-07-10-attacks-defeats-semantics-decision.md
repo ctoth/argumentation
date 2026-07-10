@@ -46,17 +46,35 @@ Complete this table before production edits:
 
 | Framework kind | Semantic operation | Required relation | Paper image | Current owner | Verdict |
 |---|---|---|---|---|---|
-| Plain Dung | conflict-free / naive | TBD | TBD | TBD | TBD |
-| Plain Dung | defense / admissible | TBD | TBD | TBD | TBD |
-| Plain Dung | range / stage | TBD | TBD | TBD | TBD |
-| Plain Dung | SCC decomposition / CF2 | TBD | TBD | TBD | TBD |
-| Structured projection | conflict-free / naive | TBD | TBD | TBD | TBD |
-| Structured projection | defense / admissible | TBD | TBD | TBD | TBD |
-| Structured projection | range / stage | TBD | TBD | TBD | TBD |
-| Structured projection | SCC decomposition / CF2 | TBD | TBD | TBD | TBD |
+| Plain Dung | conflict-free / naive | canonical `defeats` relation (the paper's single `attacks` relation) | `papers/Dung_1995_AcceptabilityArguments/pngs/page-005.png` | `core/dung.py::naive_extensions` | current behavior correct |
+| Plain Dung | defense / admissible | canonical `defeats` relation for both attack and counterattack | `papers/Dung_1995_AcceptabilityArguments/pngs/page-005.png` | `core/dung.py::admissible` | current behavior correct |
+| Plain Dung | range / stage | canonical `defeats` relation for conflict-free candidates and range | `papers/Gaggl_2013_CF2ArgumentationSemanticsRevisited/pngs/page-002.png` | `core/dung.py::stage_extensions` | current behavior correct |
+| Plain Dung | SCC decomposition / CF2 | canonical `defeats` relation for SCCs, component defeat, and naive base | `papers/Gaggl_2013_CF2ArgumentationSemanticsRevisited/pngs/page-003.png`; `page-004.png` | `core/dung.py::_is_scc_recursive_extension` | current behavior correct |
+| Structured projection | conflict-free / naive | full pre-preference `attacks` relation | `papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-013.png` | `core/dung.py::naive_extensions` | implementation defect |
+| Structured projection | defense / admissible | `attacks` for conflict-freedom; preference-filtered `defeats` for defense | `papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-011.png`; `page-013.png` | `core/dung.py::admissible` | current behavior correct |
+| Structured projection | range / stage | no paper-defined mixed relation; Gaggl uses one `R`, and Modgil-Prakken's supported extension list omits stage | `papers/Gaggl_2013_CF2ArgumentationSemanticsRevisited/pngs/page-002.png`; `papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-013.png` | `core/dung.py::stage_extensions` | unsupported input must be rejected |
+| Structured projection | SCC decomposition / CF2 | no paper-defined mixed relation; Gaggl uses one `R` throughout SCC recursion and naive base | `papers/Gaggl_2013_CF2ArgumentationSemanticsRevisited/pngs/page-002.png`; `page-003.png`; `page-004.png` | `core/dung.py::cf2_extensions` | unsupported input must be rejected |
 
 Allowed verdicts are `current behavior correct`, `implementation defect`, or
 `unsupported input must be rejected`. Do not use “probably.”
+
+### Distinguishing Current-Tree Result
+
+For arguments `{a, b}`, full attacks `{(a, b)}`, and no surviving defeats,
+current `main` returns:
+
+- naive: `{a, b}`, because it incorrectly reads only `defeats`;
+- admissible: `{}`, `{a}`, `{b}`, which correctly combines attack-based
+  conflict-freedom with defeat-based defense;
+- stage: `{a}` and `{b}`, a hybrid of attack-based candidates and
+  defeat-based range that neither cited framework defines; and
+- CF2: `{a, b}`, because SCC decomposition and its naive base read different
+  effective relations.
+
+The executable policy will preserve the admissible result, make naive maximal
+over the attack-conflict-free sets, and reject distinct-relation stage, stage2,
+and CF2 input before SCC/range computation. Frameworks with `attacks=None` or
+`attacks == defeats` remain ordinary single-relation Dung frameworks.
 
 ## Phase 1: Current-Tree Inventory
 
