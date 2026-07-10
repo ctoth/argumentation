@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -98,3 +98,16 @@ Use the exact current test paths discovered during execution if names differ.
 - The structural occurrence classifier is deleted from the semantic path.
 - Evaluation work has a deterministic bound contract.
 - The focused and full gates pass in a clean, separately committed slice.
+
+## Execution Record
+
+- Semantic-classification RED contract: `976e5b7`.
+- Behavioral classifier and structural-path deletion: `bc903df`.
+- Hypothesis compares generated Boolean conditions against a truth-table oracle.
+- The operational contract proves exactly two condition evaluations for each
+  assignment of the other parents.
+- `uv run pytest -q tests/frameworks -k "adf"`: 19 passed.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- `uv run pytest -q`: 2994 passed, 3 skipped, 1 xfailed in 297.85s.
+- Source scan confirms `_structural_polarity` is absent.
