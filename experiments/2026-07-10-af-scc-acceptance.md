@@ -271,12 +271,111 @@ reference table (DS-PR crusti 125/175/225 = NO; DC-CO crusti 175/225 = YES;
 DC-CO scc_3605/scc_7481 = NO). DS-PR t15 slice: no lost rows, no answer
 changes, >10% common-time regression = kill.
 
-(results filled in after the runs)
+### Frontier results (t120; baseline = `5dd6a03`, fixed2 = `911135b`)
+
+| cell | baseline | fixed2 | reference answer | verdict |
+|---|---|---|---|---|
+| DC-CO crusti_g2io_175 | timeout | **solved YES** | YES | **FLIP, correct** |
+| DC-CO crusti_g2io_225 | timeout | **solved YES** | YES | **FLIP, correct** |
+| DC-CO scc_3605 | timeout | **solved NO** | NO | **FLIP, correct** |
+| DC-CO scc_7481 | timeout | **solved NO** | NO | **FLIP, correct** |
+| DS-PR crusti_g2io_125 | timeout | **solved NO** | NO | **FLIP, correct** |
+| DS-PR crusti_g2io_175 | timeout | timeout | NO | no flip (stop rule) |
+| DS-PR crusti_g2io_225 | timeout | timeout | NO | no flip (stop rule) |
+| DS-ST crusti_g2io_175 (prio 2) | timeout | timeout | YES | predicted (one-sided limit) |
+| DS-ST crusti_g2io_225 (prio 2) | timeout | timeout | YES | predicted (one-sided limit) |
+
+Totals over the 18 AF frontier rows: baseline 6 solved / 12 timeout →
+fixed2 **11 solved / 7 timeout**. No solved row regressed and no solved
+answer changed (DC-CO crusti_125 = true, scc_1554 = false, DS-PR mainkwt ×3
+= false, DS-ST crusti_125 = false, identical in both runs). The first fixed
+run (`af-scc-acceptance-fixed`, commit 9dfc489) produced the identical
+18-row table. **Gate: 5 of 7 in-scope cells flipped with reference-matching
+answers = MET.**
+
+### DS-PR crusti_175/225 stop-rule anatomy (2 iterations spent)
+
+Cone verified small (1400 / 1575 args; 92k / 131k defeats; 8 / 7 SCCs).
+After iteration 2 the SAT *checks* are seconds each; the remaining time is
+Python-API construction: parse ~15 s + cone extraction ~14 s + three kernel
+builds inside CDAS on the 92k-attack cone (super-core ~16 s +
+complete-labelling extension problem ~14 s + double-admissible attacker
+solver ~32 s ≈ 62 s) + loop checks ⇒ > 120 s. Time now goes to **clause
+construction, not SAT search**. Candidate follow-ups (out of scope here):
+share one kernel across the CDAS sub-solvers, skip the answer-preserving
+super-core precheck on big cones, a direct-CNF substrate (scout Proposal C),
+faster cone extraction.
+
+### DS-PR cap320 t15 slice guard
+
+| run | solved | timeout | common-row time vs baseline | answer mismatches |
+|---|---|---|---|---|
+| baseline (5dd6a03) | 221 | 34 | — | — |
+| fixed (9dfc489, pre-threshold) | 233 | 22 | −13.97 % | 0 |
+| fixed2 (911135b, final) | 221 | 34 | −0.44 % | 0 |
+
+The pre-threshold run lost one baseline-solved instance (BA_160_80_2,
+0.6 s flat → 95–97 s under the non-incremental sat-core CDAS loop); the
+`PREFERRED_CONE_MIN_DEFEATS` guard fixed it (0.6–0.7 s again in fixed2).
+fixed2's remaining 5-lost/5-gained churn is boundary-band noise, not the
+change: every churned row sits at 10.7–15.0 s against the 15 s budget;
+`n192p5q2_ve` churned with cone = whole graph (provably unchanged code
+path); and identical-code mainkwt rows shifted uniformly ~+3.5 s between the
+fixed and fixed2 runs (environmental drift — other agents share this
+machine). The baseline itself (221/34) already deviates from exp-1's
+recorded expectation (235/20) on this machine/day. No answer changed in any
+run; common-row time never regressed.
 
 ## Interpretation
 
-(filled in after the metric gate)
+The scout's structural lever is real and the derivation held end-to-end:
+restricting DC/DS to the query's ancestor cone turns the crusti/scc frontier
+cells from >120 s whole-graph kernel builds into 17–107 s cone solves with
+reference-matching answers, provably (not heuristically) preserving the
+semantics for complete/preferred and one-sidedly for stable. Two findings
+matter beyond this experiment:
+
+1. **The default Z3 SMT core, not the encoding, was the acceptance
+   bottleneck at scale** — `Tactic('sat')` decides the same require_in
+   complete-labelling query 165× faster on the crusti_175 cone. This likely
+   generalizes to the ER cells (single-SCC, out of scope here).
+2. **Python-API clause construction is the next wall**: DS-PR on the two
+   biggest crusti cones still TOs because CDAS builds three kernels on the
+   cone (~62 s) before the loop starts — the incremental-SAT substrate
+   (Proposal C) is the right follow-up, now with a precise cost model.
+
+DS-ST behaved exactly as derived: the one-sided rule is sound but its
+conclusive branch does not trigger on crusti (the cone genuinely has
+query-free stable extensions), so those two priority-2 cells stay timeout by
+design — honestly reported rather than unsoundly flipped.
+
+## Failure Analysis
+
+Two mid-experiment failures, both caught and corrected:
+
+1. The very first baseline attempt ran while the implementation was being
+   written into the same worktree; `run_child` spawns a fresh subprocess per
+   row, so later rows would have imported modified code. The run was killed
+   and the baseline fully rerun from a detached checkout of unmodified main
+   (`5dd6a03`), with no source edits during any subsequent benchmark.
+2. Iteration 1 (cone + default engine) left the crusti DC-CO cells timing
+   out; phase probes isolated the 265 s require_in check and iteration 2
+   (sat-core engine) fixed it. The BA_160_80_2 t15 loss was probed to a
+   consistent sat-core pathology on tiny CDAS loops and fixed by the
+   measured cone-size threshold.
 
 ## Decision
 
-(filled in after the metric gate)
+**GO.** Recommend promoting `exp/af-scc-acceptance` (code through `911135b`;
+docs through this commit) to main: the frontier gate is met (5/7 flips, all
+answers matching the ICCMA reference table), the t15 slice shows no answer
+changes and no common-time regression, and the flat paths are byte-for-byte
+unchanged outside the new auto-only cone routing. Two full-suite test
+failures on this branch are **pre-existing on main** (verified failing
+identically on detached `5dd6a03`):
+`test_current_docs_do_not_cite_old_flat_source_paths` and
+`test_large_dense_stable_auto_route_uses_sat_without_asp` — fix on main
+independently. Follow-ups in value order: (a) shared-kernel / direct-CNF
+CDAS substrate for DS-PR crusti_175/225 and the ER family, (b) sat-core
+engine for the flat acceptance paths, (c) self-loop preprocessing for the
+scc family (shrinks the marginal scc_3605 cone).
