@@ -1,6 +1,8 @@
-from itertools import combinations
+from itertools import combinations, product
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from argumentation.core import dung
 from argumentation.core.dung import ArgumentationFramework
@@ -41,6 +43,45 @@ def _admissible_extensions(
             attacks=framework.attacks,
         )
     }
+
+
+@st.composite
+def _single_relation_frameworks(
+    draw: st.DrawFn,
+) -> ArgumentationFramework:
+    size = draw(st.integers(min_value=1, max_value=4))
+    arguments = frozenset(("a", "b", "c", "d")[:size])
+    pairs = tuple(product(sorted(arguments), repeat=2))
+    relation = frozenset(
+        draw(st.sets(st.sampled_from(pairs), max_size=len(pairs)))
+    )
+    return ArgumentationFramework(arguments=arguments, defeats=relation)
+
+
+@st.composite
+def _structured_frameworks_with_blocked_attack(
+    draw: st.DrawFn,
+) -> ArgumentationFramework:
+    size = draw(st.integers(min_value=1, max_value=4))
+    arguments = frozenset(("a", "b", "c", "d")[:size])
+    pairs = tuple(product(sorted(arguments), repeat=2))
+    attacks = frozenset(
+        draw(st.sets(st.sampled_from(pairs), min_size=1, max_size=len(pairs)))
+    )
+    blocked = draw(st.sampled_from(sorted(attacks)))
+    remaining = tuple(sorted(attacks - {blocked}))
+    defeats = (
+        frozenset()
+        if not remaining
+        else frozenset(
+            draw(st.sets(st.sampled_from(remaining), max_size=len(remaining)))
+        )
+    )
+    return ArgumentationFramework(
+        arguments=arguments,
+        attacks=attacks,
+        defeats=defeats,
+    )
 
 
 # Dung 1995, p.326:
@@ -84,6 +125,25 @@ def test_identical_attack_metadata_remains_a_single_relation_framework() -> None
     assert dung.cf2_extensions(framework) == [frozenset({"a"})]
 
 
+@given(_single_relation_frameworks())
+@settings(max_examples=40, deadline=None)
+def test_identical_attack_metadata_preserves_every_single_relation_semantic(
+    framework: ArgumentationFramework,
+) -> None:
+    """Dung 1995 p.326 and Gaggl 2013 pp.927-929 use one relation."""
+    duplicate = ArgumentationFramework(
+        arguments=framework.arguments,
+        defeats=framework.defeats,
+        attacks=framework.defeats,
+    )
+
+    assert dung.naive_extensions(duplicate) == dung.naive_extensions(framework)
+    assert _admissible_extensions(duplicate) == _admissible_extensions(framework)
+    assert dung.stage_extensions(duplicate) == dung.stage_extensions(framework)
+    assert dung.stage2_extensions(duplicate) == dung.stage2_extensions(framework)
+    assert dung.cf2_extensions(duplicate) == dung.cf2_extensions(framework)
+
+
 # Modgil and Prakken 2018, Defs. 9, 14-15, pp.12,14:
 # papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-011.png
 # papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-013.png
@@ -94,6 +154,31 @@ def test_structured_naive_is_maximal_attack_conflict_free() -> None:
         frozenset({"a"}),
         frozenset({"b"}),
     }
+
+
+@given(_structured_frameworks_with_blocked_attack())
+@settings(max_examples=60, deadline=None)
+def test_structured_naive_matches_maximal_attack_conflict_free_property(
+    framework: ArgumentationFramework,
+) -> None:
+    """Modgil-Prakken 2018 page-013.png, Definition 14."""
+    assert framework.attacks is not None
+    conflict_free_candidates = [
+        candidate
+        for size in range(len(framework.arguments) + 1)
+        for values in combinations(sorted(framework.arguments), size)
+        if dung.conflict_free(
+            candidate := frozenset(values),
+            framework.attacks,
+        )
+    ]
+    expected = {
+        candidate
+        for candidate in conflict_free_candidates
+        if not any(candidate < other for other in conflict_free_candidates)
+    }
+
+    assert set(dung.naive_extensions(framework)) == expected
 
 
 def test_structured_admissible_uses_attacks_for_conflict_and_defeats_for_defense(
