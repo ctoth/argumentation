@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -192,3 +192,25 @@ do not substitute a narrower check for the full gate.
 - Convergence and truncation claims are truthful.
 - No disproved heuristic path remains in production or examples.
 - Each semantic correction is separately committed before the next begins.
+
+## Execution Record
+
+- Discussion-based RED `1a9b170`; GREEN `376514b`.
+- Burden-based RED `2a49b88`; GREEN `cd6638e`.
+- Tuple* partial-preorder RED `282bd89`; GREEN `b7b56e0`.
+- h-Categoriser recurrence RED `75fbb68`; GREEN `417dd7a`.
+- False iterated-graded export RED `07c6c71`; deletion `f18c82e`.
+- Counting matrix semantics RED `5513575`; GREEN `475bb3b`.
+
+Hypothesis properties now cover discussion path multiplicity, burden prefixes,
+Tuple* branch multisets and partial-preorder transitivity, h-Categoriser
+differential equivalence, and counting-series equivalence on generated DAGs.
+
+Final gates:
+
+- `uv run pytest -q tests/ranking`: 35 passed.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- `uv run pytest -q`: 2990 passed, 3 skipped, 1 xfailed in 298.43s.
+- Source scan found none of the disproved weighted discussion, decimal Tuple*,
+  capped h-Categoriser, or scalar iterated-graded implementations.
