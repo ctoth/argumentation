@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -108,3 +108,28 @@ Use the exact current test paths during execution.
 - Converged outputs remain compatible.
 - The convergence signal is not discarded anywhere in the audited call graph.
 - The operational route contracts and full gates pass in an isolated commit.
+
+## Execution Record
+
+- Non-convergence error RED and API decision: `39b2e1f`.
+- Direct diagnostic-carrying error implementation: `a528d3a`.
+- High-level and derived-value RED matrix: `065b4d8`.
+- Fail-closed explanation, contestation, revised-impact, Shapley-impact, and
+  attack-sensitivity implementation: `322c40a`.
+- A real one-iteration solve proves `explain_acceptance` rejects bounded
+  non-convergence with iteration, residual, and tolerance diagnostics.
+- Deterministic route contracts prove explanation and first-stage contestation
+  stop after one failed solve, mixed contestation and revised impact stop after
+  two, and Shapley attribution stops before pairing a failed coalition value.
+- Hypothesis found real cyclic/self-attack DF-QuAD cases that remain
+  non-converged after 10,000 iterations; sensitivity now returns either a final
+  bounded delta or a deterministic `GradualConvergenceError`, never an
+  unsettled numeric value.
+- The source audit found no remaining direct extraction of `.strengths` in the
+  gradual package without a preceding convergence check.
+- `uv run pytest -q tests/gradual`: 56 passed, 1 xfailed.
+- `uv run pytest -q tests -k "gradual and (converg or explain or contest or shapley)"`:
+  12 passed, 3014 deselected.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- Calibrated full gate: 3022 passed, 3 skipped, 1 xfailed in 296.48s.
