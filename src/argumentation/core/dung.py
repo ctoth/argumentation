@@ -389,11 +389,21 @@ def _subframework(
 
 
 def naive_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
-    """Compute all maximal conflict-free sets."""
+    """Compute all maximal conflict-free sets.
+
+    Structured projections use the full attack relation for conflict-freedom
+    (Modgil and Prakken 2018, Definition 14). Pure Dung frameworks use their
+    single canonical defeat relation.
+    """
+    cf_relation = (
+        framework.attacks
+        if framework.attacks is not None
+        else framework.defeats
+    )
     candidates = [
         candidate
         for candidate in _all_subsets(framework.arguments)
-        if conflict_free(candidate, framework.defeats)
+        if conflict_free(candidate, cf_relation)
     ]
     return maximal_sets(candidates)
 
