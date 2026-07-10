@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Literal, Mapping
 
 from argumentation.gradual.gradual import (
+    GradualConvergenceError,
     ShapleyAttackImpactResult,
     WeightedBipolarGraph,
     quadratic_energy_strengths,
@@ -86,11 +87,14 @@ def explain_acceptance(
     max_iterations: int = 10_000,
 ) -> AcceptanceExplanation:
     """Explain target acceptance with strengths and Shapley attack impacts."""
-    strengths = quadratic_energy_strengths(
+    strength_result = quadratic_energy_strengths(
         graph,
         tolerance=tolerance,
         max_iterations=max_iterations,
-    ).strengths
+    )
+    if not strength_result.converged:
+        raise GradualConvergenceError("acceptance explanation", strength_result)
+    strengths = strength_result.strengths
     return AcceptanceExplanation(
         target=target,
         strength=strengths[target],
@@ -120,7 +124,10 @@ def contest(
     if overlap:
         raise ValueError(f"evidence arguments already exist: {sorted(overlap)!r}")
 
-    before = quadratic_energy_strengths(graph).strengths[claim]
+    before_result = quadratic_energy_strengths(graph)
+    if not before_result.converged:
+        raise GradualConvergenceError("contestation baseline", before_result)
+    before = before_result.strengths[claim]
     augmented_weights = dict(graph.initial_weights)
     augmented_weights.update({str(argument): float(weight) for argument, weight in evidence.items()})
     attacks = set(graph.attacks)
@@ -140,7 +147,10 @@ def contest(
         attacks=frozenset(attacks),
         supports=frozenset(supports),
     )
-    after = quadratic_energy_strengths(witness).strengths[claim]
+    after_result = quadratic_energy_strengths(witness)
+    if not after_result.converged:
+        raise GradualConvergenceError("contestation result", after_result)
+    after = after_result.strengths[claim]
     return ContestationResult(
         claim=claim,
         before_strength=before,

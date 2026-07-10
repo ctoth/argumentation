@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from argumentation.core.dung import ArgumentationFramework, grounded_extension
 from argumentation.gradual.dfquad import dfquad_strengths
-from argumentation.gradual.gradual import WeightedBipolarGraph
+from argumentation.gradual.gradual import GradualConvergenceError, WeightedBipolarGraph
 
 
 def score_conflict(
@@ -95,11 +95,17 @@ def attack_removal_sensitivity(
         attacks=framework.defeats,
         supports=frozenset(supports),
     )
-    strengths_full = dfquad_strengths(
+    full_result = dfquad_strengths(
         graph,
         base_scores=base_scores,
         support_weights=supports,
-    ).strengths
+    )
+    if not full_result.converged:
+        raise GradualConvergenceError(
+            "attack removal sensitivity baseline",
+            full_result,
+        )
+    strengths_full = full_result.strengths
 
     reduced_framework = ArgumentationFramework(
         arguments=framework.arguments,
@@ -111,9 +117,15 @@ def attack_removal_sensitivity(
         attacks=reduced_framework.defeats,
         supports=frozenset(supports),
     )
-    strengths_reduced = dfquad_strengths(
+    reduced_result = dfquad_strengths(
         reduced_graph,
         base_scores=base_scores,
         support_weights=supports,
-    ).strengths
+    )
+    if not reduced_result.converged:
+        raise GradualConvergenceError(
+            "attack removal sensitivity after removal",
+            reduced_result,
+        )
+    strengths_reduced = reduced_result.strengths
     return strengths_reduced[attack[1]] - strengths_full[attack[1]]

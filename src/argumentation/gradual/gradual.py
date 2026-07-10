@@ -317,6 +317,8 @@ def revised_direct_impact(
         tolerance=tolerance,
         max_iterations=max_iterations,
     )
+    if not original.converged:
+        raise GradualConvergenceError("revised impact baseline", original)
     removed_attacks = frozenset(
         (source, attacked)
         for source, attacked in graph.attacks
@@ -328,6 +330,11 @@ def revised_direct_impact(
         tolerance=tolerance,
         max_iterations=max_iterations,
     )
+    if not after_attack_removal.converged:
+        raise GradualConvergenceError(
+            "revised impact after attack removal",
+            after_attack_removal,
+        )
 
     removed_arguments = normalized_influencers - {target}
     argument_removed = _without_arguments(graph, removed_arguments)
@@ -336,6 +343,11 @@ def revised_direct_impact(
         tolerance=tolerance,
         max_iterations=max_iterations,
     )
+    if not after_argument_removal.converged:
+        raise GradualConvergenceError(
+            "revised impact after argument removal",
+            after_argument_removal,
+        )
 
     attack_removed_strength = after_attack_removal.strengths[target]
     argument_removed_strength = after_argument_removal.strengths[target]
@@ -387,16 +399,28 @@ def shapley_attack_impacts(
             )
             for coalition in combinations(others, size):
                 removed = frozenset(coalition)
-                before = quadratic_energy_strengths(
+                before_result = quadratic_energy_strengths(
                     _without_attacks(graph, removed),
                     tolerance=tolerance,
                     max_iterations=max_iterations,
-                ).strengths[target]
-                after = quadratic_energy_strengths(
+                )
+                if not before_result.converged:
+                    raise GradualConvergenceError(
+                        "Shapley attack impact before removal",
+                        before_result,
+                    )
+                after_result = quadratic_energy_strengths(
                     _without_attacks(graph, removed | frozenset({attack})),
                     tolerance=tolerance,
                     max_iterations=max_iterations,
-                ).strengths[target]
+                )
+                if not after_result.converged:
+                    raise GradualConvergenceError(
+                        "Shapley attack impact after removal",
+                        after_result,
+                    )
+                before = before_result.strengths[target]
+                after = after_result.strengths[target]
                 impact += coefficient * (after - before)
         impacts[attack] = impact
 

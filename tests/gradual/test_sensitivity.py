@@ -13,6 +13,7 @@ from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.gradual.gradual import GradualConvergenceError
 from argumentation.gradual.sensitivity import attack_removal_sensitivity, score_conflict
 
 
@@ -250,19 +251,46 @@ class TestAttackRemovalSensitivityProperties:
     @given(framework_with_scored_attacks())
     @_PROP_SETTINGS
     def test_delta_is_finite_and_bounded(self, scenario) -> None:
-        """DF-QuAD strengths lie in ``[0, 1]``, so the delta lies in ``[-1, 1]``."""
+        """A final delta is bounded; an unsettled solve fails with diagnostics."""
         framework, supports, base_scores, attack = scenario
-        delta = attack_removal_sensitivity(framework, supports, base_scores, attack)
+        try:
+            delta = attack_removal_sensitivity(
+                framework,
+                supports,
+                base_scores,
+                attack,
+            )
+        except GradualConvergenceError as error:
+            assert error.result.converged is False
+            assert error.result.max_delta > error.result.tolerance
+            return
         assert delta == delta  # not NaN
         assert -1.0 <= delta <= 1.0
 
     @given(framework_with_scored_attacks())
     @_PROP_SETTINGS
     def test_deterministic(self, scenario) -> None:
-        """Same inputs yield the same delta on repeated calls."""
+        """Same inputs yield the same delta or non-convergence diagnostic."""
         framework, supports, base_scores, attack = scenario
-        first = attack_removal_sensitivity(framework, supports, base_scores, attack)
-        second = attack_removal_sensitivity(framework, supports, base_scores, attack)
+        outcomes: list[float | tuple[str, int, float, float]] = []
+        for _ in range(2):
+            try:
+                outcomes.append(
+                    attack_removal_sensitivity(
+                        framework,
+                        supports,
+                        base_scores,
+                        attack,
+                    )
+                )
+            except GradualConvergenceError as error:
+                outcomes.append((
+                    error.operation,
+                    error.result.iterations,
+                    error.result.max_delta,
+                    error.result.tolerance,
+                ))
+        first, second = outcomes
         assert first == second
 
     @pytest.mark.xfail(
