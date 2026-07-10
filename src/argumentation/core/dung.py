@@ -319,8 +319,16 @@ def stage_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all stage extensions by range-maximal conflict-free sets.
 
     Gaggl and Woltran 2013, p. 927: stage extensions are conflict-free sets
-    with maximal range.
+    with maximal range under one attack relation. Distinct pre-preference
+    attacks and preference-filtered defeats do not define that one relation.
     """
+    if (
+        framework.attacks is not None
+        and framework.attacks != framework.defeats
+    ):
+        raise ValueError(
+            "stage semantics is undefined for distinct attack and defeat relations"
+        )
     args = framework.arguments
     cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
     candidates: list[frozenset[str]] = []
