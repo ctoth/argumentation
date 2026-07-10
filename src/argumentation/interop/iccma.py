@@ -277,9 +277,23 @@ def _parse_numeric_aba(text: str) -> ABAFramework:
             assumptions.add(_aba_numeric_literal(atoms, parts[1], atom_count, line_number))
             continue
         if parts[0] == "c" and len(parts) == 3:
-            contraries[
-                _aba_numeric_literal(atoms, parts[1], atom_count, line_number)
-            ] = _aba_numeric_literal(atoms, parts[2], atom_count, line_number)
+            assumption = _aba_numeric_literal(
+                atoms,
+                parts[1],
+                atom_count,
+                line_number,
+            )
+            if assumption in contraries:
+                raise ValueError(
+                    f"duplicate contrary for assumption {parts[1]!r} "
+                    f"at ABA line {line_number}"
+                )
+            contraries[assumption] = _aba_numeric_literal(
+                atoms,
+                parts[2],
+                atom_count,
+                line_number,
+            )
             continue
         if parts[0] == "r" and len(parts) >= 2:
             rules.add(
