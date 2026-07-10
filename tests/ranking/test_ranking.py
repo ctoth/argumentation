@@ -134,6 +134,22 @@ def test_categoriser_non_convergence_is_result_data() -> None:
     assert set(result.scores) == _bonzon_example().arguments
 
 
+def test_h_categoriser_does_not_cap_the_attacker_sum() -> None:
+    # Besnard--Hunter 2001, page-019.png (printed p.222), Definition 8.10:
+    # h(N) = 1 / (1 + h(N1) + ... + h(Nl)). Two leaf attackers therefore
+    # give 1/3, not the capped value 1/2.
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("b", "a"), ("c", "a")}),
+    )
+
+    result = h_categoriser_ranking(framework)
+
+    assert result.scores["a"] == pytest.approx(1.0 / 3.0)
+    assert result.scores["b"] == pytest.approx(1.0)
+    assert result.scores["c"] == pytest.approx(1.0)
+
+
 def _discussion_sequence(
     framework: ArgumentationFramework,
     argument: str,
@@ -226,6 +242,19 @@ def _small_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
         ),
         st.sets(st.sampled_from(possible_attacks), max_size=8),
     )
+
+
+@given(_small_frameworks())
+def test_h_categoriser_is_the_besnard_hunter_categoriser(
+    framework: ArgumentationFramework,
+) -> None:
+    expected = categoriser_scores(framework, max_iterations=100)
+    actual = h_categoriser_ranking(framework, max_iterations=100)
+
+    assert actual.scores == pytest.approx(expected.scores)
+    assert actual.ranking == expected.ranking
+    assert actual.converged is expected.converged
+    assert actual.iterations == expected.iterations
 
 
 def _small_acyclic_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
