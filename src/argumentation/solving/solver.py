@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import importlib.util
 
+from argumentation.core.optional_deps import OptionalDependencyUnavailable
 from argumentation.structured.aba import aba as aba_semantics
 from argumentation.frameworks import adf as adf_semantics
 from argumentation.frameworks import setaf as setaf_semantics
@@ -197,8 +198,8 @@ def solve_aba_single_extension(
         ):
             try:
                 result = native_sparse_narrow_aba_extension(framework, semantics)
-            except RuntimeError as exc:
-                return _aba_sat_runtime_unavailable(exc)
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
             return SingleExtensionSolverSuccess(
                 extension=result.extension,
                 metadata=result.route_metadata | result.telemetry,
@@ -208,12 +209,15 @@ def solve_aba_single_extension(
                 return SingleExtensionSolverSuccess(
                     extension=sat_aba_stable_extension(framework),
                 )
-            except RuntimeError as exc:
-                return _aba_sat_runtime_unavailable(exc)
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
         if semantics in {"complete", "preferred"}:
-            return SingleExtensionSolverSuccess(
-                extension=sat_aba_support_extension(framework, semantics),
-            )
+            try:
+                return SingleExtensionSolverSuccess(
+                    extension=sat_aba_support_extension(framework, semantics),
+                )
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
         return _aba_sat_unsupported_semantics(semantics)
     if backend in {"asp", "clingo"}:
         if not isinstance(framework, ABAFramework):
@@ -268,15 +272,18 @@ def solve_aba_acceptance(
         if semantics == "stable":
             try:
                 return _solve_sat_stable_aba_acceptance(framework, task, query)
-            except RuntimeError as exc:
-                return _aba_sat_runtime_unavailable(exc)
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
         if semantics in {"complete", "preferred"}:
-            answer, witness = sat_aba_support_acceptance(
-                framework,
-                semantics=semantics,
-                task=task,
-                query=query,
-            )
+            try:
+                answer, witness = sat_aba_support_acceptance(
+                    framework,
+                    semantics=semantics,
+                    task=task,
+                    query=query,
+                )
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
             return AcceptanceSolverSuccess(
                 answer=answer,
                 witness=witness if task == "credulous" and answer else None,
@@ -321,7 +328,10 @@ def solve_dung_extensions(
     if backend == "sat":
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
-        return ExtensionSolverSuccess(sat_extensions(framework, semantics))
+        try:
+            return ExtensionSolverSuccess(sat_extensions(framework, semantics))
+        except OptionalDependencyUnavailable as exc:
+            return _optional_dependency_unavailable(exc)
     if backend == "native":
         return ExtensionSolverSuccess(
             _sorted_extensions(_dung_extensions(framework, semantics))
@@ -369,9 +379,12 @@ def solve_dung_single_extension(
                 )
             except AfSatCheckTimeout as exc:
                 return _sat_check_timeout(exc, semantics)
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        extensions = sat_extensions(framework, semantics)
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
+        try:
+            extensions = sat_extensions(framework, semantics)
+        except OptionalDependencyUnavailable as exc:
+            return _optional_dependency_unavailable(exc)
         return SingleExtensionSolverSuccess(
             extension=extensions[0] if extensions else None,
         )
@@ -423,8 +436,8 @@ def solve_dung_acceptance(
                 )
             except AfSatCheckTimeout as exc:
                 return _sat_check_timeout(exc, semantics)
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
             if cone_result is not None:
                 return cone_result
         solve_dedicated = _dedicated_sat_acceptance_solver(semantics, task)
@@ -440,13 +453,13 @@ def solve_dung_acceptance(
                 )
             except AfSatCheckTimeout as exc:
                 return _sat_check_timeout(exc, semantics)
-            except RuntimeError as exc:
-                return _sat_runtime_unavailable(exc)
-        return _solve_dung_acceptance_from_extensions(
-            sat_extensions(framework, semantics),
-            task,
-            query,
-        )
+            except OptionalDependencyUnavailable as exc:
+                return _optional_dependency_unavailable(exc)
+        try:
+            extensions = sat_extensions(framework, semantics)
+        except OptionalDependencyUnavailable as exc:
+            return _optional_dependency_unavailable(exc)
+        return _solve_dung_acceptance_from_extensions(extensions, task, query)
     return SolverBackendUnavailable(
         backend=backend,
         install_hint="Use backend='native'.",
@@ -565,19 +578,13 @@ def _sat_check_timeout(exc: AfSatCheckTimeout, semantics: str) -> SolverBackendT
     )
 
 
-def _sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
+def _optional_dependency_unavailable(
+    exc: OptionalDependencyUnavailable,
+) -> SolverBackendUnavailable:
     return SolverBackendUnavailable(
         backend="sat",
         reason=str(exc),
-        install_hint="Install the z3-solver extra or use backend='native'.",
-    )
-
-
-def _aba_sat_runtime_unavailable(exc: RuntimeError) -> SolverBackendUnavailable:
-    return SolverBackendUnavailable(
-        backend="sat",
-        reason=str(exc),
-        install_hint="Install the z3-solver extra or use backend='native'.",
+        install_hint=exc.install_hint,
     )
 
 

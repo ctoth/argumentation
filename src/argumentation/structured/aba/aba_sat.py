@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import time
 from typing import Any
 
-from argumentation.core.optional_deps import load_z3
+from argumentation.core.optional_deps import OptionalDependencyUnavailable, load_z3
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, _closure
 from argumentation.structured.aba.aba_bitset_closure import _BitsetHornClosure
 from argumentation.structured.aba.aba_support_model import (
@@ -1765,7 +1765,11 @@ def _load_pysat_solver():
     try:
         from pysat.solvers import Solver  # type: ignore[import-not-found]
     except ImportError as exc:
-        raise RuntimeError("native ABA PrefSat solving requires python-sat") from exc
+        raise OptionalDependencyUnavailable(
+            feature="native ABA PrefSat solving",
+            package="python-sat",
+            install_hint="Install python-sat or use backend='native'.",
+        ) from exc
     return Solver
 
 
