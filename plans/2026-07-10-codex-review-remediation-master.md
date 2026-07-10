@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Authorized for full execution on 2026-07-10.
+Status: Completed on 2026-07-10.
 
 Source review: [`reviews/2026-07-10/codex.md`](../reviews/2026-07-10/codex.md)
 
@@ -151,3 +151,37 @@ When the user authorizes execution, begin only with
 [`2026-07-10-repository-gate-repair.md`](2026-07-10-repository-gate-repair.md).
 Do not begin ranking or other semantic work until the baseline is green and
 that slice is committed.
+
+## Closure Audit
+
+Every focused plan is completed; none is deferred.
+
+| Review item | Final disposition | Primary evidence |
+|---|---|---|
+| Ranking heuristic substitutes | Corrected or removed | Ranking RED/GREEN ledger from `1a9b170` through `475bb3b`; false iterated-graded export deleted in `f18c82e` |
+| Structural ADF link polarity | Corrected | `976e5b7`, `bc903df`; `_structural_polarity` absent from source |
+| Solver runtime misdiagnosis | Corrected | `2627bf1`, `09da2aa`; `solver.py` catches only `OptionalDependencyUnavailable` for package absence |
+| Duplicate ABA contraries | Corrected | `5428603`, `653b0fb`, `9f2aaf5`; both parse sites check uniqueness before assignment |
+| Discarded gradual convergence | Corrected | `065b4d8`, `322c40a`; every audited final-value extraction follows a convergence check |
+| Two reported repository-gate failures | Invalidated by current-tree evidence | Phase 0 record: the one-second timeout reserve and reorganized documentation paths were already correct; untouched baseline passed |
+| `attacks` / `defeats` ambiguity | Adjudicated and enforced | `fffa976`, `c666720`, `ebce2ee`, `f928589`; page-image-backed decision table and exact extension contracts |
+
+Cross-cutting scans found no disproved weighted discussion formula, decimal
+Tuple* path, capped h-Categoriser recurrence, false iterated-graded export,
+structural ADF polarity helper, broad `RuntimeError` conversion in
+`solving/solver.py`, silent contrary overwrite, or unguarded high-level gradual
+score extraction. No compatibility shim, relation adapter, or second semantic
+path was introduced.
+
+Release and migration coverage is committed in `CHANGELOG.md`, `README.md`, and
+`docs/gaps.md` (`182a68d`). The final gates on the fully documented tree are:
+
+- `uv run pytest -q --timeout=120 --timeout-method=thread --session-timeout=360`:
+  3030 passed, 3 skipped, 1 xfailed in 298.50s.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- `git diff --check`: clean.
+
+All kept work is committed directly on `main`. The tracked worktree is clean;
+the pre-existing unrelated untracked logs, notes, prompts, reports, scripts,
+paper marker, and crash dump remain untouched.

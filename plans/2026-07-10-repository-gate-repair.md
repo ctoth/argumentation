@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed by current-tree invalidation on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -97,3 +97,20 @@ silently widening into unrelated cleanup.
 - The full baseline suite is green.
 - The two fixes exist as independently attributable Git slices.
 - Production semantics and package ownership are unchanged.
+
+## Execution Record
+
+The review's Phase 0 validation was wrong against the clean current `main`
+baseline (`b70a1d6`):
+
+- `tools/iccma2025_run_native.py` reserves one second, not five, and the focused
+  test correctly expects a 39-second child budget from 40 seconds.
+- `docs/argumentation-package-boundary.md` already names the reorganized owners,
+  and `tests/test_docs_surface.py` passes.
+- The initial unmodified baseline passed: 2980 passed, 3 skipped, 1 xfailed in
+  300.49s.
+
+Under the issue-invalidity rule, no timeout, documentation, test, branch, or
+compatibility work was manufactured for these already-correct items. There are
+therefore no Phase 0 fix commits; the evidence invalidating the premise is the
+completion artifact.
