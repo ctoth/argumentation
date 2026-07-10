@@ -21,7 +21,7 @@ class RankingResult:
     ``converged=False`` is data, not an exception.
     """
 
-    scores: dict[str, float]
+    scores: dict[str, float] | dict[str, tuple[float, ...]]
     ranking: tuple[frozenset[str], ...]
     converged: bool
     iterations: int
@@ -144,32 +144,49 @@ def discussion_based_ranking(
     max_depth: int | None = None,
     tolerance: float = 1e-9,
 ) -> RankingResult:
-    """Compute a discussion-count ranking.
+    """Compute Amgoud--Ben-Naim discussion-based semantics.
 
-    Amgoud and Ben-Naim 2013 count alternating defence/attack discussions.
-    Here even-depth defenders increase acceptability and odd-depth attackers
-    decrease it, with diminishing depth weight.
+    The semantic value is the signed sequence of linear-discussion counts:
+    odd lengths are negative (won discussions), even lengths are positive
+    (lost discussions), and smaller sequences are better lexicographically.
+    ``converged=False`` means discussions continue beyond the returned bound.
     """
 
-    attackers = _attackers(framework)
+    if tolerance <= 0.0:
+        raise ValueError("tolerance must be positive")
     depth = max_depth if max_depth is not None else max(len(framework.arguments), 1)
-    scores: dict[str, float] = {}
+    if depth <= 0:
+        raise ValueError("max_depth must be positive")
+
+    attackers = _attackers(framework)
+    scores: dict[str, tuple[float, ...]] = {}
+    converged = True
     for argument in framework.arguments:
-        total = 1.0
-        frontier = {argument}
-        for level in range(1, depth + 1):
-            next_frontier = {attacker for target in frontier for attacker in attackers[target]}
-            if not next_frontier:
-                break
-            weight = 1.0 / (level + 1)
-            total += weight * len(next_frontier) * (1 if level % 2 == 0 else -1)
+        frontier = {argument: 1}
+        sequence: list[float] = []
+        for length in range(1, depth + 1):
+            count = sum(frontier.values())
+            sequence.append(float(-count if length % 2 == 1 else count))
+            next_frontier: dict[str, int] = {}
+            for target, multiplicity in frontier.items():
+                for attacker in attackers[target]:
+                    next_frontier[attacker] = (
+                        next_frontier.get(attacker, 0) + multiplicity
+                    )
             frontier = next_frontier
-        scores[argument] = total
-    return _result(
-        scores,
-        higher_is_better=True,
-        tolerance=tolerance,
-        converged=True,
+        if frontier:
+            converged = False
+        scores[argument] = tuple(sequence)
+
+    ordered_values = sorted(set(scores.values()))
+    ranking = tuple(
+        frozenset(argument for argument, value in scores.items() if value == tier_value)
+        for tier_value in ordered_values
+    )
+    return RankingResult(
+        scores=dict(sorted(scores.items())),
+        ranking=ranking,
+        converged=converged,
         iterations=depth,
         semantics="discussion_based",
     )
