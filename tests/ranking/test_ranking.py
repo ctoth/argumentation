@@ -214,6 +214,23 @@ def test_discussion_ranking_marks_a_bounded_cycle_as_truncated() -> None:
     assert result.iterations == 4
 
 
+def test_counting_ranking_uses_normalized_alternating_path_counts() -> None:
+    # Delobelle--Villata 2019 page-004.png, Definition 5. With two leaf
+    # attackers, the matrix infinity norm is two and the attacked argument's
+    # limit is 1 - alpha * (1 + 1) / 2 = 1 - alpha.
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("b", "a"), ("c", "a")}),
+    )
+
+    result = counting_ranking(framework, damping=0.9)
+
+    assert result.scores["a"] == pytest.approx(0.1)
+    assert result.scores["b"] == pytest.approx(1.0)
+    assert result.scores["c"] == pytest.approx(1.0)
+    assert result.converged is True
+
+
 @pytest.mark.parametrize(
     "semantic",
     [
@@ -292,6 +309,46 @@ def _branch_lengths(framework: ArgumentationFramework, argument: str) -> tuple[i
             for length in _branch_lengths(framework, attacker)
         )
     )
+
+
+@given(_small_acyclic_frameworks(), st.floats(min_value=0.05, max_value=0.95))
+def test_counting_ranking_matches_finite_matrix_series_on_dags(
+    framework: ArgumentationFramework,
+    damping: float,
+) -> None:
+    # In a four-node DAG, M^4 is zero. Definition 5's infinite series is
+    # therefore exactly the first four signed walk-count terms.
+    normalization = max(
+        (
+            sum(1 for _attacker, target in framework.defeats if target == argument)
+            for argument in framework.arguments
+        ),
+        default=0,
+    )
+    normalization = max(normalization, 1)
+    expected = {
+        argument: sum(
+            ((-1.0) ** (length - 1))
+            * (damping ** (length - 1))
+            * abs(count)
+            / (normalization ** (length - 1))
+            for length, count in enumerate(
+                _discussion_sequence(framework, argument, max_length=4),
+                start=1,
+            )
+        )
+        for argument in framework.arguments
+    }
+
+    result = counting_ranking(
+        framework,
+        damping=damping,
+        tolerance=1e-12,
+        max_iterations=5,
+    )
+
+    assert result.scores == pytest.approx(expected)
+    assert result.converged is True
 
 
 def test_tuples_ranking_preserves_exact_branch_tuples_and_incomparability() -> None:
