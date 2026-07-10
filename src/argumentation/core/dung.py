@@ -477,11 +477,21 @@ def cf2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all CF2 extensions by recursive SCC decomposition.
 
     The base case for a single strongly connected component is the naive
-    semantics. Solver-backed CF2 reasoning is a later workstream item.
+    semantics. Gaggl and Woltran's definition uses one relation for SCCs,
+    component defeat, and the naive base; distinct structured attack/defeat
+    layers are therefore outside this semantic contract. Solver-backed CF2
+    reasoning is a later workstream item.
 
     Reference:
         Gaggl and Woltran 2013, Definition 2.7.
     """
+    if (
+        framework.attacks is not None
+        and framework.attacks != framework.defeats
+    ):
+        raise ValueError(
+            "CF2 semantics is undefined for distinct attack and defeat relations"
+        )
     return [
         candidate
         for candidate in _all_subsets(framework.arguments)
@@ -494,7 +504,15 @@ def stage2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]
 
     Gaggl and Woltran 2013 give the SCC-recursive shape for CF2; stage2 uses
     the same component recursion with stage semantics as the single-SCC base.
+    Both layers require one canonical relation.
     """
+    if (
+        framework.attacks is not None
+        and framework.attacks != framework.defeats
+    ):
+        raise ValueError(
+            "stage2 semantics is undefined for distinct attack and defeat relations"
+        )
     return [
         candidate
         for candidate in _all_subsets(framework.arguments)
