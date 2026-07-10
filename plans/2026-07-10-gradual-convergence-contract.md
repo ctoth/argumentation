@@ -29,6 +29,22 @@ Before adding a public field, exception, or parameter:
 4. Keep direct lower-level solver access available for callers that explicitly
    want bounded intermediate values; do not relabel those values as converged.
 
+### Recorded API Decision
+
+The inventory found one existing convergence owner,
+`GradualStrengthResult`, which already carries `converged`, `iterations`,
+`max_delta`, `tolerance`, and the integration method. It found no existing
+non-convergence exception or non-converged variant for the final explanation,
+contestation, revised-impact, Shapley-impact, or sensitivity results.
+
+The minimum fail-closed API change is one direct
+`GradualConvergenceError` beside `GradualStrengthResult`. The error carries the
+unchanged lower-level result and names the operation that required convergence.
+High-level and derived-value boundaries raise it immediately on the first
+non-converged required solve. The low-level strength functions continue to
+return `GradualStrengthResult`, including bounded intermediate values, without
+raising. No wrapper result, retry path, or compatibility interface is added.
+
 ## Red Contracts
 
 1. Configure `explain_acceptance` with an iteration limit that cannot converge
