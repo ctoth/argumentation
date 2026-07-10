@@ -109,6 +109,86 @@ def test_parse_official_numeric_aba_rejects_out_of_range_atom() -> None:
         parse_aba("p aba 2\na 3\n")
 
 
+@pytest.mark.parametrize(
+    ("text", "assumption", "line_number"),
+    [
+        (
+            "p aba\na alpha\nc alpha not_alpha\nc alpha other\n",
+            "alpha",
+            4,
+        ),
+        (
+            "p aba\na alpha\nc alpha not_alpha\nc alpha not_alpha\n",
+            "alpha",
+            4,
+        ),
+        (
+            "p aba 3\na 1\nc 1 2\nc 1 3\n",
+            "1",
+            4,
+        ),
+        (
+            "p aba 2\na 1\nc 1 2\nc 1 2\n",
+            "1",
+            4,
+        ),
+    ],
+    ids=(
+        "compact-different",
+        "compact-identical",
+        "numeric-different",
+        "numeric-identical",
+    ),
+)
+def test_parse_aba_rejects_duplicate_contrary_declarations(
+    text: str,
+    assumption: str,
+    line_number: int,
+) -> None:
+    with pytest.raises(
+        ValueError,
+        match=rf"duplicate contrary.*{assumption}.*line {line_number}",
+    ):
+        parse_aba(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "p aba\na alpha\na beta\nc alpha contrary\nc beta contrary\n",
+        "p aba 3\na 1\na 2\nc 1 3\nc 2 3\n",
+    ],
+    ids=("compact", "numeric"),
+)
+def test_parse_aba_allows_different_assumptions_to_share_a_contrary(
+    text: str,
+) -> None:
+    framework = parse_aba(text)
+
+    assert len(framework.contrary) == 2
+    assert len(set(framework.contrary.values())) == 1
+
+
+def test_aba_serializers_emit_one_contrary_per_assumption_and_round_trip() -> None:
+    alpha = lit("1")
+    beta = lit("2")
+    contrary = lit("3")
+    framework = ABAFramework(
+        language=frozenset({alpha, beta, contrary}),
+        rules=frozenset(),
+        assumptions=frozenset({alpha, beta}),
+        contrary={alpha: contrary, beta: contrary},
+    )
+
+    compact = write_aba(framework)
+    numeric = write_numeric_aba(framework)
+
+    assert sum(line.startswith("c ") for line in compact.splitlines()) == 2
+    assert sum(line.startswith("c ") for line in numeric.splitlines()) == 2
+    assert parse_aba(compact) == framework
+    assert parse_aba(numeric) == framework
+
+
 def test_aba_iccma_rejects_non_flat_input() -> None:
     text = """p aba
 a alpha
