@@ -2,7 +2,7 @@
 
 Date: 2026-07-10
 
-Status: Active under the remediation master plan.
+Status: Completed on 2026-07-10.
 
 Parent: [`2026-07-10-codex-review-remediation-master.md`](2026-07-10-codex-review-remediation-master.md)
 
@@ -135,3 +135,28 @@ Use the repository's exact current test locations when executing.
 - Every solver route in the inventory follows the same explicit matrix.
 - Broad catch/message-sniffing fallback paths are absent.
 - The route contracts and full gates pass in an isolated committed slice.
+
+## Execution Record
+
+- Optional-dependency signal RED `809f545`; GREEN `73f61ed`.
+- Solver routing matrix RED `2627bf1`; GREEN `09da2aa`.
+- Direct `load_z3` import-boundary coverage `93035f9`.
+- Every former broad catch now catches only
+  `OptionalDependencyUnavailable`; ordinary invariant `RuntimeError`s propagate
+  after one invocation and are not rerouted.
+- Dung enumeration, single-witness, cone acceptance, direct acceptance, and
+  enumerated acceptance routes return the exact dependency guidance carried by
+  the typed signal.
+- ABA sparse, stable, and support routes follow the same distinction, and the
+  direct `python-sat` loader raises the typed signal with `python-sat` guidance.
+- ASPIC/Clingo and ICCMA retained their existing unavailable, process, timeout,
+  and protocol result contracts; no adapter or compatibility hierarchy was
+  added.
+- `uv run pytest -q tests/solving`: 260 passed, 2 skipped.
+- `uv run pytest -q tests -k "solver and (unavailable or protocol or invariant)"`:
+  15 passed, 2995 deselected.
+- `uv run pyright src`: 0 errors, 0 warnings.
+- `uv run lint-imports`: 2 contracts kept, 0 broken.
+- `uv run pytest -q`: 3007 passed, 3 skipped, 1 xfailed in 289.03s.
+- Source scan found no broad `RuntimeError` catch or obsolete runtime-to-
+  unavailable helper in `solving/solver.py`.
