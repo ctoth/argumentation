@@ -23,7 +23,7 @@ require a pre-candidate holdout baseline).
 
 **Budget:** this frame is worth **≤ 8 triage probes and ≤ 3 full experiments**
 before a synthesis/stop decision. Probes touch dev only, never the holdout.
-Usage after Round 1 probe 4: **4 / 8 triage probes; 0 / 3 full experiments**.
+Usage after Round 1 probe 5 semantic gate: **5 / 8 triage probes; 0 / 3 full experiments**.
 
 **Campaign kill criteria:** stop and write the final synthesis when any holds —
 (a) two consecutive triage rounds with no surviving candidate; (b) triage/
@@ -52,6 +52,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P2 | Clingo built-in configuration discriminator for SE-PR | triaged-out (no survivor; no source experiment) | `experiments/2026-07-11-iccma2023-clingo-config-triage.md` | Fixed 3× interleaved default/handy/crafty/trendy sweep: fastest `trendy` median **9.759 s**, every run **>9.0 s**; `handy` only 2/3 correct with one timeout. All successful arms retained 4 / 1 / 3 / 3 telemetry. Zero arms cleared the ≤8.0 s median + <9.0 s every-run gate; no loser profiled. |
 | R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
 | R1-P4 | SE-PR CEGAR grow-to-maximal re-grounding churn | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-cegar-regrounding-churn-triage.md`; `reports/iccma-round1-hotspot-scout-20260711.md`; `reports/iccma-h3-cegar-semantic-scout-20260711.md`; `reports/iccma-h3-cegar-profile-scout-20260711.md` | Completed hard-row telemetry is only 4 solver calls / 1 outer / 3 inner / 3 refinements. The committed real-worker profile places 928 samples in `clingo.Control.solve` on the growth stack versus 3 in refinement grounding. Exact maximality requires the final no-superset proof; re-grounding churn is not the bottleneck. Expected gain from the stated mechanism: 0 solved rows. |
+| R1-P5 | Exact collective-attack SCC conditioning for stable/preferred | semantic gate passed; operational shape measurement preregistered, not run | `reports/iccma-aba-scc-composition-constructive-20260711.md`; `reports/iccma-aba-scc-composition-adversarial-20260711.md`; `scripts/aba_scc_composition_reference.py`; `tests/structured/aba/test_aba_scc_composition_contract.py`; `experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md` | Bounded exact support-primal SCC recursion now contracts factual normalization, collective-tail conditioning, defeated tails, and preferred `C/M` against both direct/support oracles. No hard-row measurement occurred. Survival to a separately committed development-only shape measurement requires every frozen structural/cap gate in the preregistration. |
 | H2 | Delete the complete/admissibility undefeated layer for SE-ST | invalid premise; superseded (no probe) | `reports/iccma-h2-stable-semantic-scout-20260711.md`; `experiments/2026-05-21-aba-se-st-direct-stable-encoding.md` (`4deb85d`) | The earlier "untouched territory" premise was wrong. The exact lean stable-only deletion was implemented at `4b6ee26`, passed semantic contracts, solved 0/5, and was abandoned after its real-worker profile remained in `clingo.Control.solve` (2,440 samples versus 2,450 for the complete-module path). The retained record names the exact profile at `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`. |
 | H3-S1 | One-shot global maximum-cardinality complete set for SE-PR via `#maximize` | invalid premise; superseded (no probe) | `reports/iccma-maxcard-semantic-scout-20260711.md`; `reports/aba-preferred-salvage-inventory.md` (`5d7a5b6`); branch `experiment/aba-asp-saturation-preferred` (`fe1c317`, `aa56b7c`, `b6c9b1d`, failure record `408f4b0`) | The earlier candidate-selection premise was wrong. The exact one-shot Lehtonen `pi_com` construction with `#maximize { 1,X : in(X) }.`, proved-optimum waiting, and the existing single-witness result shape was already implemented and passed semantic gates. T1/T3/T5/T6/T8 then timed out on `auto`, `asp`, and `sat`. Retained diagnosis: global ASP optimization over complete extensions does not solve the dense preferred class. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
@@ -180,3 +181,25 @@ This inventory freeze is not a probe and consumes no probe budget. Usage remains
 exactly **4 / 8 triage probes** and **0 / 3 full experiments**. No shape
 measurement, source slice, solver, benchmark, or holdout work is authorized by
 this entry.
+
+### Round 1 — Probe 5: collective-attack SCC semantic contract — 2026-07-11
+
+The selected theorem is now executable as a bounded diagnostic/reference
+contract. It materializes minimal-support collective attacks, normalizes factual
+attackers, computes the collective-attack primal SCCs, and recursively carries
+conditioned tails plus exact `D/P/U/UP` and preferred `C/M` state. Named fixtures
+and bounded generated cases require complete stable and preferred extension-
+family equality against both current direct native and support-model oracles;
+the path contract also requires multiple SCCs, a cross-SCC collective tail,
+partial activation, defeated-tail discard, nonempty mitigation, factual
+normalization, and stable-branch annihilation.
+
+No ICCMA hard row, benchmark, solver worker, production `src/` path, or holdout
+was accessed. The separately committed operational shape measurement is
+preregistered in
+`experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md` and is
+authorized only after this semantic gate passes. It must fail closed on the
+frozen support, branch-state, and full-boundary caps and must prove more than one
+useful SCC plus strict maximum-residual reduction on at least one hard
+development framework. Probe budget used: **5 / 8**; full experiments used:
+**0 / 3**.
