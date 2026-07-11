@@ -153,3 +153,30 @@ diagnosis is that global ASP optimization over complete extensions does not
 solve the dense preferred class. This supersession spends no probe and creates
 no experiment: usage remains **4 / 8 triage probes** and **0 / 3 full
 experiments**.
+
+### Round 1 — Candidate-history inventory freeze — 2026-07-11
+
+`reports/iccma-history-sepr-inventory-20260711.md` and
+`reports/iccma-history-sest-inventory-20260711.md` are together the authoritative
+candidate-history boundary for this campaign. Known dead or superseded families
+identified there must not reopen without new evidence that invalidates their
+recorded cause of death or supersession. The single selected next target family
+is **directed ABA SCC-recursive exact conditioning/decomposition**; this records
+novelty and selection only and does not claim semantic composition or
+operational usefulness.
+
+The selected next task is to derive an executable semantic composition contract
+before any shape measurement or source slice. Its exact question is:
+
+> For every finite ordinary flat ABA framework in the bounded generated test
+> domain, does a directed assumption-dependency/attack SCC recursion with
+> explicit predecessor-boundary conditioning return, after lifting, exactly the
+> same stable-extension set and exactly the same preferred-extension set as the
+> direct semantic oracles, in both directions, including cross-SCC rule and
+> contrary dependencies, empty and factual attackers, and branches with no
+> extension?
+
+This inventory freeze is not a probe and consumes no probe budget. Usage remains
+exactly **4 / 8 triage probes** and **0 / 3 full experiments**. No shape
+measurement, source slice, solver, benchmark, or holdout work is authorized by
+this entry.
