@@ -161,4 +161,138 @@ experiment, production default change, holdout run, promotion, push, or merge.
 
 ## Results
 
-Pending preregistered measurements.
+Final status: **triaged out; no configuration survived**. No production solver,
+evaluator, runner, test, or holdout path was changed or run.
+
+Preregistration commits:
+
+- `dd95143bbb1a7b29a7003ca0deaf2db51de8a434` — initial frozen arms,
+  threshold, order, and checker plan;
+- `b2971e223306f849c9f4e16e24378c6def87af9c` — before any measurement,
+  replaced the intractable powerset reference call with its polynomial
+  Horn-closure characterization. No arm, order, cap, threshold, or decision rule
+  changed.
+
+### Exact execution and expected fail-closed exit
+
+```text
+uv run scripts/probe_iccma2023_clingo_config.py \
+  --output data/iccma/2023/runs/probe2-clingo-config-triage.json
+```
+
+The script completed all 12 preregistered runs, wrote the JSON diagnostic, and
+exited `1` with:
+
+```text
+FAIL-CLOSED: expected exactly one survivor, got []
+```
+
+This nonzero exit is the preregistered expected outcome when no configuration
+survives. It is not a harness crash or an incomplete run.
+
+Environment and shape: Clingo `5.8.0`; 600 assumptions, 2,000 language
+literals, 7,699 rules; direct production API; explicit Clingo backend;
+preferred/single-extension; sequential execution. The 15.0-second cap is the
+direct API's per-`Control.solve` cap. Overall elapsed also includes setup,
+grounding, prior solve calls, and result handling; therefore the timed-out
+`handy` run reached 16.052 seconds overall after its second solver call.
+
+### Per-run evidence
+
+Telemetry columns are solver calls / outer iterations / inner iterations /
+refinement clauses. `preferred-valid` means the polynomial reference
+admissibility check passed and the independent `AssumptionKernel` found no
+proper admissible superset.
+
+| Repeat | Arm | Exact added arg | Status | Elapsed (s) | Telemetry | Witness check | Size |
+|---:|---|---|---|---:|---|---|---:|
+| 1 | default | none | success | 10.037819 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 1 | handy | `--configuration=handy` | success | 15.952374 | 4 / 1 / 3 / 3 | preferred-valid | 367 |
+| 1 | crafty | `--configuration=crafty` | success | 12.139236 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 1 | trendy | `--configuration=trendy` | success | 9.752802 | 4 / 1 / 3 / 3 | preferred-valid | 367 |
+| 2 | default | none | success | 10.076064 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 2 | handy | `--configuration=handy` | success | 14.864182 | 4 / 1 / 3 / 3 | preferred-valid | 367 |
+| 2 | crafty | `--configuration=crafty` | success | 11.712464 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 2 | trendy | `--configuration=trendy` | success | 9.759105 | 4 / 1 / 3 / 3 | preferred-valid | 367 |
+| 3 | default | none | success | 10.917314 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 3 | handy | `--configuration=handy` | timeout | 16.051686 | 2 / 1 / 1 / 1 | no witness; fail closed | — |
+| 3 | crafty | `--configuration=crafty` | success | 11.565108 | 4 / 1 / 3 / 3 | preferred-valid | 350 |
+| 3 | trendy | `--configuration=trendy` | success | 9.852444 | 4 / 1 / 3 / 3 | preferred-valid | 367 |
+
+All 11 returned witnesses passed every independent checker component:
+subset/closure, conflict-freeness, defense/admissibility, and absence of a
+proper admissible superset. The one timeout returned no witness and was scored
+as an incorrect run, as preregistered. Exact effective args were present in
+every result (`--models=0 --warn=none` plus the arm argument), and no telemetry
+or control-argument error occurred.
+
+### Aggregates and survival gate
+
+| Arm | Correct | Median (s) | Range (s) | Spread (s) | Median telemetry | Survives |
+|---|---:|---:|---|---:|---|---|
+| default | 3 / 3 | 10.076064 | 10.037819–10.917314 | 0.879494 | 4 / 1 / 3 / 3 | no |
+| handy | 2 / 3 | 15.952374 | 14.864182–16.051686 | 1.187504 | 4 / 1 / 3 / 3 | no |
+| crafty | 3 / 3 | 11.712464 | 11.565108–12.139236 | 0.574127 | 4 / 1 / 3 / 3 | no |
+| trendy | 3 / 3 | 9.759105 | 9.752802–9.852444 | 0.099642 | 4 / 1 / 3 / 3 | no |
+
+`trendy` was directionally fastest, but it missed the median threshold by
+1.759 seconds and every one of its runs exceeded the strict 9.0-second ceiling.
+It therefore receives no follow-up tuning or profile. `handy` additionally
+failed the 3/3 correctness requirement because one run hit the solve cap.
+
+### Operational diagnosis and attribution
+
+Compared with probe 1's default direct result (`4 / 1 / 3 / 3`, 10.180 s),
+every successful run in this probe performed exactly the same four-call,
+one-outer, three-inner, three-refinement preferred-growth shape. Thus no tested
+configuration reduced the deterministic operational work count. The only
+changed solver input was the documented Clingo configuration; pinned
+production/evaluator surfaces remained unchanged. The observed timing
+differences are therefore attributable to Clingo search behavior, not an
+evaluator change, but none cleared the frozen noise-protected gate.
+
+Dominant cost before: probe 1's real-worker profile had `928` samples in
+`clingo.Control.solve`, versus `27` initial-grounding, `19` program-addition,
+and `3` refinement-grounding samples. Dominant cost after: no arm survived, so
+the preregistration prohibited profiling an arbitrary loser. The repeated
+operational evidence shows that the intended invariant did not shrink: all
+successful arms retained the same search-loop shape and the fastest arm still
+missed both time thresholds. This is complete kill evidence for the built-in
+configuration hypothesis, not an opaque benchmark miss.
+
+### Verdict and next target
+
+Verdict: **KILL**. Zero configurations meet all preregistered conditions. Do
+not start a source experiment, change the production Clingo default, profile a
+loser, tune an option, run the sealed holdout, or promote this triage result.
+
+Next target from the evidence: do not run another generic built-in Clingo
+configuration sweep on this row. A later Round 1 probe, if authorized, must
+target a mechanism that can reduce the unchanged four-call preferred-growth
+search itself, while preserving the campaign's operational-contract rule.
+
+Generated diagnostic (gitignored, not committed):
+`data/iccma/2023/runs/probe2-clingo-config-triage.json`.
+
+### Focused checks
+
+```text
+uv run ruff check scripts/probe_iccma2023_clingo_config.py
+All checks passed!
+
+uv run pyright scripts/probe_iccma2023_clingo_config.py
+0 errors, 0 warnings, 0 informations
+
+uv run pytest -q \
+  tests/structured/aba/test_aba.py::test_assumption_kernel_preferred_grows_nonstable_admissible_witness \
+  tests/structured/aba/test_aba.py::test_assumption_kernel_preferred_matches_native_oracle \
+  tests/structured/aba/test_aba_multishot.py::test_preferred_single_extension_uses_limited_multishot_witness \
+  tests/structured/aba/test_aba_multishot.py::test_enumerate_preferred_telemetry_iterates \
+  tests/structured/aba/test_aba_multishot.py::test_incremental_solver_passes_diagnostic_control_args \
+  tests/interop/test_iccma_runner.py::test_solve_aba_job_passes_clingo_diagnostics_to_single_extension
+6 passed in 0.74s
+```
+
+`git diff --check` passed. The diff from `2091a7d` over `src/`, `tools/`,
+`tests/`, and `experiments/iccma2023-frame/population-holdout.json` was empty.
+The holdout was not read or run.
