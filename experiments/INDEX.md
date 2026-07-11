@@ -373,3 +373,32 @@ Usage remains **6 / 8 triage probes** and **0 / 3 full experiments**. Probe 8
 is preregistered and **not consumed**; campaign kill has not fired. Failure ends
 this last quotient family and leads to final synthesis without redefining the
 class/lift or widening to SCC, backdoor, support, portfolio, or another family.
+
+### Round 1 — Probe 8 Gate A semantic contract: PASS — 2026-07-11
+
+The Gate A diagnostic/reference was implemented test-first. The exact focused
+command was first red because the independent reference module did not exist,
+then passed all 15 tests in 22.16 seconds under the frozen 60-second timeout
+and a hard 512 MiB process-memory cap. The contract contains exactly the 12
+frozen named fixtures and exactly 300 deterministic seed-`2026071108`
+Hypothesis examples with `deadline=None`.
+
+The complete normalized serialization retains assumption/non-assumption
+literal colors, distinct rule nodes, and contrary/head/body/factual
+incidences. Every class pair is independently certified as a full
+fix-outside transposition from that serialization. Near clones and the
+attacker-matched entangled A/B classes are rejected. The bounded reference
+constructs preferred quotient states without either comparison oracle, lifts
+every multiplicity state to its complete concrete orbit, and matches the full
+preferred family from both native and support authorities. Size-2 and size-3
+classes and nontrivial `k=1`/`k=2` size-3 expansions are nonvacuous.
+
+Existing ABA semantic/SCC gates passed 24 tests in 3.40 seconds; the unchanged
+Probe 6 bounded gate passed 15 tests in 61.76 seconds with observed-runtime
+slack. No semantic counterexample appeared. No ICCMA row/corpus file, solver,
+benchmark, production source/routing/encoding, or holdout was accessed.
+
+Verdict: **GATE A PASS**. Gate B is authorized from the committed Gate A slice
+but has not started. Probe usage remains **6 / 8 triage probes** and **0 / 3
+full experiments**; Probe 8 is still **not consumed**. First permitted-row
+access in Gate B will consume it.

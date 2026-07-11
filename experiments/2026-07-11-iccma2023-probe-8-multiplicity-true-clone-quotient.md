@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Status: **preregistered; Gate A not implemented; Probe 8 not consumed**.
+Status: **GATE A PASS; Gate B authorized but not started; Probe 8 not consumed**.
 
 Preregistration base: `858c0cd2ad057301bb0ea05b970845ad9d149c48`
 
@@ -168,6 +168,77 @@ failure to execute partial multiplicity, population-count mismatch, timeout,
 or resource-cap breach is a **semantic kill**. Gate B remains closed, no dev row
 is opened, and budget remains 6/8. The Gate A implementation and result must be
 committed before any next slice.
+
+### Gate A result — PASS
+
+Gate A was implemented test-first as one diagnostic/reference/test/record
+slice. The first exact focused invocation was red at collection with
+`ModuleNotFoundError: No module named
+'scripts.aba_true_clone_quotient_reference'`. No reference implementation
+existed at that point.
+
+The bounded reference now:
+
+- rejects more than eight assumptions, sixteen rules, 32 total literals,
+  body width above eight, more than 256 concrete subsets, or more than 256
+  quotient states before exhaustive semantic reasoning;
+- serializes every assumption/non-assumption literal node and every distinct
+  rule node, with separate contrary, head, body-membership, and factual-rule
+  incidences;
+- verifies each proposed assumption transposition from that serialization
+  alone, exchanging only the two assumption nodes and fixing all other
+  literal/rule nodes;
+- accepts a nontrivial class only after every within-class pair has such a
+  certificate;
+- independently enumerates concrete admissibility and quotient-state
+  maximality without calling either comparison authority to construct the
+  result;
+- expands each state to the Cartesian product of every exact-size class
+  subset and explicit singleton selection, then unions complete preferred
+  orbits with an overlap check; and
+- keeps the canonical witness selector as a separate post-family operation.
+
+The test module contains exactly the twelve frozen top-level fixture names.
+It certifies nonvacuous size-2 and size-3 classes, explicitly expands `k=1`
+and `k=2` size-3 orbits, and covers conjunctive support, factual attack,
+mutual and self attack, no-stable/preferred behavior, distinct-contrary and
+head/body/factual-rule near clones, attacker-matched entangled A/B symmetry,
+and two simultaneous classes without loss or duplication. The fixed-seed
+Hypothesis contract uses seed `2026071108`, `max_examples=300`,
+`deadline=None`, no example database, and generation-only phases. Every
+example emits its ordered index, normalized SHA-256, assumption/rule counts,
+certified classes, and all three family sizes as deterministic JSON in pytest
+capture. All generated frameworks are ordinary flat ABA and remain within the
+frozen eight-assumption/sixteen-rule maxima.
+
+The exact Gate A command runs under a reversible hard 512 MiB process-memory
+limit (Windows Job Object in this environment) and the frozen 60-second pytest
+timeout. Final result:
+
+```text
+15 passed in 22.16s
+```
+
+Relevant existing semantic gates also passed:
+
+```text
+uv run pytest -q tests/structured/aba/test_aba_semantic_properties.py tests/structured/aba/test_aba_scc_composition_contract.py --timeout=60
+24 passed in 3.40s
+
+uv run pytest -q tests/structured/aba/test_aba_backdoor_cutset_contract.py --timeout=90
+15 passed in 61.76s
+```
+
+An initial combined existing-gate run added a 60-second per-test timeout and
+timed out only in Probe 6's 300-example native preferred enumeration after 38
+passing tests. It produced no assertion or semantic counterexample. The
+isolated Probe 6 rerun used modest observed-runtime slack and passed unchanged.
+
+Verdict: **GATE A PASS**. Gate B is authorized only after this complete slice
+is committed. No ICCMA row or corpus file was opened, no solver or benchmark
+was run, no production source/routing/encoding was changed, and no holdout was
+touched. Usage remains exactly **6 / 8 triage probes** and **0 / 3 full
+experiments**; Probe 8 remains **not consumed**.
 
 ## Gate B: consumed shape-only probe on two development rows
 
