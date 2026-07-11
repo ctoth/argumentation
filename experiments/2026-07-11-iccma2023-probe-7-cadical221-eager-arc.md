@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Status: **preregistered; capability not established; Probe 7 not consumed**.
+Status: **blocked before probe; dependency/API capability absent**.
 
 Preregistration base: `50b7b0f22ce039aa0d9f9e6039c17f3bb7464ced`
 
@@ -297,3 +297,123 @@ access, a full-dev run, source promotion, or a direct route change.
 No candidate capability was established, no CaDiCaL source was built, no test
 or source file was changed, no ICCMA row was run, Probe 7 was not consumed, and
 the holdout remained sealed while writing this record.
+
+## Execution outcome
+
+Final status: **blocked before probe; dependency/API capability absent**.
+
+Probe usage remains **6 / 8 triage probes** and **0 / 3 full experiments**.
+The sole authorized ICCMA row was not opened. No development or holdout row was
+opened, no production source or route was changed, and no metric run, retry,
+tuning pass, sweep, repetition, or profile was performed.
+
+### Red-first operational contract
+
+The deterministic contract was added before the candidate build or diagnostic
+implementation and run exactly as preregistered:
+
+```powershell
+uv run pytest -q `
+  tests/structured/aba/test_aba_cadical2_eager_arc_contract.py `
+  --timeout=30
+```
+
+It failed red during collection because the diagnostic owner
+`scripts.probe_iccma2023_cadical221_eager_arc` did not exist. The red contract
+was committed alone as `a62b6c3efd835075fa038997fe1e76a3be3e7780` before any
+candidate build. It remains red because the capability gate blocked the
+diagnostic implementation.
+
+### Exact build and checker provenance
+
+The clean temporary root was:
+
+`C:\Users\Q\AppData\Local\Temp\argumentation-probe7-cadical221-20260711-a62b6c3`
+
+The CaDiCaL checkout was cloned from `https://github.com/arminbiere/cadical.git`,
+detached at `4198d817d0dcde5b1240eefbff70b555b7df2af9`, and verified by
+`git describe --tags --exact-match` as `rel-2.2.1`. Its own `./configure`
+completed. The default all-target `make -j2` compiled the solver/library objects
+but failed on optional `mobical` because MinGW lacks `sys/mman.h`; the repository
+BUILD.md explicitly permits the Windows/cross-build `make cadical` target. That
+target generated `build/cadical.exe` and `build/libcadical.a` without changing
+CaDiCaL source or solver options. With the MinGW runtime directory on `PATH`,
+`build/cadical.exe --version` returned exactly `2.2.1` with exit status 0.
+
+The independent proof checker was `drat-trim` commit
+`2e3b2dc0ecf938addbd779d42877b6ed69d9a985`, cloned separately from
+`https://github.com/marijnheule/drat-trim.git` and compiled on Windows with the
+portability-only macro `-Dgetc_unlocked=getc`. Checker executable SHA-256:
+`b065d5dc00f3a0ed6ec99a402eece9ef330e6e608bdb0b1b38c92c68800e1d21`.
+
+### Capability fixture results
+
+The minimal direct C++ driver used only the public CaDiCaL API. It made no
+option/configuration calls and installed no callback. It called clause addition,
+an assumption, signed phases, `solve`, signed `val`, proof tracing, direct native
+statistics, the aggregate native statistics report, and `terminate`. A
+PowerShell `Start-Process`/`WaitForExit(5000)` outer cap completed with driver
+exit status 0. Driver source SHA-256:
+`ca2977bd4d0c697b2f81d95b3c7d2ba38ee241483b6fc6f7c908a48d1f2012a9`;
+executable SHA-256:
+`5f0ddfcdf1f6e10ee7e6a0abe70edd9a96310d1b934e0847791de3c774c1f5b9`.
+
+- Trivial SAT: status `10`; assumption `-1`; phases `-1, 2`; complete model
+  assignment `1=false, 2=true`; `val(1)=-1`, `val(-1)=-1`, `val(2)=2`, and
+  `val(-2)=2`; conflicts `0`, decisions `0`, search propagations `0`.
+- Trivial UNSAT: status `20`; conflicts `0`, decisions `0`, search propagations
+  `1`. Exact DIMACS SHA-256:
+  `ac42a371b5a124286c410ed5dfa2e3be7ee7d5b1feac6f08e7e1715f0c3669a8`.
+  Proof SHA-256:
+  `6d00de2f06e17322854c6df199187830e5332b5fc26e6406561235508478161a`.
+  The independent command `drat-trim.exe trivial-unsat.cnf
+  trivial-unsat-final.drat -i` returned exit status 0 and `s VERIFIED` in
+  0.050 seconds.
+- Termination entrypoint: a direct `terminate()` call was accepted by the real
+  linked candidate API. The subsequent empty-formula solve returned SAT (`10`).
+
+### Blocking capability failures
+
+Two frozen requirements fail on the exact pinned API:
+
+1. `Solver::get_statistic_value("restarts")` returned `-1` on both fixtures.
+   In CaDiCaL 2.2.1 this is the documented unsupported-statistic sentinel; the
+   public direct statistic API implements conflicts, decisions, and search
+   propagations but not restarts. The aggregate `statistics()` printer omits a
+   zero restart line, so it cannot provide the required unambiguous nonnegative
+   restart integer for these fixtures without changing configuration or relying
+   on absence-as-zero. The preregistration fails closed on missing statistics.
+2. The frozen raw signed-value condition says `val(v)` and `val(-v)` must be
+   opposite signed answers. The exact API instead follows its documented IPASIR
+   rule—return the queried literal when true and its negation when false—so both
+   queries identify the same signed assigned variable. The real SAT fixture
+   produced `val(1)=-1` and `val(-1)=-1` (and likewise `2` for both signs of
+   variable 2). Treating those actual results as opposite would falsify the API
+   observation; changing the frozen authority after observing capability data
+   would invalidate the preregistration.
+
+The successful version, clause, assumption, phase, termination, solve, model,
+proof-tracing, and independent-proof checks cannot substitute for either absent
+frozen capability. Under the preregistered fail-closed rule, execution therefore
+stopped before diagnostic implementation and before Probe 7 consumption.
+
+### Final gates
+
+All closeout gates passed except the intentionally red preregistered contract:
+
+- `uv run pytest -q tests/structured/aba/test_aba_stable_arc_acyclic.py
+  tests/structured/aba/test_aba_sparse_narrow_native_sat.py --timeout=30`:
+  **6 passed in 0.76 s**.
+- `uv run ruff format --check
+  tests/structured/aba/test_aba_cadical2_eager_arc_contract.py`:
+  **1 file already formatted**.
+- `uv run ruff check
+  tests/structured/aba/test_aba_cadical2_eager_arc_contract.py`:
+  **all checks passed**.
+- `uv run pyright`: **0 errors, 0 warnings, 0 informations**.
+- `git diff --check`: **passed**.
+
+The exact operational-contract command remains red at collection with
+`ModuleNotFoundError: No module named
+'scripts.probe_iccma2023_cadical221_eager_arc'`. That is the committed baseline
+state and was not turned green after the capability gate blocked implementation.
