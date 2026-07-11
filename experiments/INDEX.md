@@ -23,7 +23,7 @@ require a pre-candidate holdout baseline).
 
 **Budget:** this frame is worth **≤ 8 triage probes and ≤ 3 full experiments**
 before a synthesis/stop decision. Probes touch dev only, never the holdout.
-Usage after Round 1 probe 3: **3 / 8 triage probes; 0 / 3 full experiments**.
+Usage after Round 1 probe 4: **4 / 8 triage probes; 0 / 3 full experiments**.
 
 **Campaign kill criteria:** stop and write the final synthesis when any holds —
 (a) two consecutive triage rounds with no surviving candidate; (b) triage/
@@ -51,6 +51,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P1 | Stable-first shortcut for SE-PR single-extension | triaged-out (killed before source experiment) | `experiments/2026-07-11-iccma2023-stable-preferred-triage.md` | Flat and Clingo-routed; stable query completed in 0.834 s but returned **no extension/witness**, so no exact witness could pass the independent preferred verifier. Current SE-PR solved in 10.180 s with 4 calls / 1 outer / 3 inner / 3 refinements; real-worker profile remained Clingo-solve bound (928 samples). |
 | R1-P2 | Clingo built-in configuration discriminator for SE-PR | triaged-out (no survivor; no source experiment) | `experiments/2026-07-11-iccma2023-clingo-config-triage.md` | Fixed 3× interleaved default/handy/crafty/trendy sweep: fastest `trendy` median **9.759 s**, every run **>9.0 s**; `handy` only 2/3 correct with one timeout. All successful arms retained 4 / 1 / 3 / 3 telemetry. Zero arms cleared the ≤8.0 s median + <9.0 s every-run gate; no loser profiled. |
 | R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
+| R1-P4 | SE-PR CEGAR grow-to-maximal re-grounding churn | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-cegar-regrounding-churn-triage.md`; `reports/iccma-round1-hotspot-scout-20260711.md`; `reports/iccma-h3-cegar-semantic-scout-20260711.md`; `reports/iccma-h3-cegar-profile-scout-20260711.md` | Completed hard-row telemetry is only 4 solver calls / 1 outer / 3 inner / 3 refinements. The committed real-worker profile places 928 samples in `clingo.Control.solve` on the growth stack versus 3 in refinement grounding. Exact maximality requires the final no-superset proof; re-grounding churn is not the bottleneck. Expected gain from the stated mechanism: 0 solved rows. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
 
 Note: the DC-CO stocktake diagnostic `experiments/2026-06-29-iccma-uncapped-aba-dcco-profile.md`
@@ -109,3 +110,21 @@ fires: Round 1 remains open with five probe slots, and this read-only probe does
 not advance the consecutive production-source-slice criterion. The next
 candidate must preregister a new semantic claim and prove strict hard-instance
 search-space reduction before any solver or benchmark call.
+
+### Round 1 — Probe 4: SE-PR CEGAR re-grounding churn — 2026-07-11
+Evidence-only adjudication of the authorized hotspot proposal and H3 semantic/
+profile scouts against current code/tests and the committed probe-1 telemetry
+and real-worker py-spy record. The completed hard preferred row has the short
+exact shape 4 solver calls / 1 outer iteration / 3 inner iterations / 3
+refinements. Its profile attributes 928 samples to `clingo.Control.solve`
+inside grow-to-maximal and only 3 to refinement grounding; even removing all
+observed non-solve work cannot move 11.074908 s below the 10 s campaign budget.
+The refinement chain is semantically exact: strict supersets are sought until
+the final unsatisfiable solve proves maximality. H3 is killed as stated without
+a source slice, solver/benchmark rerun, redundant profile, or holdout access.
+Probe budget used: **4 / 8**; full experiments used: **0 / 3**. No campaign
+kill criterion fires because Round 1 remains open, budget remains, and this
+evidence-only probe does not advance the consecutive production-source-slice
+count. The next candidate must separately preregister an exact one-shot
+preferred-maximality/search hypothesis with semantic and operational contracts
+that target work inside the inner Clingo solves.
