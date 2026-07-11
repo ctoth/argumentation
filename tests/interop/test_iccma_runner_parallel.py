@@ -211,6 +211,26 @@ def test_jobs_defaults_to_exact_serial(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert captured["config"].jobs == 1
 
 
+def test_sat_backend_can_be_selected_for_runner_experiments(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, RunConfig] = {}
+
+    def capture_run_native(config: RunConfig) -> list[dict[str, Any]]:
+        captured["config"] = config
+        return []
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_native", capture_run_native)
+
+    exit_code = main(
+        ["--root", str(tmp_path), "--label", "sat-backend", "--backend", "sat"]
+    )
+
+    assert exit_code == 0
+    assert captured["config"].backend == "sat"
+
+
 def test_caveat_printed_only_when_parallel(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
