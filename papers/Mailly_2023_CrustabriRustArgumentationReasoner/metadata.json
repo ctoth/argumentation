@@ -1,16 +1,16 @@
 {
-  "cite_key": "lagniez2023crustabri",
-  "title": "Crustabri (ICCMA 2023 solver description)",
+  "cite_key": "jarvisalo2023iccma",
+  "title": "Solver and Benchmark Descriptions of ICCMA 2023: 5th International Competition on Computational Models of Argumentation",
   "authors": [
-    "Jean-Marie Lagniez",
-    "Emmanuel Lonca",
-    "Jean-Guy Mailly"
+    "Matti Järvisalo",
+    "Tuomo Lehtonen",
+    "Andreas Niskanen"
   ],
   "year": "2023",
   "arxiv_id": null,
   "doi": null,
   "abstract": null,
-  "url": "https://iccma2023.github.io/solvers.html",
-  "pdf_url": null,
-  "note": "STUB. Full system-description PDF not available open-access (see notes.md). Solver code: https://github.com/crillab/crustabri"
+  "url": "https://hdl.handle.net/10138/565357",
+  "pdf_url": "https://helda.helsinki.fi/server/api/core/bitstreams/2e6d8485-fa34-48e5-9e24-eefe0cc1572c/content",
+  "note": "Edited volume, Department of Computer Science Series of Publications B, B-2023-3. Includes 'Crustabri, the evolution of CoQuiAAS' by Jean-Marie Lagniez, Emmanuel Lonca, and Jean-Guy Mailly on page 20."
 }

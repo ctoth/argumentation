@@ -81,7 +81,7 @@ mu-toksia is the **architectural target** for this project's SAT backend. The pr
 ## Related Work Worth Reading
 - Dvořák, Järvisalo, Wallner, Woltran (2014), *Complexity-sensitive decision procedures for abstract argumentation* — the CEGAR algorithms mu-toksia implements for DS-PR/sem/stg. Already in the collection as `Dvorak_2014_ComplexitySensitiveDecisionProcedures`.
 - Cerutti, Giacomin, Vallati — ArgSemSAT (`Cerutti_2015_ArgSemSAT-1.0ExploitingSATSolvers`), the other complete-labelling SAT solver.
-- Lagniez, Lonca, Mailly (2015), *CoQuiAAS* — the constraint/SAT solver whose grounded-by-propagation idea mu-toksia reuses; predecessor of crustabri (see `Mailly_2023_CrustabriRustArgumentationReasoner`).
+- Lagniez, Lonca, Mailly (2015), *CoQuiAAS* — the constraint/SAT solver whose grounded-by-propagation idea mu-toksia reuses; predecessor of Crustabri. → NOW IN COLLECTION: [Solver and Benchmark Descriptions of ICCMA 2023: 5th International Competition on Computational Models of Argumentation](../Mailly_2023_CrustabriRustArgumentationReasoner/notes.md)
 - Besnard & Doutre (2004), *Checking the acceptability of a set of arguments* — origin of the SAT encodings in Figure 1.
 - Niskanen & Järvisalo (2020, ECAI), *Algorithms for dynamic argumentation frameworks: an incremental SAT-based approach* — the companion paper with the full dynamic-track algorithm behind the `r_{a,b}` variables.
 
@@ -89,3 +89,9 @@ mu-toksia is the **architectural target** for this project's SAT backend. The pr
 - [ ] mu-toksia omits Cegartix's CEGAR "shortcuts"; measure whether adding shortcuts helps our hard DS-PR families.
 - [ ] The DS-ST loss to Aspartix suggests an ASP backend may still win on stable — worth remembering for backend routing (cf. the ASP references `Egly_2010_...`, `Lehtonen_2021_DeclarativeAlgorithmsComplexityABA`).
 - [ ] The single-instance design assumes the solver's assumptions interface is cheap to re-enter; verify our chosen backend (PySAT/CaDiCaL) has comparable incremental performance.
+
+## Collection Cross-References
+
+### Now in Collection (previously listed as leads)
+
+- [Solver and Benchmark Descriptions of ICCMA 2023: 5th International Competition on Computational Models of Argumentation](../Mailly_2023_CrustabriRustArgumentationReasoner/notes.md) — the Crustabri description confirms a Rust successor to CoQuiAAS that replaces its specialized (co)MSS black box with iterative CaDiCaL, reuses one SAT solver plus selectors for dynamic changes, and reports both maximal-subset gains and stage/semi-stable extension regressions.
