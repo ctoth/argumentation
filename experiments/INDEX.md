@@ -23,8 +23,8 @@ require a pre-candidate holdout baseline).
 
 **Budget:** this frame is worth **≤ 8 triage probes and ≤ 3 full experiments**
 before a synthesis/stop decision. Probes touch dev only, never the holdout.
-Usage after the diagnosed Round 1 probe 5 operational kill: **5 / 8 triage
-probes; 0 / 3 full experiments**.
+Usage after the Round 1 probe 6 semantic kill: **6 / 8 triage probes; 0 / 3
+full experiments**.
 
 **Campaign kill criteria:** stop and write the final synthesis when any holds —
 (a) two consecutive triage rounds with no surviving candidate; (b) triage/
@@ -54,7 +54,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
 | R1-P4 | SE-PR CEGAR grow-to-maximal re-grounding churn | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-cegar-regrounding-churn-triage.md`; `reports/iccma-round1-hotspot-scout-20260711.md`; `reports/iccma-h3-cegar-semantic-scout-20260711.md`; `reports/iccma-h3-cegar-profile-scout-20260711.md` | Completed hard-row telemetry is only 4 solver calls / 1 outer / 3 inner / 3 refinements. The committed real-worker profile places 928 samples in `clingo.Control.solve` on the growth stack versus 3 in refinement grounding. Exact maximality requires the final no-superset proof; re-grounding churn is not the bottleneck. Expected gain from the stated mechanism: 0 solved rows. |
 | R1-P5 | Exact collective-attack SCC conditioning for stable/preferred | triaged-out (promotion no-go diagnosed; no source experiment) | `experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md`; `experiments/2026-07-11-iccma2023-probe-5-scc-operational-measurement.md`; `experiments/artifacts/2026-07-11-probe-5-scc-shape.json`; `scripts/measure_aba_scc_composition_shape.py`; `tests/structured/aba/test_aba_scc_composition_shape.py` | Six focused shape tests passed, but the exact frozen dev command did not complete its first support extraction or emit partial output after about 13 minutes. Real-process `py-spy` localized the active stack to eager `_minimal_supports` antichain construction before `require_cap`; the 4,096 collective-attack cap does not bound extraction, so frozen clause 2 did not become executable. No row metrics, holdout, source slice, solver timing, benchmark, or full experiment. |
-| R1-P6 | Small assumption backdoor/cutset conditioning into exact residual components | authorized: semantic contract only; not yet spent | `reports/iccma-aba-preferred-backdoor-constructive-20260711.md`; `reports/iccma-aba-preferred-backdoor-adversarial-20260711.md`; `experiments/2026-07-11-iccma2023-backdoor-cutset-adjudication.md` | Adjudication freezes the strengthened incidence-separator theorem. The adversarial fixed-`k=1` family has no valid separator at `K={x}` because its final rule factor keeps all residual assumptions connected; it kills only the naive `3^k` label-state claim. Proceed to the bounded semantic contract and ten named fixtures only. Usage remains 5/8 until that probe is executed. |
+| R1-P6 | Small assumption backdoor/cutset conditioning into exact residual components | triaged-out (semantic kill; no operational work) | `experiments/2026-07-11-iccma2023-probe-6-backdoor-semantic-contract.md`; `scripts/aba_backdoor_cutset_reference.py`; `tests/structured/aba/test_aba_backdoor_cutset_contract.py` | The bounded reference and 300 fixed-seed examples agree with both authorities on every qualifying cutset, but the frozen `two_component_cut_attack_union` fixture is not a separator: both attack-rule factors remain joined through the shared `contrary(k)` literal after deleting `k`, leaving one assumption-bearing component. The exact frozen fixture/path contract is unsatisfiable and fails closed. |
 | H2 | Delete the complete/admissibility undefeated layer for SE-ST | invalid premise; superseded (no probe) | `reports/iccma-h2-stable-semantic-scout-20260711.md`; `experiments/2026-05-21-aba-se-st-direct-stable-encoding.md` (`4deb85d`) | The earlier "untouched territory" premise was wrong. The exact lean stable-only deletion was implemented at `4b6ee26`, passed semantic contracts, solved 0/5, and was abandoned after its real-worker profile remained in `clingo.Control.solve` (2,440 samples versus 2,450 for the complete-module path). The retained record names the exact profile at `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`. |
 | H3-S1 | One-shot global maximum-cardinality complete set for SE-PR via `#maximize` | invalid premise; superseded (no probe) | `reports/iccma-maxcard-semantic-scout-20260711.md`; `reports/aba-preferred-salvage-inventory.md` (`5d7a5b6`); branch `experiment/aba-asp-saturation-preferred` (`fe1c317`, `aa56b7c`, `b6c9b1d`, failure record `408f4b0`) | The earlier candidate-selection premise was wrong. The exact one-shot Lehtonen `pi_com` construction with `#maximize { 1,X : in(X) }.`, proved-optimum waiting, and the existing single-witness result shape was already implemented and passed semantic gates. T1/T3/T5/T6/T8 then timed out on `auto`, `asp`, and `sat`. Retained diagnosis: global ASP optimization over complete extensions does not solve the dense preferred class. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
@@ -268,3 +268,32 @@ spend the probe: usage remains **5 / 8 triage probes** and **0 / 3 full
 experiments**. Exact next action is the bounded diagnostic/reference semantic
 contract and ten named fixtures only. No shape measurement, source route,
 solver call, benchmark, hard-row access, or holdout access is authorized.
+
+### Round 1 — Probe 6 semantic contract: killed by frozen non-separator fixture — 2026-07-11
+
+The bounded diagnostic/reference and its tests were implemented without any
+production source, solver, benchmark, hard-row, holdout, profile, or operational
+measurement. Nine composable named fixtures and all `300` deterministic
+Hypothesis examples matched exhaustive admissibility plus both current direct
+native and independent support preferred authorities for every qualifying
+`K`, including empty and nonempty cutsets. Exact selected/rejected cut state,
+attacked-`K` signatures, cut-defense obligations, collective-tail activation,
+canonical lift/deduplication, and one global maximality filter are executable.
+
+The tenth frozen fixture, `two_component_cut_attack_union`, requires both
+`{a}->k` and `{b}->k` to contribute from distinct residual components after
+deleting `K={k}`. Under the frozen compact rule/contrary factor-incidence graph,
+both stored-rule factors share the literal `contrary(k)`, so `a` and `b` remain
+connected in one assumption-bearing residual component. The diagnostic
+explicitly returns `NonSeparatorError`; it does not silently compose or
+substitute a different fixture. The fixed-`k` adversarial family is likewise
+explicitly rejected as a non-separator.
+
+The decisive record is
+`experiments/2026-07-11-iccma2023-probe-6-backdoor-semantic-contract.md`.
+Verdict: **SEMANTIC KILL.** Probe usage is now **6 / 8 triage probes** and
+**0 / 3 full experiments**. The later support-free operational contract is not
+preregistered and no operational telemetry, production route, solver probe,
+benchmark, hard row, or holdout action is authorized. The next action is a
+campaign-level correction/replacement of the inconsistent frozen package or
+selection of the next inventory candidate.
