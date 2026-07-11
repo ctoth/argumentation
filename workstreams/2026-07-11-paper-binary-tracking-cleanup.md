@@ -40,7 +40,8 @@ Gate results:
 - Pass: the four affected ABA contract files completed with `35 passed in 5.55s`.
 
 Commit:
-- This atomic cleanup commit.
+- `4fa36ce` records the fixed-point cleanup contract and gates.
+- `c0d2732` removes the 13 page images from Git tracking while preserving the ignored local files.
 
 Next slice:
 - None. The requested binary-tracking scope reaches fixed point when the search and runtime gates pass.
