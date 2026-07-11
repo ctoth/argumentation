@@ -53,6 +53,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
 | R1-P4 | SE-PR CEGAR grow-to-maximal re-grounding churn | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-cegar-regrounding-churn-triage.md`; `reports/iccma-round1-hotspot-scout-20260711.md`; `reports/iccma-h3-cegar-semantic-scout-20260711.md`; `reports/iccma-h3-cegar-profile-scout-20260711.md` | Completed hard-row telemetry is only 4 solver calls / 1 outer / 3 inner / 3 refinements. The committed real-worker profile places 928 samples in `clingo.Control.solve` on the growth stack versus 3 in refinement grounding. Exact maximality requires the final no-superset proof; re-grounding churn is not the bottleneck. Expected gain from the stated mechanism: 0 solved rows. |
 | H2 | Delete the complete/admissibility undefeated layer for SE-ST | invalid premise; superseded (no probe) | `reports/iccma-h2-stable-semantic-scout-20260711.md`; `experiments/2026-05-21-aba-se-st-direct-stable-encoding.md` (`4deb85d`) | The earlier "untouched territory" premise was wrong. The exact lean stable-only deletion was implemented at `4b6ee26`, passed semantic contracts, solved 0/5, and was abandoned after its real-worker profile remained in `clingo.Control.solve` (2,440 samples versus 2,450 for the complete-module path). The retained record names the exact profile at `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`. |
+| H3-S1 | One-shot global maximum-cardinality complete set for SE-PR via `#maximize` | invalid premise; superseded (no probe) | `reports/iccma-maxcard-semantic-scout-20260711.md`; `reports/aba-preferred-salvage-inventory.md` (`5d7a5b6`); branch `experiment/aba-asp-saturation-preferred` (`fe1c317`, `aa56b7c`, `b6c9b1d`, failure record `408f4b0`) | The earlier candidate-selection premise was wrong. The exact one-shot Lehtonen `pi_com` construction with `#maximize { 1,X : in(X) }.`, proved-optimum waiting, and the existing single-witness result shape was already implemented and passed semantic gates. T1/T3/T5/T6/T8 then timed out on `auto`, `asp`, and `sat`. Retained diagnosis: global ASP optimization over complete extensions does not solve the dense preferred class. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
 
 Note: the DC-CO stocktake diagnostic `experiments/2026-06-29-iccma-uncapped-aba-dcco-profile.md`
@@ -138,3 +139,17 @@ profile were already retained in
 the `4b6ee26` implementation was abandoned. H2 is superseded and killed; this
 history correction is not probe 5 and creates no new experiment record. Probe
 budget remains **4 / 8**; full experiments remain **0 / 3**.
+
+### Round 1 — Post-H3 invalidity correction: global max-cardinality preferred — 2026-07-11
+The earlier candidate-selection premise was wrong. The proposed exact one-shot
+global maximum-cardinality preferred witness was already implemented on
+`experiment/aba-asp-saturation-preferred`: semantic properties landed at
+`fe1c317`, the ASP maximality route at `aa56b7c`, proved-optimum witness return
+at `b6c9b1d`, and the retained failure diagnosis at `408f4b0`. The construction
+used Lehtonen `pi_com` with `#maximize { 1,X : in(X) }.`, waited for the proved
+optimum, and returned the existing single-extension shape. Its semantic gates
+passed, but T1/T3/T5/T6/T8 timed out on `auto`, `asp`, and `sat`. The retained
+diagnosis is that global ASP optimization over complete extensions does not
+solve the dense preferred class. This supersession spends no probe and creates
+no experiment: usage remains **4 / 8 triage probes** and **0 / 3 full
+experiments**.
