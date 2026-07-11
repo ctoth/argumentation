@@ -1,0 +1,98 @@
+{
+  "partition": "development",
+  "purpose": "Triage + tuning population. Baseline measured here. Candidates measured here.",
+  "metric_config": {
+    "backend": "auto",
+    "jobs": 1,
+    "timeout_seconds": 10,
+    "max_af_arguments": -1,
+    "max_aba_assumptions": 1000000,
+    "subtracks": [
+      "SE-ST",
+      "SE-PR"
+    ]
+  },
+  "strata_assumptions": [
+    10,
+    30,
+    50,
+    150,
+    200,
+    600
+  ],
+  "derivation": "Deterministic, RNG-free. From data/iccma/2023/manifests/iccma-2023-manifest.json select ABA instances with parse_status=ok whose assumptions in {10,30,50,150,200,600}; per stratum sort by relative_path ascending; sorted-index {0,1} -> development, {2,3} -> holdout. Every selected instance is crossed with subtracks {SE-ST,SE-PR}. Dev = 12 instances x 2 subtracks = 24 rows; holdout = 12 instances x 2 subtracks = 24 rows; disjoint by instance identity.",
+  "instances": [
+    {
+      "relative_path": "benchmarks/aba/aba_100_0.1_10_10_0.aba",
+      "assumptions": 10,
+      "atoms": 100,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_100_0.1_10_10_1.aba",
+      "assumptions": 10,
+      "atoms": 100,
+      "sorted_index": 1
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_100_0.3_10_10_0.aba",
+      "assumptions": 30,
+      "atoms": 100,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_100_0.3_10_10_1.aba",
+      "assumptions": 30,
+      "atoms": 100,
+      "sorted_index": 1
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_500_0.1_10_10_0.aba",
+      "assumptions": 50,
+      "atoms": 500,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_500_0.1_10_10_1.aba",
+      "assumptions": 50,
+      "atoms": 500,
+      "sorted_index": 1
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_500_0.3_10_10_0.aba",
+      "assumptions": 150,
+      "atoms": 500,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_500_0.3_10_10_1.aba",
+      "assumptions": 150,
+      "atoms": 500,
+      "sorted_index": 1
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_2000_0.1_10_10_0.aba",
+      "assumptions": 200,
+      "atoms": 2000,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_2000_0.1_10_10_1.aba",
+      "assumptions": 200,
+      "atoms": 2000,
+      "sorted_index": 1
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_2000_0.3_10_10_0.aba",
+      "assumptions": 600,
+      "atoms": 2000,
+      "sorted_index": 0
+    },
+    {
+      "relative_path": "benchmarks/aba/aba_2000_0.3_10_10_1.aba",
+      "assumptions": 600,
+      "atoms": 2000,
+      "sorted_index": 1
+    }
+  ]
+}
