@@ -106,12 +106,20 @@ Every `success` result must contain exactly one preferred witness and its
 `accepted_assumptions` must match that witness. The script then validates the
 same witness independently of the measured Clingo preferred encoding:
 
-1. `argumentation.structured.aba.aba.admissible` must accept it under the
-   reference flat-ABA semantics;
+1. the polynomial Horn-closure characterization of the reference flat-ABA
+   semantics must establish subset/closure, conflict-freeness, and defense: for
+   `U`, the assumptions not attacked by the witness, no witness member's
+   contrary may occur in `closure(U)`;
 2. the separate `AssumptionKernel` admissibility encoding is asked for an
    admissible proper superset by requiring all witness assumptions and at least
    one outside assumption;
 3. the witness is preferred-valid only when that query returns no superset.
+
+The direct `aba.admissible` reference function is intentionally not invoked on
+this 600-assumption instance because its reference implementation enumerates the
+full assumption powerset. The Horn-closure criterion is the equivalent
+polynomial flat-ABA check already used by probe 1; the separate kernel query
+supplies the maximal-admissible (preferred) check.
 
 No witness, a malformed witness, failed admissibility, a returned proper
 admissible superset, or any checker exception is a closed failure for that run.
@@ -154,4 +162,3 @@ experiment, production default change, holdout run, promotion, push, or merge.
 ## Results
 
 Pending preregistered measurements.
-
