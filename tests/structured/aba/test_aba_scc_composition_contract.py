@@ -161,7 +161,40 @@ def test_preferred_state_records_defeated_tails_and_mitigation() -> None:
 
     result = preferred_extensions(framework)
 
+    downstream = frozenset({b, c})
+    projection_only_attacks = frozenset(
+        CollectiveAttack(attack.tail & downstream, attack.target)
+        for attack in result.collective_framework.attacks
+        if attack.target in downstream
+    )
+    projection_only_admissible: set[frozenset[Literal]] = set()
+    for candidate in (
+        frozenset(),
+        frozenset({b}),
+        frozenset({c}),
+        downstream,
+    ):
+        attacked = frozenset(
+            attack.target
+            for attack in projection_only_attacks
+            if attack.tail <= candidate
+        )
+        if candidate & attacked:
+            continue
+        if all(
+            attack.target not in candidate or bool(attack.tail & attacked)
+            for attack in projection_only_attacks
+        ):
+            projection_only_admissible.add(candidate)
+    projection_only_preferred = {
+        candidate
+        for candidate in projection_only_admissible
+        if not any(candidate < other for other in projection_only_admissible)
+    }
+
     assert result.extensions == (frozenset({c}),)
+    assert projection_only_preferred == {frozenset({b}), frozenset({c})}
+    assert projection_only_preferred - set(result.extensions) == {frozenset({b})}
     assert result.trace.nonempty_candidate_states >= 1
     assert result.trace.mitigated_attacks >= 1
     assert result.trace.maximum_boundary_items <= result.trace.boundary_item_cap
