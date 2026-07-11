@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Status: in progress; baseline and profiler evidence recorded before the route experiment.
+Status: measured on the experiment branch; automatic SAT routing not promoted.
 
 Experiment branch: `exp/iccma2023-aba-600-stable-sat-route`
 
@@ -41,14 +41,24 @@ Kill criteria:
 - Do not tune SAT options or alter an encoding within this experiment.
 
 Experiment result:
-- Pending.
+- The required ICCMA runner initially rejected `--backend sat`; that earlier capability premise was wrong.
+- Instrumentation commit `000ae2c` adds the missing SAT selection surface and a CLI contract without changing solver behavior.
+- Metric command: the baseline command with only `--backend sat` and label `exp-aba600-sest-sat-row0`.
+- Result: `timeout>5.0`, elapsed `5.023400s`, no witness.
+- The SAT route did not pass the focused promotion gate.
 
 Failure analysis:
-- Pending if the metric gate misses.
+- Profiler command: the same SAT row with `--profile-workers-format raw --profile-worker-subtrack SE-ST`.
+- Profile: `data/iccma/2023/profiles/exp-aba600-row0-sest-sat/aba-SE-ST-aba_2000_0.3_10_10_0.aba-025953348c53.raw.txt`.
+- Compared against: the automatic ASP worker profile recorded in the baseline section.
+- Dominant cost before: Clingo solving, 302 of 384 principal samples; grounding and program addition accounted for 38 and 30 samples respectively.
+- Dominant cost after: ranked-closure constraint construction, 391 of 399 samples inside `_add_ranked_closure_constraints` / `_emit_ranked_closure_constraints`; 27 samples included `Z3_solver_assert`, and the worker did not reach the Z3 solve.
+- Interpretation: the bottleneck moved from ASP solver search to Python/Z3 ranked-closure encoding construction and did not shrink enough to meet the gate.
+- Next target from evidence: reduce the operational size or construction cost of ranked-closure constraints before reconsidering this SAT route.
 
-Outcome: pending.
+Outcome: negative for route selection; useful instrumentation retained.
 
-Decision: pending.
+Decision: abandon automatic SAT-route promotion for this shape. Promote only the runner's SAT selection instrumentation, then begin a separate one-variable ranked-closure construction experiment.
 
 Generated diagnostics:
 - ICCMA run JSON/CSV/summary/event logs and raw profiles under `data/iccma/2023/`; these generated files are not committed.
