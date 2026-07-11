@@ -1,0 +1,107 @@
+{
+  "outcome": "GATE B FAIL-CLOSED: ROW WALL TIMEOUT",
+  "outer_wall_seconds_limit": 15.0,
+  "pre_access_harness_failure": {
+    "consumed_probe": false,
+    "error": "ModuleNotFoundError: No module named 'scripts'",
+    "reason": "direct-file entrypoint failed before either row was opened"
+  },
+  "probe": "ICCMA 2023 Probe 8 Gate B",
+  "rows": [
+    {
+      "all_certificates_revalidated": null,
+      "candidate_buckets": null,
+      "cap_status": {
+        "cpu_seconds_limit": 5.0,
+        "cpu_within_cap": null,
+        "memory_bytes_limit": 536870912,
+        "memory_within_cap": null,
+        "wall_seconds_limit": 5.0,
+        "wall_within_cap": false
+      },
+      "certified_class_count": null,
+      "certified_classes": null,
+      "counts": {
+        "assumptions": null,
+        "incidences": null,
+        "literals": null,
+        "nodes": null,
+        "rules": null
+      },
+      "elapsed_cpu_seconds": null,
+      "elapsed_wall_seconds": ">=5.0",
+      "input_sha256": null,
+      "largest_class": null,
+      "multiplicity_state_counts": {
+        "original": null,
+        "quotient": null
+      },
+      "normalized_sha256": null,
+      "outcome": "FAIL_CLOSED_WALL_TIMEOUT",
+      "path": "data/iccma/2023/extracted/instances/benchmarks/aba/aba_2000_0.3_10_10_0.aba",
+      "peak_traced_memory_bytes": null,
+      "refinement_rounds": null,
+      "rejected_transpositions": null,
+      "rule_templates": {
+        "original_count": null,
+        "quotient_count": null,
+        "quotient_templates": null,
+        "reconstructs_original_multiset": null,
+        "reconstruction_sha256": null
+      },
+      "unceiled_symmetric_decision_reduction": null,
+      "verified_transpositions": null
+    },
+    {
+      "all_certificates_revalidated": null,
+      "candidate_buckets": null,
+      "cap_status": {
+        "cpu_seconds_limit": 5.0,
+        "cpu_within_cap": null,
+        "memory_bytes_limit": 536870912,
+        "memory_within_cap": null,
+        "wall_seconds_limit": 5.0,
+        "wall_within_cap": null
+      },
+      "certified_class_count": null,
+      "certified_classes": null,
+      "counts": {
+        "assumptions": null,
+        "incidences": null,
+        "literals": null,
+        "nodes": null,
+        "rules": null
+      },
+      "elapsed_cpu_seconds": null,
+      "elapsed_wall_seconds": null,
+      "input_sha256": null,
+      "largest_class": null,
+      "multiplicity_state_counts": {
+        "original": null,
+        "quotient": null
+      },
+      "normalized_sha256": null,
+      "outcome": "NOT_ACCESSED_AFTER_FAIL_CLOSED_GATE",
+      "path": "data/iccma/2023/extracted/instances/benchmarks/aba/aba_2000_0.3_10_10_1.aba",
+      "peak_traced_memory_bytes": null,
+      "refinement_rounds": null,
+      "rejected_transpositions": null,
+      "rule_templates": {
+        "original_count": null,
+        "quotient_count": null,
+        "quotient_templates": null,
+        "reconstructs_original_multiset": null,
+        "reconstruction_sha256": null
+      },
+      "unceiled_symmetric_decision_reduction": null,
+      "verified_transpositions": null
+    }
+  ],
+  "selected_row": null,
+  "shape_predicts_speedup": false,
+  "solver_diagnostic_authorized": false,
+  "usage": {
+    "full_experiments": "0/3",
+    "triage_probes": "7/8"
+  }
+}

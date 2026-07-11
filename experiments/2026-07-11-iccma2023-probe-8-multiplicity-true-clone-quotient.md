@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Status: **GATE A PASS; Gate B authorized but not started; Probe 8 not consumed**.
+Status: **GATE A PASS; GATE B FAIL-CLOSED on row wall timeout; Probe 8 consumed**.
 
 Preregistration base: `858c0cd2ad057301bb0ea05b970845ad9d149c48`
 
@@ -298,6 +298,58 @@ Anything else kills the family. Larger reduction percentages may be reported
 only as exploratory, nonpredictive floors; they cannot substitute for or be
 interpreted as a wall-clock threshold.
 
+### Gate B result — FAIL-CLOSED ON FROZEN WALL CAP
+
+Gate B was implemented test-first as a diagnostic-only script and focused
+contract. The initial focused invocation was red at collection because
+`scripts.probe_aba_true_clone_quotient_shape` did not exist. Five synthetic
+shape tests then passed. They cover deterministic complete-graph color
+refinement, sole-authority calls to the committed Gate A fix-outside verifier,
+near-clone rejection, exact size-2 multiplicity-state credit without a ceiling,
+rule-template multiplicity reconstruction, deterministic telemetry, and
+certificate revalidation.
+
+A pre-access direct-file invocation then failed with
+`ModuleNotFoundError: No module named 'scripts'` before either corpus file was
+opened. It did not consume the probe or attempt a row. Module invocation was
+fixed, and the same five focused tests plus the module entrypoint passed before
+the corpus command.
+
+The next command made the first actual authorized corpus access and therefore
+consumed Probe 8 immediately:
+
+```powershell
+uv run -m scripts.probe_aba_true_clone_quotient_shape `
+  data/iccma/2023/extracted/instances/benchmarks/aba/aba_2000_0.3_10_10_0.aba `
+  data/iccma/2023/extracted/instances/benchmarks/aba/aba_2000_0.3_10_10_1.aba `
+  --output experiments/artifacts/2026-07-11-probe-8-true-clone-shape.json
+```
+
+The first row process did not emit parseable telemetry before the frozen
+5.0-second wall cap and was terminated by the parent. The parent reported
+`subprocess.TimeoutExpired` for
+`aba_2000_0.3_10_10_0.aba` at exactly the registered timeout. No input hash,
+normalized counts, refinement result, class certificate, state count, rule
+template count, CPU time, or peak-memory result escaped the terminated process;
+those fields are explicitly `null` in the artifact rather than fabricated.
+
+The timed-out row was not retried. Because any timeout kills Gate B, the second
+row could no longer change the decision and was not opened. It is explicitly
+recorded as `NOT_ACCESSED_AFTER_FAIL_CLOSED_GATE`, not silently skipped. No
+other development row, SE-ST row, population, holdout, solver, support family,
+preferred computation, benchmark, profile, production source, route, or
+encoding was opened or run.
+
+Verdict: **GATE B FAIL-CLOSED: ROW WALL TIMEOUT**. This is not a
+`STRUCTURAL KILL` claim: the cap prevented observation of whether either row
+contains the frozen surviving shape. The family still fails the preregistered
+Gate B and ends without a solver diagnostic. Shape predicts no speedup, no row
+is selected, and the solver diagnostic is **not authorized**. Usage is now
+exactly **7 / 8 triage probes** and **0 / 3 full experiments**. This was the
+last selected quotient family, so the campaign proceeds to final synthesis
+without retrying, relaxing the cap, redefining the class/lift, or widening to
+another family.
+
 ## Conditional diagnostic solver slice
 
 Only if committed Gate A and Gate B results both pass may a separately committed
@@ -338,15 +390,13 @@ evidence. Wall time alone cannot complete the diagnosis.
 
 ## Kill, campaign, and promotion boundaries
 
-At this preregistration commit, usage remains exactly **6 / 8 triage probes**
-and **0 / 3 full experiments**. Probe 8 is preregistered and **not consumed**.
-Gate A is free; Gate B consumes Probe 8 on first permitted-row access.
+Current usage is exactly **7 / 8 triage probes** and **0 / 3 full
+experiments**. Probe 8 was consumed by Gate B's first permitted-row access.
 
-Campaign kill has not fired yet. This is the last selected quotient family.
-Failure at any frozen semantic, shape, or diagnostic boundary ends this family
-and the campaign proceeds to its required final synthesis; it does not redefine
-classes or lift, relax a cap/threshold, retry a row, widen to another quotient
-family, or revive SCC/backdoor/support/portfolio work.
+The Gate B failure ended this last selected quotient family. The campaign now
+proceeds to its required final synthesis; it does not redefine classes or lift,
+relax a cap/threshold, retry a row, widen to another quotient family, or revive
+SCC/backdoor/support/portfolio work.
 
 Even a positive diagnostic cannot change production. Before any production
 route or encoding change, a later full experiment must be separately
