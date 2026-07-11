@@ -54,6 +54,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
 | R1-P4 | SE-PR CEGAR grow-to-maximal re-grounding churn | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-cegar-regrounding-churn-triage.md`; `reports/iccma-round1-hotspot-scout-20260711.md`; `reports/iccma-h3-cegar-semantic-scout-20260711.md`; `reports/iccma-h3-cegar-profile-scout-20260711.md` | Completed hard-row telemetry is only 4 solver calls / 1 outer / 3 inner / 3 refinements. The committed real-worker profile places 928 samples in `clingo.Control.solve` on the growth stack versus 3 in refinement grounding. Exact maximality requires the final no-superset proof; re-grounding churn is not the bottleneck. Expected gain from the stated mechanism: 0 solved rows. |
 | R1-P5 | Exact collective-attack SCC conditioning for stable/preferred | triaged-out (promotion no-go diagnosed; no source experiment) | `experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md`; `experiments/2026-07-11-iccma2023-probe-5-scc-operational-measurement.md`; `experiments/artifacts/2026-07-11-probe-5-scc-shape.json`; `scripts/measure_aba_scc_composition_shape.py`; `tests/structured/aba/test_aba_scc_composition_shape.py` | Six focused shape tests passed, but the exact frozen dev command did not complete its first support extraction or emit partial output after about 13 minutes. Real-process `py-spy` localized the active stack to eager `_minimal_supports` antichain construction before `require_cap`; the 4,096 collective-attack cap does not bound extraction, so frozen clause 2 did not become executable. No row metrics, holdout, source slice, solver timing, benchmark, or full experiment. |
+| R1-P6 | Small assumption backdoor/cutset conditioning into exact residual components | authorized: semantic contract only; not yet spent | `reports/iccma-aba-preferred-backdoor-constructive-20260711.md`; `reports/iccma-aba-preferred-backdoor-adversarial-20260711.md`; `experiments/2026-07-11-iccma2023-backdoor-cutset-adjudication.md` | Adjudication freezes the strengthened incidence-separator theorem. The adversarial fixed-`k=1` family has no valid separator at `K={x}` because its final rule factor keeps all residual assumptions connected; it kills only the naive `3^k` label-state claim. Proceed to the bounded semantic contract and ten named fixtures only. Usage remains 5/8 until that probe is executed. |
 | H2 | Delete the complete/admissibility undefeated layer for SE-ST | invalid premise; superseded (no probe) | `reports/iccma-h2-stable-semantic-scout-20260711.md`; `experiments/2026-05-21-aba-se-st-direct-stable-encoding.md` (`4deb85d`) | The earlier "untouched territory" premise was wrong. The exact lean stable-only deletion was implemented at `4b6ee26`, passed semantic contracts, solved 0/5, and was abandoned after its real-worker profile remained in `clingo.Control.solve` (2,440 samples versus 2,450 for the complete-module path). The retained record names the exact profile at `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`. |
 | H3-S1 | One-shot global maximum-cardinality complete set for SE-PR via `#maximize` | invalid premise; superseded (no probe) | `reports/iccma-maxcard-semantic-scout-20260711.md`; `reports/aba-preferred-salvage-inventory.md` (`5d7a5b6`); branch `experiment/aba-asp-saturation-preferred` (`fe1c317`, `aa56b7c`, `b6c9b1d`, failure record `408f4b0`) | The earlier candidate-selection premise was wrong. The exact one-shot Lehtonen `pi_com` construction with `#maximize { 1,X : in(X) }.`, proved-optimum waiting, and the existing single-witness result shape was already implemented and passed semantic gates. T1/T3/T5/T6/T8 then timed out on `auto`, `asp`, and `sat`. Retained diagnosis: global ASP optimization over complete extensions does not solve the dense preferred class. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
@@ -238,3 +239,32 @@ The next candidate named by the committed history inventory is **small
 backdoor/cutset conditioning into exact residual components**. It requires
 bounded cutset/strict-residual telemetry and an exact lift/validation semantic
 contract before any solver probe. This reconciliation does not start it.
+
+### Round 1 — Probe 6 adjudication: strengthened cutset theorem survives — 2026-07-11
+
+The constructive and adversarial backdoor reports were adjudicated without
+averaging their conclusions. The strengthened candidate remains the inventory's
+small assumption backdoor/cutset family, not bounded-incidence-width or tree-
+decomposition DP: it deletes one bounded assumption set `K` from the compact
+rule/contrary factor-incidence graph and proceeds only when that deletion
+separates at least two assumption-bearing residual components. Exact per-
+component attacked-`K` signatures, cut-defense obligations, admissible lifts,
+deduplication, and global inclusion maximality are frozen boundary semantics,
+not an `IN/OUT/UNDEC` product.
+
+The adversarial fixed-`k=1` exponential-support family does not satisfy this
+separator antecedent. With `K={x}` deleted, the factor for
+`bar(c) <- x,t_1,...,t_m` connects every `t_i`; their rule factors connect all
+`u_i,v_i`, and the contrary link connects `c`. There is one assumption-bearing
+residual component, so `K={x}` is invalid. The family falsifies only the naive
+`3^k` complete-state claim and reinforces the bans on eager minimal-support
+extraction and post-extraction caps; it does not falsify the strengthened
+theorem or fail-closed operational bounds.
+
+The decisive record is
+`experiments/2026-07-11-iccma2023-backdoor-cutset-adjudication.md`. Verdict:
+**PROCEED TO PROBE 6 SEMANTIC CONTRACT.** This adjudication does not itself
+spend the probe: usage remains **5 / 8 triage probes** and **0 / 3 full
+experiments**. Exact next action is the bounded diagnostic/reference semantic
+contract and ten named fixtures only. No shape measurement, source route,
+solver call, benchmark, hard-row access, or holdout access is authorized.
