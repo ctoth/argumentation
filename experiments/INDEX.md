@@ -24,8 +24,9 @@ require a pre-candidate holdout baseline).
 **Budget:** this frame is worth **≤ 8 triage probes and ≤ 3 full experiments**
 before a synthesis/stop decision. Probes touch dev only, never the holdout.
 Usage after the Round 1 probe 6 semantic kill: **6 / 8 triage probes; 0 / 3
-full experiments**. Probe 7 is preregistered and **not consumed**; its capability
-gate precedes any access to the sole permitted development row.
+full experiments**. Probe 8 is preregistered and **not consumed**. Its free
+semantic Gate A precedes any access to its two permitted development rows;
+first row access at Gate B consumes it and moves usage to 7/8.
 
 **Campaign kill criteria:** stop and write the final synthesis when any holds —
 (a) two consecutive triage rounds with no surviving candidate; (b) triage/
@@ -57,6 +58,7 @@ evidence that never landed on `main` as a kept improvement.
 | R1-P5 | Exact collective-attack SCC conditioning for stable/preferred | triaged-out (promotion no-go diagnosed; no source experiment) | `experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md`; `experiments/2026-07-11-iccma2023-probe-5-scc-operational-measurement.md`; `experiments/artifacts/2026-07-11-probe-5-scc-shape.json`; `scripts/measure_aba_scc_composition_shape.py`; `tests/structured/aba/test_aba_scc_composition_shape.py` | Six focused shape tests passed, but the exact frozen dev command did not complete its first support extraction or emit partial output after about 13 minutes. Real-process `py-spy` localized the active stack to eager `_minimal_supports` antichain construction before `require_cap`; the 4,096 collective-attack cap does not bound extraction, so frozen clause 2 did not become executable. No row metrics, holdout, source slice, solver timing, benchmark, or full experiment. |
 | R1-P6 | Small assumption backdoor/cutset conditioning into exact residual components | triaged-out (semantic kill; no operational work) | `experiments/2026-07-11-iccma2023-probe-6-backdoor-semantic-contract.md`; `scripts/aba_backdoor_cutset_reference.py`; `tests/structured/aba/test_aba_backdoor_cutset_contract.py` | The bounded reference and 300 fixed-seed examples agree with both authorities on every qualifying cutset, but the frozen `two_component_cut_attack_union` fixture is not a separator: both attack-rule factors remain joined through the shared `contrary(k)` literal after deleting `k`, leaving one assumption-bearing component. The exact frozen fixture/path contract is unsatisfiable and fails closed. |
 | R1-P7 | Direct CaDiCaL 2.2.1 on the unchanged eager-arc one-shot stable CNF | blocked before probe; dependency/API capability absent | `experiments/2026-07-11-iccma2023-probe-7-cadical221-eager-arc.md`; red contract `a62b6c3` | Exact `rel-2.2.1` built and reported `2.2.1`; trivial SAT/UNSAT and independent DRAT validation passed. Capability failed closed before target access: `get_statistic_value("restarts")` returns unsupported sentinel `-1`, while the frozen raw `val(v)`/`val(-v)` opposite-answer condition contradicts the observed/documented IPASIR result (`val(1)=-1`, `val(-1)=-1`). No diagnostic engine, ICCMA row, metric, profile, production change, or holdout access. Probe not consumed; budget remains 6/8. |
+| R1-P8 | Multiplicity-aware true-clone/module quotienting for ABA SE-PR | preregistered; Gate A not implemented; probe not consumed | `experiments/2026-07-11-iccma2023-probe-8-multiplicity-true-clone-quotient.md` | Frozen sequential gates: complete-family semantic equality on 12 named fixtures plus exactly 300 fixed-seed bounded frameworks before any dev-row access; then shape-only inspection of exactly the two hard SE-PR rows. Classes require independently verified full normalized-framework automorphisms fixing every outside node; entangled classes are rejected. Family lift is full orbit expansion, separate from canonical witness selection. Shape survival requires a nontrivial certified class and strict quotient-template decrease on at least one row; shape predicts no speedup. Budget remains 6/8. |
 | H2 | Delete the complete/admissibility undefeated layer for SE-ST | invalid premise; superseded (no probe) | `reports/iccma-h2-stable-semantic-scout-20260711.md`; `experiments/2026-05-21-aba-se-st-direct-stable-encoding.md` (`4deb85d`) | The earlier "untouched territory" premise was wrong. The exact lean stable-only deletion was implemented at `4b6ee26`, passed semantic contracts, solved 0/5, and was abandoned after its real-worker profile remained in `clingo.Control.solve` (2,440 samples versus 2,450 for the complete-module path). The retained record names the exact profile at `data/iccma/2025/profiles/aba-se-st-direct-stable-encoding/small/aba-SE-ST-auto-abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba-4f3ede81e1a5.raw.txt`. |
 | H3-S1 | One-shot global maximum-cardinality complete set for SE-PR via `#maximize` | invalid premise; superseded (no probe) | `reports/iccma-maxcard-semantic-scout-20260711.md`; `reports/aba-preferred-salvage-inventory.md` (`5d7a5b6`); branch `experiment/aba-asp-saturation-preferred` (`fe1c317`, `aa56b7c`, `b6c9b1d`, failure record `408f4b0`) | The earlier candidate-selection premise was wrong. The exact one-shot Lehtonen `pi_com` construction with `#maximize { 1,X : in(X) }.`, proved-optimum waiting, and the existing single-witness result shape was already implemented and passed semantic gates. T1/T3/T5/T6/T8 then timed out on `auto`, `asp`, and `sat`. Retained diagnosis: global ASP optimization over complete extensions does not solve the dense preferred class. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
@@ -339,3 +341,35 @@ The successful capabilities cannot substitute for either fail-closed
 requirement. Status is **blocked before probe; dependency/API capability
 absent**. The sole ICCMA row was not opened, so Probe 7 was not consumed and
 usage remains **6 / 8 triage probes** and **0 / 3 full experiments**.
+
+### Round 1 — Probe 8 preregistration: multiplicity-aware true-clone quotient — 2026-07-11
+
+The last selected quotient family is frozen in
+`experiments/2026-07-11-iccma2023-probe-8-multiplicity-true-clone-quotient.md`.
+Gate A is a free bounded semantic contract committed before any development-row
+access. It requires independently verified complete-framework, fix-outside
+transpositions; rejection of entangled A/B attacker matching and near clones;
+full-orbit family lifting distinct from later canonical witness selection; and
+complete preferred-family equality with both native and support authorities on
+12 named fixtures plus exactly 300 fixed-seed ordinary flat ABA frameworks.
+
+Only a committed Gate A pass opens Gate B. First access to either of the two
+authorized `aba_2000_0.3_10_10_{0,1}.aba` SE-PR rows consumes Probe 8 and moves
+usage to 7/8. Gate B is normalized-incidence shape telemetry only: deterministic
+color refinement followed by per-transposition verification as sole authority,
+with no solver or support extraction. It fails closed at 5 seconds/512 MiB per
+row and 15 seconds outer. Survival requires a nontrivial certified fix-outside
+class and a strict quotient rule-template decrease on at least one row. Exact
+raw state counts and unceiled decision reduction include size-2-class credit;
+shape predicts no wall-clock speedup.
+
+Only both committed gate passes can authorize the separately committed one-row
+Clingo-vs-same-Clingo diagnostic with 9-second internal/10-second outer caps,
+jobs 1, first-candidate falsification, then exactly `B1,Q1,B2,Q2,B3,Q3`, and
+real-worker profiling on a miss. It remains triage evidence. No production
+route/encoding is authorized before a later full-experiment preregistration.
+
+Usage remains **6 / 8 triage probes** and **0 / 3 full experiments**. Probe 8
+is preregistered and **not consumed**; campaign kill has not fired. Failure ends
+this last quotient family and leads to final synthesis without redefining the
+class/lift or widening to SCC, backdoor, support, portfolio, or another family.
