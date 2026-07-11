@@ -23,7 +23,7 @@ require a pre-candidate holdout baseline).
 
 **Budget:** this frame is worth **≤ 8 triage probes and ≤ 3 full experiments**
 before a synthesis/stop decision. Probes touch dev only, never the holdout.
-Usage after Round 1 probe 2: **2 / 8 triage probes; 0 / 3 full experiments**.
+Usage after Round 1 probe 3: **3 / 8 triage probes; 0 / 3 full experiments**.
 
 **Campaign kill criteria:** stop and write the final synthesis when any holds —
 (a) two consecutive triage rounds with no surviving candidate; (b) triage/
@@ -50,6 +50,7 @@ evidence that never landed on `main` as a kept improvement.
 | N2 | Native-CNF base-UNSAT precheck ahead of the 5 s Clingo worker | triaged-out (negative) | `experiments/2026-07-11-iccma2023-aba-stable-base-unsat-screen.md` (`5f75a7c`) | Base **is** UNSAT but the proof took **46.12 s** (build 0.56 s) — a 46 s precheck cannot front a 5 s worker. Kept diagnostic `scripts/diagnose_aba_stable_base_formula.py`. Recorded as the **second consecutive slice without a kept improvement**. |
 | R1-P1 | Stable-first shortcut for SE-PR single-extension | triaged-out (killed before source experiment) | `experiments/2026-07-11-iccma2023-stable-preferred-triage.md` | Flat and Clingo-routed; stable query completed in 0.834 s but returned **no extension/witness**, so no exact witness could pass the independent preferred verifier. Current SE-PR solved in 10.180 s with 4 calls / 1 outer / 3 inner / 3 refinements; real-worker profile remained Clingo-solve bound (928 samples). |
 | R1-P2 | Clingo built-in configuration discriminator for SE-PR | triaged-out (no survivor; no source experiment) | `experiments/2026-07-11-iccma2023-clingo-config-triage.md` | Fixed 3× interleaved default/handy/crafty/trendy sweep: fastest `trendy` median **9.759 s**, every run **>9.0 s**; `handy` only 2/3 correct with one timeout. All successful arms retained 4 / 1 / 3 / 3 telemetry. Zero arms cleared the ≤8.0 s median + <9.0 s every-run gate; no loser profiled. |
+| R1-P3 | Support-free/core-fact preprocessing for SE-ST/SE-PR | triaged-out (diagnosed negative; no source experiment) | `experiments/2026-07-11-iccma2023-support-free-core-fact-preprocessing.md`; `reports/iccma-s2-semantic-scout-20260711.md`; `reports/iccma-s2-operational-scout-20260711.md` | Candidate already exists: production Clingo uses `flat_aba_core_facts` without materialized supports and stable/preferred already use the grounded reduct. Both 600-assumption headroom instances retain 600/600 assumptions and all rules (0/2 reduced, covering 0/3 timeout rows). Existing real-worker profile remains preferred-growth solve-bound; no production slice or benchmark rerun. |
 | D1 | DC-CO / 100ba-acyc route campaign | unpromoted evidence (branch-only) | branch `exp/iccma-aba-dcco-100ba-acyc` @ `f21c22f` (**+47 commits, unmerged**; base `7bc7fb7`) | 47 commits of routing-shape discovery + acyc SAT propagator/lazy-CNF prototypes + 100ba-acyc backend, **never landed on `main`**. Not a frame candidate as-is: DC-CO is a different task/slice and the lazy-CNF port is a recorded NO-GO (IPASIR-UP correct but ~4× too slow). Promote-with-contract or salvage-then-drop is a foreman decision, out of this frame's scope. |
 
 Note: the DC-CO stocktake diagnostic `experiments/2026-06-29-iccma-uncapped-aba-dcco-profile.md`
@@ -92,3 +93,19 @@ preferred-growth operational invariant did not shrink. Per the frozen rule, no
 loser was profiled and no source experiment is authorized. Probe budget used:
 **2 / 8**; full experiments used: **0 / 3**. Round 1 remains open with six
 probe slots; do not spend one on another generic built-in configuration sweep.
+
+### Round 1 — Probe 3: support-free/core-fact preprocessing — 2026-07-11
+Evidence-only adjudication of the semantic and operational scouts against the
+committed frame, current source/tests, prior probes, and recorded real-worker
+py-spy evidence. The candidate is already the production path: Clingo omits
+materialized support facts, and stable/preferred already use the grounded
+reduct. The reduct fixed 0 assumptions IN/OUT and retained 600/600 assumptions
+plus 7867/7867 and 7699/7699 rules on the two hard development instances, so
+0/2 headroom frameworks and 0/3 timeout rows shrink. The profile remains
+Clingo-solve bound inside the unchanged 4/1/3/3 preferred-growth shape. The
+candidate is killed without a source slice or benchmark rerun. Probe budget
+used: **3 / 8**; full experiments used: **0 / 3**. No campaign kill criterion
+fires: Round 1 remains open with five probe slots, and this read-only probe does
+not advance the consecutive production-source-slice criterion. The next
+candidate must preregister a new semantic claim and prove strict hard-instance
+search-space reduction before any solver or benchmark call.
