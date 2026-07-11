@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "measurement": "probe-5 collective-attack SCC operational shape",
+  "status": "promotion_no_go_diagnosed",
+  "scope": "development baseline-timeout frameworks only",
+  "command": "uv run scripts/measure_aba_scc_composition_shape.py --manifest experiments/iccma2023-frame/population-dev.json --baseline-record experiments/2026-07-11-iccma2023-campaign-frame-baseline.md --only-baseline-timeouts --collective-attack-cap 4096 --branch-state-cap 65536 --boundary-item-cap 4096 --output experiments/artifacts/2026-07-11-probe-5-scc-shape.json",
+  "preregistration": "experiments/2026-07-11-iccma2023-probe-5-scc-semantic-contract.md",
+  "contract_base": "0d03790a0d62e06f013910898810a1fbf0538bdf",
+  "measurement_head": "2dba279c97a55079b100d0b7cb5472f060a6bb31",
+  "caps": {
+    "collective_attacks": 4096,
+    "branch_states": 65536,
+    "boundary_items": 4096
+  },
+  "precondition_gate": {
+    "command": "uv run pytest -q tests/structured/aba/test_aba_scc_composition_shape.py",
+    "result": "6 passed",
+    "completed_before_measurement": true
+  },
+  "failed_clause": {
+    "number": 2,
+    "text": "Exact collective-support extraction completes under the 4,096-attack cap on every measured hard development framework.",
+    "result": "failed_operationally",
+    "reason": "The diagnostic eagerly calls _minimal_supports(framework) before it can count collective attacks or enforce the 4,096 cap. The cap therefore does not bound exact support extraction on the first hard row."
+  },
+  "observation": {
+    "elapsed_description": "about 13 minutes",
+    "completed_first_exact_support_extraction": false,
+    "partial_output_artifact_produced": false,
+    "hot_process_pid": 362188,
+    "hot_process_cpu_seconds": 800.42,
+    "hot_process_working_set_bytes": 2318831616,
+    "interruption": "The frozen command was interrupted only after the profiler attached to the real hot process and diagnosed the active extraction stack."
+  },
+  "profiler": {
+    "command": "uv run --with py-spy py-spy dump --pid 362188",
+    "attached_to_real_hot_process": true,
+    "active_stack": [
+      "_add_minimal_support line 155 in aba_support_model.py",
+      "_minimal_set line 164 in aba_support_model.py",
+      "_combine_supports line 146 in aba_support_model.py",
+      "_minimal_supports line 120 in aba_support_model.py",
+      "_measure_framework line 400 in measure_aba_scc_composition_shape.py",
+      "main line 529 in measure_aba_scc_composition_shape.py"
+    ]
+  },
+  "failure_analysis": {
+    "compared_against": "The frozen operational hypothesis that exact support extraction would complete under an executable 4,096 collective-attack cap before SCC conditioning was assessed.",
+    "dominant_cost_before": "No prior hard-row extraction profile was preregistered; the intended bounded operation was exact support extraction followed by collective-attack counting and SCC conditioning.",
+    "dominant_cost_observed": "Eager minimal-support antichain construction in _add_minimal_support/_minimal_set/_combine_supports/_minimal_supports before any cap check.",
+    "intended_invariant": "Clause 2: exact collective-support extraction is bounded by the frozen 4,096 collective-attack cap.",
+    "invariant_change": "unchanged",
+    "interpretation": "The intended clause did not become executable on the hard row. No support count, SCC shape, residual reduction, branch count, or boundary size was produced.",
+    "next_target_from_evidence": "Before this SCC route could be reconsidered, exact support generation would need an executable in-generation bound or equivalent bounded extraction contract; this reconciliation does not design or implement one."
+  },
+  "rows": [],
+  "row_metrics_available": false,
+  "holdout_accessed": false,
+  "production_source_modified": false,
+  "solver_timing_accessed": false,
+  "production_experiment": false,
+  "campaign_disposition": "Round 1 probe 5 operationally killed; no full experiment consumed."
+}
