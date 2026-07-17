@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 import lzma
@@ -92,6 +92,10 @@ class RunConfig:
     only_instances: frozenset[str] = frozenset()
     only_subtracks: frozenset[str] = frozenset()
     jobs: int = 1
+    # Opt-in per-subtrack wall-clock budgets in seconds, keyed by subtrack
+    # (e.g. {"DS-PR": 600.0}). Empty means every row uses timeout_seconds, so
+    # dispatch is byte-identical to the pre-budget flat-timeout behaviour.
+    task_budgets: dict[str, float] = field(default_factory=dict)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -114,6 +118,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-af-arguments", type=int, default=100)
     parser.add_argument("--max-aba-assumptions", type=int, default=10)
     parser.add_argument("--timeout-seconds", type=float, default=5.0)
+    parser.add_argument(
+        "--budgets-json",
+        type=Path,
+        default=None,
+        help=(
+            "JSON file mapping subtrack (e.g. \"DS-PR\") to a per-row wall-clock "
+            "budget in seconds; subtracks absent from the file fall back to "
+            "--timeout-seconds. Omit for the flat single-timeout behaviour."
+        ),
+    )
     parser.add_argument("--label", default="native-bounded")
     parser.add_argument(
         "--no-progress",
@@ -168,6 +182,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.event_log_path is not None:
         args.event_log_path.parent.mkdir(parents=True, exist_ok=True)
         args.event_log_path.write_text("", encoding="utf-8")
+    task_budgets = load_task_budgets(args.budgets_json)
 
     config = RunConfig(
         root=args.root,
@@ -184,7 +199,14 @@ def main(argv: list[str] | None = None) -> int:
         only_instances=frozenset(args.only_instance),
         only_subtracks=frozenset(args.only_subtrack),
         jobs=args.jobs,
+        task_budgets=task_budgets,
     )
+    if task_budgets:
+        print(
+            f"per-subtrack budgets active for {len(task_budgets)} subtrack(s); "
+            f"others fall back to --timeout-seconds={args.timeout_seconds}: "
+            + json.dumps(task_budgets, sort_keys=True)
+        )
     rows = run_native(config)
     output_dir = config.root / "runs"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -406,6 +428,40 @@ def emit_json_event(path: Path | str | None, event: dict[str, Any]) -> None:
             handle.write(line + "\n")
 
 
+def load_task_budgets(path: Path | None) -> dict[str, float]:
+    """Load a subtrack->seconds budget map from a JSON file.
+
+    Returns an empty dict when no path is given so callers keep the flat
+    single-timeout dispatch. Raises ValueError on a malformed file so a typo in
+    a long benchmark command fails fast instead of silently reverting to the
+    flat timeout.
+    """
+    if path is None:
+        return {}
+    raw = load_json(path)
+    if not isinstance(raw, dict):
+        raise ValueError(f"budgets JSON {path} must be an object mapping subtrack to seconds")
+    budgets: dict[str, float] = {}
+    for subtrack, seconds in raw.items():
+        if not isinstance(seconds, (int, float)) or isinstance(seconds, bool):
+            raise ValueError(f"budget for {subtrack!r} in {path} must be a number, got {seconds!r}")
+        if seconds <= 0:
+            raise ValueError(f"budget for {subtrack!r} in {path} must be positive, got {seconds!r}")
+        budgets[str(subtrack)] = float(seconds)
+    return budgets
+
+
+def budget_for_task(config: RunConfig, task: dict[str, Any]) -> float:
+    """Wall-clock seconds allowed for this row.
+
+    Falls back to the flat ``timeout_seconds`` whenever no per-subtrack budget
+    is configured, so an empty ``task_budgets`` reproduces the exact pre-budget
+    dispatch (same subprocess kill and same derived in-process solver budget).
+    """
+    subtrack = str(task.get("subtrack", ""))
+    return float(config.task_budgets.get(subtrack, config.timeout_seconds))
+
+
 def run_or_skip(
     config: RunConfig,
     instance: dict[str, Any],
@@ -445,24 +501,25 @@ def run_or_skip(
         )
         if query_path is None or not query_path.exists():
             return {**base, "status": "skipped", "reason": "missing_query"}
+    budget_seconds = budget_for_task(config, task)
     job = {
         "root": str(config.root),
         "backend": config.backend,
         "iccma_binary": config.iccma_binary,
-        "solver_timeout_seconds": config.timeout_seconds,
+        "solver_timeout_seconds": budget_seconds,
         "event_log_path": str(config.event_log_path) if config.event_log_path is not None else None,
         "profile_path": str(worker_profile_path(config, instance, task))
         if should_profile_worker(config, task)
         else None,
         "profile_format": config.profile_workers_format,
-        "profile_duration_seconds": profile_duration_seconds(config)
+        "profile_duration_seconds": profile_duration_seconds(budget_seconds)
         if should_profile_worker(config, task)
         else None,
         "instance": instance,
         "task": task,
     }
     started = time.perf_counter()
-    result = run_child(job, timeout_seconds=config.timeout_seconds)
+    result = run_child(job, timeout_seconds=budget_seconds)
     elapsed = time.perf_counter() - started
     return {
         **base,
@@ -710,8 +767,8 @@ def should_profile_worker(config: RunConfig, task: dict[str, Any]) -> bool:
     )
 
 
-def profile_duration_seconds(config: RunConfig) -> float:
-    return max(1.0, config.timeout_seconds - 1.0)
+def profile_duration_seconds(budget_seconds: float) -> float:
+    return max(1.0, budget_seconds - 1.0)
 
 
 def worker_profile_path(
