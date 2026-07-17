@@ -9,6 +9,7 @@ from tools.iccma2025_run_native import (
     budget_for_task,
     load_task_budgets,
     profile_duration_seconds,
+    run_native,
     run_or_skip,
 )
 
@@ -134,3 +135,64 @@ def test_per_subtrack_budget_overrides_kill_and_solver_timeout(tmp_path, monkeyp
     run_or_skip(config_budgeted, instance, task)
     assert captured["timeout_seconds"] == 600.0
     assert captured["job"]["solver_timeout_seconds"] == 600.0
+
+
+def test_only_tracks_filters_redundant_track_before_solving(tmp_path, monkeypatch) -> None:
+    """--only-track drops the duplicate solve of the same instance under another track."""
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    (manifests / "iccma-2025-manifest.json").write_text(
+        json.dumps([{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]),
+        encoding="utf-8",
+    )
+    (manifests / "iccma-2025-task-matrix.json").write_text(
+        json.dumps(
+            [
+                {"track": "main", "subtrack": "SE-CO", "instance_kind": "af"},
+                {"track": "heuristics", "subtrack": "SE-CO", "instance_kind": "af"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    seen: list[tuple[str, str]] = []
+
+    def record_job(_config, instance, task):
+        seen.append((task["track"], task["subtrack"]))
+        return {"instance": instance["relative_path"], "track": task["track"], "status": "solved"}
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_or_skip", record_job)
+    config = _config(tmp_path, only_tracks=frozenset({"main"}))
+
+    run_native(config)
+
+    assert seen == [("main", "SE-CO")]
+
+
+def test_empty_only_tracks_runs_every_track(tmp_path, monkeypatch) -> None:
+    manifests = tmp_path / "manifests"
+    manifests.mkdir()
+    (manifests / "iccma-2025-manifest.json").write_text(
+        json.dumps([{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]),
+        encoding="utf-8",
+    )
+    (manifests / "iccma-2025-task-matrix.json").write_text(
+        json.dumps(
+            [
+                {"track": "main", "subtrack": "SE-CO", "instance_kind": "af"},
+                {"track": "heuristics", "subtrack": "SE-CO", "instance_kind": "af"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    seen: list[str] = []
+
+    def record_job(_config, instance, task):
+        seen.append(task["track"])
+        return {"instance": instance["relative_path"], "track": task["track"], "status": "solved"}
+
+    monkeypatch.setattr("tools.iccma2025_run_native.run_or_skip", record_job)
+    config = _config(tmp_path)
+
+    run_native(config)
+
+    assert seen == ["main", "heuristics"]

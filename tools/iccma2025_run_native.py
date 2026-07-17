@@ -91,6 +91,7 @@ class RunConfig:
     profile_worker_subtracks: frozenset[str] = frozenset()
     only_instances: frozenset[str] = frozenset()
     only_subtracks: frozenset[str] = frozenset()
+    only_tracks: frozenset[str] = frozenset()
     jobs: int = 1
     # Opt-in per-subtrack wall-clock budgets in seconds, keyed by subtrack
     # (e.g. {"DS-PR": 600.0}). Empty means every row uses timeout_seconds, so
@@ -170,6 +171,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Run only this subtrack; repeat to run multiple subtracks.",
     )
     parser.add_argument(
+        "--only-track",
+        action="append",
+        default=[],
+        help=(
+            "Run only this track (e.g. \"main\"); repeat to run multiple tracks. "
+            "Default runs every track, matching the pre-existing behaviour."
+        ),
+    )
+    parser.add_argument(
         "--jobs",
         type=int,
         default=1,
@@ -198,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
         profile_worker_subtracks=frozenset(args.profile_worker_subtrack),
         only_instances=frozenset(args.only_instance),
         only_subtracks=frozenset(args.only_subtrack),
+        only_tracks=frozenset(args.only_track),
         jobs=args.jobs,
         task_budgets=task_budgets,
     )
@@ -264,6 +275,7 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         for task in task_matrix
         if task["instance_kind"] == normalized_instance_kind(instance)
         if not config.only_subtracks or str(task["subtrack"]) in config.only_subtracks
+        if not config.only_tracks or str(task["track"]) in config.only_tracks
     ]
     log_run_event(config, "iccma_jobs_built", jobs=len(jobs))
     rows = run_rows_in_job_order(config, jobs)
