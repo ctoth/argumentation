@@ -195,6 +195,32 @@ an algorithmic ceiling; a fresh full census at a realistic budget would land
 materially above 4243, with the unsolved remainder concentrated in ER (and a
 slice of scc) rather than spread across the 1871.
 
+## D5 — full fresh census wall-clock estimate (not launched)
+
+Estimate for a full-corpus rerun at **t15, `--jobs 8`** comparable to the truth
+run (which was serial t5). Derived from the truth-run CSV: 6114 non-skipped rows
+(4243 solved, 1871 timeout); measured serial solved-row elapsed at t5 sums to
+7,431 s. Model: solved rows keep their sub-5 s solve time, timeouts run the full
+15 s, ~1 s subprocess spawn per row:
+
+- CPU-seconds ≈ 7,431 + 1871×15 + 6114×1 ≈ **41,600 s**
+- Wall at `--jobs 8` ≈ **≈ 5,200 s ≈ 87 min (~1.4 h)**.
+
+Caveats: `--jobs 8` timing is contention-noisy (counts valid only); the estimate
+treats every 5 s-timeout as a full 15 s (upper bound — many budget-artifact rows
+solve in 7–15 s and would finish sooner, others need >15 s and still hit the
+wall). t15 is a modest bump for a *faster* full census, still far below the 600 s
+realistic budget, so it will NOT capture the full budget-artifact conversion this
+sample shows. Exact command (do not run without approval):
+
+```
+uv run python tools/iccma2025_run_native.py \
+  --root data/iccma/2025 \
+  --backend auto --max-af-arguments -1 --max-aba-assumptions 2147483647 \
+  --timeout-seconds 15 --jobs 8 --no-progress \
+  --label full-uncapped-auto-t15-jobs8-2026-07-17
+```
+
 ## Reproducibility
 
 - Runner: committed on `exp/iccma-census-budgets` (D1 `3d7fc24`, `--only-track`
