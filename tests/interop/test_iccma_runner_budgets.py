@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import dataclasses
 import json
+from typing import Any
 
 import pytest
 
@@ -14,8 +16,8 @@ from tools.iccma2025_run_native import (
 )
 
 
-def _config(tmp_path, **overrides) -> RunConfig:
-    base = dict(
+def _config(tmp_path, **overrides: Any) -> RunConfig:
+    base = RunConfig(
         root=tmp_path,
         backend="auto",
         iccma_binary=None,
@@ -25,8 +27,7 @@ def _config(tmp_path, **overrides) -> RunConfig:
         progress=False,
         event_log_path=None,
     )
-    base.update(overrides)
-    return RunConfig(**base)
+    return dataclasses.replace(base, **overrides)
 
 
 def test_load_task_budgets_none_is_empty() -> None:
@@ -111,7 +112,7 @@ def test_per_subtrack_budget_overrides_kill_and_solver_timeout(tmp_path, monkeyp
     instance_path.parent.mkdir(parents=True)
     instance_path.write_text("arg(a).\n", encoding="utf-8")
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     def record_run_child(job, *, timeout_seconds):
         captured["job"] = job
