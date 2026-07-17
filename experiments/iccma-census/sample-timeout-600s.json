@@ -1,0 +1,425 @@
+{
+  "budget_seconds": 600,
+  "entries": [
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_20_2.af",
+      "subtrack": "DC-ID"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_30_4.af",
+      "subtrack": "DC-ID"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_20_2.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_30_4.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_40_3.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_200_20_3.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_200_20_5.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_20_2.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_30_4.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_20_2.af",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_300_30_4.af",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_200_20_3.af",
+      "subtrack": "SE-SST"
+    },
+    {
+      "family": "ER",
+      "instance": "AFs/ER_200_20_5.af",
+      "subtrack": "SE-SST"
+    },
+    {
+      "family": "aba",
+      "instance": "ABAs/aba_2000_0.1_5_5_1.aba",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "aba",
+      "instance": "ABAs/aba_2000_0.1_5_5_3.aba",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "aba",
+      "instance": "ABAs/aba_2000_0.1_5_5_1.aba",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "aba",
+      "instance": "ABAs/aba_2000_0.1_5_5_3.aba",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "subtrack": "SE-PR"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "abcgen",
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_150_0.1_255_15.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_150_0.1_255_15.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "SE-SST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "SE-SST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_17.af",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "crusti_g2io",
+      "instance": "AFs/crusti_g2io_125_0.5_31_24.af",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "mainkwt",
+      "instance": "AFs/mainkwt_250_100_50_100_100_0.4_0.3_0.4_0.3_0.4_0.3_0.2__5.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "mainkwt",
+      "instance": "AFs/mainkwt_250_100_50_100_200_0.4_0.3_0.4_0.3_0.4_0.3_0.2__2.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "mainkwt",
+      "instance": "AFs/mainkwt_250_100_50_150_100_0.4_0.3_0.4_0.3_0.4_0.3_0.2__3.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_1554_2_0.4_0.2_3.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2843_36_0.3_0.1_12.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2951_7_0.5_0.2_18.af",
+      "subtrack": "DC-CO"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_1554_2_0.4_0.2_3.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2843_36_0.3_0.1_12.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2951_7_0.5_0.2_18.af",
+      "subtrack": "DS-PR"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_1554_2_0.4_0.2_3.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2843_36_0.3_0.1_12.af",
+      "subtrack": "DS-SST"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_1554_2_0.4_0.2_3.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2843_36_0.3_0.1_12.af",
+      "subtrack": "SE-ID"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_1554_2_0.4_0.2_3.af",
+      "subtrack": "SE-ST"
+    },
+    {
+      "family": "scc",
+      "instance": "AFs/scc_2843_36_0.3_0.1_12.af",
+      "subtrack": "SE-ST"
+    }
+  ],
+  "selection": "timeout rows only; per stratum sort by relative_path, take first k",
+  "source_csv": "iccma-2025-full-uncapped-auto-t5-2026-05-14.csv",
+  "source_csv_sha256": "bbe3865f62ecc6051fd6ebf9ff405086afc0f48584d3c16b12bfda3aa5005bda",
+  "strata": [
+    {
+      "available": 15,
+      "family": "ER",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "DC-ID"
+    },
+    {
+      "available": 15,
+      "family": "ER",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DS-PR"
+    },
+    {
+      "available": 17,
+      "family": "ER",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "DS-SST"
+    },
+    {
+      "available": 15,
+      "family": "ER",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ID"
+    },
+    {
+      "available": 13,
+      "family": "ER",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-PR"
+    },
+    {
+      "available": 17,
+      "family": "ER",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-SST"
+    },
+    {
+      "available": 11,
+      "family": "aba",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-PR"
+    },
+    {
+      "available": 8,
+      "family": "aba",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ST"
+    },
+    {
+      "available": 65,
+      "family": "abcgen",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "SE-PR"
+    },
+    {
+      "available": 65,
+      "family": "abcgen",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "SE-ST"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DC-CO"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DS-PR"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "DS-SST"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ID"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-SST"
+    },
+    {
+      "available": 20,
+      "family": "crusti_g2io",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ST"
+    },
+    {
+      "available": 17,
+      "family": "mainkwt",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DS-PR"
+    },
+    {
+      "available": 14,
+      "family": "scc",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DC-CO"
+    },
+    {
+      "available": 14,
+      "family": "scc",
+      "requested": 3,
+      "selected": 3,
+      "subtrack": "DS-PR"
+    },
+    {
+      "available": 14,
+      "family": "scc",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "DS-SST"
+    },
+    {
+      "available": 14,
+      "family": "scc",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ID"
+    },
+    {
+      "available": 14,
+      "family": "scc",
+      "requested": 2,
+      "selected": 2,
+      "subtrack": "SE-ST"
+    }
+  ],
+  "total_selected": 52
+}
