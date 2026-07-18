@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import os
+from pathlib import Path
+import subprocess
+import tempfile
 import time
 from typing import Any
 
@@ -130,6 +134,170 @@ def native_cnf_prefsat_extension(
     return solver.result(extension)
 
 
+# Strong CDCL engine for the flat one-shot stable solve. The Wave-2 experiment
+# (experiments/2026-07-18-aba-cadical-engine-prod.md) measured direct CaDiCaL
+# 2.2.1 winning ~23x on the c35 flat CNF. Gate D0 FAILED for pysat's bundled
+# cadical195 (1.9.5 ran >300s vs the <=76s gate on the byte-identical CNF), so
+# per the preregistration the strong engine is the vendored CaDiCaL 2.2.1
+# binary driven as a batch DIMACS solver (scripts/build_cadical221.sh). If the
+# binary is unavailable, _stable_extension_with_fallback rebuilds on glucose4 —
+# a missing dependency can never lose a row.
+_STABLE_ENGINE_STRONG = "cadical221-batch"
+
+_CADICAL221_ENV = "ARGUMENTATION_CADICAL221"
+
+
+def _find_cadical221_binary() -> Path:
+    """Resolve the vendored CaDiCaL 2.2.1 batch binary.
+
+    Order: explicit env override, then the repo-local vendored build produced
+    by scripts/build_cadical221.sh. Raising here is safe: the flat stable path
+    catches it and falls back to glucose4.
+    """
+    override = os.environ.get(_CADICAL221_ENV)
+    if override:
+        path = Path(override)
+        if path.is_file():
+            return path
+        raise OptionalDependencyUnavailable(
+            feature="flat-stable strong SAT engine",
+            package=f"CaDiCaL 2.2.1 ({_CADICAL221_ENV}={override} not found)",
+            install_hint="Run scripts/build_cadical221.sh or fix the env path.",
+        )
+    repo_root = Path(__file__).resolve().parents[4]
+    vendored = repo_root / "tools" / "solvers" / "cadical-2.2.1" / "cadical.exe"
+    if vendored.is_file():
+        return vendored
+    raise OptionalDependencyUnavailable(
+        feature="flat-stable strong SAT engine",
+        package="CaDiCaL 2.2.1 (vendored binary missing)",
+        install_hint="Run scripts/build_cadical221.sh (see its header).",
+    )
+
+
+class _BatchDimacsCadical:
+    """pysat-shaped adapter driving a CaDiCaL binary as a batch DIMACS solver.
+
+    Supports exactly the surface `_NativeSparseNarrowStableSolver` uses:
+    add_clause / set_phases / solve(assumptions=...) / get_model. Each solve
+    writes base clauses plus assumption unit clauses to a temp DIMACS file and
+    reruns the binary; the flat eager-arc stable path is effectively one-shot
+    (cycle-refinement clauses are rare), which is the exact configuration the
+    Wave-1 evidence measured. Phases are recorded but not passed: the measured
+    2.2.1 win was in default (no-phase) mode.
+    """
+
+    def __init__(self, binary: Path) -> None:
+        self._binary = binary
+        self._clauses: list[list[int]] = []
+        self._nvars = 0
+        self._model: list[int] | None = None
+        self.recorded_phases: list[int] | None = None
+
+    def add_clause(self, clause: list[int]) -> None:
+        for literal in clause:
+            variable = abs(literal)
+            if variable > self._nvars:
+                self._nvars = variable
+        self._clauses.append(list(clause))
+
+    def set_phases(self, vector: list[int]) -> None:
+        self.recorded_phases = list(vector)
+        for literal in vector:
+            variable = abs(literal)
+            if variable > self._nvars:
+                self._nvars = variable
+
+    def solve(self, assumptions: list[int] | tuple[int, ...] = ()) -> bool:
+        units = [[literal] for literal in assumptions]
+        clauses = self._clauses + units
+        with tempfile.TemporaryDirectory(prefix="cadical221-") as tmp:
+            cnf_path = Path(tmp) / "problem.cnf"
+            with cnf_path.open("w", encoding="ascii", newline="\n") as handle:
+                handle.write(f"p cnf {self._nvars} {len(clauses)}\n")
+                for clause in clauses:
+                    handle.write(" ".join(str(x) for x in clause) + " 0\n")
+            completed = subprocess.run(
+                [str(self._binary), "-q", str(cnf_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        if completed.returncode == 10:
+            model: list[int] = []
+            for line in completed.stdout.splitlines():
+                if line.startswith("v "):
+                    model.extend(
+                        int(tok) for tok in line[2:].split() if tok and tok != "0"
+                    )
+            if not model:
+                raise RuntimeError("cadical221 reported SAT without v-lines")
+            self._model = model
+            return True
+        if completed.returncode == 20:
+            self._model = None
+            return False
+        raise RuntimeError(
+            f"cadical221 batch solve failed (rc={completed.returncode}): "
+            f"{completed.stderr.strip()[:200]}"
+        )
+
+    def get_model(self) -> list[int] | None:
+        return self._model
+
+# Provisional structural thresholds; frozen after the dev-slice calibration in
+# the Wave-2 record. Routes only the giant recursive-core class (glucose4 times
+# out) to the strong engine, keeping glucose4 for everything it already solves.
+_STABLE_STRONG_MIN_RULES = 24000
+_STABLE_STRONG_MIN_RECURSIVE_RULES = 300
+
+
+def _stable_engine_for(
+    *,
+    recursive_rules: int,
+    edges: int,
+    assumptions: int,
+    rules: int,
+) -> str:
+    """Pick the flat-stable SAT engine from measured structural features.
+
+    Structural, never family-name based. Returns the strong engine only above a
+    conservative threshold (the giant recursive core where glucose4 times out);
+    otherwise the unchanged glucose4 default. The safety gate (no dev row solved
+    by glucose4 but not by the routed build) validates the threshold.
+    """
+    if (
+        rules >= _STABLE_STRONG_MIN_RULES
+        or recursive_rules >= _STABLE_STRONG_MIN_RECURSIVE_RULES
+    ):
+        return _STABLE_ENGINE_STRONG
+    return "glucose4"
+
+
+def _stable_extension_with_fallback(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet,
+) -> tuple[AssumptionSet | None, dict]:
+    """Flat-stable build+solve with a no-row-loss glucose4 fallback.
+
+    The structural predicate may route to the strong engine; if that engine
+    fails to build or solve (bad binding, load error, crash surfaced as an
+    exception), rebuild on glucose4 so an engine/dependency failure can never
+    lose a row. A genuine engine-independent bug re-raises below (clause
+    construction is identical for every engine) and is not masked.
+    """
+    try:
+        solver = _NativeSparseNarrowStableSolver(framework, engine=None)
+        extension = solver.stable_extension(require_assumptions=require_assumptions)
+        return extension, dict(solver.telemetry)
+    except Exception:
+        pass
+    fallback = _NativeSparseNarrowStableSolver(framework, engine="glucose4")
+    extension = fallback.stable_extension(require_assumptions=require_assumptions)
+    return extension, dict(fallback.telemetry)
+
+
 def native_sparse_narrow_sat_extension(
     framework: ABAFramework,
     semantics: str,
@@ -156,12 +324,13 @@ def native_sparse_narrow_sat_extension(
             route_metadata=_native_sparse_narrow_route_metadata("preferred", telemetry),
         )
     if semantics == "stable":
-        solver = _NativeSparseNarrowStableSolver(framework)
-        extension = solver.stable_extension(require_assumptions=require_assumptions)
+        extension, telemetry = _stable_extension_with_fallback(
+            framework, require_assumptions=require_assumptions
+        )
         return NativeSparseNarrowSatResult(
             extension=extension,
-            telemetry=dict(solver.telemetry),
-            route_metadata=_native_sparse_narrow_route_metadata("stable", solver.telemetry),
+            telemetry=telemetry,
+            route_metadata=_native_sparse_narrow_route_metadata("stable", telemetry),
         )
     raise ValueError(f"unsupported sparse/narrow native SAT semantics: {semantics}")
 
@@ -842,8 +1011,9 @@ def _first_directed_edge_cycle(
 
 
 class _NativeSparseNarrowStableSolver:
-    def __init__(self, framework: ABAFramework) -> None:
+    def __init__(self, framework: ABAFramework, *, engine: str | None = None) -> None:
         solver_class = _load_pysat_solver()
+        self._engine_arg = engine
         self.framework = framework
         self.assumptions = tuple(sorted(framework.assumptions, key=repr))
         self.literals = tuple(
@@ -865,7 +1035,6 @@ class _NativeSparseNarrowStableSolver:
             for rule in self.rules
             if rule.antecedents
         }
-        self.solver = solver_class(name="glucose4")
         self.telemetry = {
             "clingo_solver_calls": 0,
             "native_sparse_narrow_solver_checks": 0,
@@ -912,6 +1081,17 @@ class _NativeSparseNarrowStableSolver:
         }
         self.telemetry["native_sparse_narrow_acyc_recursive_rules"] = len(self.just_vars)
         self.telemetry["native_sparse_narrow_acyc_edges"] = len(self.edge_vars)
+        self.engine = engine if engine is not None else _stable_engine_for(
+            recursive_rules=len(self.just_vars),
+            edges=len(self.edge_vars),
+            assumptions=len(self.assumptions),
+            rules=len(self.rules),
+        )
+        self.telemetry["native_sparse_narrow_engine"] = self.engine
+        if self.engine == "cadical221-batch":
+            self.solver: Any = _BatchDimacsCadical(_find_cadical221_binary())
+        else:
+            self.solver = solver_class(name=self.engine)
         self._completion_options_by_head: dict[Literal, list[int]] = defaultdict(list)
         for rule, variable in self.support_vars.items():
             self._completion_options_by_head[rule.consequent].append(
@@ -919,10 +1099,10 @@ class _NativeSparseNarrowStableSolver:
             )
         self._add_completion_clauses()
         self._add_arc_acyclic_clauses()
-        self.solver.set_phases(
-            [self.in_vars[assumption] for assumption in self.assumptions]
-            + [-variable for variable in self.edge_vars.values()]
-        )
+        self.phase_vector = [
+            self.in_vars[assumption] for assumption in self.assumptions
+        ] + [-variable for variable in self.edge_vars.values()]
+        self.solver.set_phases(self.phase_vector)
 
     def _new_var(self) -> int:
         variable = self._next_var
@@ -1165,11 +1345,11 @@ def _native_sparse_narrow_stable_extension(
 ) -> NativeSparseNarrowSatResult | None:
     if semantics not in {"preferred", "stable"}:
         return None
-    solver = _NativeSparseNarrowStableSolver(framework)
-    extension = solver.stable_extension(require_assumptions=require_assumptions)
+    extension, telemetry = _stable_extension_with_fallback(
+        framework, require_assumptions=require_assumptions
+    )
     if extension is None:
         return None
-    telemetry = dict(solver.telemetry)
     return NativeSparseNarrowSatResult(
         extension=extension,
         telemetry=telemetry,
