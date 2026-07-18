@@ -428,3 +428,15 @@ source/routing/encoding, other dev/SE-ST row, full population, or holdout was
 opened. Usage is **7 / 8 triage probes** and **0 / 3 full experiments**. Probe 8
 was the last selected quotient family; the campaign now goes to final synthesis
 without retrying or widening the family.
+
+---
+
+## Related standalone measurement (not part of this campaign or its budget)
+
+- **2026-07-17 realistic-budget census** — `experiments/2026-07-17-realistic-budget-census.md`.
+  A separate truth-measurement (not a campaign hypothesis): reruns a frozen
+  stratified sample of ICCMA-2025 timeout rows at 600 s to split budget
+  artifacts from algorithmic hardness, and rechecks this campaign's 2026-07-11
+  Probe 1–8 kills (which ran at a 5–10 s row wall on the 600-assumption
+  `aba_2000_0.3_10_10_{0,1}.aba` dev shapes) at 600 s. See that record for the
+  probe-recheck verdict bearing on Probes N1/R1-P3/8.
