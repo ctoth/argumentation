@@ -32,6 +32,7 @@ def _cyclic_support_framework() -> ABAFramework:
 
 # --- 1. structural predicate is a pure function of measured features ---
 
+
 def test_stable_engine_for_small_is_glucose4() -> None:
     engine = aba_sat._stable_engine_for(
         recursive_rules=10, edges=12, assumptions=30, rules=200
@@ -49,6 +50,7 @@ def test_stable_engine_for_giant_is_strong() -> None:
 
 # --- 2. default engine unchanged for small frameworks ---
 
+
 def test_default_engine_is_glucose4_for_small() -> None:
     solver = aba_sat._NativeSparseNarrowStableSolver(_cyclic_support_framework())
     assert solver.telemetry["native_sparse_narrow_engine"] == "glucose4"
@@ -56,6 +58,7 @@ def test_default_engine_is_glucose4_for_small() -> None:
 
 
 # --- 3. engine override keeps the answer correct (parity vs oracle) ---
+
 
 @pytest.mark.parametrize("engine", ["glucose4", "cadical195"])
 def test_engine_override_matches_oracle(engine: str) -> None:
@@ -71,6 +74,7 @@ def test_engine_override_matches_oracle(engine: str) -> None:
 
 # --- 4. phase parity: the phase vector is engine-independent ---
 
+
 def test_phase_vector_identical_across_engines() -> None:
     framework = _cyclic_support_framework()
     g = aba_sat._NativeSparseNarrowStableSolver(framework, engine="glucose4")
@@ -80,6 +84,7 @@ def test_phase_vector_identical_across_engines() -> None:
 
 
 # --- 5. no-row-loss fallback: strong-engine failure falls back to glucose4 ---
+
 
 def test_fallback_to_glucose4_on_strong_engine_error(monkeypatch) -> None:
     framework = _cyclic_support_framework()

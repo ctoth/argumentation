@@ -130,6 +130,66 @@ def native_cnf_prefsat_extension(
     return solver.result(extension)
 
 
+# Strong CDCL engine for the flat one-shot stable solve. pysat name; the Wave-2
+# experiment (experiments/2026-07-18-aba-cadical-engine-prod.md) measured direct
+# CaDiCaL 2.2.1 winning ~23x on the c35 flat CNF; pysat bundles CaDiCaL 1.9.5 as
+# `cadical195` (the reproducible dependency). Gate D0 confirms 1.9.5 reproduces
+# the win on the byte-identical CNF; otherwise a vendored 2.2.1 build is used.
+_STABLE_ENGINE_STRONG = "cadical195"
+
+# Provisional structural thresholds; frozen after the dev-slice calibration in
+# the Wave-2 record. Routes only the giant recursive-core class (glucose4 times
+# out) to the strong engine, keeping glucose4 for everything it already solves.
+_STABLE_STRONG_MIN_RULES = 24000
+_STABLE_STRONG_MIN_RECURSIVE_RULES = 300
+
+
+def _stable_engine_for(
+    *,
+    recursive_rules: int,
+    edges: int,
+    assumptions: int,
+    rules: int,
+) -> str:
+    """Pick the flat-stable SAT engine from measured structural features.
+
+    Structural, never family-name based. Returns the strong engine only above a
+    conservative threshold (the giant recursive core where glucose4 times out);
+    otherwise the unchanged glucose4 default. The safety gate (no dev row solved
+    by glucose4 but not by the routed build) validates the threshold.
+    """
+    if (
+        rules >= _STABLE_STRONG_MIN_RULES
+        or recursive_rules >= _STABLE_STRONG_MIN_RECURSIVE_RULES
+    ):
+        return _STABLE_ENGINE_STRONG
+    return "glucose4"
+
+
+def _stable_extension_with_fallback(
+    framework: ABAFramework,
+    *,
+    require_assumptions: AssumptionSet,
+) -> tuple[AssumptionSet | None, dict]:
+    """Flat-stable build+solve with a no-row-loss glucose4 fallback.
+
+    The structural predicate may route to the strong engine; if that engine
+    fails to build or solve (bad binding, load error, crash surfaced as an
+    exception), rebuild on glucose4 so an engine/dependency failure can never
+    lose a row. A genuine engine-independent bug re-raises below (clause
+    construction is identical for every engine) and is not masked.
+    """
+    try:
+        solver = _NativeSparseNarrowStableSolver(framework, engine=None)
+        extension = solver.stable_extension(require_assumptions=require_assumptions)
+        return extension, dict(solver.telemetry)
+    except Exception:
+        pass
+    fallback = _NativeSparseNarrowStableSolver(framework, engine="glucose4")
+    extension = fallback.stable_extension(require_assumptions=require_assumptions)
+    return extension, dict(fallback.telemetry)
+
+
 def native_sparse_narrow_sat_extension(
     framework: ABAFramework,
     semantics: str,
@@ -156,12 +216,13 @@ def native_sparse_narrow_sat_extension(
             route_metadata=_native_sparse_narrow_route_metadata("preferred", telemetry),
         )
     if semantics == "stable":
-        solver = _NativeSparseNarrowStableSolver(framework)
-        extension = solver.stable_extension(require_assumptions=require_assumptions)
+        extension, telemetry = _stable_extension_with_fallback(
+            framework, require_assumptions=require_assumptions
+        )
         return NativeSparseNarrowSatResult(
             extension=extension,
-            telemetry=dict(solver.telemetry),
-            route_metadata=_native_sparse_narrow_route_metadata("stable", solver.telemetry),
+            telemetry=telemetry,
+            route_metadata=_native_sparse_narrow_route_metadata("stable", telemetry),
         )
     raise ValueError(f"unsupported sparse/narrow native SAT semantics: {semantics}")
 
@@ -842,8 +903,9 @@ def _first_directed_edge_cycle(
 
 
 class _NativeSparseNarrowStableSolver:
-    def __init__(self, framework: ABAFramework) -> None:
+    def __init__(self, framework: ABAFramework, *, engine: str | None = None) -> None:
         solver_class = _load_pysat_solver()
+        self._engine_arg = engine
         self.framework = framework
         self.assumptions = tuple(sorted(framework.assumptions, key=repr))
         self.literals = tuple(
@@ -865,7 +927,6 @@ class _NativeSparseNarrowStableSolver:
             for rule in self.rules
             if rule.antecedents
         }
-        self.solver = solver_class(name="glucose4")
         self.telemetry = {
             "clingo_solver_calls": 0,
             "native_sparse_narrow_solver_checks": 0,
@@ -912,6 +973,14 @@ class _NativeSparseNarrowStableSolver:
         }
         self.telemetry["native_sparse_narrow_acyc_recursive_rules"] = len(self.just_vars)
         self.telemetry["native_sparse_narrow_acyc_edges"] = len(self.edge_vars)
+        self.engine = engine if engine is not None else _stable_engine_for(
+            recursive_rules=len(self.just_vars),
+            edges=len(self.edge_vars),
+            assumptions=len(self.assumptions),
+            rules=len(self.rules),
+        )
+        self.telemetry["native_sparse_narrow_engine"] = self.engine
+        self.solver = solver_class(name=self.engine)
         self._completion_options_by_head: dict[Literal, list[int]] = defaultdict(list)
         for rule, variable in self.support_vars.items():
             self._completion_options_by_head[rule.consequent].append(
@@ -919,10 +988,10 @@ class _NativeSparseNarrowStableSolver:
             )
         self._add_completion_clauses()
         self._add_arc_acyclic_clauses()
-        self.solver.set_phases(
-            [self.in_vars[assumption] for assumption in self.assumptions]
-            + [-variable for variable in self.edge_vars.values()]
-        )
+        self.phase_vector = [
+            self.in_vars[assumption] for assumption in self.assumptions
+        ] + [-variable for variable in self.edge_vars.values()]
+        self.solver.set_phases(self.phase_vector)
 
     def _new_var(self) -> int:
         variable = self._next_var
@@ -1165,11 +1234,11 @@ def _native_sparse_narrow_stable_extension(
 ) -> NativeSparseNarrowSatResult | None:
     if semantics not in {"preferred", "stable"}:
         return None
-    solver = _NativeSparseNarrowStableSolver(framework)
-    extension = solver.stable_extension(require_assumptions=require_assumptions)
+    extension, telemetry = _stable_extension_with_fallback(
+        framework, require_assumptions=require_assumptions
+    )
     if extension is None:
         return None
-    telemetry = dict(solver.telemetry)
     return NativeSparseNarrowSatResult(
         extension=extension,
         telemetry=telemetry,
