@@ -60,7 +60,7 @@ def test_default_engine_is_glucose4_for_small() -> None:
 # --- 3. engine override keeps the answer correct (parity vs oracle) ---
 
 
-@pytest.mark.parametrize("engine", ["glucose4", "cadical195"])
+@pytest.mark.parametrize("engine", ["glucose4", "cadical221-batch"])
 def test_engine_override_matches_oracle(engine: str) -> None:
     framework = _cyclic_support_framework()
     solver = aba_sat._NativeSparseNarrowStableSolver(framework, engine=engine)
@@ -78,7 +78,7 @@ def test_engine_override_matches_oracle(engine: str) -> None:
 def test_phase_vector_identical_across_engines() -> None:
     framework = _cyclic_support_framework()
     g = aba_sat._NativeSparseNarrowStableSolver(framework, engine="glucose4")
-    c = aba_sat._NativeSparseNarrowStableSolver(framework, engine="cadical195")
+    c = aba_sat._NativeSparseNarrowStableSolver(framework, engine="cadical221-batch")
     assert g.phase_vector == c.phase_vector
     assert len(g.phase_vector) > 0
 

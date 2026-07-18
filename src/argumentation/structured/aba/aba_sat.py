@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+import os
+from pathlib import Path
+import subprocess
+import tempfile
 import time
 from typing import Any
 
@@ -130,12 +134,116 @@ def native_cnf_prefsat_extension(
     return solver.result(extension)
 
 
-# Strong CDCL engine for the flat one-shot stable solve. pysat name; the Wave-2
-# experiment (experiments/2026-07-18-aba-cadical-engine-prod.md) measured direct
-# CaDiCaL 2.2.1 winning ~23x on the c35 flat CNF; pysat bundles CaDiCaL 1.9.5 as
-# `cadical195` (the reproducible dependency). Gate D0 confirms 1.9.5 reproduces
-# the win on the byte-identical CNF; otherwise a vendored 2.2.1 build is used.
-_STABLE_ENGINE_STRONG = "cadical195"
+# Strong CDCL engine for the flat one-shot stable solve. The Wave-2 experiment
+# (experiments/2026-07-18-aba-cadical-engine-prod.md) measured direct CaDiCaL
+# 2.2.1 winning ~23x on the c35 flat CNF. Gate D0 FAILED for pysat's bundled
+# cadical195 (1.9.5 ran >300s vs the <=76s gate on the byte-identical CNF), so
+# per the preregistration the strong engine is the vendored CaDiCaL 2.2.1
+# binary driven as a batch DIMACS solver (scripts/build_cadical221.sh). If the
+# binary is unavailable, _stable_extension_with_fallback rebuilds on glucose4 —
+# a missing dependency can never lose a row.
+_STABLE_ENGINE_STRONG = "cadical221-batch"
+
+_CADICAL221_ENV = "ARGUMENTATION_CADICAL221"
+
+
+def _find_cadical221_binary() -> Path:
+    """Resolve the vendored CaDiCaL 2.2.1 batch binary.
+
+    Order: explicit env override, then the repo-local vendored build produced
+    by scripts/build_cadical221.sh. Raising here is safe: the flat stable path
+    catches it and falls back to glucose4.
+    """
+    override = os.environ.get(_CADICAL221_ENV)
+    if override:
+        path = Path(override)
+        if path.is_file():
+            return path
+        raise OptionalDependencyUnavailable(
+            feature="flat-stable strong SAT engine",
+            package=f"CaDiCaL 2.2.1 ({_CADICAL221_ENV}={override} not found)",
+            install_hint="Run scripts/build_cadical221.sh or fix the env path.",
+        )
+    repo_root = Path(__file__).resolve().parents[4]
+    vendored = repo_root / "tools" / "solvers" / "cadical-2.2.1" / "cadical.exe"
+    if vendored.is_file():
+        return vendored
+    raise OptionalDependencyUnavailable(
+        feature="flat-stable strong SAT engine",
+        package="CaDiCaL 2.2.1 (vendored binary missing)",
+        install_hint="Run scripts/build_cadical221.sh (see its header).",
+    )
+
+
+class _BatchDimacsCadical:
+    """pysat-shaped adapter driving a CaDiCaL binary as a batch DIMACS solver.
+
+    Supports exactly the surface `_NativeSparseNarrowStableSolver` uses:
+    add_clause / set_phases / solve(assumptions=...) / get_model. Each solve
+    writes base clauses plus assumption unit clauses to a temp DIMACS file and
+    reruns the binary; the flat eager-arc stable path is effectively one-shot
+    (cycle-refinement clauses are rare), which is the exact configuration the
+    Wave-1 evidence measured. Phases are recorded but not passed: the measured
+    2.2.1 win was in default (no-phase) mode.
+    """
+
+    def __init__(self, binary: Path) -> None:
+        self._binary = binary
+        self._clauses: list[list[int]] = []
+        self._nvars = 0
+        self._model: list[int] | None = None
+        self.recorded_phases: list[int] | None = None
+
+    def add_clause(self, clause: list[int]) -> None:
+        for literal in clause:
+            variable = abs(literal)
+            if variable > self._nvars:
+                self._nvars = variable
+        self._clauses.append(list(clause))
+
+    def set_phases(self, vector: list[int]) -> None:
+        self.recorded_phases = list(vector)
+        for literal in vector:
+            variable = abs(literal)
+            if variable > self._nvars:
+                self._nvars = variable
+
+    def solve(self, assumptions: list[int] | tuple[int, ...] = ()) -> bool:
+        units = [[literal] for literal in assumptions]
+        clauses = self._clauses + units
+        with tempfile.TemporaryDirectory(prefix="cadical221-") as tmp:
+            cnf_path = Path(tmp) / "problem.cnf"
+            with cnf_path.open("w", encoding="ascii", newline="\n") as handle:
+                handle.write(f"p cnf {self._nvars} {len(clauses)}\n")
+                for clause in clauses:
+                    handle.write(" ".join(str(x) for x in clause) + " 0\n")
+            completed = subprocess.run(
+                [str(self._binary), "-q", str(cnf_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        if completed.returncode == 10:
+            model: list[int] = []
+            for line in completed.stdout.splitlines():
+                if line.startswith("v "):
+                    model.extend(
+                        int(tok) for tok in line[2:].split() if tok and tok != "0"
+                    )
+            if not model:
+                raise RuntimeError("cadical221 reported SAT without v-lines")
+            self._model = model
+            return True
+        if completed.returncode == 20:
+            self._model = None
+            return False
+        raise RuntimeError(
+            f"cadical221 batch solve failed (rc={completed.returncode}): "
+            f"{completed.stderr.strip()[:200]}"
+        )
+
+    def get_model(self) -> list[int] | None:
+        return self._model
 
 # Provisional structural thresholds; frozen after the dev-slice calibration in
 # the Wave-2 record. Routes only the giant recursive-core class (glucose4 times
@@ -980,7 +1088,10 @@ class _NativeSparseNarrowStableSolver:
             rules=len(self.rules),
         )
         self.telemetry["native_sparse_narrow_engine"] = self.engine
-        self.solver = solver_class(name=self.engine)
+        if self.engine == "cadical221-batch":
+            self.solver: Any = _BatchDimacsCadical(_find_cadical221_binary())
+        else:
+            self.solver = solver_class(name=self.engine)
         self._completion_options_by_head: dict[Literal, list[int]] = defaultdict(list)
         for rule, variable in self.support_vars.items():
             self._completion_options_by_head[rule.consequent].append(
