@@ -77,6 +77,7 @@ class SATCheck:
     learned_count: int | None = None
     range_bound: int | None = None
     range_constraint: str | None = None
+    engine: str | None = None
     metadata: Mapping[str, object] | None = None
 
 
@@ -157,6 +158,7 @@ class AfSatKernel:
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
+        self.engine = engine
         self.solver = _make_solver(self.z3, engine)
         _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
@@ -392,6 +394,7 @@ class AfSatKernel:
                     learned_count=learned_count,
                     range_bound=range_bound,
                     range_constraint=range_constraint,
+                    engine=self.engine,
                     metadata=self.metadata,
                 )
             )
@@ -687,6 +690,7 @@ def find_preferred_extension(
     metadata: Mapping[str, object] | None = None,
     simplify: bool = True,
     check_budget_seconds: float | None = None,
+    engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
         framework, "preferred", simplify=simplify, require_in=require_in, require_out=require_out
@@ -698,6 +702,7 @@ def find_preferred_extension(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=engine,
     )
     problem.add_complete_labelling()
     result = _find_preferred_extension_body(
@@ -1248,6 +1253,7 @@ class _PreferredSkepticalAttackerSolver:
         self.metadata = metadata
         self.check_budget_seconds = check_budget_seconds
         self.z3 = _load_z3()
+        self.engine = engine
         self.solver = _make_solver(self.z3, engine)
         _apply_check_budget(self.solver, check_budget_seconds)
         self.arguments = tuple(sorted(framework.arguments))
@@ -1295,6 +1301,7 @@ class _PreferredSkepticalAttackerSolver:
                     ),
                     loop_index=loop_index,
                     learned_count=self.learned_count,
+                    engine=self.engine,
                     metadata=self.metadata,
                 )
             )

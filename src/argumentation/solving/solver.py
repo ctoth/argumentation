@@ -52,7 +52,10 @@ from argumentation.core.scc_recursive import (
     SCC_RECURSIVE_SEMANTICS,
     scc_extensions,
 )
-from argumentation.solving.af_scc_cone import solve_cone_acceptance
+from argumentation.solving.af_scc_cone import (
+    PREFERRED_CONE_MIN_DEFEATS,
+    solve_cone_acceptance,
+)
 from argumentation.frameworks.setaf import SETAF
 from argumentation.solver_adapters import iccma_aba, iccma_af
 from argumentation.core.solver_results import (
@@ -121,6 +124,30 @@ AcceptanceSolverResult = (
     | SolverBackendTimeout
     | SolverProtocolError
 )
+
+
+def _flat_sat_engine(kind: str, framework: ArgumentationFramework) -> str:
+    """Z3 engine for a FLAT (non-cone) AF SAT op, per the exp/af-satcore-flat
+    74-cell A/B probe (2026-07-10, completed in 2026-07-17-af-flat-satcore.md).
+
+    ``Tactic('sat')`` (sat-core) is answer-identical to the default SMT core on
+    these purely propositional labelling encodings but far faster at scale.
+    ``kind``:
+    - ``"complete"`` / ``"preferred_witness"``: sat-core unconditional
+      (win-or-tie every probed cell; some ER timeouts -> solved).
+    - ``"cdas_skeptical"``: sat-core only above the defeat threshold; the
+      non-incremental sat core has a small-instance CDAS-loop pathology
+      (BA_160_80_2: 0.42s -> 11.55s) below it.
+    - anything else (``"stable"``, ``"ideal"``): smt (no win, one measured loss).
+    Semi-stable/stage never reach here for sat-core: their range-maximal loop
+    uses pseudo-Boolean constraints Tactic('sat') cannot express.
+    """
+    if kind in ("complete", "preferred_witness"):
+        return "sat-core"
+    if kind == "cdas_skeptical":
+        if len(framework.defeats) >= PREFERRED_CONE_MIN_DEFEATS:
+            return "sat-core"
+    return "smt"
 
 
 # Dung single-extension SAT finders keyed by semantics. Every finder shares the
@@ -368,14 +395,20 @@ def solve_dung_single_extension(
         trace_sink, metadata, check_budget_seconds = _sat_options(sat)
         find_single = _SAT_SINGLE_EXTENSION_FINDERS.get(semantics)
         if find_single is not None:
+            # Only complete/preferred finders accept an engine and are routed to
+            # sat-core (SE-CO / SE-PR); stable/semi-stable/stage/ideal keep smt.
+            single_kwargs: dict[str, object] = dict(
+                trace_sink=trace_sink,
+                metadata=metadata,
+                check_budget_seconds=check_budget_seconds,
+            )
+            if semantics == "complete":
+                single_kwargs["engine"] = _flat_sat_engine("complete", framework)
+            elif semantics == "preferred":
+                single_kwargs["engine"] = _flat_sat_engine("preferred_witness", framework)
             try:
                 return SingleExtensionSolverSuccess(
-                    extension=find_single(
-                        framework,
-                        trace_sink=trace_sink,
-                        metadata=metadata,
-                        check_budget_seconds=check_budget_seconds,
-                    ),
+                    extension=find_single(framework, **single_kwargs),
                 )
             except AfSatCheckTimeout as exc:
                 return _sat_check_timeout(exc, semantics)
@@ -782,31 +815,28 @@ def _solve_sat_acceptance(
     trace_sink: SATTraceSink | None = None,
     metadata: Mapping[str, object] | None = None,
     check_budget_seconds: float | None = None,
+    engine: str | None = None,
 ) -> AcceptanceSolverSuccess:
     """Credulous (require_in→witness) / skeptical (require_out→counterexample)
     SAT acceptance against any find_*_extension finder sharing the
     (framework, *, require_in/require_out, trace_sink, metadata,
-    check_budget_seconds) signature."""
+    check_budget_seconds) signature. ``engine`` is forwarded only when set, so
+    finders without an engine parameter (semi-stable, stage) keep working."""
+    shared = dict(
+        trace_sink=trace_sink,
+        metadata=metadata,
+        check_budget_seconds=check_budget_seconds,
+    )
+    if engine is not None:
+        shared["engine"] = engine
     if task == "credulous":
-        witness = find_extension(
-            framework,
-            require_in=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-            check_budget_seconds=check_budget_seconds,
-        )
+        witness = find_extension(framework, require_in=query, **shared)
         return AcceptanceSolverSuccess(
             answer=witness is not None,
             witness=witness,
         )
     if task == "skeptical":
-        counterexample = find_extension(
-            framework,
-            require_out=query,
-            trace_sink=trace_sink,
-            metadata=metadata,
-            check_budget_seconds=check_budget_seconds,
-        )
+        counterexample = find_extension(framework, require_out=query, **shared)
         return AcceptanceSolverSuccess(
             answer=counterexample is None,
             counterexample=counterexample,
@@ -851,6 +881,7 @@ def _solve_sat_complete_acceptance(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=_flat_sat_engine("complete", framework),
     )
 
 
@@ -870,6 +901,7 @@ def _solve_sat_preferred_credulous_acceptance(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=_flat_sat_engine("preferred_witness", framework),
     )
     return AcceptanceSolverSuccess(
         answer=witness is not None,
@@ -893,6 +925,7 @@ def _solve_sat_preferred_skeptical_acceptance(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
+        engine=_flat_sat_engine("cdas_skeptical", framework),
     )
     return AcceptanceSolverSuccess(
         answer=answer,
