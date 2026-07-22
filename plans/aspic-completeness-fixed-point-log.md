@@ -234,3 +234,34 @@ Commit:
 
 Next slice:
 - Reapply the two-line true-owner monkeypatch repair.
+
+## Iteration 7 - stale enumeration instrumentation repair
+
+Slice read:
+- `tests/structured/aba/test_aba.py`
+- `src/argumentation/structured/aba/aba_sat.py::support_extensions`
+
+Surfaces:
+- Two monkeypatch targets naming the deleted solver alias
+  - Disposition: rewrite the callers to the already-owned capability.
+  - Classification: already-owned capability that must use its true owner
+    directly.
+  - Owner after cleanup:
+    `argumentation.structured.aba.aba_sat.support_extensions`.
+  - Action: patch the enumeration function at its defining module so the tests
+    retain their no-enumeration assertion without a solver alias.
+  - Evidence: `solver.py` calls the singular SAT APIs; the plural enumeration
+    capability is defined only in `aba_sat.py`.
+
+Gate results:
+- Pass: focused ABA solver suite, 30 tests.
+- Pass: focused Ruff check.
+- Pass: focused Ruff format check.
+- Pass: source diff is exactly two monkeypatch target strings.
+
+Commit:
+- `test(aba): patch enumeration owner directly`.
+
+Next slice:
+- Populate the verified ignored clean-worktree gate inputs and run all package
+  gates.

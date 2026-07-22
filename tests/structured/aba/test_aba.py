@@ -162,7 +162,7 @@ def test_solve_aba_single_extension_auto_uses_support_sat_without_enumeration(
         raise AssertionError("ABA support extension enumeration should not run")
 
     monkeypatch.setattr(
-        "argumentation.solving.solver.sat_aba_support_extensions",
+        "argumentation.structured.aba.aba_sat.support_extensions",
         fail_support_enumeration,
     )
 
@@ -185,7 +185,7 @@ def test_solve_aba_acceptance_auto_uses_support_sat_without_enumeration(
         raise AssertionError("ABA support acceptance enumeration should not run")
 
     monkeypatch.setattr(
-        "argumentation.solving.solver.sat_aba_support_extensions",
+        "argumentation.structured.aba.aba_sat.support_extensions",
         fail_support_enumeration,
     )
 
