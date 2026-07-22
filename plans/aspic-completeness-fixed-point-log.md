@@ -364,3 +364,57 @@ Commit:
 
 Next slice:
 - Mark the two executable-bootstrap imports at their IO boundaries.
+
+## Iteration 11 - executable-bootstrap Ruff boundary
+
+Slice read:
+- `scripts/run_frontier_v1.py` repository-root bootstrap
+- `tools/run_aba_10x10_fixture.py` repository-root bootstrap
+
+Surfaces:
+- Two imports intentionally following `sys.path` setup
+  - Disposition: keep at the IO boundary with line-scoped `# noqa: E402`.
+  - Classification: IO-boundary-only carriers.
+  - Owner after cleanup: the imported tools modules; direct execution requires
+    repository-root path setup before import resolution.
+  - Action: annotate only the two import lines; do not move imports, add an
+    adapter, or change bootstrap behavior.
+
+Gate results:
+- Pass: focused Ruff check.
+- Pass: focused Ruff format check.
+
+Commit:
+- `chore: mark bootstrap imports`.
+
+Next slice:
+- Run and record every final package gate, then amend this commit with only the
+  final tracked execution-record update.
+
+## Final package fixed point before Propstore repin
+
+Gate results before the execution-record-only amendment:
+- Pass: package full suite under the process-local MinGW runtime environment,
+  3165 passed, 4 skipped, 1 xfailed in 501.42 seconds.
+- Pass: package-wide Pyright, zero errors.
+- Pass: package-wide Ruff check.
+- Pass: package-wide Ruff format check, 294 files formatted.
+- Pass: tracked worktree clean before this execution-record update; ignored
+  paper page images and the CaDiCaL binary remain gate-only inputs.
+
+Fixed-point delta:
+- Added: typed bounded-construction evidence and typed ASPIC query status.
+- Deleted: obsolete Probe 7 red scaffold, stale solver-alias instrumentation,
+  dead imports, and inert lint-only syntax.
+- Moved: callers to package-owned result/status objects and test instrumentation
+  to the true ABA SAT enumeration owner.
+- Restored old surfaces: none.
+- New adapters, wrappers, compatibility shims, or fallback readers: none.
+
+Final amendment:
+- Amend only this execution-record update into
+  `chore: mark bootstrap imports`; preserve the subject.
+- After the amendment, rerun the package full suite under the same process-local
+  MinGW runtime plus package-wide Pyright, Ruff check, and Ruff format check.
+- Record the resulting commit hash in Propstore's tracked B2 execution record;
+  a commit cannot truthfully contain its own hash.

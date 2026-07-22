@@ -42,7 +42,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.iccma_run_selected import run_selected
+from tools.iccma_run_selected import run_selected  # noqa: E402
 
 DEFAULT_MANIFEST = ROOT / "tests" / "manifests" / "iccma2025-frontier-v1.json"
 DEFAULT_DATA_ROOT = ROOT / "data" / "iccma" / "2025"
