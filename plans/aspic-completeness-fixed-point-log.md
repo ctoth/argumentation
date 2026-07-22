@@ -104,8 +104,42 @@ Gate results:
   than rewriting the whole file's line endings.
 
 Commit:
-- Pending `refactor(aspic): type query execution status`.
+- `25483a5 refactor(aspic): type query execution status`.
 
 Next slice:
 - Repair the pre-existing package-wide Pyright gate failure in a separate
   atomic commit.
+
+## Iteration 3 - package solver formatting prerequisite
+
+Slice read:
+- `src/argumentation/solving/solver.py::_solve_sat_acceptance`
+- `tests/solving/test_af_satcore_flat_routing.py`
+
+Surfaces:
+- Whole-file Ruff formatting diff around a one-line type repair
+  - Disposition: rewrite
+  - Owner after cleanup: repository-formatted `solver.py`
+  - Action: restore the annotation before formatting, keep mechanical format
+    changes separate, then reapply the annotation in the next commit.
+  - Evidence: `uv run ruff format --check` would reformat the entire file.
+- Unused `support_extensions as sat_aba_support_extensions` import
+  - Disposition: delete
+  - Owner after cleanup: none; no caller uses it
+  - Action: remove the import exposed by the required focused Ruff gate.
+  - Evidence: zero references beyond the import and Ruff F401.
+
+Gate results:
+- Pass: solver routing suite, 45 tests.
+- Pass: focused Ruff check and Ruff format check after whole-file formatting.
+- Expected: package Pyright reports exactly the one recorded heterogeneous
+  `shared` mapping error, now at formatted line 835, and no additional errors.
+- EOL note: `solver.py` is tracked and checked out as CRLF; the diff whitespace
+  check passes with `cr-at-eol` while preserving that existing line-ending
+  policy.
+
+Commit:
+- Pending `style(solving): format solver module`.
+
+Next slice:
+- Reapply the one-line package Pyright gate repair.
