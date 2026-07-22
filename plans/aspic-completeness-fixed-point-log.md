@@ -301,3 +301,38 @@ Commit:
 
 Next slice:
 - Classify and repair the 19 package-wide Ruff findings in atomic owner slices.
+
+## Iteration 9 - production-owner Ruff repair
+
+Slice read:
+- `src/argumentation/dynamics/af_revision.py::ExtensionRevisionState.from_extensions`
+- `src/argumentation/probabilistic/probabilistic.py` import boundary
+- `src/argumentation/structured/aba/aba_decomposition.py` imports
+
+Surfaces:
+- Lambda assigned to the default extension ranking
+  - Disposition: rewrite with a named local callable.
+  - Classification: valid capability with wrong representation.
+  - Owner after cleanup: `ExtensionRevisionState.from_extensions`; the callable
+    captures only that method's `extension_set` and is not a generic helper.
+- Late `argumentation.core.dung` import
+  - Disposition: use the already-owned capability directly at the module import
+    boundary.
+  - Classification: already-owned capability that must use its true owner
+    directly.
+- Unused `defaultdict` and `Iterable` imports
+  - Disposition: delete.
+  - Classification: dead surfaces with no owner after cleanup.
+
+Gate results:
+- Pass: focused production test suite, 34 tests.
+- Pass: package-wide Pyright, zero errors.
+- Pass: focused Ruff check and Ruff format check.
+- Pass: local formatter normalization changed only the edited import block and
+  required spacing before the named local callable.
+
+Commit:
+- `fix: repair production Ruff violations`.
+
+Next slice:
+- Repair the classified test-owner Ruff findings.

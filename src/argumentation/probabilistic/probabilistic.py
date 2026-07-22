@@ -17,6 +17,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, cast
 
+from argumentation.core.dung import (
+    ArgumentationFramework,
+    SemanticsName,
+    extensions_for,
+)
 from argumentation.probabilistic.probabilistic_components import connected_components
 
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
@@ -112,13 +117,6 @@ def _normalize_strategy(strategy: str) -> tuple[str, str]:
             f"Unknown strategy: {requested}. Supported strategies: {supported}"
         )
     return _STRATEGY_ALIASES.get(requested, requested), requested
-
-
-from argumentation.core.dung import (
-    ArgumentationFramework,
-    SemanticsName,
-    extensions_for,
-)
 
 
 ProbabilityValue = float

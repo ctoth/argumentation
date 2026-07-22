@@ -130,7 +130,11 @@ class ExtensionRevisionState:
     ) -> ExtensionRevisionState:
         extension_set = set(extensions)
         if ranking is None:
-            ranking = lambda candidate: 0 if candidate in extension_set else 1
+
+            def default_ranking(candidate: frozenset[str]) -> int:
+                return 0 if candidate in extension_set else 1
+
+            ranking = default_ranking
         return cls(arguments=arguments, extensions=extensions, ranking=ranking)
 
     @staticmethod
