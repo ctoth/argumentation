@@ -336,3 +336,31 @@ Commit:
 
 Next slice:
 - Repair the classified test-owner Ruff findings.
+
+## Iteration 10 - test-owner Ruff repair
+
+Slice read:
+- The eight test modules named by the package-wide Ruff gate.
+
+Surfaces:
+- Late `cayrol_derived_defeats` test import
+  - Disposition: move into the existing top-level bipolar import block.
+  - Classification: valid capability in the wrong placement.
+- Ten Ruff-proven unused test imports
+  - Disposition: delete.
+  - Classification: dead test surfaces with no owner after cleanup.
+- Two `f` prefixes on strings without substitutions
+  - Disposition: delete the inert prefixes.
+  - Classification: dead representation syntax; no capability changes.
+
+Gate results:
+- Pass: exact eight-module focused test suite, 137 tests.
+- Pass: focused Ruff check and Ruff format check.
+- Pass: local formatter normalization changed only line endings touched by the
+  planned import and string-prefix edits.
+
+Commit:
+- `test: repair Ruff violations`.
+
+Next slice:
+- Mark the two executable-bootstrap imports at their IO boundaries.

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import sys
 
 from tools.iccma2025_run_native import RunConfig, run_or_skip

@@ -9,7 +9,6 @@ from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.solving.solver import (
-    AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     SingleExtensionSolverSuccess,
     solve_aba_acceptance,

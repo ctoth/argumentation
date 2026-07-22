@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 
 from argumentation.core.bipolar import (
     BipolarArgumentationFramework,
+    cayrol_derived_defeats,
     c_admissible,
     c_preferred_extensions,
     conflict_free,
@@ -212,8 +213,6 @@ class TestCayrolProperties:
 
 
 # ── Support cycle and self-support property tests (audit-2026-03-28) ──
-
-from argumentation.core.bipolar import cayrol_derived_defeats
 
 
 @st.composite

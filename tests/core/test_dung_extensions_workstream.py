@@ -18,7 +18,6 @@ from argumentation.core.dung import (
     complete_extensions,
     eager_extension,
     indirect_attacks,
-    preferred_extensions,
     conflict_free,
     prudent_admissible,
     prudent_conflict_free,

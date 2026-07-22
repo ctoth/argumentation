@@ -34,7 +34,6 @@ from argumentation.structured.aspic.aspic import (
     PremiseArg,
     StrictArg,
     DefeasibleArg,
-    Argument,
     Attack,
     KnowledgeBase,
     ArgumentationSystem,
@@ -50,8 +49,6 @@ from argumentation.structured.aspic.aspic import (
     sub,
     top_rule,
     def_rules,
-    last_def_rules,
-    prem_p,
     is_firm,
     is_strict,
     CSAF,
@@ -1452,7 +1449,7 @@ class TestAttackProperties:
             if atk.kind == "rebutting":
                 tr = top_rule(atk.target_sub)
                 assert tr is not None, (
-                    f"Rebutting target_sub has no top rule (PremiseArg)"
+                    "Rebutting target_sub has no top rule (PremiseArg)"
                 )
                 assert tr.kind == "defeasible", (
                     f"Rebutting target_sub top rule is {tr.kind}, expected 'defeasible'"
@@ -1478,7 +1475,7 @@ class TestAttackProperties:
             if atk.kind == "undercutting":
                 tr = top_rule(atk.target_sub)
                 assert tr is not None, (
-                    f"Undercutting target_sub has no top rule (PremiseArg)"
+                    "Undercutting target_sub has no top rule (PremiseArg)"
                 )
                 assert tr.kind == "defeasible", (
                     f"Undercutting target_sub top rule is {tr.kind}, "
