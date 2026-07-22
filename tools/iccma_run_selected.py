@@ -48,7 +48,9 @@ def run_selected(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run one ICCMA row through the native runner worker.")
+    parser = argparse.ArgumentParser(
+        description="Run one ICCMA row through the native runner worker."
+    )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--relative-path", required=True)
     parser.add_argument("--kind", required=True)

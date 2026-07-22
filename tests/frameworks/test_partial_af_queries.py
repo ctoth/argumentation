@@ -7,7 +7,11 @@ from itertools import product
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from argumentation.core.dung import grounded_extension, preferred_extensions, stable_extensions
+from argumentation.core.dung import (
+    grounded_extension,
+    preferred_extensions,
+    stable_extensions,
+)
 from argumentation.frameworks.partial_af import (
     PartialArgumentationFramework,
     credulously_accepted_arguments,
@@ -22,7 +26,9 @@ st_states = st.lists(
     min_size=len(PAIR_ORDER),
     max_size=len(PAIR_ORDER),
 )
-ALL_STATE_ASSIGNMENTS = list(product(["attack", "ignorance", "non_attack"], repeat=len(PAIR_ORDER)))
+ALL_STATE_ASSIGNMENTS = list(
+    product(["attack", "ignorance", "non_attack"], repeat=len(PAIR_ORDER))
+)
 
 
 def _example_paf() -> PartialArgumentationFramework:
@@ -34,7 +40,9 @@ def _example_paf() -> PartialArgumentationFramework:
     )
 
 
-def _paf_from_states(states: tuple[str, ...] | list[str]) -> PartialArgumentationFramework:
+def _paf_from_states(
+    states: tuple[str, ...] | list[str],
+) -> PartialArgumentationFramework:
     attacks = set()
     ignorance = set()
     non_attacks = set()
@@ -62,7 +70,9 @@ def _extensions_for_completion(
         if semantics == "grounded":
             extensions.append(grounded_extension(completion))
         elif semantics == "preferred":
-            extensions.extend(frozenset(ext) for ext in preferred_extensions(completion))
+            extensions.extend(
+                frozenset(ext) for ext in preferred_extensions(completion)
+            )
         elif semantics == "stable":
             extensions.extend(frozenset(ext) for ext in stable_extensions(completion))
         else:
@@ -70,7 +80,9 @@ def _extensions_for_completion(
     return extensions
 
 
-def _bruteforce_skeptical(paf: PartialArgumentationFramework, semantics: str) -> frozenset[str]:
+def _bruteforce_skeptical(
+    paf: PartialArgumentationFramework, semantics: str
+) -> frozenset[str]:
     extensions = _extensions_for_completion(paf, semantics)
     if not extensions:
         return frozenset()
@@ -80,7 +92,9 @@ def _bruteforce_skeptical(paf: PartialArgumentationFramework, semantics: str) ->
     return frozenset(skeptical)
 
 
-def _bruteforce_credulous(paf: PartialArgumentationFramework, semantics: str) -> frozenset[str]:
+def _bruteforce_credulous(
+    paf: PartialArgumentationFramework, semantics: str
+) -> frozenset[str]:
     credulous: set[str] = set()
     for extension in _extensions_for_completion(paf, semantics):
         credulous.update(extension)
@@ -113,12 +127,12 @@ def test_query_helpers_match_bruteforce_completion_semantics_on_tiny_profiles():
     for semantics in ("grounded", "preferred", "stable"):
         for states in ALL_STATE_ASSIGNMENTS:
             paf = _paf_from_states(states)
-            assert skeptically_accepted_arguments(paf, semantics=semantics) == _bruteforce_skeptical(
-                paf, semantics
-            )
-            assert credulously_accepted_arguments(paf, semantics=semantics) == _bruteforce_credulous(
-                paf, semantics
-            )
+            assert skeptically_accepted_arguments(
+                paf, semantics=semantics
+            ) == _bruteforce_skeptical(paf, semantics)
+            assert credulously_accepted_arguments(
+                paf, semantics=semantics
+            ) == _bruteforce_credulous(paf, semantics)
 
 
 @settings(
@@ -137,7 +151,9 @@ def test_fixing_ignorance_grows_skeptical_and_shrinks_credulous(
     fixed_pair = next(iter(sorted(paf.ignorance)))
     fixed_framework = PartialArgumentationFramework(
         arguments=paf.arguments,
-        attacks=(paf.attacks | {fixed_pair}) if fixed_relation == "attack" else paf.attacks,
+        attacks=(paf.attacks | {fixed_pair})
+        if fixed_relation == "attack"
+        else paf.attacks,
         ignorance=paf.ignorance - {fixed_pair},
         non_attacks=(
             paf.non_attacks | {fixed_pair}
@@ -147,9 +163,13 @@ def test_fixing_ignorance_grows_skeptical_and_shrinks_credulous(
     )
 
     original_skeptical = skeptically_accepted_arguments(paf, semantics="grounded")
-    fixed_skeptical = skeptically_accepted_arguments(fixed_framework, semantics="grounded")
+    fixed_skeptical = skeptically_accepted_arguments(
+        fixed_framework, semantics="grounded"
+    )
     original_credulous = credulously_accepted_arguments(paf, semantics="grounded")
-    fixed_credulous = credulously_accepted_arguments(fixed_framework, semantics="grounded")
+    fixed_credulous = credulously_accepted_arguments(
+        fixed_framework, semantics="grounded"
+    )
 
     assert original_skeptical <= fixed_skeptical
     assert fixed_credulous <= original_credulous

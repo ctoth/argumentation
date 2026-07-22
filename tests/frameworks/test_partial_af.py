@@ -90,10 +90,7 @@ def test_paf_completions_are_sound_dung_frameworks():
 def test_paf_completions_are_exact_and_counted_by_ignorance_choices():
     paf = _tiny_paf()
 
-    expected = {
-        frozenset(paf.attacks | choice)
-        for choice in _powerset(paf.ignorance)
-    }
+    expected = {frozenset(paf.attacks | choice) for choice in _powerset(paf.ignorance)}
     actual = {completion.defeats for completion in enumerate_completions(paf)}
 
     assert actual == expected
@@ -130,9 +127,8 @@ def test_merge_framework_edit_distance_satisfies_triangle_inequality():
     )
 
     direct = merge_framework_edit_distance(left, right)
-    via_middle = (
-        merge_framework_edit_distance(left, middle)
-        + merge_framework_edit_distance(middle, right)
-    )
+    via_middle = merge_framework_edit_distance(
+        left, middle
+    ) + merge_framework_edit_distance(middle, right)
 
     assert direct <= via_middle

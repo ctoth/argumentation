@@ -4,7 +4,13 @@ import pytest
 
 from argumentation.structured.aba.aba import ABAFramework, NotFlatABAError
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from argumentation.interop.iccma import parse_aba, parse_apx, parse_tgf, write_aba, write_numeric_aba
+from argumentation.interop.iccma import (
+    parse_aba,
+    parse_apx,
+    parse_tgf,
+    write_aba,
+    write_numeric_aba,
+)
 
 
 def lit(name: str) -> Literal:
@@ -18,7 +24,9 @@ def test_aba_iccma_round_trip_preserves_flat_framework() -> None:
     stay = lit("stay")
     framework = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}),
+        rules=frozenset(
+            {Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )
@@ -50,11 +58,13 @@ def test_parse_official_iccma_2025_numeric_aba_example() -> None:
         lit("2"): lit("7"),
         lit("3"): lit("8"),
     }
-    assert framework.rules == frozenset({
-        Rule((lit("5"), lit("1")), lit("4"), "strict"),
-        Rule((), lit("5"), "strict"),
-        Rule((lit("2"), lit("3")), lit("6"), "strict"),
-    })
+    assert framework.rules == frozenset(
+        {
+            Rule((lit("5"), lit("1")), lit("4"), "strict"),
+            Rule((), lit("5"), "strict"),
+            Rule((lit("2"), lit("3")), lit("6"), "strict"),
+        }
+    )
 
 
 def test_write_numeric_aba_emits_official_iccma_2025_header() -> None:

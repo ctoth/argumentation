@@ -38,11 +38,10 @@ def complementary_literals(
     _validate_positive_propositions(propositions)
     unknown_clean = clean - propositions
     if unknown_clean:
-        raise ValueError(f"clean contains unknown propositions: {sorted(map(repr, unknown_clean))!r}")
-    return frozenset(
-        proposition.contrary
-        for proposition in propositions - clean
-    )
+        raise ValueError(
+            f"clean contains unknown propositions: {sorted(map(repr, unknown_clean))!r}"
+        )
+    return frozenset(proposition.contrary for proposition in propositions - clean)
 
 
 def subjective_knowledge_base(
@@ -60,9 +59,7 @@ def subjective_knowledge_base(
     rejected = propositions - clean
     return KnowledgeBase(
         axioms=knowledge_base.axioms,
-        premises=frozenset(
-            (knowledge_base.premises - rejected) | complements
-        ),
+        premises=frozenset((knowledge_base.premises - rejected) | complements),
     )
 
 
@@ -82,7 +79,10 @@ def subjective_defeasible_rules(
             raise ValueError("subjective_defeasible_rules expects defeasible rules")
         if rule.name is None:
             raise ValueError("defeasible rules must have a name for value filtering")
-        required = frozenset(rule.antecedents) | {rule.consequent, _rule_name_literal(rule)}
+        required = frozenset(rule.antecedents) | {
+            rule.consequent,
+            _rule_name_literal(rule),
+        }
         if required <= clean:
             surviving.add(rule)
     return frozenset(surviving)
@@ -151,6 +151,8 @@ def _rule_name_literal(rule: Rule) -> Literal:
 
 
 def _validate_positive_propositions(propositions: frozenset[Literal]) -> None:
-    negated = sorted(repr(proposition) for proposition in propositions if proposition.negated)
+    negated = sorted(
+        repr(proposition) for proposition in propositions if proposition.negated
+    )
     if negated:
         raise ValueError(f"propositions must be positive literals: {negated!r}")

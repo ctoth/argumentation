@@ -23,13 +23,15 @@ def test_parse_af_reads_iccma_2023_numeric_format() -> None:
 
     assert framework == ArgumentationFramework(
         arguments=frozenset({"1", "2", "3", "4", "5"}),
-        defeats=frozenset({
-            ("1", "2"),
-            ("2", "4"),
-            ("4", "5"),
-            ("5", "4"),
-            ("5", "5"),
-        }),
+        defeats=frozenset(
+            {
+                ("1", "2"),
+                ("2", "4"),
+                ("4", "5"),
+                ("5", "4"),
+                ("5", "5"),
+            }
+        ),
     )
 
 
@@ -47,7 +49,9 @@ def numeric_afs(draw: st.DrawFn) -> ArgumentationFramework:
         if not possible_attacks
         else st.sets(st.sampled_from(possible_attacks), max_size=10)
     )
-    return ArgumentationFramework(arguments=arguments, defeats=frozenset(draw(attack_strategy)))
+    return ArgumentationFramework(
+        arguments=arguments, defeats=frozenset(draw(attack_strategy))
+    )
 
 
 def test_write_af_emits_deterministic_iccma_format() -> None:

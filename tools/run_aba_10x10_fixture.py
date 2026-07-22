@@ -21,7 +21,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--root", type=Path, default=DATA_ROOT)
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
-    parser.add_argument("--backend", choices=["auto", "native", "iccma"], default="auto")
+    parser.add_argument(
+        "--backend", choices=["auto", "native", "iccma"], default="auto"
+    )
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--event-log-path", type=Path, default=None)
     args = parser.parse_args(argv)
@@ -96,7 +98,9 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    print(json.dumps({"event": "aba_10x10_fixture_complete", **summary}, sort_keys=True))
+    print(
+        json.dumps({"event": "aba_10x10_fixture_complete", **summary}, sort_keys=True)
+    )
     return 0
 
 

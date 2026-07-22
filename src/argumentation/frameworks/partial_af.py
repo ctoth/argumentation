@@ -22,7 +22,9 @@ class PairState(StrEnum):
     NON_ATTACK = "non_attack"
 
 
-def _normalize_pairs(pairs: frozenset[AttackPair] | set[AttackPair]) -> frozenset[AttackPair]:
+def _normalize_pairs(
+    pairs: frozenset[AttackPair] | set[AttackPair],
+) -> frozenset[AttackPair]:
     normalized: set[AttackPair] = set()
     for attacker, target in pairs:
         normalized.add((attacker, target))
@@ -46,9 +48,7 @@ class PartialArgumentationFramework:
         ordered_pairs = frozenset(product(arguments, arguments))
 
         overlap = (
-            (attacks & ignorance)
-            | (attacks & non_attacks)
-            | (ignorance & non_attacks)
+            (attacks & ignorance) | (attacks & non_attacks) | (ignorance & non_attacks)
         )
         if overlap:
             raise ValueError(
@@ -66,8 +66,7 @@ class PartialArgumentationFramework:
                 details.append(f"extra={sorted(extra)!r}")
             suffix = f": {', '.join(details)}" if details else ""
             raise ValueError(
-                "attacks, ignorance, and non_attacks must partition A x A"
-                f"{suffix}"
+                f"attacks, ignorance, and non_attacks must partition A x A{suffix}"
             )
 
         object.__setattr__(self, "arguments", arguments)
@@ -123,7 +122,9 @@ def enumerate_completions(
     return completions
 
 
-def _coerce_partial_framework(framework: FrameworkLike) -> PartialArgumentationFramework:
+def _coerce_partial_framework(
+    framework: FrameworkLike,
+) -> PartialArgumentationFramework:
     if isinstance(framework, PartialArgumentationFramework):
         return framework
     if isinstance(framework, ArgumentationFramework):

@@ -60,9 +60,7 @@ def select_rows(
     subtracks: set[str] | None,
 ) -> list[dict[str, Any]]:
     return [
-        row
-        for row in rows
-        if subtracks is None or str(row["subtrack"]) in subtracks
+        row for row in rows if subtracks is None or str(row["subtrack"]) in subtracks
     ]
 
 
@@ -101,8 +99,7 @@ def run_rows(
         # Collect futures in submit order so the output keeps manifest
         # order no matter which rows finish first.
         futures = [
-            pool.submit(run_row, index, row)
-            for index, row in enumerate(rows, start=1)
+            pool.submit(run_row, index, row) for index, row in enumerate(rows, start=1)
         ]
         return [future.result() for future in futures]
 

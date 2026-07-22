@@ -20,6 +20,7 @@ from argumentation.core.dung import ArgumentationFramework
 # Data structures
 # ===================================================================
 
+
 @dataclass
 class TreeDecomposition:
     """Tree decomposition of an AF's primal graph.
@@ -77,6 +78,7 @@ class DPTableSummary:
 # ===================================================================
 # Treewidth estimation: min-degree heuristic
 # ===================================================================
+
 
 def _build_primal_graph(
     framework: ArgumentationFramework,
@@ -141,6 +143,7 @@ def estimate_treewidth(framework: ArgumentationFramework) -> int:
 # ===================================================================
 # Tree decomposition computation
 # ===================================================================
+
 
 def compute_tree_decomposition(
     framework: ArgumentationFramework,
@@ -222,7 +225,9 @@ def validate_tree_decomposition(
         neighbors = td.adj.get(bag_id, set())
         for neighbor in neighbors:
             if neighbor not in bag_ids:
-                raise ValueError("tree decomposition adjacency references an unknown bag")
+                raise ValueError(
+                    "tree decomposition adjacency references an unknown bag"
+                )
             if bag_id not in td.adj.get(neighbor, set()):
                 raise ValueError("tree decomposition adjacency must be symmetric")
 
@@ -250,11 +255,7 @@ def validate_tree_decomposition(
 
     covered_arguments = set().union(*td.bags.values())
     for argument in sorted(covered_arguments):
-        containing = {
-            bag_id
-            for bag_id, bag in td.bags.items()
-            if argument in bag
-        }
+        containing = {bag_id for bag_id, bag in td.bags.items() if argument in bag}
         component: set[int] = set()
         stack = [next(iter(containing))]
         while stack:
@@ -286,14 +287,13 @@ def validate_tree_decomposition(
     relation = framework.attacks if framework.attacks is not None else framework.defeats
     for src, tgt in relation:
         if not any(src in bag and tgt in bag for bag in td.bags.values()):
-            raise ValueError(
-                f"tree decomposition does not cover edge ({src}, {tgt})"
-            )
+            raise ValueError(f"tree decomposition does not cover edge ({src}, {tgt})")
 
 
 # ===================================================================
 # Nice tree decomposition conversion
 # ===================================================================
+
 
 def to_nice_tree_decomposition(
     td: TreeDecomposition,

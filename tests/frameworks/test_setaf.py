@@ -35,7 +35,9 @@ SMALL_ARGUMENTS = ("a", "b", "c", "d")
 def _all_subsets(arguments: frozenset[str]) -> tuple[frozenset[str], ...]:
     ordered = sorted(arguments)
     return tuple(
-        frozenset(argument for index, argument in enumerate(ordered) if mask & (1 << index))
+        frozenset(
+            argument for index, argument in enumerate(ordered) if mask & (1 << index)
+        )
         for mask in range(1 << len(ordered))
     )
 
@@ -74,7 +76,9 @@ def singleton_tail_frameworks(draw: st.DrawFn) -> tuple[SETAF, ArgumentationFram
     defeats = frozenset(draw(defeat_strategy))
     setaf = SETAF(
         arguments=arguments,
-        attacks=frozenset((frozenset({attacker}), target) for attacker, target in defeats),
+        attacks=frozenset(
+            (frozenset({attacker}), target) for attacker, target in defeats
+        ),
     )
     dung = ArgumentationFramework(arguments=arguments, defeats=defeats)
     return setaf, dung
@@ -221,7 +225,9 @@ def test_characteristic_function_is_monotone(framework: SETAF) -> None:
     for left in subsets:
         for right in subsets:
             if left <= right:
-                assert characteristic_fn(framework, left) <= characteristic_fn(framework, right)
+                assert characteristic_fn(framework, left) <= characteristic_fn(
+                    framework, right
+                )
 
 
 @given(setafs())
@@ -247,7 +253,9 @@ def test_singleton_tail_setafs_reduce_to_dung_semantics(
     setaf, dung = pair
 
     for candidate in _all_subsets(setaf.arguments):
-        assert conflict_free(setaf, candidate) is dung_conflict_free(candidate, dung.defeats)
+        assert conflict_free(setaf, candidate) is dung_conflict_free(
+            candidate, dung.defeats
+        )
         assert admissible(setaf, candidate) is dung_admissible(
             candidate,
             dung.arguments,

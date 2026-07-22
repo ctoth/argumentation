@@ -265,3 +265,39 @@ Commit:
 Next slice:
 - Populate the verified ignored clean-worktree gate inputs and run all package
   gates.
+
+## Iteration 8 - package-wide formatting prerequisite
+
+Slice read:
+- The exact output of `uv run ruff format --check .`.
+
+Surfaces:
+- 198 Python files predating the active Ruff format policy
+  - Disposition: rewrite mechanically in one isolated repository-format commit.
+  - Owner after cleanup: each existing module; no symbol or capability moves.
+  - Action: run `uv run ruff format .` with a clean tracked worktree.
+  - Evidence: the package-wide format gate named exactly 198 files and 96 files
+    were already formatted.
+
+Gate environment:
+- The 13 required ignored paper page images and ignored CaDiCaL 2.2.1 binary
+  were copied from the primary package checkout to matching clean-worktree
+  paths.
+- `C:\Users\Q\scoop\apps\mingw-winlibs\current\bin` is prepended only to test
+  processes. The isolated CaDiCaL routing suite passes, 7 tests.
+
+Gate results:
+- Pass: package full suite, 3165 passed, 4 skipped, 1 xfailed.
+- Pass: package-wide Pyright, zero errors.
+- Pass: package-wide Ruff format check, 294 files formatted.
+- Expected red: package-wide Ruff check retains exactly 19 non-format findings
+  across production, tests, scripts, and tools; they are deferred to explicit
+  classified repair slices.
+- Pass: formatting changed only Python layout; no semantic repair is mixed into
+  this slice.
+
+Commit:
+- `style: format package`.
+
+Next slice:
+- Classify and repair the 19 package-wide Ruff findings in atomic owner slices.

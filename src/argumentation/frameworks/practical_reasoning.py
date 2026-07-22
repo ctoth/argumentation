@@ -73,8 +73,7 @@ class ActionBasedAlternatingTransitionSystem:
         unknown_precondition_actions = sorted(set(self.preconditions) - self.actions)
         if unknown_precondition_actions:
             raise ValueError(
-                "preconditions use unknown actions: "
-                f"{unknown_precondition_actions!r}"
+                f"preconditions use unknown actions: {unknown_precondition_actions!r}"
             )
         for action, states in self.preconditions.items():
             unknown_states = sorted(states - self.states)
@@ -94,7 +93,9 @@ class ActionBasedAlternatingTransitionSystem:
                 raise ValueError(f"interpretation uses unknown state: {state!r}")
             unknown = propositions - self.propositions
             if unknown:
-                raise ValueError(f"interpretation uses unknown propositions: {sorted(unknown)!r}")
+                raise ValueError(
+                    f"interpretation uses unknown propositions: {sorted(unknown)!r}"
+                )
 
         for (source, target, value), effect in self.valuation.items():
             if source not in self.states or target not in self.states:
@@ -195,7 +196,12 @@ def _cq11(
 ) -> tuple[CriticalQuestionObjection, ...]:
     # Atkinson & Bench-Capon 2007 p. 862, CQ11: the proposed action promotes
     # one value, while a different available action promotes another value.
-    if system.effect(argument.current_state, argument.resulting_state, argument.promoted_value) != "+":
+    if (
+        system.effect(
+            argument.current_state, argument.resulting_state, argument.promoted_value
+        )
+        != "+"
+    ):
         return tuple()
 
     objections: list[CriticalQuestionObjection] = []

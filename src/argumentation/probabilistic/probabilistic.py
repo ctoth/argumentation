@@ -22,18 +22,20 @@ from argumentation.probabilistic.probabilistic_components import connected_compo
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
 _DETERMINISTIC_EPSILON = 1e-12
 _UNSET = object()
-_ALLOWED_STRATEGIES = frozenset({
-    "auto",
-    "deterministic",
-    "mc",
-    "exact",
-    "exact_enum",
-    "exact_dp",
-    "paper_td",
-    "dfquad",
-    "dfquad_quad",
-    "dfquad_baf",
-})
+_ALLOWED_STRATEGIES = frozenset(
+    {
+        "auto",
+        "deterministic",
+        "mc",
+        "exact",
+        "exact_enum",
+        "exact_dp",
+        "paper_td",
+        "dfquad",
+        "dfquad_quad",
+        "dfquad_baf",
+    }
+)
 _STRATEGY_ALIASES = {
     "exact": "exact_enum",
 }
@@ -89,13 +91,15 @@ def _inverse_standard_normal_cdf(p: float) -> float:
         )
     if p > high:
         q = math.sqrt(-2.0 * math.log(1.0 - p))
-        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / (
-            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q) + 1.0
-        )
+        return -(
+            ((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]
+        ) / (((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q) + 1.0)
     q = p - 0.5
     r = q * q
-    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (
-        (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r) + 1.0
+    return (
+        (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5])
+        * q
+        / ((((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r) + 1.0)
     )
 
 
@@ -104,8 +108,11 @@ def _normalize_strategy(strategy: str) -> tuple[str, str]:
     requested = str(strategy)
     if requested not in _ALLOWED_STRATEGIES:
         supported = ", ".join(sorted(_ALLOWED_STRATEGIES))
-        raise ValueError(f"Unknown strategy: {requested}. Supported strategies: {supported}")
+        raise ValueError(
+            f"Unknown strategy: {requested}. Supported strategies: {supported}"
+        )
     return _STRATEGY_ALIASES.get(requested, requested), requested
+
 
 from argumentation.core.dung import (
     ArgumentationFramework,
@@ -157,6 +164,7 @@ def _expectation(value: ProbabilityValue | None) -> float:
         return 1.0
     return float(value)
 
+
 @dataclass(frozen=True)
 class ProbabilisticAF:
     """Probabilistic AF with primitive-relation uncertainty.
@@ -202,7 +210,10 @@ class ProbabilisticAF:
         object.__setattr__(
             self,
             "p_args",
-            {str(arg): _validate_probability(probability, f"p_args[{arg!r}]") for arg, probability in self.p_args.items()},
+            {
+                str(arg): _validate_probability(probability, f"p_args[{arg!r}]")
+                for arg, probability in self.p_args.items()
+            },
         )
         p_arg_keys = set(self.p_args)
         if p_arg_keys != set(framework_args):
@@ -222,7 +233,9 @@ class ProbabilisticAF:
             self,
             "p_defeats",
             {
-                (str(src), str(tgt)): _validate_probability(probability, f"p_defeats[{(src, tgt)!r}]")
+                (str(src), str(tgt)): _validate_probability(
+                    probability, f"p_defeats[{(src, tgt)!r}]"
+                )
                 for (src, tgt), probability in self.p_defeats.items()
             },
         )
@@ -232,7 +245,9 @@ class ProbabilisticAF:
                 self,
                 "p_attacks",
                 {
-                    (str(src), str(tgt)): _validate_probability(probability, f"p_attacks[{(src, tgt)!r}]")
+                    (str(src), str(tgt)): _validate_probability(
+                        probability, f"p_attacks[{(src, tgt)!r}]"
+                    )
                     for (src, tgt), probability in self.p_attacks.items()
                 },
             )
@@ -246,7 +261,9 @@ class ProbabilisticAF:
                 self,
                 "p_supports",
                 {
-                    (str(src), str(tgt)): _validate_probability(probability, f"p_supports[{(src, tgt)!r}]")
+                    (str(src), str(tgt)): _validate_probability(
+                        probability, f"p_supports[{(src, tgt)!r}]"
+                    )
                     for (src, tgt), probability in self.p_supports.items()
                 },
             )
@@ -265,7 +282,9 @@ class ProbabilisticAF:
         return self.p_attacks
 
     @property
-    def support_probabilities(self) -> Mapping[tuple[str, str], ProbabilityValue] | None:
+    def support_probabilities(
+        self,
+    ) -> Mapping[tuple[str, str], ProbabilityValue] | None:
         return self.p_supports
 
 
@@ -531,24 +550,29 @@ def _deterministic_world(
     arg_subset: frozenset[str] | None = None,
 ) -> ArgumentationFramework:
     """Realize the unique deterministic world for a deterministic PrAF."""
-    args_to_consider = arg_subset if arg_subset is not None else praf.framework.arguments
+    args_to_consider = (
+        arg_subset if arg_subset is not None else praf.framework.arguments
+    )
     sampled_args = frozenset(
-        a for a in args_to_consider
-        if _edge_is_present(praf.p_args[a])
+        a for a in args_to_consider if _edge_is_present(praf.p_args[a])
     )
     sampled_attacks = frozenset(
-        edge for edge in _primitive_attacks(praf)
+        edge
+        for edge in _primitive_attacks(praf)
         if edge[0] in sampled_args
         and edge[1] in sampled_args
         and _edge_is_present(_attack_opinion(praf, edge))
     )
     sampled_supports = frozenset(
-        edge for edge in praf.supports
+        edge
+        for edge in praf.supports
         if edge[0] in sampled_args
         and edge[1] in sampled_args
         and _edge_is_present(_support_opinion(praf, edge))
     )
-    return _build_sampled_framework(praf, sampled_args, sampled_attacks, sampled_supports)
+    return _build_sampled_framework(
+        praf, sampled_args, sampled_attacks, sampled_supports
+    )
 
 
 def _build_sampled_framework(
@@ -565,7 +589,11 @@ def _build_sampled_framework(
     if sampled_supports and direct_defeats:
         from argumentation.core.bipolar import cayrol_derived_defeats
 
-        all_defeats |= set(cayrol_derived_defeats(frozenset(direct_defeats), frozenset(sampled_supports)))
+        all_defeats |= set(
+            cayrol_derived_defeats(
+                frozenset(direct_defeats), frozenset(sampled_supports)
+            )
+        )
 
     sampled_attacks_relation: frozenset[tuple[str, str]] | None = None
     if praf.framework.attacks is not None:
@@ -616,7 +644,7 @@ def _enumerate_worlds(
                 p_attacks_config *= p_edge
                 sampled_attacks.add(edge)
             else:
-                p_attacks_config *= (1.0 - p_edge)
+                p_attacks_config *= 1.0 - p_edge
         if p_attacks_config < 1e-15:
             continue
 
@@ -628,17 +656,20 @@ def _enumerate_worlds(
                     p_supports_config *= p_edge
                     sampled_supports.add(edge)
                 else:
-                    p_supports_config *= (1.0 - p_edge)
+                    p_supports_config *= 1.0 - p_edge
 
             total_prob = p_attacks_config * p_supports_config
             if total_prob < 1e-15:
                 continue
 
-            yield total_prob, _build_sampled_framework(
-                praf,
-                sampled_args,
-                frozenset(sampled_attacks),
-                frozenset(sampled_supports),
+            yield (
+                total_prob,
+                _build_sampled_framework(
+                    praf,
+                    sampled_args,
+                    frozenset(sampled_attacks),
+                    frozenset(sampled_supports),
+                ),
             )
 
 
@@ -669,11 +700,13 @@ def _compute_probabilistic_acceptance(
         Required only for argument_acceptance: "credulous" or "skeptical".
     """
     normalized_strategy, requested_strategy = _normalize_strategy(strategy)
-    normalized_query_kind, normalized_inference_mode, normalized_queried_set = _validate_query_contract(
-        strategy=normalized_strategy,
-        query_kind=query_kind,
-        inference_mode=inference_mode,
-        queried_set=queried_set,
+    normalized_query_kind, normalized_inference_mode, normalized_queried_set = (
+        _validate_query_contract(
+            strategy=normalized_strategy,
+            query_kind=query_kind,
+            inference_mode=inference_mode,
+            queried_set=queried_set,
+        )
     )
 
     if normalized_strategy == "deterministic":
@@ -686,7 +719,8 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
     if normalized_strategy == "mc":
         result = _compute_mc(
@@ -701,7 +735,8 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
     if normalized_strategy == "exact_enum":
         result = _compute_exact_enumeration(
@@ -713,10 +748,13 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
     if normalized_strategy == "exact_dp":
-        from argumentation.probabilistic.probabilistic_grounded_td import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_grounded_td import (
+            supports_exact_dp,
+        )
 
         if not _exact_dp_supports_query(
             query_kind=normalized_query_kind,
@@ -737,7 +775,8 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
     if normalized_strategy == "paper_td":
         result = _compute_paper_td(
@@ -749,7 +788,8 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
     if normalized_strategy == "dfquad":
         raise ValueError(
@@ -764,7 +804,8 @@ def _compute_probabilistic_acceptance(
         )
         return (
             _with_strategy_override(result, strategy_requested=requested_strategy)
-            if requested_strategy != normalized_strategy else result
+            if requested_strategy != normalized_strategy
+            else result
         )
 
     # Auto dispatch
@@ -807,17 +848,18 @@ def _compute_probabilistic_acceptance(
 
     # Medium AF with low treewidth: exact DP (Popescu & Wallner 2024)
     # Per plan Section 2.4: estimate treewidth, use DP if below cutoff.
-    from argumentation.probabilistic.probabilistic_treedecomp_construction import estimate_treewidth
+    from argumentation.probabilistic.probabilistic_treedecomp_construction import (
+        estimate_treewidth,
+    )
 
     tw = estimate_treewidth(praf.framework)
-    if (
-        tw <= treewidth_cutoff
-        and _exact_dp_supports_query(
-            query_kind=normalized_query_kind,
-            inference_mode=normalized_inference_mode,
-        )
+    if tw <= treewidth_cutoff and _exact_dp_supports_query(
+        query_kind=normalized_query_kind,
+        inference_mode=normalized_inference_mode,
     ):
-        from argumentation.probabilistic.probabilistic_grounded_td import supports_exact_dp
+        from argumentation.probabilistic.probabilistic_grounded_td import (
+            supports_exact_dp,
+        )
 
         if supports_exact_dp(praf, semantics):
             return _compute_exact_dp(
@@ -897,6 +939,7 @@ def _deterministic_fallback(
         inference_mode=None,
         queried_set=queried_set,
     )
+
 
 def _sample_subgraph(
     praf: ProbabilisticAF,
@@ -988,9 +1031,7 @@ def _compute_mc(
                 adjusted_n = n + z * z
                 adjusted_count = hits + (z * z) / 2.0
                 adjusted_p = adjusted_count / adjusted_n
-                ci_half = z * math.sqrt(
-                    adjusted_p * (1.0 - adjusted_p) / adjusted_n
-                )
+                ci_half = z * math.sqrt(adjusted_p * (1.0 - adjusted_p) / adjusted_n)
                 if ci_half <= epsilon:
                     break
 
@@ -1000,9 +1041,7 @@ def _compute_mc(
         adjusted_n = n + z * z
         adjusted_count = hits + (z * z) / 2.0
         adjusted_p = adjusted_count / adjusted_n
-        ci_half = z * math.sqrt(
-            adjusted_p * (1.0 - adjusted_p) / adjusted_n
-        )
+        ci_half = z * math.sqrt(adjusted_p * (1.0 - adjusted_p) / adjusted_n)
         return PrAFResult(
             acceptance_probs=None,
             extension_probability=hits / n if n > 0 else 0.0,
@@ -1028,21 +1067,23 @@ def _compute_mc(
     for comp_args in components:
         # Build sub-PrAF for this component
         comp_defeats = frozenset(
-            (f, t) for f, t in praf.framework.defeats
+            (f, t)
+            for f, t in praf.framework.defeats
             if f in comp_args and t in comp_args
         )
         comp_attacks = None
         if praf.framework.attacks is not None:
             comp_attacks = frozenset(
-                (f, t) for f, t in praf.framework.attacks
+                (f, t)
+                for f, t in praf.framework.attacks
                 if f in comp_args and t in comp_args
             )
         comp_supports = frozenset(
-            (f, t) for f, t in praf.supports
-            if f in comp_args and t in comp_args
+            (f, t) for f, t in praf.supports if f in comp_args and t in comp_args
         )
         comp_base_defeats = frozenset(
-            (f, t) for f, t in _direct_defeats(praf)
+            (f, t)
+            for f, t in _direct_defeats(praf)
             if f in comp_args and t in comp_args
         )
 
@@ -1053,20 +1094,19 @@ def _compute_mc(
         )
         comp_p_args = {a: praf.p_args[a] for a in comp_args}
         comp_p_defeats = {
-            d: praf.p_defeats[d] for d in comp_defeats
-            if d in praf.p_defeats
+            d: praf.p_defeats[d] for d in comp_defeats if d in praf.p_defeats
         }
         comp_p_attacks = None
         if praf.p_attacks is not None:
             comp_p_attacks = {
-                d: praf.p_attacks[d] for d in comp_attacks or frozenset()
+                d: praf.p_attacks[d]
+                for d in comp_attacks or frozenset()
                 if d in praf.p_attacks
             }
         comp_p_supports = None
         if praf.p_supports is not None:
             comp_p_supports = {
-                d: praf.p_supports[d] for d in comp_supports
-                if d in praf.p_supports
+                d: praf.p_supports[d] for d in comp_supports if d in praf.p_supports
             }
 
         comp_praf = ProbabilisticAF(
@@ -1148,9 +1188,7 @@ def _compute_mc(
                 adjusted_n = n + z * z
                 adjusted_count = counts[a] + (z * z) / 2.0
                 adjusted_p = adjusted_count / adjusted_n
-                ci = z * math.sqrt(
-                    adjusted_p * (1.0 - adjusted_p) / adjusted_n
-                )
+                ci = z * math.sqrt(adjusted_p * (1.0 - adjusted_p) / adjusted_n)
                 max_ci_half = max(max_ci_half, ci)
 
     return PrAFResult(
@@ -1202,7 +1240,7 @@ def _compute_exact_enumeration(
             if arg_mask & (1 << i):
                 p_args_present *= p_a
             else:
-                p_args_present *= (1.0 - p_a)
+                p_args_present *= 1.0 - p_a
 
         if p_args_present < 1e-15:
             continue
@@ -1232,7 +1270,9 @@ def _compute_exact_enumeration(
 
     return PrAFResult(
         acceptance_probs=acceptance if query_kind == "argument_acceptance" else None,
-        extension_probability=None if query_kind == "argument_acceptance" else extension_probability,
+        extension_probability=None
+        if query_kind == "argument_acceptance"
+        else extension_probability,
         strategy_used="exact_enum",
         strategy_requested="exact_enum",
         downgraded_from=None,
@@ -1261,7 +1301,9 @@ def _compute_exact_dp(
     from argumentation.probabilistic.probabilistic_grounded_td import compute_exact_dp
 
     if query_kind != "argument_acceptance" or inference_mode != "credulous":
-        raise ValueError("exact_dp currently only supports credulous argument acceptance")
+        raise ValueError(
+            "exact_dp currently only supports credulous argument acceptance"
+        )
 
     acceptance = compute_exact_dp(praf, semantics)
 
@@ -1294,7 +1336,9 @@ def _compute_paper_td(
 ) -> PrAFResult:
     """Exact complete-extension probability via the paper-faithful TD backend."""
     if query_kind != "extension_probability" or inference_mode is not None:
-        raise ValueError("paper_td currently only supports extension_probability queries")
+        raise ValueError(
+            "paper_td currently only supports extension_probability queries"
+        )
     if queried_set is None:
         raise ValueError("paper_td requires queried_set")
 
@@ -1357,7 +1401,7 @@ def summarize_defeat_relations(
             if arg_mask & (1 << i):
                 p_args_present *= p_a
             else:
-                p_args_present *= (1.0 - p_a)
+                p_args_present *= 1.0 - p_a
 
         if p_args_present < 1e-15:
             continue
@@ -1415,7 +1459,9 @@ def _compute_dfquad(
     if strategy == "dfquad_quad":
         if tau is None:
             raise ValueError("dfquad_quad requires explicit tau")
-        missing_tau = sorted(argument for argument in praf.framework.arguments if argument not in tau)
+        missing_tau = sorted(
+            argument for argument in praf.framework.arguments if argument not in tau
+        )
         if missing_tau:
             missing_text = ", ".join(missing_tau)
             raise ValueError(f"missing tau for arguments: {missing_text}")

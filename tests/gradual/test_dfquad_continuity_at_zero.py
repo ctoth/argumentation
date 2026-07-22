@@ -9,7 +9,9 @@ from argumentation.gradual.gradual import WeightedBipolarGraph
 
 @given(
     base=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
-    influence=st.floats(min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False),
+    influence=st.floats(
+        min_value=0.01, max_value=0.99, allow_nan=False, allow_infinity=False
+    ),
 )
 def test_dfquad_equal_attack_and_support_is_continuous_at_zero(
     base: float,

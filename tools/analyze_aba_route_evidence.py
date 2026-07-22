@@ -46,7 +46,9 @@ def analyze_payload(payload: dict[str, Any]) -> EvidenceAnalysis:
         total_rows=len(rows),
         by_backend=_backend_summary(rows),
         bucket_outcomes=_bucket_outcomes(rows),
-        all_timeout_rows=[_row_with_signature(row) for row in rows if row["all_timed_out"]],
+        all_timeout_rows=[
+            _row_with_signature(row) for row in rows if row["all_timed_out"]
+        ],
         backend_wins_zero_counterexamples=_backend_wins_zero_counterexamples(rows),
         all_timeout_signatures=_all_timeout_signatures(rows),
         mixed_signatures=_mixed_signatures(rows),
@@ -73,7 +75,9 @@ def _bucket_outcomes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     for bucket_id, bucket_rows in sorted(grouped.items()):
         outcomes = Counter(
-            "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}"
+            "all_timeout"
+            if row["all_timed_out"]
+            else f"best:{row['best_solved_backend']}"
             for row in bucket_rows
         )
         result.append(
@@ -82,7 +86,9 @@ def _bucket_outcomes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "outcomes": dict(sorted(outcomes.items())),
                 "total": len(bucket_rows),
                 "all_timeout_rows": [
-                    _row_with_signature(row) for row in bucket_rows if row["all_timed_out"]
+                    _row_with_signature(row)
+                    for row in bucket_rows
+                    if row["all_timed_out"]
                 ],
                 "mixed": len(outcomes) > 1,
             }
@@ -90,7 +96,9 @@ def _bucket_outcomes(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return result
 
 
-def _backend_wins_zero_counterexamples(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _backend_wins_zero_counterexamples(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     grouped: dict[tuple[tuple[str, Any], ...], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         grouped[_signature(row)].append(row)
@@ -98,7 +106,8 @@ def _backend_wins_zero_counterexamples(rows: list[dict[str, Any]]) -> list[dict[
     wins: list[dict[str, Any]] = []
     for signature, signature_rows in sorted(grouped.items()):
         solved = [
-            row for row in signature_rows
+            row
+            for row in signature_rows
             if row["best_solved_backend"] and not row["all_timed_out"]
         ]
         if len(solved) < 2:
@@ -151,7 +160,9 @@ def _mixed_signatures(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     signatures: list[dict[str, Any]] = []
     for signature, signature_rows in sorted(grouped.items()):
         outcomes = Counter(
-            "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}"
+            "all_timeout"
+            if row["all_timed_out"]
+            else f"best:{row['best_solved_backend']}"
             for row in signature_rows
         )
         if len(signature_rows) < 2 or len(outcomes) < 2:
@@ -183,7 +194,8 @@ def _route_candidate_summary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]
                 "predicate": predicate,
                 "candidate_rows": len(candidate_rows),
                 "counterexample_count": counterexample_count,
-                "production_ready": counterexample_count == 0 and len(candidate_rows) >= 2,
+                "production_ready": counterexample_count == 0
+                and len(candidate_rows) >= 2,
             }
         )
     return summary
@@ -218,7 +230,9 @@ def _row_with_signature(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Analyze ABA route evidence from shape benchmark JSON.")
+    parser = argparse.ArgumentParser(
+        description="Analyze ABA route evidence from shape benchmark JSON."
+    )
     parser.add_argument("input_json", type=Path)
     parser.add_argument("--output-json", type=Path)
     args = parser.parse_args(argv)

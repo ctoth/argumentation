@@ -74,9 +74,7 @@ def is_semi_stable(framework, witness: frozenset[str]) -> tuple[bool, str]:
 
     if not all(defended(argument) for argument in witness):
         return False, "not admissible"
-    defended_set = {
-        argument for argument in framework.arguments if defended(argument)
-    }
+    defended_set = {argument for argument in framework.arguments if defended(argument)}
     if defended_set != set(witness):
         return False, "not complete (defended set differs)"
 

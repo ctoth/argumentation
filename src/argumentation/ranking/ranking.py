@@ -88,7 +88,8 @@ def categoriser_scores(
             argument: (
                 1.0
                 if not attackers[argument]
-                else 1.0 / (1.0 + sum(current[attacker] for attacker in attackers[argument]))
+                else 1.0
+                / (1.0 + sum(current[attacker] for attacker in attackers[argument]))
             )
             for argument in framework.arguments
         }
@@ -431,7 +432,9 @@ def _ranking_from_scores(
     tolerance: float,
 ) -> tuple[frozenset[str], ...]:
     direction: Literal[-1, 1] = -1 if higher_is_better else 1
-    ordered = sorted(scores, key=lambda argument: (direction * scores[argument], argument))
+    ordered = sorted(
+        scores, key=lambda argument: (direction * scores[argument], argument)
+    )
     tiers: list[frozenset[str]] = []
     tier_values: list[float] = []
 

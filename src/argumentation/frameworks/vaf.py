@@ -62,7 +62,9 @@ class ValueBasedArgumentationFramework:
                 f"missing={missing_valuations!r}, extra={extra_valuations!r}"
             )
 
-        unknown_values = sorted(value for value in valuation.values() if value not in values)
+        unknown_values = sorted(
+            value for value in valuation.values() if value not in values
+        )
         if unknown_values:
             raise ValueError(f"valuation uses unknown values: {unknown_values!r}")
 
@@ -71,7 +73,9 @@ class ValueBasedArgumentationFramework:
             if self.audiences is not None
             else None
         )
-        active_audience = self._validate_audience(self.audience) if self.audience else None
+        active_audience = (
+            self._validate_audience(self.audience) if self.audience else None
+        )
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "attacks", attacks)
@@ -80,7 +84,9 @@ class ValueBasedArgumentationFramework:
         object.__setattr__(self, "audience", active_audience)
         object.__setattr__(self, "audiences", normalized_audiences)
 
-    def with_audience(self, audience: Sequence[str]) -> ValueBasedArgumentationFramework:
+    def with_audience(
+        self, audience: Sequence[str]
+    ) -> ValueBasedArgumentationFramework:
         """Return the same VAF with a different active audience ordering."""
 
         return ValueBasedArgumentationFramework(
@@ -92,7 +98,9 @@ class ValueBasedArgumentationFramework:
             audiences=self.audiences,
         )
 
-    def value_preferred(self, left: str, right: str, audience: Sequence[str] | None = None) -> bool:
+    def value_preferred(
+        self, left: str, right: str, audience: Sequence[str] | None = None
+    ) -> bool:
         """Return whether ``left`` is strictly preferred to ``right``."""
 
         ordering = self._active_or_supplied_audience(audience)
@@ -119,7 +127,9 @@ class ValueBasedArgumentationFramework:
                 defeats.add((attacker, target))
         return frozenset(defeats)
 
-    def induced_framework(self, audience: Sequence[str] | None = None) -> ArgumentationFramework:
+    def induced_framework(
+        self, audience: Sequence[str] | None = None
+    ) -> ArgumentationFramework:
         """Return the Dung AF induced by removing failing attacks."""
 
         defeats = self.successful_attacks(audience)
@@ -155,7 +165,9 @@ class ValueBasedArgumentationFramework:
             if not extensions:
                 objective.clear()
                 break
-            accepted_by_audience = set.intersection(*(set(extension) for extension in extensions))
+            accepted_by_audience = set.intersection(
+                *(set(extension) for extension in extensions)
+            )
             objective &= accepted_by_audience
         return frozenset(objective)
 

@@ -49,8 +49,12 @@ def flat_aba_specs(
     max_assumptions: int = 4,
     max_rules: int = 8,
 ) -> RawABASpec:
-    assumption_count = draw(st.integers(min_value=min_assumptions, max_value=max_assumptions))
-    atom_count = draw(st.integers(min_value=assumption_count + 1, max_value=assumption_count + 6))
+    assumption_count = draw(
+        st.integers(min_value=min_assumptions, max_value=max_assumptions)
+    )
+    atom_count = draw(
+        st.integers(min_value=assumption_count + 1, max_value=assumption_count + 6)
+    )
     assumptions = tuple(lit(f"a{index}") for index in range(assumption_count))
     atoms = tuple(lit(f"x{index}") for index in range(atom_count))
     contraries = {
@@ -75,13 +79,15 @@ def flat_aba_specs(
         )
     )
     rules = tuple(
-        Rule(tuple(atoms[body_index] for body_index in body), non_assumption_heads[head], "strict")
+        Rule(
+            tuple(atoms[body_index] for body_index in body),
+            non_assumption_heads[head],
+            "strict",
+        )
         for head, body in rule_specs
     )
     rule_literals = {
-        literal
-        for rule in rules
-        for literal in (rule.consequent, *rule.antecedents)
+        literal for rule in rules for literal in (rule.consequent, *rule.antecedents)
     }
     language = frozenset((*assumptions, *contraries.values(), *rule_literals))
     return RawABASpec(
@@ -125,7 +131,9 @@ def p_acyclic_frameworks(draw) -> ABAFramework:
                 unique=True,
             )
         )
-        rules.append(Rule(tuple(atoms[index] for index in body), atoms[head_index], "strict"))
+        rules.append(
+            Rule(tuple(atoms[index] for index in body), atoms[head_index], "strict")
+        )
     return ABAFramework(
         language=frozenset((*assumptions, *atoms)),
         assumptions=frozenset(assumptions),
@@ -143,10 +151,12 @@ def cyclic_dependency_frameworks() -> st.SearchStrategy[ABAFramework]:
             language=frozenset({a, x, y}),
             assumptions=frozenset({a}),
             contrary={a: y},
-            rules=frozenset({
-                Rule((x,), y, "strict"),
-                Rule((y,), x, "strict"),
-            }),
+            rules=frozenset(
+                {
+                    Rule((x,), y, "strict"),
+                    Rule((y,), x, "strict"),
+                }
+            ),
         )
     )
 
@@ -174,13 +184,19 @@ def _dense_medium_arity_framework(size: int) -> ABAFramework:
     assumptions = tuple(lit(f"a{index}") for index in range(size))
     atoms = tuple(lit(f"x{index}") for index in range(size))
     rules = {
-        Rule(tuple(assumptions[(index + offset) % size] for offset in range(3)), atoms[index], "strict")
+        Rule(
+            tuple(assumptions[(index + offset) % size] for offset in range(3)),
+            atoms[index],
+            "strict",
+        )
         for index in range(size)
     }
     return ABAFramework(
         language=frozenset((*assumptions, *atoms)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: atoms[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: atoms[index] for index, assumption in enumerate(assumptions)
+        },
         rules=frozenset(rules),
     )
 
@@ -202,12 +218,16 @@ def _low_width_framework(size: int) -> ABAFramework:
     return ABAFramework(
         language=frozenset((*assumptions, *atoms)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: atoms[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: atoms[index] for index, assumption in enumerate(assumptions)
+        },
         rules=frozenset(rules),
     )
 
 
-def renamed_framework(framework: ABAFramework, *, prefix: str = "r") -> tuple[ABAFramework, dict[Literal, Literal]]:
+def renamed_framework(
+    framework: ABAFramework, *, prefix: str = "r"
+) -> tuple[ABAFramework, dict[Literal, Literal]]:
     mapping = {
         literal: lit(f"{prefix}{index}")
         for index, literal in enumerate(sorted(framework.language, key=repr))
@@ -215,7 +235,9 @@ def renamed_framework(framework: ABAFramework, *, prefix: str = "r") -> tuple[AB
     return (
         ABAFramework(
             language=frozenset(mapping[literal] for literal in framework.language),
-            assumptions=frozenset(mapping[assumption] for assumption in framework.assumptions),
+            assumptions=frozenset(
+                mapping[assumption] for assumption in framework.assumptions
+            ),
             contrary={
                 mapping[assumption]: mapping[contrary]
                 for assumption, contrary in framework.contrary.items()

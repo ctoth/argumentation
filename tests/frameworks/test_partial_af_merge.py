@@ -53,9 +53,7 @@ def test_consensual_expand_on_shared_universe_introduces_no_ignorance():
 
     assert expanded.ignorance == frozenset()
     assert expanded.attacks == frozenset({("A", "B")})
-    assert expanded.non_attacks == frozenset(
-        {("A", "A"), ("B", "A"), ("B", "B")}
-    )
+    assert expanded.non_attacks == frozenset({("A", "A"), ("B", "A"), ("B", "B")})
 
 
 @settings(

@@ -56,7 +56,9 @@ def test_increasing_budget_adds_grounded_extensions_with_witnesses() -> None:
         frozenset(),
         frozenset({"b"}),
     }
-    b_witness = next(result for result in beta_one if result.extension == frozenset({"b"}))
+    b_witness = next(
+        result for result in beta_one if result.extension == frozenset({"b"})
+    )
     assert b_witness.deleted_attacks == frozenset({("a", "b")})
     assert b_witness.deleted_weight == pytest.approx(1.0)
 
@@ -65,7 +67,9 @@ def test_increasing_budget_adds_grounded_extensions_with_witnesses() -> None:
         frozenset({"a"}),
         frozenset({"b"}),
     }
-    a_witness = next(result for result in beta_two if result.extension == frozenset({"a"}))
+    a_witness = next(
+        result for result in beta_two if result.extension == frozenset({"a"})
+    )
     assert a_witness.deleted_attacks == frozenset({("b", "a")})
     assert a_witness.deleted_weight == pytest.approx(2.0)
 

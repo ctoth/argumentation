@@ -85,8 +85,7 @@ class TestBudgetReachesSolverParams:
 
         assert AfSatKernel(framework).check_budget_seconds is None
         assert (
-            AfSatKernel(framework, check_budget_seconds=2.5).check_budget_seconds
-            == 2.5
+            AfSatKernel(framework, check_budget_seconds=2.5).check_budget_seconds == 2.5
         )
 
 
@@ -199,9 +198,7 @@ class TestSolverLayerPlumbing:
         def exhausted_finder(framework, **kwargs):
             raise AfSatCheckTimeout("stable_extension", check_budget_seconds=0.5)
 
-        monkeypatch.setattr(
-            solver_module, "find_stable_extension", exhausted_finder
-        )
+        monkeypatch.setattr(solver_module, "find_stable_extension", exhausted_finder)
 
         result = solve_dung_acceptance(
             _three_cycle(),
@@ -221,9 +218,7 @@ class TestSolverLayerPlumbing:
         def exhausted_finder(framework, **kwargs):
             raise AfSatCheckTimeout("stable_extension", check_budget_seconds=0.5)
 
-        monkeypatch.setattr(
-            solver_module, "find_stable_extension", exhausted_finder
-        )
+        monkeypatch.setattr(solver_module, "find_stable_extension", exhausted_finder)
 
         result = solve_dung_acceptance(
             _three_cycle(),

@@ -14,7 +14,11 @@ from argumentation.structured.aba.aba_telemetry import (
     aba_structural_telemetry,
 )
 from argumentation.interop.iccma import parse_aba
-from tools.iccma2025_run_native import DATA_ROOT, read_instance_text, resolve_instance_path
+from tools.iccma2025_run_native import (
+    DATA_ROOT,
+    read_instance_text,
+    resolve_instance_path,
+)
 
 
 NUMERIC_FEATURES = (
@@ -59,17 +63,25 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict[str, Any]:
+def build_fixture(
+    root: Path, manifest_path: Path, event_log_path: Path
+) -> dict[str, Any]:
     manifest = _load_manifest(manifest_path)
     events = _load_relevant_events(event_log_path)
     telemetry_by_instance = _telemetry_by_instance(root, manifest, events)
     candidates = [
-        _candidate_from_event(event, manifest[event["instance"]], telemetry_by_instance[event["instance"]])
+        _candidate_from_event(
+            event, manifest[event["instance"]], telemetry_by_instance[event["instance"]]
+        )
         for event in events
         if event["instance"] in manifest and event["instance"] in telemetry_by_instance
     ]
-    timeout_candidates = [candidate for candidate in candidates if candidate["status"] == "timeout"]
-    solved_candidates = [candidate for candidate in candidates if candidate["status"] == "solved"]
+    timeout_candidates = [
+        candidate for candidate in candidates if candidate["status"] == "timeout"
+    ]
+    solved_candidates = [
+        candidate for candidate in candidates if candidate["status"] == "solved"
+    ]
     if len(timeout_candidates) < 10 or len(solved_candidates) < 10:
         raise SystemExit(
             f"need at least 10 timeout and 10 solved candidates, got "
@@ -78,11 +90,13 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
 
     cluster_key = TARGET_STRUCTURAL_CLUSTER
     cluster_timeouts = [
-        candidate for candidate in timeout_candidates
+        candidate
+        for candidate in timeout_candidates
         if candidate["structural_cluster"] == cluster_key
     ]
     cluster_solved = [
-        candidate for candidate in solved_candidates
+        candidate
+        for candidate in solved_candidates
         if candidate["structural_cluster"] == cluster_key
     ]
     if len(cluster_timeouts) < 10 or len(cluster_solved) < 10:
@@ -96,9 +110,15 @@ def build_fixture(root: Path, manifest_path: Path, event_log_path: Path) -> dict
     selected_solved_ids = {pair["solved_row"] for pair in pairs}
     selected_rows = [
         *selected_timeouts,
-        *[candidate for candidate in solved_candidates if candidate["row_id"] in selected_solved_ids],
+        *[
+            candidate
+            for candidate in solved_candidates
+            if candidate["row_id"] in selected_solved_ids
+        ],
     ]
-    selected_rows = sorted(selected_rows, key=lambda row: (row["status"], row["row_id"]))
+    selected_rows = sorted(
+        selected_rows, key=lambda row: (row["status"], row["row_id"])
+    )
     _validate_payload(selected_rows, pairs)
     return {
         "source_event_log": str(event_log_path),
@@ -145,7 +165,9 @@ def _telemetry_by_instance(
     manifest: dict[str, dict[str, Any]],
     events: list[dict[str, Any]],
 ) -> dict[str, dict[str, object]]:
-    instances = sorted({event["instance"] for event in events if event["instance"] in manifest})
+    instances = sorted(
+        {event["instance"] for event in events if event["instance"] in manifest}
+    )
     telemetry: dict[str, dict[str, object]] = {}
     for index, relative_path in enumerate(instances, start=1):
         if index == 1 or index % 25 == 0:
@@ -223,7 +245,9 @@ def _cluster_counts(
     return dict(sorted(counts.items()))
 
 
-def _select_structural_timeouts(candidates: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+def _select_structural_timeouts(
+    candidates: list[dict[str, Any]], *, limit: int
+) -> list[dict[str, Any]]:
     return sorted(
         candidates,
         key=lambda row: (
@@ -250,7 +274,11 @@ def _pair_with_solved_matches(
                 for solved_row in solved_rows
                 if solved_row["row_id"] not in used_solved
             ),
-            key=lambda item: (item[0], str(item[1]["subtrack"]), str(item[1]["row_id"])),
+            key=lambda item: (
+                item[0],
+                str(item[1]["subtrack"]),
+                str(item[1]["row_id"]),
+            ),
         )
         for distance, solved_row in ranked:
             decision_features = _decision_features(timeout_row, solved_row)
@@ -289,7 +317,9 @@ def _numeric(row: dict[str, Any], feature: str) -> float:
     return float(value)
 
 
-def _decision_features(left: dict[str, Any], right: dict[str, Any]) -> OrderedDict[str, dict[str, object]]:
+def _decision_features(
+    left: dict[str, Any], right: dict[str, Any]
+) -> OrderedDict[str, dict[str, object]]:
     features: OrderedDict[str, dict[str, object]] = OrderedDict()
     for feature in NUMERIC_FEATURES:
         left_value = left["telemetry"][feature]
@@ -302,7 +332,9 @@ def _decision_features(left: dict[str, Any], right: dict[str, Any]) -> OrderedDi
     return features
 
 
-def _shared_features(left: dict[str, Any], right: dict[str, Any]) -> OrderedDict[str, object]:
+def _shared_features(
+    left: dict[str, Any], right: dict[str, Any]
+) -> OrderedDict[str, object]:
     shared: OrderedDict[str, object] = OrderedDict()
     for feature in NUMERIC_FEATURES:
         if left["telemetry"][feature] == right["telemetry"][feature]:

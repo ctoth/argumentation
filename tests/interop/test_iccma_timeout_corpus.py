@@ -139,8 +139,16 @@ def test_summarize_timeout_rows_groups_by_year_track_subtrack_and_kind() -> None
 
 
 def test_checked_in_range_max_inclusion_timeout_fixture_summary() -> None:
-    summary_path = ROOT / "data" / "iccma" / "timeouts" / "range-max-inclusion-cap100-summary.json"
-    timeouts_path = ROOT / "data" / "iccma" / "timeouts" / "range-max-inclusion-cap100-timeouts.json"
+    summary_path = (
+        ROOT / "data" / "iccma" / "timeouts" / "range-max-inclusion-cap100-summary.json"
+    )
+    timeouts_path = (
+        ROOT
+        / "data"
+        / "iccma"
+        / "timeouts"
+        / "range-max-inclusion-cap100-timeouts.json"
+    )
 
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     timeouts = json.loads(timeouts_path.read_text(encoding="utf-8"))

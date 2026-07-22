@@ -76,14 +76,14 @@ def _definition_range(
     defeats: frozenset[tuple[str, str]],
 ) -> frozenset[str]:
     return extension | frozenset(
-        target
-        for attacker, target in defeats
-        if attacker in extension
+        target for attacker, target in defeats if attacker in extension
     )
 
 
 def _draw_subset(data: st.DataObject, arguments: frozenset[str]) -> frozenset[str]:
-    return frozenset(data.draw(st.sets(st.sampled_from(sorted(arguments)), max_size=len(arguments))))
+    return frozenset(
+        data.draw(st.sets(st.sampled_from(sorted(arguments)), max_size=len(arguments)))
+    )
 
 
 # ── Concrete regression tests ───────────────────────────────────────
@@ -110,7 +110,9 @@ class TestGroundedConcrete:
 
     def test_nixon_diamond(self):
         """A attacks B, B attacks A. Grounded = {} (mutual defeat)."""
-        assert grounded_extension(af({"A", "B"}, {("A", "B"), ("B", "A")})) == frozenset()
+        assert (
+            grounded_extension(af({"A", "B"}, {("A", "B"), ("B", "A")})) == frozenset()
+        )
 
     def test_reinstatement(self):
         """A attacks B, B attacks C. A reinstates C. Grounded = {A, C}."""
@@ -137,7 +139,9 @@ class TestGroundedConcrete:
 
     def test_no_attacks(self):
         """No attacks means all arguments are in grounded extension."""
-        assert grounded_extension(af({"A", "B", "C"}, set())) == frozenset({"A", "B", "C"})
+        assert grounded_extension(af({"A", "B", "C"}, set())) == frozenset(
+            {"A", "B", "C"}
+        )
 
     def test_chain_of_four(self):
         """A->B->C->D. Grounded = {A, C}. A and C are defended."""
@@ -190,9 +194,7 @@ class TestPreferredConcrete:
 
     def test_reinstatement(self):
         """A->B->C. Single preferred = {A, C}."""
-        exts = preferred_extensions(
-            af({"A", "B", "C"}, {("A", "B"), ("B", "C")})
-        )
+        exts = preferred_extensions(af({"A", "B", "C"}, {("A", "B"), ("B", "C")}))
         assert exts == [frozenset({"A", "C"})]
 
     def test_self_attacker(self):
@@ -502,13 +504,17 @@ class TestHelpers:
         # F({}) = {A} (A has no attackers, so defended by any set)
         assert characteristic_fn(frozenset(), all_args, defeats) == frozenset({"A"})
         # F({A}) = {A, C} (A defends itself + C)
-        assert characteristic_fn(frozenset({"A"}), all_args, defeats) == frozenset({"A", "C"})
+        assert characteristic_fn(frozenset({"A"}), all_args, defeats) == frozenset(
+            {"A", "C"}
+        )
 
     def test_admissible(self):
         all_args = frozenset({"A", "B", "C"})
         defeats = frozenset({("A", "B"), ("B", "C")})
         assert admissible(frozenset({"A", "C"}), all_args, defeats) is True
-        assert admissible(frozenset({"B"}), all_args, defeats) is False  # B attacked by A, can't defend
+        assert (
+            admissible(frozenset({"B"}), all_args, defeats) is False
+        )  # B attacked by A, can't defend
 
 
 # ── Property tests ──────────────────────────────────────────────────
@@ -567,7 +573,9 @@ class TestDungDefinitionProperties:
         for candidate in _all_subsets(framework.arguments):
             if not admissible(candidate, framework.arguments, framework.defeats):
                 continue
-            acceptable = characteristic_fn(candidate, framework.arguments, framework.defeats)
+            acceptable = characteristic_fn(
+                candidate, framework.arguments, framework.defeats
+            )
             for accepted_argument in acceptable:
                 enlarged = candidate | {accepted_argument}
                 assert admissible(enlarged, framework.arguments, framework.defeats)
@@ -623,7 +631,8 @@ class TestGroundedProperties:
         fixed_points = [
             candidate
             for candidate in _all_subsets(framework.arguments)
-            if characteristic_fn(candidate, framework.arguments, framework.defeats) == candidate
+            if characteristic_fn(candidate, framework.arguments, framework.defeats)
+            == candidate
         ]
 
         assert fixed_points
@@ -781,8 +790,7 @@ class TestNewSemanticsProperties:
             assert extension in conflict_free_sets
             extension_range = ranges[extension]
             assert not any(
-                extension_range < other_range
-                for other_range in ranges.values()
+                extension_range < other_range for other_range in ranges.values()
             )
 
     @given(argumentation_frameworks(max_args=5))
@@ -824,13 +832,19 @@ class TestCharacteristicFnProperties:
         lower = _draw_subset(data, args)
         remaining = args - lower
         extra = (
-            frozenset(data.draw(st.sets(st.sampled_from(sorted(remaining)), max_size=len(remaining))))
+            frozenset(
+                data.draw(
+                    st.sets(st.sampled_from(sorted(remaining)), max_size=len(remaining))
+                )
+            )
             if remaining
             else frozenset()
         )
         upper = lower | extra
 
-        assert characteristic_fn(lower, args, defeats) <= characteristic_fn(upper, args, defeats)
+        assert characteristic_fn(lower, args, defeats) <= characteristic_fn(
+            upper, args, defeats
+        )
 
 
 class TestSingleDungPath:

@@ -15,9 +15,15 @@ from argumentation.gradual.gradual_principles import (
 
 
 @given(
-    target_base=st.floats(min_value=0.05, max_value=0.95, allow_nan=False, allow_infinity=False),
-    supporter_strength=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
-    attacker_strength=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    target_base=st.floats(
+        min_value=0.05, max_value=0.95, allow_nan=False, allow_infinity=False
+    ),
+    supporter_strength=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    ),
+    attacker_strength=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    ),
 )
 def test_dfquad_satisfies_baroni_balance_directionality_and_monotonicity(
     target_base: float,

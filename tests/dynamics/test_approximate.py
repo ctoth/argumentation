@@ -5,7 +5,11 @@ from argumentation.dynamics.approximate import (
     approximate_semi_stable,
     k_stable_extensions,
 )
-from argumentation.core.dung import ArgumentationFramework, semi_stable_extensions, stable_extensions
+from argumentation.core.dung import (
+    ArgumentationFramework,
+    semi_stable_extensions,
+    stable_extensions,
+)
 
 
 def af(args: set[str], defeats: set[tuple[str, str]]) -> ArgumentationFramework:

@@ -74,14 +74,18 @@ def test_manifest_counts_compressed_apx_instances(tmp_path) -> None:
     assert row.attacks == 1
 
 
-def test_run_or_skip_applies_cap_to_uncounted_compressed_apx(tmp_path, monkeypatch) -> None:
+def test_run_or_skip_applies_cap_to_uncounted_compressed_apx(
+    tmp_path, monkeypatch
+) -> None:
     instance_path = tmp_path / "extracted" / "instances" / "case.apx.lzma"
     instance_path.parent.mkdir(parents=True)
     payload = "".join(f"arg(a{i}).\n" for i in range(21))
     instance_path.write_bytes(lzma.compress(payload.encode("utf-8")))
 
     def fail_run_child(*args, **kwargs):
-        raise AssertionError("oversized compressed AF should be skipped before worker launch")
+        raise AssertionError(
+            "oversized compressed AF should be skipped before worker launch"
+        )
 
     monkeypatch.setattr("tools.iccma2025_run_native.run_child", fail_run_child)
     config = RunConfig(
@@ -117,7 +121,9 @@ def test_run_or_skip_skips_missing_acceptance_query_before_worker(
     instance_path.write_text("arg(a).\n", encoding="utf-8")
 
     def fail_run_child(*args, **kwargs):
-        raise AssertionError("queryless acceptance row should be skipped before worker launch")
+        raise AssertionError(
+            "queryless acceptance row should be skipped before worker launch"
+        )
 
     monkeypatch.setattr("tools.iccma2025_run_native.run_child", fail_run_child)
     config = RunConfig(
@@ -405,7 +411,9 @@ def test_worker_profile_path_is_stable_and_filterable(tmp_path) -> None:
     assert path.name.endswith(".raw.txt")
 
 
-def test_run_or_skip_sets_profile_duration_inside_row_timeout(tmp_path, monkeypatch) -> None:
+def test_run_or_skip_sets_profile_duration_inside_row_timeout(
+    tmp_path, monkeypatch
+) -> None:
     captured: dict[str, object] = {}
 
     def record_run_child(job, *, timeout_seconds):
@@ -493,12 +501,18 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
             extension=frozenset(),
             metadata={
                 "solver": "clingo_multishot",
-                "clingo_control_args": ("--models=0", "--warn=none", "--configuration=frumpy"),
+                "clingo_control_args": (
+                    "--models=0",
+                    "--warn=none",
+                    "--configuration=frumpy",
+                ),
                 "clingo_statistics": {"solving": {"solvers": {"choices": 7.0}}},
             },
         )
 
-    monkeypatch.setattr("argumentation.solving.solver.solve_aba_single_extension", fake_solve)
+    monkeypatch.setattr(
+        "argumentation.solving.solver.solve_aba_single_extension", fake_solve
+    )
 
     result = solve_aba_job(
         {
@@ -531,7 +545,9 @@ def test_solve_aba_job_passes_clingo_diagnostics_to_single_extension(
     }
 
 
-def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeypatch) -> None:
+def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(
+    tmp_path, monkeypatch
+) -> None:
     from argumentation.solving.solver import SingleExtensionSolverSuccess
 
     instance_path = tmp_path / "extracted" / "instances" / "case.aba"
@@ -551,7 +567,9 @@ def test_solve_aba_job_defaults_clingo_diagnostics_to_disabled(tmp_path, monkeyp
             },
         )
 
-    monkeypatch.setattr("argumentation.solving.solver.solve_aba_single_extension", fake_solve)
+    monkeypatch.setattr(
+        "argumentation.solving.solver.solve_aba_single_extension", fake_solve
+    )
 
     solve_aba_job(
         {
@@ -586,11 +604,15 @@ def test_parse_worker_stdout_accepts_py_spy_wrapped_output() -> None:
     assert parsed == {"answer": "false", "status": "solved"}
 
 
-def test_run_child_reports_profile_duration_without_worker_json(tmp_path, monkeypatch) -> None:
+def test_run_child_reports_profile_duration_without_worker_json(
+    tmp_path, monkeypatch
+) -> None:
     profile_path = tmp_path / "profiles" / "row.speedscope.json"
 
     class CompletedProfileProcess:
-        stdout = StringIO("py-spy> Sampling process 100 times a second for 1 seconds...\n")
+        stdout = StringIO(
+            "py-spy> Sampling process 100 times a second for 1 seconds...\n"
+        )
         stderr = StringIO("")
 
         def wait(self, timeout):

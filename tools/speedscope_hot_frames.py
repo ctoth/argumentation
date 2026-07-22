@@ -64,12 +64,16 @@ def summarize(path: Path, *, limit: int) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Summarize hot frames from a speedscope JSON file.")
+    parser = argparse.ArgumentParser(
+        description="Summarize hot frames from a speedscope JSON file."
+    )
     parser.add_argument("profile", type=Path)
     parser.add_argument("--limit", type=int, default=20)
     args = parser.parse_args(argv)
 
-    print(json.dumps(summarize(args.profile, limit=args.limit), indent=2, sort_keys=True))
+    print(
+        json.dumps(summarize(args.profile, limit=args.limit), indent=2, sort_keys=True)
+    )
     return 0
 
 

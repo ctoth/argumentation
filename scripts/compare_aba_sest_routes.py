@@ -43,7 +43,9 @@ def row_line(row: dict) -> str:
 
 
 def is_aba(row: dict) -> bool:
-    return str(row.get("kind", "")).startswith("aba") or str(row["instance"]).endswith(".aba")
+    return str(row.get("kind", "")).startswith("aba") or str(row["instance"]).endswith(
+        ".aba"
+    )
 
 
 def parse_aba_framework(root: Path, instance: str):
@@ -112,9 +114,7 @@ def main() -> None:
 
     for name, keyed in (("baseline", baseline), ("fixed", fixed)):
         counts = Counter(row["status"] for row in keyed.values())
-        aba_counts = Counter(
-            row["status"] for row in keyed.values() if is_aba(row)
-        )
+        aba_counts = Counter(row["status"] for row in keyed.values() if is_aba(row))
         print(f"{name} status counts (all): {dict(sorted(counts.items()))}")
         print(f"{name} status counts (ABA): {dict(sorted(aba_counts.items()))}")
 

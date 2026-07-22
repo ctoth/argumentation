@@ -192,7 +192,9 @@ APX_ATT_RE = re.compile(r"^att\(([^(),\s]+),([^(),\s]+)\)\.$")
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Prepare ICCMA benchmark data by year.")
+    parser = argparse.ArgumentParser(
+        description="Prepare ICCMA benchmark data by year."
+    )
     parser.add_argument("--root", type=Path, default=DATA_ROOT)
     parser.add_argument("--year", choices=[*ARCHIVES_BY_YEAR, "all"], required=True)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -326,7 +328,11 @@ def write_manifest(year_root: Path, year: str) -> list[ManifestRow]:
         encoding="utf-8",
     )
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
-        fieldnames = list(asdict(rows[0]).keys()) if rows else [field.name for field in ManifestRow.__dataclass_fields__.values()]
+        fieldnames = (
+            list(asdict(rows[0]).keys())
+            if rows
+            else [field.name for field in ManifestRow.__dataclass_fields__.values()]
+        )
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(asdict(row) for row in rows)
@@ -357,24 +363,34 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
     name = path.name.lower()
     if path.name.startswith("._") or "__MACOSX/" in relative:
         return ManifestRow(archive_name, relative, "archive_metadata", "skipped", size)
-    if archive_name.startswith("results") or suffix in {".csv", ".xlsx", ".xls", ".results"}:
+    if archive_name.startswith("results") or suffix in {
+        ".csv",
+        ".xlsx",
+        ".xls",
+        ".results",
+    }:
         return ManifestRow(archive_name, relative, "results", "skipped", size)
-    if (
-        suffix in {".arg", ".query", ".apxm", ".tgfm", ".asm"}
-        or name.endswith(("_arg.lzma", "_query.lzma"))
+    if suffix in {".arg", ".query", ".apxm", ".tgfm", ".asm"} or name.endswith(
+        ("_arg.lzma", "_query.lzma")
     ):
         return ManifestRow(archive_name, relative, "query_or_updates", "skipped", size)
     try:
         if name.endswith(".apx.lzma"):
             arguments, attacks = scan_apx_file(path)
-            return ManifestRow(archive_name, relative, "compressed_apx", "ok", size, arguments, attacks)
+            return ManifestRow(
+                archive_name, relative, "compressed_apx", "ok", size, arguments, attacks
+            )
         if name.endswith(".tgf.lzma"):
             arguments, attacks = scan_tgf_file(path)
-            return ManifestRow(archive_name, relative, "compressed_tgf", "ok", size, arguments, attacks)
+            return ManifestRow(
+                archive_name, relative, "compressed_tgf", "ok", size, arguments, attacks
+            )
         header = first_payload_line(path)
         if header.startswith("p af "):
             arguments, attacks = scan_numeric_af_file(path)
-            return ManifestRow(archive_name, relative, "af", "ok", size, arguments, attacks)
+            return ManifestRow(
+                archive_name, relative, "af", "ok", size, arguments, attacks
+            )
         if header.startswith("p aba"):
             atoms, assumptions, rules, contraries = scan_numeric_aba_file(path)
             return ManifestRow(
@@ -390,15 +406,21 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
             )
         if looks_like_tgf(path, header):
             arguments, attacks = scan_tgf_file(path)
-            return ManifestRow(archive_name, relative, "tgf", "ok", size, arguments, attacks)
+            return ManifestRow(
+                archive_name, relative, "tgf", "ok", size, arguments, attacks
+            )
         if looks_like_apx(path, header):
             arguments, attacks = scan_apx_file(path)
-            return ManifestRow(archive_name, relative, "apx", "ok", size, arguments, attacks)
+            return ManifestRow(
+                archive_name, relative, "apx", "ok", size, arguments, attacks
+            )
         if suffix == ".py":
             return ManifestRow(archive_name, relative, "dynamic_app", "skipped", size)
         return ManifestRow(archive_name, relative, "unknown", "skipped", size)
     except Exception as exc:
-        return ManifestRow(archive_name, relative, "unknown", "error", size, error=str(exc))
+        return ManifestRow(
+            archive_name, relative, "unknown", "error", size, error=str(exc)
+        )
 
 
 def scan_numeric_af_file(path: Path) -> tuple[int, int]:
@@ -441,7 +463,9 @@ def scan_numeric_aba_file(path: Path) -> tuple[int, int, int, int]:
         if atom_count is None:
             raise ValueError("ICCMA ABA input must start with a p aba header")
         if parts[0] == "a" and len(parts) == 2:
-            assumptions.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            assumptions.add(
+                validate_numeric_id(parts[1], atom_count, line_number, "ABA")
+            )
             continue
         if parts[0] == "c" and len(parts) == 3:
             source = validate_numeric_id(parts[1], atom_count, line_number, "ABA")
@@ -449,7 +473,9 @@ def scan_numeric_aba_file(path: Path) -> tuple[int, int, int, int]:
             contraries[source] = target
             continue
         if parts[0] == "r" and len(parts) >= 2:
-            rule_heads.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            rule_heads.add(
+                validate_numeric_id(parts[1], atom_count, line_number, "ABA")
+            )
             for item in parts[2:]:
                 validate_numeric_id(item, atom_count, line_number, "ABA")
             rule_count += 1
@@ -459,9 +485,13 @@ def scan_numeric_aba_file(path: Path) -> tuple[int, int, int, int]:
         raise ValueError("ICCMA ABA input must include a p aba header")
     assumption_heads = assumptions & rule_heads
     if assumption_heads:
-        raise ValueError(f"flat ABA rule heads cannot be assumptions: {sorted(assumption_heads)}")
+        raise ValueError(
+            f"flat ABA rule heads cannot be assumptions: {sorted(assumption_heads)}"
+        )
     if set(contraries) != assumptions:
-        raise ValueError("ABA contrary map must define exactly one contrary per assumption")
+        raise ValueError(
+            "ABA contrary map must define exactly one contrary per assumption"
+        )
     return atom_count, len(assumptions), rule_count, len(contraries)
 
 
@@ -524,7 +554,12 @@ def looks_like_apx(path: Path, header: str) -> bool:
 
 def looks_like_tgf(path: Path, header: str) -> bool:
     name = path.name.lower()
-    return path.suffix.lower() == ".tgf" or name.endswith(".tgf.lzma") or header == "#" or header.isdigit()
+    return (
+        path.suffix.lower() == ".tgf"
+        or name.endswith(".tgf.lzma")
+        or header == "#"
+        or header.isdigit()
+    )
 
 
 def iter_payload_parts(path: Path):
@@ -541,7 +576,9 @@ def validate_numeric_id(value: str, maximum: int, line_number: int, label: str) 
         raise ValueError(f"{label} line {line_number} must contain numeric ids")
     numeric = int(value)
     if numeric < 1 or numeric > maximum:
-        raise ValueError(f"{label} line {line_number} references id outside 1..{maximum}")
+        raise ValueError(
+            f"{label} line {line_number} references id outside 1..{maximum}"
+        )
     return numeric
 
 
@@ -598,7 +635,9 @@ def safe_extract_archive(archive_path: Path, target: Path) -> None:
 
 
 def is_plain_file_archive(path: Path) -> bool:
-    return not (path.suffix.lower() == ".zip" or path.name.endswith((".tar.gz", ".tgz")))
+    return not (
+        path.suffix.lower() == ".zip" or path.name.endswith((".tar.gz", ".tgz"))
+    )
 
 
 def safe_extract_zip(archive_path: Path, target: Path) -> None:
@@ -621,7 +660,9 @@ def safe_extract_tar(archive_path: Path, target: Path) -> None:
         archive.extractall(target, filter="data")
 
 
-def selected_archives(specs: dict[str, ArchiveSpec], selected: str) -> list[ArchiveSpec]:
+def selected_archives(
+    specs: dict[str, ArchiveSpec], selected: str
+) -> list[ArchiveSpec]:
     if selected == "all":
         return list(specs.values())
     if selected not in specs:

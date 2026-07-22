@@ -112,10 +112,14 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     fetch_parser = subparsers.add_parser("fetch")
-    fetch_parser.add_argument("archive", choices=[*ARCHIVES, "all"], default="all", nargs="?")
+    fetch_parser.add_argument(
+        "archive", choices=[*ARCHIVES, "all"], default="all", nargs="?"
+    )
 
     extract_parser = subparsers.add_parser("extract")
-    extract_parser.add_argument("archive", choices=[*ARCHIVES, "all"], default="all", nargs="?")
+    extract_parser.add_argument(
+        "archive", choices=[*ARCHIVES, "all"], default="all", nargs="?"
+    )
     extract_parser.add_argument("--force", action="store_true")
 
     manifest_parser = subparsers.add_parser("manifest")
@@ -192,7 +196,9 @@ def write_manifest(root: Path) -> list[ManifestRow]:
         encoding="utf-8",
     )
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(asdict(rows[0]).keys()) if rows else [])
+        writer = csv.DictWriter(
+            handle, fieldnames=list(asdict(rows[0]).keys()) if rows else []
+        )
         if rows:
             writer.writeheader()
             writer.writerows(asdict(row) for row in rows)
@@ -218,7 +224,9 @@ def write_task_matrix(root: Path) -> None:
     manifest_dir.mkdir(parents=True, exist_ok=True)
     json_path = manifest_dir / "iccma-2025-task-matrix.json"
     csv_path = manifest_dir / "iccma-2025-task-matrix.csv"
-    json_path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     with csv_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
@@ -273,7 +281,9 @@ def classify_file(archive_name: str, relative: str, path: Path) -> ManifestRow:
             return ManifestRow(archive_name, relative, "dynamic_app", "skipped", size)
         return ManifestRow(archive_name, relative, "unknown", "skipped", size)
     except Exception as exc:
-        return ManifestRow(archive_name, relative, "unknown", "error", size, error=str(exc))
+        return ManifestRow(
+            archive_name, relative, "unknown", "error", size, error=str(exc)
+        )
 
 
 def scan_af_file(path: Path) -> tuple[int, int]:
@@ -316,7 +326,9 @@ def scan_aba_file(path: Path) -> tuple[int, int, int, int]:
         if atom_count is None:
             raise ValueError("ICCMA ABA input must start with a p aba header")
         if parts[0] == "a" and len(parts) == 2:
-            assumptions.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            assumptions.add(
+                validate_numeric_id(parts[1], atom_count, line_number, "ABA")
+            )
             continue
         if parts[0] == "c" and len(parts) == 3:
             source = validate_numeric_id(parts[1], atom_count, line_number, "ABA")
@@ -324,7 +336,9 @@ def scan_aba_file(path: Path) -> tuple[int, int, int, int]:
             contraries[source] = target
             continue
         if parts[0] == "r" and len(parts) >= 2:
-            rule_heads.add(validate_numeric_id(parts[1], atom_count, line_number, "ABA"))
+            rule_heads.add(
+                validate_numeric_id(parts[1], atom_count, line_number, "ABA")
+            )
             for item in parts[2:]:
                 validate_numeric_id(item, atom_count, line_number, "ABA")
             rule_count += 1
@@ -334,9 +348,13 @@ def scan_aba_file(path: Path) -> tuple[int, int, int, int]:
         raise ValueError("ICCMA ABA input must include a p aba header")
     assumption_heads = assumptions & rule_heads
     if assumption_heads:
-        raise ValueError(f"flat ABA rule heads cannot be assumptions: {sorted(assumption_heads)}")
+        raise ValueError(
+            f"flat ABA rule heads cannot be assumptions: {sorted(assumption_heads)}"
+        )
     if set(contraries) != assumptions:
-        raise ValueError("ABA contrary map must define exactly one contrary per assumption")
+        raise ValueError(
+            "ABA contrary map must define exactly one contrary per assumption"
+        )
     return atom_count, len(assumptions), rule_count, len(contraries)
 
 
@@ -354,7 +372,9 @@ def validate_numeric_id(value: str, maximum: int, line_number: int, label: str) 
         raise ValueError(f"{label} line {line_number} must contain numeric ids")
     numeric = int(value)
     if numeric < 1 or numeric > maximum:
-        raise ValueError(f"{label} line {line_number} references id outside 1..{maximum}")
+        raise ValueError(
+            f"{label} line {line_number} references id outside 1..{maximum}"
+        )
     return numeric
 
 

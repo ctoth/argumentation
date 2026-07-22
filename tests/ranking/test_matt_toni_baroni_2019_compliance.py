@@ -5,7 +5,10 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.gradual.gradual_principles import PRINCIPLE_COMPLIANCE, ComplianceLabel
+from argumentation.gradual.gradual_principles import (
+    PRINCIPLE_COMPLIANCE,
+    ComplianceLabel,
+)
 from argumentation.ranking.matt_toni import matt_toni_strengths
 
 
@@ -28,4 +31,6 @@ def test_matt_toni_declares_conditional_baroni_principle_compliance(
     assert matt_toni_strengths(mutual_attack) == pytest.approx({"a": 0.5, "b": 0.5})
     assert PRINCIPLE_COMPLIANCE["matt_toni"]["directionality"] is ComplianceLabel.HOLDS
     assert PRINCIPLE_COMPLIANCE["matt_toni"]["balance"] is ComplianceLabel.CONDITIONAL
-    assert PRINCIPLE_COMPLIANCE["matt_toni"]["monotonicity"] is ComplianceLabel.CONDITIONAL
+    assert (
+        PRINCIPLE_COMPLIANCE["matt_toni"]["monotonicity"] is ComplianceLabel.CONDITIONAL
+    )

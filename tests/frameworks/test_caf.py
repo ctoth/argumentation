@@ -197,9 +197,7 @@ def test_kr2020_example_3_cl_semi_stable_and_i_semi_stable_are_incomparable() ->
     assert set(claim_level_extensions(caf, semantics="semi-stable")) == {
         frozenset({"b", "d"})
     }
-    assert set(inherited_extensions(caf, semantics="semi-stable")) == {
-        frozenset({"a"})
-    }
+    assert set(inherited_extensions(caf, semantics="semi-stable")) == {frozenset({"a"})}
 
 
 def test_kr2020_example_4_cl_semi_stable_is_not_i_maximal_for_general_cafs() -> None:
@@ -218,9 +216,7 @@ def test_kr2020_example_4_cl_semi_stable_is_not_i_maximal_for_general_cafs() -> 
 def test_kr2020_example_5_cl_stage_and_i_stage_are_incomparable() -> None:
     caf = example_5_caf()
 
-    assert set(inherited_extensions(caf, semantics="stage")) == {
-        frozenset({"b"})
-    }
+    assert set(inherited_extensions(caf, semantics="stage")) == {frozenset({"b"})}
     assert set(claim_level_extensions(caf, semantics="stage")) == {
         frozenset({"a"}),
         frozenset({"b"}),
@@ -254,9 +250,7 @@ def test_claim_level_extensions_maximize_claim_sets() -> None:
         claims={"a1": "A", "a2": "A", "b": "B"},
     )
 
-    assert claim_level_extensions(caf, semantics="naive") == (
-        frozenset({"A", "B"}),
-    )
+    assert claim_level_extensions(caf, semantics="naive") == (frozenset({"A", "B"}),)
 
 
 def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
@@ -266,11 +260,15 @@ def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
     )
 
     assert concurrence_holds(caf, semantics="stable") is True
-    assert extensions(caf, semantics="stable", view="inherited") == inherited_extensions(
+    assert extensions(
+        caf, semantics="stable", view="inherited"
+    ) == inherited_extensions(
         caf,
         semantics="stable",
     )
-    assert extensions(caf, semantics="stable", view="claim_level") == claim_level_extensions(
+    assert extensions(
+        caf, semantics="stable", view="claim_level"
+    ) == claim_level_extensions(
         caf,
         semantics="stable",
     )
@@ -278,7 +276,10 @@ def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
 
 def test_claim_level_stage_discards_range_dominated_claim_sets() -> None:
     caf = ClaimAugmentedAF(
-        framework=af({"a", "b", "c1", "c2"}, {("b", "a"), ("b", "c1"), ("c1", "c1"), ("c2", "c2")}),
+        framework=af(
+            {"a", "b", "c1", "c2"},
+            {("b", "a"), ("b", "c1"), ("c1", "c1"), ("c2", "c2")},
+        ),
         claims={"a": "A", "b": "B", "c1": "C", "c2": "C"},
     )
 
@@ -299,7 +300,9 @@ def test_kr2020_definition_3_well_formed_requires_same_outgoing_attacks() -> Non
     assert is_well_formed(not_well_formed) is False
 
 
-def test_aij2023_definition_6_defeated_claims_require_attacking_all_occurrences() -> None:
+def test_aij2023_definition_6_defeated_claims_require_attacking_all_occurrences() -> (
+    None
+):
     caf = ClaimAugmentedAF(
         framework=af({"a1", "a2", "b"}, {("b", "a1")}),
         claims={"a1": "A", "a2": "A", "b": "B"},
@@ -310,11 +313,19 @@ def test_aij2023_definition_6_defeated_claims_require_attacking_all_occurrences(
 
 
 @st.composite
-def cafs(draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int = 3) -> ClaimAugmentedAF:
+def cafs(
+    draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int = 3
+) -> ClaimAugmentedAF:
     argument_count = draw(st.integers(min_value=0, max_value=max_arguments))
     arguments = [f"a{index}" for index in range(argument_count)]
-    possible_defeats = [(source, target) for source in arguments for target in arguments]
-    defeats = draw(st.sets(st.sampled_from(possible_defeats), max_size=len(possible_defeats))) if possible_defeats else set()
+    possible_defeats = [
+        (source, target) for source in arguments for target in arguments
+    ]
+    defeats = (
+        draw(st.sets(st.sampled_from(possible_defeats), max_size=len(possible_defeats)))
+        if possible_defeats
+        else set()
+    )
     claim_bound = max(1, min(max_claims, max(1, argument_count)))
     claim_numbers = draw(
         st.lists(
@@ -324,13 +335,20 @@ def cafs(draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int = 3) -> Cla
         )
     )
     return ClaimAugmentedAF(
-        framework=ArgumentationFramework(arguments=frozenset(arguments), defeats=frozenset(defeats)),
-        claims={argument: f"c{claim}" for argument, claim in zip(arguments, claim_numbers, strict=True)},
+        framework=ArgumentationFramework(
+            arguments=frozenset(arguments), defeats=frozenset(defeats)
+        ),
+        claims={
+            argument: f"c{claim}"
+            for argument, claim in zip(arguments, claim_numbers, strict=True)
+        },
     )
 
 
 @st.composite
-def well_formed_cafs(draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int = 3) -> ClaimAugmentedAF:
+def well_formed_cafs(
+    draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int = 3
+) -> ClaimAugmentedAF:
     argument_count = draw(st.integers(min_value=0, max_value=max_arguments))
     arguments = [f"a{index}" for index in range(argument_count)]
     claim_bound = max(1, min(max_claims, max(1, argument_count)))
@@ -341,10 +359,24 @@ def well_formed_cafs(draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int
             max_size=argument_count,
         )
     )
-    claims = {argument: f"c{claim}" for argument, claim in zip(arguments, claim_numbers, strict=True)}
+    claims = {
+        argument: f"c{claim}"
+        for argument, claim in zip(arguments, claim_numbers, strict=True)
+    }
     claim_ids = sorted(set(claims.values()))
-    possible_claim_attacks = [(source, target) for source in claim_ids for target in claim_ids]
-    claim_attacks = draw(st.sets(st.sampled_from(possible_claim_attacks), max_size=len(possible_claim_attacks))) if possible_claim_attacks else set()
+    possible_claim_attacks = [
+        (source, target) for source in claim_ids for target in claim_ids
+    ]
+    claim_attacks = (
+        draw(
+            st.sets(
+                st.sampled_from(possible_claim_attacks),
+                max_size=len(possible_claim_attacks),
+            )
+        )
+        if possible_claim_attacks
+        else set()
+    )
     defeats = {
         (source, target)
         for source in arguments
@@ -352,7 +384,9 @@ def well_formed_cafs(draw: st.DrawFn, *, max_arguments: int = 4, max_claims: int
         if (claims[source], claims[target]) in claim_attacks
     }
     return ClaimAugmentedAF(
-        framework=ArgumentationFramework(arguments=frozenset(arguments), defeats=frozenset(defeats)),
+        framework=ArgumentationFramework(
+            arguments=frozenset(arguments), defeats=frozenset(defeats)
+        ),
         claims=claims,
     )
 
@@ -366,13 +400,21 @@ def unique_claim_cafs(draw: st.DrawFn, *, max_arguments: int = 4) -> ClaimAugmen
     )
 
 
-def project(caf: ClaimAugmentedAF, extensions_: tuple[frozenset[str], ...] | list[frozenset[str]]) -> set[frozenset[str]]:
-    return {frozenset(caf.claims[argument] for argument in extension) for extension in extensions_}
+def project(
+    caf: ClaimAugmentedAF,
+    extensions_: tuple[frozenset[str], ...] | list[frozenset[str]],
+) -> set[frozenset[str]]:
+    return {
+        frozenset(caf.claims[argument] for argument in extension)
+        for extension in extensions_
+    }
 
 
 @given(cafs())
 @settings(max_examples=60)
-def test_definition_4_inherited_extensions_are_projected_dung_extensions(caf: ClaimAugmentedAF) -> None:
+def test_definition_4_inherited_extensions_are_projected_dung_extensions(
+    caf: ClaimAugmentedAF,
+) -> None:
     assert set(inherited_extensions(caf, semantics="preferred")) == project(
         caf,
         preferred_extensions(caf.framework),
@@ -381,9 +423,15 @@ def test_definition_4_inherited_extensions_are_projected_dung_extensions(caf: Cl
 
 @given(well_formed_cafs())
 @settings(max_examples=60)
-def test_lemma_1_well_formed_same_claim_sets_have_same_defeated_claims(caf: ClaimAugmentedAF) -> None:
+def test_lemma_1_well_formed_same_claim_sets_have_same_defeated_claims(
+    caf: ClaimAugmentedAF,
+) -> None:
     subsets = [
-        frozenset(argument for index, argument in enumerate(sorted(caf.framework.arguments)) if mask & (1 << index))
+        frozenset(
+            argument
+            for index, argument in enumerate(sorted(caf.framework.arguments))
+            if mask & (1 << index)
+        )
         for mask in range(1 << len(caf.framework.arguments))
     ]
     for left in subsets:
@@ -394,7 +442,9 @@ def test_lemma_1_well_formed_same_claim_sets_have_same_defeated_claims(caf: Clai
 
 @given(cafs())
 @settings(max_examples=60)
-def test_proposition_1_cl_preferred_is_subset_of_i_preferred(caf: ClaimAugmentedAF) -> None:
+def test_proposition_1_cl_preferred_is_subset_of_i_preferred(
+    caf: ClaimAugmentedAF,
+) -> None:
     assert set(claim_level_extensions(caf, semantics="preferred")) <= set(
         inherited_extensions(caf, semantics="preferred")
     )
@@ -430,7 +480,9 @@ def test_proposition_6_cl_naive_is_i_maximal(caf: ClaimAugmentedAF) -> None:
 
 @given(well_formed_cafs())
 @settings(max_examples=60)
-def test_proposition_8_well_formed_stable_variants_coincide(caf: ClaimAugmentedAF) -> None:
+def test_proposition_8_well_formed_stable_variants_coincide(
+    caf: ClaimAugmentedAF,
+) -> None:
     assert set(inherited_extensions(caf, semantics="stable")) == set(
         claim_level_extensions(caf, semantics="stable")
     )
@@ -441,28 +493,54 @@ def test_proposition_8_well_formed_stable_variants_coincide(caf: ClaimAugmentedA
 
 @given(well_formed_cafs())
 @settings(max_examples=60)
-def test_proposition_10_well_formed_semi_stable_outputs_are_i_maximal(caf: ClaimAugmentedAF) -> None:
+def test_proposition_10_well_formed_semi_stable_outputs_are_i_maximal(
+    caf: ClaimAugmentedAF,
+) -> None:
     assert is_i_maximal(inherited_extensions(caf, semantics="semi-stable")) is True
     assert is_i_maximal(claim_level_extensions(caf, semantics="semi-stable")) is True
 
 
 @given(well_formed_cafs())
 @settings(max_examples=60)
-def test_proposition_11_well_formed_stage_outputs_are_i_maximal(caf: ClaimAugmentedAF) -> None:
+def test_proposition_11_well_formed_stage_outputs_are_i_maximal(
+    caf: ClaimAugmentedAF,
+) -> None:
     assert is_i_maximal(inherited_extensions(caf, semantics="stage")) is True
     assert is_i_maximal(claim_level_extensions(caf, semantics="stage")) is True
 
 
 @given(unique_claim_cafs())
 @settings(max_examples=60)
-def test_lemma_3_unique_claims_coincide_with_dung_semantics(caf: ClaimAugmentedAF) -> None:
-    assert set(inherited_extensions(caf, semantics="preferred")) == project(caf, preferred_extensions(caf.framework))
-    assert set(claim_level_extensions(caf, semantics="preferred")) == project(caf, preferred_extensions(caf.framework))
-    assert set(inherited_extensions(caf, semantics="naive")) == project(caf, naive_extensions(caf.framework))
-    assert set(claim_level_extensions(caf, semantics="naive")) == project(caf, naive_extensions(caf.framework))
-    assert set(inherited_extensions(caf, semantics="stable")) == project(caf, stable_extensions(caf.framework))
-    assert set(claim_level_extensions(caf, semantics="stable")) == project(caf, stable_extensions(caf.framework))
-    assert set(inherited_extensions(caf, semantics="semi-stable")) == project(caf, semi_stable_extensions(caf.framework))
-    assert set(claim_level_extensions(caf, semantics="semi-stable")) == project(caf, semi_stable_extensions(caf.framework))
-    assert set(inherited_extensions(caf, semantics="stage")) == project(caf, stage_extensions(caf.framework))
-    assert set(claim_level_extensions(caf, semantics="stage")) == project(caf, stage_extensions(caf.framework))
+def test_lemma_3_unique_claims_coincide_with_dung_semantics(
+    caf: ClaimAugmentedAF,
+) -> None:
+    assert set(inherited_extensions(caf, semantics="preferred")) == project(
+        caf, preferred_extensions(caf.framework)
+    )
+    assert set(claim_level_extensions(caf, semantics="preferred")) == project(
+        caf, preferred_extensions(caf.framework)
+    )
+    assert set(inherited_extensions(caf, semantics="naive")) == project(
+        caf, naive_extensions(caf.framework)
+    )
+    assert set(claim_level_extensions(caf, semantics="naive")) == project(
+        caf, naive_extensions(caf.framework)
+    )
+    assert set(inherited_extensions(caf, semantics="stable")) == project(
+        caf, stable_extensions(caf.framework)
+    )
+    assert set(claim_level_extensions(caf, semantics="stable")) == project(
+        caf, stable_extensions(caf.framework)
+    )
+    assert set(inherited_extensions(caf, semantics="semi-stable")) == project(
+        caf, semi_stable_extensions(caf.framework)
+    )
+    assert set(claim_level_extensions(caf, semantics="semi-stable")) == project(
+        caf, semi_stable_extensions(caf.framework)
+    )
+    assert set(inherited_extensions(caf, semantics="stage")) == project(
+        caf, stage_extensions(caf.framework)
+    )
+    assert set(claim_level_extensions(caf, semantics="stage")) == project(
+        caf, stage_extensions(caf.framework)
+    )

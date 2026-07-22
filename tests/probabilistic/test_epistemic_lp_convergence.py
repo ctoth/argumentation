@@ -75,9 +75,7 @@ def test_non_converged_point_was_actually_infeasible_documents_the_bug() -> None
         if max_violation <= 1e-10:
             break
 
-    worst = max(
-        abs(_constraint_violation(point, c)) for c in _OSCILLATING_CONSTRAINTS
-    )
+    worst = max(abs(_constraint_violation(point, c)) for c in _OSCILLATING_CONSTRAINTS)
     assert worst > 1e-10  # the silently-returned point did NOT satisfy the system
 
 

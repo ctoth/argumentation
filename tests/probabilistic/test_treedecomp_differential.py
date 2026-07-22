@@ -5,17 +5,17 @@ import random
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
 
 
 def _random_praf(seed: int) -> ProbabilisticAF:
     rng = random.Random(seed)
     args = [f"a{i}" for i in range(rng.randint(2, 5))]
     defeats = {
-        (src, tgt)
-        for src in args
-        for tgt in args
-        if src != tgt and rng.random() < 0.35
+        (src, tgt) for src in args for tgt in args if src != tgt and rng.random() < 0.35
     }
     if not defeats:
         defeats.add((args[0], args[-1]))

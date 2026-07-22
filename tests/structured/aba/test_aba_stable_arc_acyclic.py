@@ -30,11 +30,13 @@ def _unfounded_contrary_cycle_framework() -> ABAFramework:
         language=frozenset({a, c, d}),
         assumptions=frozenset({a}),
         contrary={a: c},
-        rules=frozenset({
-            Rule((a,), c, "strict"),
-            Rule((d,), c, "strict"),
-            Rule((c,), d, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((a,), c, "strict"),
+                Rule((d,), c, "strict"),
+                Rule((c,), d, "strict"),
+            }
+        ),
     )
 
 
@@ -45,10 +47,12 @@ def _founded_stable_with_idle_cycle_framework() -> ABAFramework:
         language=frozenset({a, c, d}),
         assumptions=frozenset({a}),
         contrary={a: c},
-        rules=frozenset({
-            Rule((d,), c, "strict"),
-            Rule((c,), d, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((d,), c, "strict"),
+                Rule((c,), d, "strict"),
+            }
+        ),
     )
 
 

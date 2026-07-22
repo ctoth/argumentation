@@ -25,7 +25,9 @@ class WeightedArgumentationFramework:
 
     def __post_init__(self) -> None:
         arguments = frozenset(str(argument) for argument in self.arguments)
-        attacks = frozenset((str(source), str(target)) for source, target in self.attacks)
+        attacks = frozenset(
+            (str(source), str(target)) for source, target in self.attacks
+        )
 
         unknown = sorted(
             (source, target)
@@ -33,7 +35,9 @@ class WeightedArgumentationFramework:
             if source not in arguments or target not in arguments
         )
         if unknown:
-            raise ValueError(f"attacks must only reference declared arguments: {unknown!r}")
+            raise ValueError(
+                f"attacks must only reference declared arguments: {unknown!r}"
+            )
 
         normalized_weights = {
             (str(source), str(target)): float(weight)
@@ -42,8 +46,7 @@ class WeightedArgumentationFramework:
         if set(normalized_weights) != set(attacks):
             raise ValueError("weights must cover exactly the attack relation")
         non_positive = sorted(
-            attack for attack, weight in normalized_weights.items()
-            if weight <= 0.0
+            attack for attack, weight in normalized_weights.items() if weight <= 0.0
         )
         if non_positive:
             raise ValueError(f"attack weights must be positive: {non_positive!r}")
@@ -65,7 +68,9 @@ class WeightedArgumentationFramework:
     def deleted_weight(self, deleted_attacks: frozenset[tuple[str, str]]) -> float:
         unknown = deleted_attacks - self.attacks
         if unknown:
-            raise ValueError(f"deleted_attacks contains undeclared attacks: {sorted(unknown)!r}")
+            raise ValueError(
+                f"deleted_attacks contains undeclared attacks: {sorted(unknown)!r}"
+            )
         return sum(self.weights[attack] for attack in deleted_attacks)
 
 
@@ -107,7 +112,9 @@ def weighted_grounded_extensions(
             deleted_weight=cost,
         )
         previous = best_by_extension.get(extension)
-        if previous is None or _witness_sort_key(candidate) < _witness_sort_key(previous):
+        if previous is None or _witness_sort_key(candidate) < _witness_sort_key(
+            previous
+        ):
             best_by_extension[extension] = candidate
 
     return sorted(best_by_extension.values(), key=_witness_sort_key)

@@ -52,12 +52,8 @@ def aba_framework(
 ) -> ABAFramework:
     assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
     contraries = {literal(f"c{index}") for index in range(1, size + 1)}
-    assumption_by_index = {
-        index: literal(f"a{index}") for index in range(1, size + 1)
-    }
-    contrary_by_index = {
-        index: literal(f"c{index}") for index in range(1, size + 1)
-    }
+    assumption_by_index = {index: literal(f"a{index}") for index in range(1, size + 1)}
+    contrary_by_index = {index: literal(f"c{index}") for index in range(1, size + 1)}
     return ABAFramework(
         language=frozenset(assumptions | contraries),
         rules=frozenset(
@@ -144,7 +140,9 @@ def test_parse_iccma_output_rejects_malformed_witness_line() -> None:
         parse_iccma_output("SE-ST", "w 1 nope\n")
 
 
-def test_iccma_af_adapter_invokes_official_2023_cli_for_single_extension(monkeypatch) -> None:
+def test_iccma_af_adapter_invokes_official_2023_cli_for_single_extension(
+    monkeypatch,
+) -> None:
     framework = af({"1", "2"}, {("1", "2")})
     calls: list[list[str]] = []
 
@@ -232,7 +230,13 @@ def test_iccma_af_adapter_accepts_python_module_command(monkeypatch) -> None:
 
     def fake_run(command, *, capture_output, text, timeout, check):
         calls.append(command)
-        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.solving.iccma_cli"]
+        assert command[:5] == [
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "argumentation.solving.iccma_cli",
+        ]
         assert command[5:8] == ["-p", "SE-ST", "-f"]
         assert command[8].endswith(".af")
         assert capture_output is True
@@ -269,7 +273,9 @@ def test_iccma_af_adapter_uses_local_stable_certificate_validation(monkeypatch) 
     )
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.subprocess.run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="w 1\n", stderr=""),
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0, stdout="w 1\n", stderr=""
+        ),
     )
 
     result = solve_af_extensions(
@@ -305,7 +311,9 @@ def test_iccma_af_adapter_reports_solver_error(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.subprocess.run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=2, stdout="", stderr="bad input"),
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=2, stdout="", stderr="bad input"
+        ),
     )
 
     result = solve_af_extensions(
@@ -328,7 +336,9 @@ def test_iccma_af_adapter_timeout_is_distinct_from_nonzero_and_protocol(
     )
 
     def fake_run(command, *, capture_output, text, timeout, check):
-        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
+        raise subprocess.TimeoutExpired(
+            command, timeout, output="partial out", stderr="partial err"
+        )
 
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.subprocess.run",
@@ -356,7 +366,9 @@ def test_iccma_af_adapter_reports_protocol_error(monkeypatch) -> None:
     )
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_af.subprocess.run",
-        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="maybe\n", stderr=""),
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0, stdout="maybe\n", stderr=""
+        ),
     )
 
     result = solve_af_extensions(
@@ -422,7 +434,9 @@ def test_iccma_af_rejects_unsupported_se_without_subprocess(monkeypatch) -> None
         calls.append((args, kwargs))
         return SimpleNamespace(returncode=0, stdout="w 1\n", stderr="")
 
-    monkeypatch.setattr("argumentation.solver_adapters.iccma_af.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run", fake_run
+    )
 
     result = solve_af_extensions(
         af({"1"}, set()),
@@ -435,7 +449,9 @@ def test_iccma_af_rejects_unsupported_se_without_subprocess(monkeypatch) -> None
     assert calls == []
 
 
-def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(monkeypatch) -> None:
+def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(
+    monkeypatch,
+) -> None:
     calls = []
     monkeypatch.setattr(
         "argumentation.solver_adapters._commands.shutil.which",
@@ -446,7 +462,9 @@ def test_iccma_af_rejects_unsupported_acceptance_without_subprocess(monkeypatch)
         calls.append((args, kwargs))
         return SimpleNamespace(returncode=0, stdout="YES\nw 1\n", stderr="")
 
-    monkeypatch.setattr("argumentation.solver_adapters.iccma_af.subprocess.run", fake_run)
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.iccma_af.subprocess.run", fake_run
+    )
 
     result = solve_af_acceptance(
         af({"1"}, set()),
@@ -750,7 +768,9 @@ def test_iccma_aba_adapter_timeout_is_distinct_from_nonzero_and_protocol(
     )
 
     def fake_run(command, *, capture_output, text, timeout, check):
-        raise subprocess.TimeoutExpired(command, timeout, output="partial out", stderr="partial err")
+        raise subprocess.TimeoutExpired(
+            command, timeout, output="partial out", stderr="partial err"
+        )
 
     monkeypatch.setattr(
         "argumentation.solver_adapters.iccma_aba.subprocess.run",
@@ -845,7 +865,13 @@ def test_iccma_aba_adapter_accepts_python_module_command(monkeypatch) -> None:
 
     def fake_run(command, *, capture_output, text, timeout, check):
         calls.append(command)
-        assert command[:5] == ["uv", "run", "python", "-m", "argumentation.solving.iccma_cli"]
+        assert command[:5] == [
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "argumentation.solving.iccma_cli",
+        ]
         assert command[5:8] == ["-p", "SE-ST", "-f"]
         assert command[8].endswith(".aba")
         assert capture_output is True
@@ -962,7 +988,9 @@ def test_iccma_aba_malformed_witnesses_are_protocol_errors(
 def test_optional_real_aspforaba_solver_smoke() -> None:
     binary = os.environ.get("ASPFORABA_SOLVER") or os.environ.get("ICCMA_ABA_SOLVER")
     if not binary or (shutil.which(binary) is None and not Path(binary).exists()):
-        pytest.skip("set ASPFORABA_SOLVER or ICCMA_ABA_SOLVER to an ICCMA 2023 ABA solver")
+        pytest.skip(
+            "set ASPFORABA_SOLVER or ICCMA_ABA_SOLVER to an ICCMA 2023 ABA solver"
+        )
 
     framework = aba_framework(2)
     result = solve_iccma_aba_extensions(framework, semantics="stable", binary=binary)

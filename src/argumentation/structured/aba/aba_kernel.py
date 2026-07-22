@@ -36,12 +36,10 @@ class AssumptionKernel:
             assumptions=assumptions,
             literals=literals,
             assumption_ids={
-                assumption: f"a{index}"
-                for index, assumption in enumerate(assumptions)
+                assumption: f"a{index}" for index, assumption in enumerate(assumptions)
             },
             literal_ids={
-                literal: f"l{index}"
-                for index, literal in enumerate(literals)
+                literal: f"l{index}" for index, literal in enumerate(literals)
             },
         )
 
@@ -51,9 +49,17 @@ class AssumptionKernel:
         require_derived: Literal | None = None,
         require_not_derived: Literal | None = None,
     ) -> AssumptionSet | None:
-        if require_derived is not None and require_derived not in self.framework.language:
-            raise ValueError(f"required literal is not in framework language: {require_derived!r}")
-        if require_not_derived is not None and require_not_derived not in self.framework.language:
+        if (
+            require_derived is not None
+            and require_derived not in self.framework.language
+        ):
+            raise ValueError(
+                f"required literal is not in framework language: {require_derived!r}"
+            )
+        if (
+            require_not_derived is not None
+            and require_not_derived not in self.framework.language
+        ):
             raise ValueError(
                 f"excluded literal is not in framework language: {require_not_derived!r}"
             )
@@ -205,7 +211,9 @@ class AssumptionKernel:
 
         def collect_model(model) -> None:
             selected.clear()
-            selected.extend(str(symbol.arguments[0]) for symbol in model.symbols(shown=True))
+            selected.extend(
+                str(symbol.arguments[0]) for symbol in model.symbols(shown=True)
+            )
 
         control = clingo.Control(["--models=0"] if optimize else ["--models=1"])
         control.add("base", [], "\n".join(program))

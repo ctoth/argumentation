@@ -197,9 +197,7 @@ def _rule_from_instance(
     origins: dict[Rule, GroundRuleOrigin],
 ) -> Rule:
     if getattr(instance, "default_negated_body", ()):
-        raise ValueError(
-            "ASPIC+ grounding does not accept default-negated rule bodies"
-        )
+        raise ValueError("ASPIC+ grounding does not accept default-negated rule bodies")
     rule = Rule(
         antecedents=tuple(_literal_from_ground_atom(atom) for atom in instance.body),
         consequent=_literal_from_ground_atom(instance.head),
@@ -208,10 +206,7 @@ def _rule_from_instance(
     )
     origins[rule] = GroundRuleOrigin(
         source_rule_id=instance.rule_id,
-        substitution=tuple(
-            (name, value)
-            for name, value in instance.substitution
-        ),
+        substitution=tuple((name, value) for name, value in instance.substitution),
         role="ground",
     )
     return rule
@@ -229,10 +224,7 @@ def _undercut_rules_from_defeaters(
                 "ASPIC+ grounding does not accept default-negated defeater bodies"
             )
         defeater_head = _literal_from_ground_atom(instance.head)
-        antecedents = tuple(
-            _literal_from_ground_atom(atom)
-            for atom in instance.body
-        )
+        antecedents = tuple(_literal_from_ground_atom(atom) for atom in instance.body)
         defeater_targets = _defeater_targets(defeater_head, target_rules, origins)
         for target_rule in defeater_targets:
             if target_rule.name is None:
@@ -246,8 +238,7 @@ def _undercut_rules_from_defeaters(
             origins[rule] = GroundRuleOrigin(
                 source_rule_id=instance.rule_id,
                 substitution=tuple(
-                    (name, value)
-                    for name, value in instance.substitution
+                    (name, value) for name, value in instance.substitution
                 ),
                 role="undercut",
                 target_rule=target_rule,
@@ -285,10 +276,7 @@ def _source_to_ground_rules(
         if origin.role != "ground":
             continue
         grouped.setdefault(origin.source_rule_id, set()).add(rule)
-    return {
-        source_id: frozenset(rules)
-        for source_id, rules in grouped.items()
-    }
+    return {source_id: frozenset(rules) for source_id, rules in grouped.items()}
 
 
 def _project_rule_order(
@@ -342,7 +330,9 @@ def _contrariness_from_language(
         by_shape.setdefault(key, set()).add(literal)
 
     for left_predicate, right_predicate in conflicts:
-        for left, right in _conflict_literals(left_predicate, right_predicate, by_shape):
+        for left, right in _conflict_literals(
+            left_predicate, right_predicate, by_shape
+        ):
             if left == right:
                 continue
             if left.contrary == right or right.contrary == left:
@@ -366,9 +356,7 @@ def _conflict_literals(
     right_name, right_negated = _decode_predicate_polarity(right_predicate)
 
     keys = {
-        args
-        for predicate, args in by_shape
-        if predicate in {left_name, right_name}
+        args for predicate, args in by_shape if predicate in {left_name, right_name}
     }
     pairs: list[tuple[Literal, Literal]] = []
     for args in keys:

@@ -28,9 +28,7 @@ from argumentation.structured.aba.aba_kernel import AssumptionKernel
 DEFAULT_INSTANCE: Final = Path(
     "data/iccma/2023/extracted/instances/benchmarks/aba/aba_2000_0.3_10_10_1.aba"
 )
-DEFAULT_OUTPUT: Final = Path(
-    "data/iccma/2023/runs/probe2-clingo-config-triage.json"
-)
+DEFAULT_OUTPUT: Final = Path("data/iccma/2023/runs/probe2-clingo-config-triage.json")
 SOLVE_CAP_SECONDS: Final = 15.0
 MEDIAN_SURVIVAL_SECONDS: Final = 8.0
 EVERY_RUN_SURVIVAL_SECONDS: Final = 9.0
@@ -148,7 +146,9 @@ def _extract_witness(result: ABAQueryResult) -> AssumptionSet:
     if result.status != "success":
         raise ValueError(f"solver status is {result.status!r}, not success")
     if len(result.extensions) != 1:
-        raise ValueError(f"expected exactly one extension, got {len(result.extensions)}")
+        raise ValueError(
+            f"expected exactly one extension, got {len(result.extensions)}"
+        )
     witness = result.extensions[0]
     if result.accepted_assumptions != witness:
         raise ValueError("accepted_assumptions does not match the returned extension")
@@ -177,8 +177,7 @@ def _check_preferred_independent(
     unattacked = assumptions - attacked
     unattacked_closure = horn_closure(unattacked, framework.rules)
     defends = not any(
-        framework.contrary[assumption] in unattacked_closure
-        for assumption in witness
+        framework.contrary[assumption] in unattacked_closure for assumption in witness
     )
     admissible = subset_ok and closed_ok and conflict_free and defends
 
@@ -404,7 +403,9 @@ def main() -> int:
         framework=framework,
     )
     if route != "asp":
-        raise AssertionError(f"expected the production auto route to be asp, got {route!r}")
+        raise AssertionError(
+            f"expected the production auto route to be asp, got {route!r}"
+        )
 
     runs: list[ProbeRun] = []
     for order_index, arm in enumerate(RUN_ORDER):

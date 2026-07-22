@@ -52,9 +52,7 @@ def _single_relation_frameworks(
     size = draw(st.integers(min_value=1, max_value=4))
     arguments = frozenset(("a", "b", "c", "d")[:size])
     pairs = tuple(product(sorted(arguments), repeat=2))
-    relation = frozenset(
-        draw(st.sets(st.sampled_from(pairs), max_size=len(pairs)))
-    )
+    relation = frozenset(draw(st.sets(st.sampled_from(pairs), max_size=len(pairs))))
     return ArgumentationFramework(arguments=arguments, defeats=relation)
 
 
@@ -181,8 +179,9 @@ def test_structured_naive_matches_maximal_attack_conflict_free_property(
     assert set(dung.naive_extensions(framework)) == expected
 
 
-def test_structured_admissible_uses_attacks_for_conflict_and_defeats_for_defense(
-) -> None:
+def test_structured_admissible_uses_attacks_for_conflict_and_defeats_for_defense() -> (
+    None
+):
     framework = _structured_distinguishing_framework()
 
     assert _admissible_extensions(framework) == {

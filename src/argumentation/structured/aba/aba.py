@@ -51,7 +51,9 @@ class ABAFramework:
         if not assumptions <= language:
             raise ValueError("ABA assumptions must be contained in the language")
         if set(contrary) != set(assumptions):
-            raise ValueError("ABA contrary map must define exactly one contrary per assumption")
+            raise ValueError(
+                "ABA contrary map must define exactly one contrary per assumption"
+            )
         rule_literals = frozenset(
             chain.from_iterable(rule.antecedents for rule in rules)
         ) | frozenset(rule.consequent for rule in rules)
@@ -78,17 +80,27 @@ class ABAPlusFramework:
 
     def __post_init__(self) -> None:
         assumptions = self.framework.assumptions
-        if any(left not in assumptions or right not in assumptions for left, right in self.preference_order):
+        if any(
+            left not in assumptions or right not in assumptions
+            for left, right in self.preference_order
+        ):
             raise ValueError("ABA+ preferences must range over assumptions")
-        object.__setattr__(self, "preference_order", _transitive_closure(self.preference_order))
+        object.__setattr__(
+            self, "preference_order", _transitive_closure(self.preference_order)
+        )
 
 
-def derives(framework: ABAFramework, premises: AssumptionSet, conclusion: Literal) -> bool:
+def derives(
+    framework: ABAFramework, premises: AssumptionSet, conclusion: Literal
+) -> bool:
     return conclusion in _closure(framework, premises)
 
 
 def argument_for(framework: ABAFramework, conclusion: Literal) -> ABAArgument:
-    for support in sorted(_all_subsets(framework.assumptions), key=lambda item: (len(item), sorted(map(repr, item)))):
+    for support in sorted(
+        _all_subsets(framework.assumptions),
+        key=lambda item: (len(item), sorted(map(repr, item))),
+    ):
         if derives(framework, support, conclusion):
             return ABAArgument(support, conclusion)
     raise ValueError(f"no ABA argument derives {conclusion!r}")
@@ -109,19 +121,31 @@ def attacks_with_preferences(
 ) -> bool:
     base = framework.framework
     for target in target_assumptions:
-        for support in _supports_deriving(base, attacker_assumptions, base.contrary[target]):
-            if not any(_strictly_less(framework, assumption, target) for assumption in support):
+        for support in _supports_deriving(
+            base, attacker_assumptions, base.contrary[target]
+        ):
+            if not any(
+                _strictly_less(framework, assumption, target) for assumption in support
+            ):
                 return True
     for attacker in attacker_assumptions:
-        for support in _supports_deriving(base, target_assumptions, base.contrary[attacker]):
-            if any(_strictly_less(framework, assumption, attacker) for assumption in support):
+        for support in _supports_deriving(
+            base, target_assumptions, base.contrary[attacker]
+        ):
+            if any(
+                _strictly_less(framework, assumption, attacker)
+                for assumption in support
+            ):
                 return True
     return False
 
 
 def closed(framework: ABAInput, assumptions: AssumptionSet) -> bool:
     base = _base(framework)
-    return assumptions <= base.assumptions and (_closure(base, assumptions) & base.assumptions) == assumptions
+    return (
+        assumptions <= base.assumptions
+        and (_closure(base, assumptions) & base.assumptions) == assumptions
+    )
 
 
 def conflict_free(framework: ABAInput, assumptions: AssumptionSet) -> bool:
@@ -129,10 +153,14 @@ def conflict_free(framework: ABAInput, assumptions: AssumptionSet) -> bool:
 
 
 def admissible(framework: ABAInput, assumptions: AssumptionSet) -> bool:
-    return closed(framework, assumptions) and conflict_free(framework, assumptions) and _defends(
-        framework,
-        assumptions,
-        assumptions,
+    return (
+        closed(framework, assumptions)
+        and conflict_free(framework, assumptions)
+        and _defends(
+            framework,
+            assumptions,
+            assumptions,
+        )
     )
 
 
@@ -149,7 +177,8 @@ def complete_extensions(framework: ABAInput) -> tuple[AssumptionSet, ...]:
     extensions = [
         candidate
         for candidate in _all_subsets(_base(framework).assumptions)
-        if admissible(framework, candidate) and def_operator(framework, candidate) <= candidate
+        if admissible(framework, candidate)
+        and def_operator(framework, candidate) <= candidate
     ]
     return _sort_extensions(extensions)
 
@@ -246,7 +275,9 @@ def _base(framework: ABAInput) -> ABAFramework:
     return framework.framework if isinstance(framework, ABAPlusFramework) else framework
 
 
-def _attacks(framework: ABAInput, attacker: AssumptionSet, target: AssumptionSet) -> bool:
+def _attacks(
+    framework: ABAInput, attacker: AssumptionSet, target: AssumptionSet
+) -> bool:
     if isinstance(framework, ABAPlusFramework):
         return attacks_with_preferences(framework, attacker, target)
     return attacks(framework, attacker, target)
@@ -307,15 +338,22 @@ def _argument_attacks(
     attacker: ABAArgument,
     target: ABAArgument,
 ) -> bool:
-    return any(attacker.conclusion == framework.contrary[assumption] for assumption in target.assumptions)
+    return any(
+        attacker.conclusion == framework.contrary[assumption]
+        for assumption in target.assumptions
+    )
 
 
 def _argument_label(argument: ABAArgument) -> str:
-    support_text = ",".join(sorted(repr(assumption) for assumption in argument.assumptions))
+    support_text = ",".join(
+        sorted(repr(assumption) for assumption in argument.assumptions)
+    )
     return f"{{{support_text}}} |- {argument.conclusion!r}"
 
 
-def _defends(framework: ABAInput, defender: AssumptionSet, target: AssumptionSet) -> bool:
+def _defends(
+    framework: ABAInput, defender: AssumptionSet, target: AssumptionSet
+) -> bool:
     base = _base(framework)
     for attacker in _all_subsets(base.assumptions):
         # NOTE: the empty attacker set must be considered -- an assumption whose
@@ -353,7 +391,10 @@ def _transitive_closure(
 
 
 def _strictly_less(framework: ABAPlusFramework, left: Literal, right: Literal) -> bool:
-    return (left, right) in framework.preference_order and (right, left) not in framework.preference_order
+    return (left, right) in framework.preference_order and (
+        right,
+        left,
+    ) not in framework.preference_order
 
 
 __all__ = [

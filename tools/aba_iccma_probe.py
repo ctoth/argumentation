@@ -16,10 +16,14 @@ from argumentation.structured.aba.aba_preprocessing import simplify_aba
 from argumentation.interop.iccma import parse_aba
 
 
-def _run_with_timeout(instance: Path, mode: str, *, timeout_seconds: float) -> dict[str, Any]:
+def _run_with_timeout(
+    instance: Path, mode: str, *, timeout_seconds: float
+) -> dict[str, Any]:
     context = multiprocessing.get_context("spawn")
     result_queue = context.Queue(maxsize=1)
-    process = context.Process(target=_probe_worker, args=(str(instance), mode, result_queue))
+    process = context.Process(
+        target=_probe_worker, args=(str(instance), mode, result_queue)
+    )
     started = time.perf_counter()
     process.start()
     process.join(timeout_seconds)
@@ -89,7 +93,9 @@ def _probe_worker(instance: str, mode: str, result_queue) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Probe production ABA ICCMA solve phases.")
+    parser = argparse.ArgumentParser(
+        description="Probe production ABA ICCMA solve phases."
+    )
     parser.add_argument("instance", type=Path)
     parser.add_argument(
         "--mode",

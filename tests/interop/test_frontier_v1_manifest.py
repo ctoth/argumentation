@@ -126,15 +126,27 @@ def test_select_rows_filters_by_subtrack() -> None:
 def test_summarize_by_class_reports_pass_rates() -> None:
     results = [
         {
-            "source": {"relative_path": "a.af", "subtrack": "DS-PR", "recal_class": "hard"},
+            "source": {
+                "relative_path": "a.af",
+                "subtrack": "DS-PR",
+                "recal_class": "hard",
+            },
             "result": {"status": "timeout"},
         },
         {
-            "source": {"relative_path": "b.af", "subtrack": "DC-CO", "recal_class": "melt"},
+            "source": {
+                "relative_path": "b.af",
+                "subtrack": "DC-CO",
+                "recal_class": "melt",
+            },
             "result": {"status": "solved"},
         },
         {
-            "source": {"relative_path": "c.af", "subtrack": "DS-PR", "recal_class": "hard"},
+            "source": {
+                "relative_path": "c.af",
+                "subtrack": "DS-PR",
+                "recal_class": "hard",
+            },
             "result": {"status": "timeout"},
         },
     ]
@@ -152,11 +164,19 @@ def test_summarize_by_class_reports_pass_rates() -> None:
 def test_summarize_by_class_flags_deviations() -> None:
     results = [
         {
-            "source": {"relative_path": "a.af", "subtrack": "DS-PR", "recal_class": "hard"},
+            "source": {
+                "relative_path": "a.af",
+                "subtrack": "DS-PR",
+                "recal_class": "hard",
+            },
             "result": {"status": "solved"},
         },
         {
-            "source": {"relative_path": "b.af", "subtrack": "DC-CO", "recal_class": "melt"},
+            "source": {
+                "relative_path": "b.af",
+                "subtrack": "DC-CO",
+                "recal_class": "melt",
+            },
             "result": {"status": "timeout"},
         },
     ]

@@ -190,9 +190,7 @@ def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
         for argument in framework.arguments
     }
     queue = deque(
-        argument
-        for argument in framework.arguments
-        if live_attackers[argument] == 0
+        argument for argument in framework.arguments if live_attackers[argument] == 0
     )
     in_arguments: set[str] = set()
     out_arguments: set[str] = set()
@@ -284,7 +282,9 @@ def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]
     """
     from argumentation.core.labelling import stable_labellings
 
-    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    cf_relation = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
     return [
         labelling.extension
         for labelling in stable_labellings(framework)
@@ -322,15 +322,14 @@ def stage_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     with maximal range under one attack relation. Distinct pre-preference
     attacks and preference-filtered defeats do not define that one relation.
     """
-    if (
-        framework.attacks is not None
-        and framework.attacks != framework.defeats
-    ):
+    if framework.attacks is not None and framework.attacks != framework.defeats:
         raise ValueError(
             "stage semantics is undefined for distinct attack and defeat relations"
         )
     args = framework.arguments
-    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    cf_relation = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
     candidates: list[frozenset[str]] = []
     for size in range(len(args) + 1):
         for subset in combinations(sorted(args), size):
@@ -404,9 +403,7 @@ def naive_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     single canonical defeat relation.
     """
     cf_relation = (
-        framework.attacks
-        if framework.attacks is not None
-        else framework.defeats
+        framework.attacks if framework.attacks is not None else framework.defeats
     )
     candidates = [
         candidate
@@ -422,9 +419,7 @@ def _component_defeated(
     components: list[frozenset[str]],
 ) -> frozenset[str]:
     component_by_argument = {
-        argument: component
-        for component in components
-        for argument in component
+        argument: component for component in components for argument in component
     }
     return frozenset(
         target
@@ -485,10 +480,7 @@ def cf2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     Reference:
         Gaggl and Woltran 2013, Definition 2.7.
     """
-    if (
-        framework.attacks is not None
-        and framework.attacks != framework.defeats
-    ):
+    if framework.attacks is not None and framework.attacks != framework.defeats:
         raise ValueError(
             "CF2 semantics is undefined for distinct attack and defeat relations"
         )
@@ -506,10 +498,7 @@ def stage2_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]
     the same component recursion with stage semantics as the single-SCC base.
     Both layers require one canonical relation.
     """
-    if (
-        framework.attacks is not None
-        and framework.attacks != framework.defeats
-    ):
+    if framework.attacks is not None and framework.attacks != framework.defeats:
         raise ValueError(
             "stage2 semantics is undefined for distinct attack and defeat relations"
         )
@@ -534,7 +523,9 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
     indirect-conflict check over odd-length attack paths.
     """
     indirect: set[tuple[str, str]] = set()
-    successors: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    successors: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
     for attacker, target in framework.defeats:
         successors.setdefault(attacker, set()).add(target)
 
@@ -561,8 +552,7 @@ def prudent_conflict_free(
     """Return whether ``candidate`` has no prudent indirect conflict."""
     indirect = indirect_attacks(framework)
     return not any(
-        attacker in candidate and target in candidate
-        for attacker, target in indirect
+        attacker in candidate and target in candidate for attacker, target in indirect
     )
 
 
@@ -579,7 +569,9 @@ def prudent_admissible(
     )
 
 
-def prudent_preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
+def prudent_preferred_extensions(
+    framework: ArgumentationFramework,
+) -> list[frozenset[str]]:
     """Return inclusion-maximal prudent-admissible sets."""
     candidates = [
         candidate

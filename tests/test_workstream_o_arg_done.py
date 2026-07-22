@@ -4,7 +4,11 @@ import re
 
 import pytest
 
-from argumentation.dynamics.af_revision import AFChangeKind, ExtensionRevisionState, _classify_extension_change
+from argumentation.dynamics.af_revision import (
+    AFChangeKind,
+    ExtensionRevisionState,
+    _classify_extension_change,
+)
 from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
     ContrarinessFn,
@@ -49,7 +53,9 @@ def test_workstream_o_arg_done() -> None:
         strict_rules=frozenset(),
         defeasible_rules=frozenset(),
     )
-    encoding = encode_aspic_theory(system, KnowledgeBase(frozenset({not_p}), frozenset({p})), pref)
+    encoding = encode_aspic_theory(
+        system, KnowledgeBase(frozenset({not_p}), frozenset({p})), pref
+    )
     assert all(
         re.fullmatch(r"[a-z][A-Za-z0-9_]*", fact.removesuffix(").").split("(", 1)[1])
         for fact in encoding.facts
@@ -70,12 +76,17 @@ def test_workstream_o_arg_done() -> None:
         ),
     )
     with pytest.raises(ValueError, match="duplicate defeasible rule name"):
-        encode_aspic_theory(duplicate_system, KnowledgeBase(frozenset({p}), frozenset()), pref)
+        encode_aspic_theory(
+            duplicate_system, KnowledgeBase(frozenset({p}), frozenset()), pref
+        )
 
-    assert _classify_extension_change(
-        (frozenset({"a"}), frozenset({"b"})),
-        (frozenset({"a"}),),
-    ) is AFChangeKind.DECISIVE
+    assert (
+        _classify_extension_change(
+            (frozenset({"a"}), frozenset({"b"})),
+            (frozenset({"a"}),),
+        )
+        is AFChangeKind.DECISIVE
+    )
 
     calls: list[frozenset[str]] = []
 
@@ -99,8 +110,13 @@ def test_workstream_o_arg_done() -> None:
         ignorance=frozenset({("b", "a")}),
         non_attacks=frozenset({("a", "a"), ("b", "b")}),
     )
-    assert accepted_arguments(partial, semantics="grounded", mode="necessary_skeptical") == frozenset()
-    assert accepted_arguments(partial, semantics="grounded", mode="possible_skeptical") == frozenset({"a"})
+    assert (
+        accepted_arguments(partial, semantics="grounded", mode="necessary_skeptical")
+        == frozenset()
+    )
+    assert accepted_arguments(
+        partial, semantics="grounded", mode="possible_skeptical"
+    ) == frozenset({"a"})
     with pytest.raises(ValueError, match="necessary_skeptical"):
         accepted_arguments(partial, semantics="grounded", mode="skeptical")
 

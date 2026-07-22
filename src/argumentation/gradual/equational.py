@@ -37,8 +37,7 @@ def equational_fixpoint(
     attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
     supporters = predecessors_index(graph.supports, nodes=graph.arguments)
     strengths = {
-        argument: graph.initial_weights[argument]
-        for argument in graph.arguments
+        argument: graph.initial_weights[argument] for argument in graph.arguments
     }
     max_delta = 0.0
     for iteration in range(1, max_iterations + 1):
@@ -51,14 +50,14 @@ def equational_fixpoint(
             support_value = 1.0
             if supporters[argument]:
                 support_value = 1.0 - _product(
-                    1.0 - strengths[source]
-                    for source in supporters[argument]
+                    1.0 - strengths[source] for source in supporters[argument]
                 )
             base = graph.initial_weights[argument]
-            updated[argument] = min(1.0, max(0.0, base * attack_value + (1.0 - base) * support_value))
+            updated[argument] = min(
+                1.0, max(0.0, base * attack_value + (1.0 - base) * support_value)
+            )
         max_delta = max(
-            abs(updated[argument] - strengths[argument])
-            for argument in graph.arguments
+            abs(updated[argument] - strengths[argument]) for argument in graph.arguments
         )
         strengths = updated
         if max_delta <= tolerance:

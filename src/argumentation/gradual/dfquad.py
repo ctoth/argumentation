@@ -198,13 +198,17 @@ def _normalized_support_weights(
 
 
 def _topological_order(graph: WeightedBipolarGraph) -> list[str]:
-    predecessors: dict[str, set[str]] = {argument: set() for argument in graph.arguments}
+    predecessors: dict[str, set[str]] = {
+        argument: set() for argument in graph.arguments
+    }
     successors: dict[str, set[str]] = {argument: set() for argument in graph.arguments}
     for source, target in graph.attacks | graph.supports:
         predecessors[target].add(source)
         successors[source].add(target)
 
-    queue = deque(sorted(argument for argument, values in predecessors.items() if not values))
+    queue = deque(
+        sorted(argument for argument, values in predecessors.items() if not values)
+    )
     order: list[str] = []
     while queue:
         argument = queue.popleft()

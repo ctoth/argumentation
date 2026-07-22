@@ -89,7 +89,9 @@ def summarize_results(results: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Run selected rows from an ICCMA timeout fixture.")
+    parser = argparse.ArgumentParser(
+        description="Run selected rows from an ICCMA timeout fixture."
+    )
     parser.add_argument("--timeouts", type=Path, required=True)
     parser.add_argument("--year", type=int, action="append")
     parser.add_argument("--subtrack")
@@ -118,7 +120,9 @@ def main(argv: list[str] | None = None) -> int:
         "results": results,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(json.dumps(payload["summary"], indent=2, sort_keys=True))
     return 0
 

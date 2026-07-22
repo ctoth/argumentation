@@ -8,7 +8,11 @@ from enum import StrEnum
 from itertools import combinations
 from typing import Protocol
 
-from argumentation.core.dung import ArgumentationFramework, grounded_extension, stable_extensions
+from argumentation.core.dung import (
+    ArgumentationFramework,
+    grounded_extension,
+    stable_extensions,
+)
 
 
 class ExtensionConstraint(Protocol):
@@ -85,11 +89,19 @@ class ExtensionRevisionState:
                 for candidate, rank in self.ranking.items()
             }
             if not all(candidate <= self.arguments for candidate in normalized_ranking):
-                raise ValueError("ranking keys must be subsets of the argument universe")
-            non_extension_floor = min(
-                (normalized_ranking.get(extension, 0) for extension in extension_set),
-                default=0,
-            ) + 1
+                raise ValueError(
+                    "ranking keys must be subsets of the argument universe"
+                )
+            non_extension_floor = (
+                min(
+                    (
+                        normalized_ranking.get(extension, 0)
+                        for extension in extension_set
+                    ),
+                    default=0,
+                )
+                + 1
+            )
             faithful_ranking = {
                 candidate: 0
                 if candidate in extension_set
@@ -112,7 +124,9 @@ class ExtensionRevisionState:
         arguments: frozenset[str],
         extensions: tuple[frozenset[str], ...],
         *,
-        ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] | None = None,
+        ranking: Mapping[frozenset[str], int]
+        | Callable[[frozenset[str]], int]
+        | None = None,
     ) -> ExtensionRevisionState:
         extension_set = set(extensions)
         if ranking is None:
@@ -134,20 +148,21 @@ class ExtensionRevisionState:
     ) -> tuple[frozenset[str], ...]:
         if not candidates:
             return ()
-        ranked = {
-            candidate: self.rank(candidate)
-            for candidate in candidates
-        }
+        ranked = {candidate: self.rank(candidate) for candidate in candidates}
         best = min(ranked.values())
-        return tuple(sorted(
-            (candidate for candidate in candidates if ranked[candidate] == best),
-            key=lambda item: (len(item), tuple(sorted(item))),
-        ))
+        return tuple(
+            sorted(
+                (candidate for candidate in candidates if ranked[candidate] == best),
+                key=lambda item: (len(item), tuple(sorted(item))),
+            )
+        )
 
     def rank(self, extension: frozenset[str]) -> int:
         candidate = frozenset(extension)
         if not candidate <= self.arguments:
-            raise ValueError("ranked extension must be a subset of the argument universe")
+            raise ValueError(
+                "ranked extension must be a subset of the argument universe"
+            )
         if isinstance(self.ranking, Mapping):
             if candidate in self.ranking:
                 return int(self.ranking[candidate])
@@ -158,12 +173,17 @@ class ExtensionRevisionState:
         if argument in self.arguments:
             return self
         arguments = self.arguments | frozenset((argument,))
+
         def ranking(candidate: frozenset[str]) -> int:
             projected = frozenset(item for item in candidate if item != argument)
             return self.rank(projected)
 
-        extensions = tuple(frozenset(set(extension) | {argument}) for extension in self.extensions)
-        return ExtensionRevisionState.from_extensions(arguments, extensions, ranking=ranking)
+        extensions = tuple(
+            frozenset(set(extension) | {argument}) for extension in self.extensions
+        )
+        return ExtensionRevisionState.from_extensions(
+            arguments, extensions, ranking=ranking
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,7 +207,9 @@ def baumann_2015_kernel_union_expand(
     union = ArgumentationFramework(
         arguments=arguments,
         defeats=frozenset(base.defeats | new.defeats),
-        attacks=frozenset((base.attacks or base.defeats) | (new.attacks or new.defeats)),
+        attacks=frozenset(
+            (base.attacks or base.defeats) | (new.attacks or new.defeats)
+        ),
     )
     return stable_kernel(union)
 
@@ -285,7 +307,9 @@ def diller_2015_revise_by_formula(
     revised = working.minimal_extensions(satisfying)
     return ExtensionRevisionResult(
         extensions=revised,
-        state=ExtensionRevisionState.from_extensions(arguments, revised, ranking=working.ranking),
+        state=ExtensionRevisionState.from_extensions(
+            arguments, revised, ranking=working.ranking
+        ),
     )
 
 
@@ -303,11 +327,15 @@ def diller_2015_revise_by_framework(
     arguments = state.arguments | framework.arguments
     working = state if arguments == state.arguments else _extend_state(state, arguments)
     lifted_target = tuple(frozenset(extension) for extension in target)
-    overlap = tuple(extension for extension in working.extensions if extension in set(lifted_target))
+    overlap = tuple(
+        extension for extension in working.extensions if extension in set(lifted_target)
+    )
     revised = overlap or working.minimal_extensions(lifted_target)
     return ExtensionRevisionResult(
         extensions=revised,
-        state=ExtensionRevisionState.from_extensions(arguments, revised, ranking=working.ranking),
+        state=ExtensionRevisionState.from_extensions(
+            arguments, revised, ranking=working.ranking
+        ),
     )
 
 
@@ -343,9 +371,10 @@ def _classify_extension_change(
         return AFChangeKind.CONSERVATIVE
     if not after_set or after_set == empty_family:
         return AFChangeKind.DESTRUCTIVE
-    if before_set and after_set and all(
-        any(old < new for new in after_set)
-        for old in before_set
+    if (
+        before_set
+        and after_set
+        and all(any(old < new for new in after_set) for old in before_set)
     ):
         return AFChangeKind.EXPANSIVE
     if len(after_set) == 1:
@@ -354,9 +383,10 @@ def _classify_extension_change(
             return AFChangeKind.DECISIVE
     if len(before_set) < len(after_set):
         return AFChangeKind.QUESTIONING
-    if before_set and after_set and all(
-        any(new <= old for old in before_set)
-        for new in after_set
+    if (
+        before_set
+        and after_set
+        and all(any(new <= old for old in before_set) for new in after_set)
     ):
         return AFChangeKind.RESTRICTIVE
     return AFChangeKind.ALTERING
@@ -381,7 +411,9 @@ def _extend_state(
                 added_arguments=extras,
             ) from None
     extensions = tuple(frozenset(extension) for extension in state.extensions)
-    return ExtensionRevisionState.from_extensions(arguments, extensions, ranking=ranking)
+    return ExtensionRevisionState.from_extensions(
+        arguments, extensions, ranking=ranking
+    )
 
 
 __all__ = [

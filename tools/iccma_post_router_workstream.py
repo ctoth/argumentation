@@ -16,7 +16,9 @@ from tools.iccma_timeout_corpus import collect_timeout_rows, summarize_timeout_r
 
 DEFAULT_ROOT = Path("data") / "iccma" / "2025"
 DEFAULT_DATA_ROOT = Path("data") / "iccma"
-DEFAULT_TIMEOUT_MANIFEST = Path("tests") / "manifests" / "iccma2025-cap200-timeouts.json"
+DEFAULT_TIMEOUT_MANIFEST = (
+    Path("tests") / "manifests" / "iccma2025-cap200-timeouts.json"
+)
 DEFAULT_STALE_SUBTRACKS = ("SE-PR", "SE-ST")
 TASK_PREFIXES = {
     "DC": "credulous-acceptance",
@@ -147,7 +149,9 @@ def summarize_result_classes(results: list[dict[str, Any]]) -> list[dict[str, An
         source = item["source"]
         result = item["result"]
         class_name = solver_class(source.get("instance_kind"), source.get("subtrack"))
-        bucket = buckets.setdefault(class_name, {"solver_class": class_name, "by_status": {}, "total": 0})
+        bucket = buckets.setdefault(
+            class_name, {"solver_class": class_name, "by_status": {}, "total": 0}
+        )
         bucket["total"] += 1
         status = str(result.get("status"))
         bucket["by_status"][status] = bucket["by_status"].get(status, 0) + 1
@@ -205,10 +209,14 @@ def execute_workstream(config: WorkstreamConfig) -> dict[str, Any]:
     if not config.skip_stale_replay:
         for subtrack in config.stale_subtracks:
             output_path = replays_dir / f"{subtrack}.json"
-            command = build_replay_command(config, subtrack=subtrack, output_path=output_path)
+            command = build_replay_command(
+                config, subtrack=subtrack, output_path=output_path
+            )
             stdout_path = logs_dir / f"replay-{subtrack}.stdout.log"
             stderr_path = logs_dir / f"replay-{subtrack}.stderr.jsonl"
-            returncode = run_command(command, stdout_path=stdout_path, stderr_path=stderr_path)
+            returncode = run_command(
+                command, stdout_path=stdout_path, stderr_path=stderr_path
+            )
             commands.append(
                 {
                     "name": f"replay-{subtrack}",
@@ -232,7 +240,9 @@ def execute_workstream(config: WorkstreamConfig) -> dict[str, Any]:
         command = build_cap_command(config, event_log_path=event_log_path)
         stdout_path = logs_dir / "cap.stdout.log"
         stderr_path = logs_dir / "cap.stderr.jsonl"
-        returncode = run_command(command, stdout_path=stdout_path, stderr_path=stderr_path)
+        returncode = run_command(
+            command, stdout_path=stdout_path, stderr_path=stderr_path
+        )
         commands.append(
             {
                 "name": "cap-run",
@@ -270,8 +280,19 @@ def execute_workstream(config: WorkstreamConfig) -> dict[str, Any]:
         "stale_timeout_replay": replay_reports,
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"report": str(report_path), "fresh_timeout_summary": report["fresh_cap"]["timeout_summary"]}, indent=2, sort_keys=True))
+    report_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {
+                "report": str(report_path),
+                "fresh_timeout_summary": report["fresh_cap"]["timeout_summary"],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return report
 
 
@@ -281,7 +302,9 @@ def parse_args(argv: list[str] | None = None) -> WorkstreamConfig:
     )
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--data-root", type=Path, default=DEFAULT_DATA_ROOT)
-    parser.add_argument("--timeout-manifest", type=Path, default=DEFAULT_TIMEOUT_MANIFEST)
+    parser.add_argument(
+        "--timeout-manifest", type=Path, default=DEFAULT_TIMEOUT_MANIFEST
+    )
     parser.add_argument("--label", default="post-router-cap200")
     parser.add_argument("--backend", default="auto")
     parser.add_argument("--max-af-arguments", type=int, default=200)

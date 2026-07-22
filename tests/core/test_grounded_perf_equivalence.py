@@ -41,9 +41,7 @@ def _reference_defends(
     defeats: frozenset[tuple[str, str]],
 ) -> bool:
     attackers = frozenset(
-        attacker
-        for attacker, target in defeats
-        if target == argument
+        attacker for attacker, target in defeats if target == argument
     )
     return all(
         any((defender, attacker) in defeats for defender in candidate)
@@ -105,11 +103,7 @@ def _random_bipolar_frameworks() -> list[BipolarArgumentationFramework]:
         support_density = 0.02 + (index % 5) * 0.03
         arguments = {f"b{index}_{node}" for node in range(size)}
         pairs = [(source, target) for source in arguments for target in arguments]
-        defeats = {
-            pair
-            for pair in pairs
-            if rng.random() < attack_density
-        }
+        defeats = {pair for pair in pairs if rng.random() < attack_density}
         supports = {
             pair
             for pair in pairs
@@ -165,7 +159,9 @@ def test_bipolar_grounded_matches_reference_fixpoint_on_small_corpus() -> None:
     frameworks.extend(_random_bipolar_frameworks())
 
     for framework in frameworks:
-        assert bipolar_grounded_extension(framework) == _reference_bipolar_grounded(framework)
+        assert bipolar_grounded_extension(framework) == _reference_bipolar_grounded(
+            framework
+        )
 
 
 def test_dung_grounded_scales_on_sparse_50k_node_graph() -> None:

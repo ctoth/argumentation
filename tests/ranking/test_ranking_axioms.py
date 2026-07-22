@@ -55,7 +55,9 @@ def test_abstraction_and_independence_ignore_names_and_disconnected_context() ->
     assert independence(categoriser_ranking, framework)
 
 
-def test_self_contradiction_ranks_self_attackers_no_higher_than_clean_arguments() -> None:
+def test_self_contradiction_ranks_self_attackers_no_higher_than_clean_arguments() -> (
+    None
+):
     framework = ArgumentationFramework(
         arguments=frozenset({"self", "clean"}),
         defeats=frozenset({("self", "self")}),
@@ -66,12 +68,16 @@ def test_self_contradiction_ranks_self_attackers_no_higher_than_clean_arguments(
 
 def test_defense_and_strict_addition_precedence_reward_defended_attackers() -> None:
     framework = ArgumentationFramework(
-        arguments=frozenset({"defended", "undefended", "attacker_a", "attacker_b", "helper"}),
-        defeats=frozenset({
-            ("attacker_a", "defended"),
-            ("attacker_b", "undefended"),
-            ("helper", "attacker_a"),
-        }),
+        arguments=frozenset(
+            {"defended", "undefended", "attacker_a", "attacker_b", "helper"}
+        ),
+        defeats=frozenset(
+            {
+                ("attacker_a", "defended"),
+                ("attacker_b", "undefended"),
+                ("helper", "attacker_a"),
+            }
+        ),
     )
     result = categoriser_ranking(framework)
 
@@ -81,12 +87,16 @@ def test_defense_and_strict_addition_precedence_reward_defended_attackers() -> N
 
 def test_counter_transitivity_variants_follow_attacker_group_quality() -> None:
     framework = ArgumentationFramework(
-        arguments=frozenset({"strong_attacker", "weak_attacker", "left", "right", "helper"}),
-        defeats=frozenset({
-            ("strong_attacker", "left"),
-            ("weak_attacker", "right"),
-            ("helper", "strong_attacker"),
-        }),
+        arguments=frozenset(
+            {"strong_attacker", "weak_attacker", "left", "right", "helper"}
+        ),
+        defeats=frozenset(
+            {
+                ("strong_attacker", "left"),
+                ("weak_attacker", "right"),
+                ("helper", "strong_attacker"),
+            }
+        ),
     )
     result = categoriser_ranking(framework)
 
@@ -97,27 +107,31 @@ def test_counter_transitivity_variants_follow_attacker_group_quality() -> None:
 
 def test_distributed_defense_precedence_prefers_spread_defense() -> None:
     framework = ArgumentationFramework(
-        arguments=frozenset({
-            "distributed",
-            "concentrated",
-            "da",
-            "db",
-            "ca",
-            "cb",
-            "d1",
-            "d2",
-            "c1",
-        }),
-        defeats=frozenset({
-            ("da", "distributed"),
-            ("db", "distributed"),
-            ("ca", "concentrated"),
-            ("cb", "concentrated"),
-            ("d1", "da"),
-            ("d2", "db"),
-            ("c1", "ca"),
-            ("c1", "cb"),
-        }),
+        arguments=frozenset(
+            {
+                "distributed",
+                "concentrated",
+                "da",
+                "db",
+                "ca",
+                "cb",
+                "d1",
+                "d2",
+                "c1",
+            }
+        ),
+        defeats=frozenset(
+            {
+                ("da", "distributed"),
+                ("db", "distributed"),
+                ("ca", "concentrated"),
+                ("cb", "concentrated"),
+                ("d1", "da"),
+                ("d2", "db"),
+                ("c1", "ca"),
+                ("c1", "cb"),
+            }
+        ),
     )
 
     assert distributed_defense_precedence(framework, categoriser_ranking(framework))

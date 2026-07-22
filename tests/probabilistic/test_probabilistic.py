@@ -62,7 +62,9 @@ def test_probabilities_are_plain_bounded_floats() -> None:
 
 
 def test_p_args_must_match_framework_arguments() -> None:
-    framework = ArgumentationFramework(arguments=frozenset({"a", "b"}), defeats=frozenset())
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}), defeats=frozenset()
+    )
 
     with pytest.raises(ValueError, match="p_args"):
         ProbabilisticAF(framework=framework, p_args={"a": 1.0}, p_defeats={})
@@ -75,7 +77,9 @@ def test_p_args_must_match_framework_arguments() -> None:
         )
 
 
-def test_probabilistic_relation_probabilities_must_reference_declared_relations() -> None:
+def test_probabilistic_relation_probabilities_must_reference_declared_relations() -> (
+    None
+):
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b")}),
@@ -131,6 +135,8 @@ def test_ws_o_arg_z_for_confidence_accepts_continuous_confidence_values() -> Non
 
 
 @pytest.mark.parametrize("confidence", [0.0, 1.0, -0.1, 1.1])
-def test_ws_o_arg_z_for_confidence_rejects_out_of_range_values(confidence: float) -> None:
+def test_ws_o_arg_z_for_confidence_rejects_out_of_range_values(
+    confidence: float,
+) -> None:
     with pytest.raises(ValueError, match="mc_confidence"):
         _z_for_confidence(confidence)

@@ -12,7 +12,11 @@ from argumentation.core.dung import (
     stable_extensions,
 )
 from argumentation.core.labelling import Label, Labelling
-from argumentation.core.labelling import ExactEnumerationExceeded, _all_subsets, complete_labellings
+from argumentation.core.labelling import (
+    ExactEnumerationExceeded,
+    _all_subsets,
+    complete_labellings,
+)
 
 
 def af(args: set[str], defeats: set[tuple[str, str]]) -> ArgumentationFramework:

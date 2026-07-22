@@ -116,19 +116,27 @@ def bipolar_frameworks(draw, max_args: int = 6):
         for target in arg_list
         if source != target
     ]
-    defeats = draw(
-        st.frozensets(
-            st.sampled_from(pairs),
-            max_size=len(pairs),
+    defeats = (
+        draw(
+            st.frozensets(
+                st.sampled_from(pairs),
+                max_size=len(pairs),
+            )
         )
-    ) if pairs else frozenset()
+        if pairs
+        else frozenset()
+    )
     support_pairs = [pair for pair in pairs if pair not in defeats]
-    supports = draw(
-        st.frozensets(
-            st.sampled_from(support_pairs),
-            max_size=len(support_pairs),
+    supports = (
+        draw(
+            st.frozensets(
+                st.sampled_from(support_pairs),
+                max_size=len(support_pairs),
+            )
         )
-    ) if support_pairs else frozenset()
+        if support_pairs
+        else frozenset()
+    )
     return BipolarArgumentationFramework(
         arguments=args,
         defeats=defeats,
@@ -143,7 +151,9 @@ class TestCayrolProperties:
     @given(bipolar_frameworks())
     @_PROP_SETTINGS
     def test_safe_implies_conflict_free(self, framework):
-        candidate = frozenset(sorted(framework.arguments)[: len(framework.arguments) // 2])
+        candidate = frozenset(
+            sorted(framework.arguments)[: len(framework.arguments) // 2]
+        )
         if safe(candidate, framework):
             assert conflict_free(candidate, framework)
 
@@ -151,7 +161,9 @@ class TestCayrolProperties:
     @_PROP_SETTINGS
     def test_conflict_free_and_support_closed_implies_safe(self, framework):
         candidate = frozenset(
-            arg for index, arg in enumerate(sorted(framework.arguments)) if index % 2 == 0
+            arg
+            for index, arg in enumerate(sorted(framework.arguments))
+            if index % 2 == 0
         )
         if conflict_free(candidate, framework) and support_closed(candidate, framework):
             assert safe(candidate, framework)
@@ -160,7 +172,9 @@ class TestCayrolProperties:
     @_PROP_SETTINGS
     def test_c_implies_s_implies_d(self, framework):
         candidate = frozenset(
-            arg for index, arg in enumerate(sorted(framework.arguments)) if index % 2 == 0
+            arg
+            for index, arg in enumerate(sorted(framework.arguments))
+            if index % 2 == 0
         )
         if c_admissible(candidate, framework):
             assert s_admissible(candidate, framework)
@@ -223,21 +237,29 @@ def bipolar_frameworks_with_cycles(draw, max_args: int = 5):
     non_self_pairs = [(s, t) for s, t in all_pairs if s != t]
 
     # Defeats: no self-defeats (standard)
-    defeats = draw(
-        st.frozensets(
-            st.sampled_from(non_self_pairs),
-            max_size=len(non_self_pairs),
+    defeats = (
+        draw(
+            st.frozensets(
+                st.sampled_from(non_self_pairs),
+                max_size=len(non_self_pairs),
+            )
         )
-    ) if non_self_pairs else frozenset()
+        if non_self_pairs
+        else frozenset()
+    )
 
     # Supports: allow self-supports, exclude edges that are defeats
     support_candidates = [p for p in all_pairs if p not in defeats]
-    supports = draw(
-        st.frozensets(
-            st.sampled_from(support_candidates),
-            max_size=len(support_candidates),
+    supports = (
+        draw(
+            st.frozensets(
+                st.sampled_from(support_candidates),
+                max_size=len(support_candidates),
+            )
         )
-    ) if support_candidates else frozenset()
+        if support_candidates
+        else frozenset()
+    )
 
     return BipolarArgumentationFramework(
         arguments=args,
@@ -307,7 +329,9 @@ class TestBipolarCycleProperties:
     @_PROP_SETTINGS
     def test_support_closed_terminates_with_cycles(self, framework):
         """support_closed check terminates even with support cycles."""
-        candidate = frozenset(sorted(framework.arguments)[:len(framework.arguments) // 2])
+        candidate = frozenset(
+            sorted(framework.arguments)[: len(framework.arguments) // 2]
+        )
         # Just verify it returns a boolean without hanging
         result = support_closed(candidate, framework)
         assert isinstance(result, bool)
@@ -316,6 +340,8 @@ class TestBipolarCycleProperties:
     @_PROP_SETTINGS
     def test_safe_implies_conflict_free_with_cycles(self, framework):
         """safe(S) => conflict_free(S) holds even with support cycles."""
-        candidate = frozenset(sorted(framework.arguments)[:len(framework.arguments) // 2])
+        candidate = frozenset(
+            sorted(framework.arguments)[: len(framework.arguments) // 2]
+        )
         if safe(candidate, framework):
             assert conflict_free(candidate, framework)

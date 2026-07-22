@@ -45,7 +45,7 @@ def test_no_z3_dung_module_or_solver_surface() -> None:
         "z3_complete_extensions",
         "z3_preferred_extensions",
         "z3_stable_extensions",
-        "backend=\"z3\"",
+        'backend="z3"',
     )
     for path in root.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
@@ -74,7 +74,9 @@ def test_eager_selects_largest_admissible_subset_of_semi_stable_intersection() -
     )
 
     assert eager_extension(framework) == frozenset()
-    assert admissible(eager_extension(framework), framework.arguments, framework.defeats)
+    assert admissible(
+        eager_extension(framework), framework.arguments, framework.defeats
+    )
 
 
 def test_stage2_collapses_to_stage_on_single_scc_gaggl_2013_pages_927_929() -> None:
@@ -84,7 +86,9 @@ def test_stage2_collapses_to_stage_on_single_scc_gaggl_2013_pages_927_929() -> N
     assert set(stage2_extensions(framework)) == set(stage_extensions(framework))
 
 
-def test_prudent_conflict_free_excludes_odd_indirect_attack_coste_marquis_2005_pages_1_2() -> None:
+def test_prudent_conflict_free_excludes_odd_indirect_attack_coste_marquis_2005_pages_1_2() -> (
+    None
+):
     """Coste-Marquis et al. 2005, pp. 1-2: indirect attacks are odd paths."""
     framework = af({"a", "b", "c", "d"}, {("a", "b"), ("b", "c"), ("c", "d")})
 
@@ -168,6 +172,5 @@ def test_complete_extensions_match_labelling_projection(
     framework: ArgumentationFramework,
 ) -> None:
     assert set(complete_extensions(framework)) == {
-        labelling.extension
-        for labelling in complete_labellings(framework)
+        labelling.extension for labelling in complete_labellings(framework)
     }

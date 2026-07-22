@@ -30,7 +30,10 @@ def test_transposition_closure_returns_closed_rules_and_post_closure_language():
     assert isinstance(result, tuple)
     closed_rules, post_closure_language = result
     assert seed in closed_rules
-    assert aspic.Rule(antecedents=(not_q,), consequent=not_p, kind="strict") in closed_rules
+    assert (
+        aspic.Rule(antecedents=(not_q,), consequent=not_p, kind="strict")
+        in closed_rules
+    )
     assert post_closure_language >= language
     assert {
         literal

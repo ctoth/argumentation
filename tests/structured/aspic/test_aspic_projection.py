@@ -50,11 +50,17 @@ def test_build_abstract_framework_matches_manual_aspic_pipeline() -> None:
     assert projection.framework == ArgumentationFramework(
         arguments=frozenset(projection.argument_to_id.values()),
         attacks=frozenset(
-            (projection.argument_to_id[attack.attacker], projection.argument_to_id[attack.target])
+            (
+                projection.argument_to_id[attack.attacker],
+                projection.argument_to_id[attack.target],
+            )
             for attack in attacks
         ),
         defeats=frozenset(
-            (projection.argument_to_id[attack.attacker], projection.argument_to_id[attack.target])
+            (
+                projection.argument_to_id[attack.attacker],
+                projection.argument_to_id[attack.target],
+            )
             for attack in defeats
         ),
     )

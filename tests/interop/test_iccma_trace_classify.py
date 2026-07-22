@@ -13,7 +13,9 @@ def test_trace_classifier_detects_unique_attacker_churn(tmp_path: Path) -> None:
         _sat("preferred_skeptical_seed", 0, None, "seed"),
     ]
     for index in range(101):
-        events.append(_sat("preferred_skeptical_adm_ext_att", index, index, f"a{index}"))
+        events.append(
+            _sat("preferred_skeptical_adm_ext_att", index, index, f"a{index}")
+        )
         events.append(
             _sat("preferred_skeptical_extend_attacker", index, index, f"w{index}")
         )
@@ -30,9 +32,9 @@ def test_trace_classifier_detects_unique_attacker_churn(tmp_path: Path) -> None:
 
     assert summary.classification == "unique-attacker-churn"
     assert summary.event_counts_by_utility["preferred_skeptical_adm_ext_att"] == 101
-    assert summary.unique_fingerprints_by_utility[
-        "preferred_skeptical_adm_ext_att"
-    ] == 101
+    assert (
+        summary.unique_fingerprints_by_utility["preferred_skeptical_adm_ext_att"] == 101
+    )
     assert summary.max_learned_count == 100
     assert summary.last_loop_index == 100
     assert summary.terminal_status == "timeout"
@@ -65,9 +67,9 @@ def test_trace_classifier_detects_quick_counterexample(tmp_path: Path) -> None:
     assert summary.classification == "quick-counterexample"
     assert summary.event_count == 3
     assert summary.event_counts_by_utility["preferred_skeptical_adm_ext_att"] == 1
-    assert summary.unique_fingerprints_by_utility[
-        "preferred_skeptical_adm_ext_att"
-    ] == 1
+    assert (
+        summary.unique_fingerprints_by_utility["preferred_skeptical_adm_ext_att"] == 1
+    )
     assert summary.terminal_answer == "false"
 
 

@@ -38,13 +38,19 @@ class ArgumentChain:
     def odd_arguments(self) -> frozenset[str]:
         """Return one-based odd-positioned arguments."""
 
-        return frozenset(argument for index, argument in enumerate(self.arguments, start=1) if index % 2)
+        return frozenset(
+            argument
+            for index, argument in enumerate(self.arguments, start=1)
+            if index % 2
+        )
 
     def even_arguments(self) -> frozenset[str]:
         """Return one-based even-positioned arguments."""
 
         return frozenset(
-            argument for index, argument in enumerate(self.arguments, start=1) if index % 2 == 0
+            argument
+            for index, argument in enumerate(self.arguments, start=1)
+            if index % 2 == 0
         )
 
     def accepted_arguments(self, *, start_accepted: bool) -> frozenset[str]:
@@ -89,7 +95,9 @@ def make_argument_chain(
     chain_arguments = tuple(arguments)
     if not chain_arguments:
         raise ValueError("chain must contain at least one argument")
-    unknown = [argument for argument in chain_arguments if argument not in vaf.arguments]
+    unknown = [
+        argument for argument in chain_arguments if argument not in vaf.arguments
+    ]
     if unknown:
         raise ValueError(f"chain contains unknown arguments: {unknown!r}")
 
@@ -124,7 +132,9 @@ def build_lines_of_argument(
     first_chains = _chains_ending_at(vaf, target)
     lines: list[ArgumentLine] = []
     for first_chain in first_chains:
-        _extend_line(vaf, first_chain, (first_chain,), frozenset({first_chain.value}), lines)
+        _extend_line(
+            vaf, first_chain, (first_chain,), frozenset({first_chain.value}), lines
+        )
     return tuple(lines)
 
 
@@ -259,7 +269,9 @@ def _extend_line(
         if vaf.valuation[attacker] != current_chain.value
     )
     if not cross_attackers:
-        lines.append(ArgumentLine(chains=line_chains, target=line_chains[0].arguments[-1]))
+        lines.append(
+            ArgumentLine(chains=line_chains, target=line_chains[0].arguments[-1])
+        )
         return
 
     extended = False
@@ -291,7 +303,9 @@ def _extend_line(
         )
 
 
-def _validate_line_links(vaf: ValueBasedArgumentationFramework, line: ArgumentLine) -> None:
+def _validate_line_links(
+    vaf: ValueBasedArgumentationFramework, line: ArgumentLine
+) -> None:
     for previous, current in zip(line.chains, line.chains[1:]):
         link = (current.arguments[-1], previous.arguments[0])
         if link not in vaf.attacks:

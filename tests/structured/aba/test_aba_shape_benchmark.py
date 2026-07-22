@@ -173,11 +173,12 @@ def test_compute_aba_shape_reports_grounded_reduct_collapse() -> None:
 
 def test_compute_aba_shape_skips_expensive_grounded_reduct() -> None:
     assumptions = frozenset(lit(f"a{index}") for index in range(40))
-    contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
+    contraries = {
+        assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)
+    }
     language = assumptions | frozenset(contraries.values()) | frozenset({lit("x")})
     rules = frozenset(
-        Rule((assumption,), lit("x"), "strict")
-        for assumption in assumptions
+        Rule((assumption,), lit("x"), "strict") for assumption in assumptions
     )
     framework = ABAFramework(
         language=language,
@@ -232,9 +233,13 @@ def test_compute_aba_shape_uses_bounded_rule_body_overlap_memory() -> None:
 
 def test_validate_result_uses_bounded_large_python_validation() -> None:
     assumptions = frozenset(lit(f"a{index}") for index in range(40))
-    contraries = {assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)}
+    contraries = {
+        assumption: lit(f"c{index}") for index, assumption in enumerate(assumptions)
+    }
     language = assumptions | frozenset(contraries.values()) | frozenset({lit("x")})
-    rules = frozenset(Rule((assumption,), lit("x"), "strict") for assumption in assumptions)
+    rules = frozenset(
+        Rule((assumption,), lit("x"), "strict") for assumption in assumptions
+    )
     framework = ABAFramework(
         language=language,
         rules=rules,
@@ -284,7 +289,9 @@ def test_shape_bucket_id_is_deterministic() -> None:
 
 
 def test_shape_bucket_boundaries_are_inclusive() -> None:
-    def bucketed(*, assumptions: int, rule_density: float, max_arity: int) -> dict[str, str]:
+    def bucketed(
+        *, assumptions: int, rule_density: float, max_arity: int
+    ) -> dict[str, str]:
         shape = shape_for_bucket(
             assumptions=assumptions,
             rule_density=rule_density,
@@ -371,13 +378,17 @@ def test_build_jobs_from_manifest_filters_and_deduplicates(tmp_path: Path) -> No
     ]
 
 
-def test_build_jobs_from_instances_preserves_path_only_as_locator(tmp_path: Path) -> None:
+def test_build_jobs_from_instances_preserves_path_only_as_locator(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "2025"
     instance_path = root / "extracted" / "instances" / "ABAs" / "shape-name-ignored.aba"
     instance_path.parent.mkdir(parents=True)
     instance_path.write_text(write_aba(framework_zero_rules()), encoding="utf-8")
 
-    jobs = build_jobs_from_instances([instance_path], root=root, subtracks=("SE-PR", "SE-ST"))
+    jobs = build_jobs_from_instances(
+        [instance_path], root=root, subtracks=("SE-PR", "SE-ST")
+    )
     shapes = [
         compute_aba_shape(
             aba_shape_benchmark.parse_aba(job.path.read_text(encoding="utf-8"))
@@ -390,7 +401,9 @@ def test_build_jobs_from_instances_preserves_path_only_as_locator(tmp_path: Path
         "ABAs/shape-name-ignored.aba",
     ]
     assert shapes[0] == shapes[1]
-    assert all("shape-name-ignored" not in json.dumps(shape.__dict__) for shape in shapes)
+    assert all(
+        "shape-name-ignored" not in json.dumps(shape.__dict__) for shape in shapes
+    )
 
 
 def test_best_solved_backend_ignores_timeout_and_invalid() -> None:
@@ -415,7 +428,9 @@ def test_best_solved_backend_ignores_timeout_and_invalid() -> None:
 
 
 def test_benchmark_rows_emit_paper_route_features(monkeypatch, tmp_path: Path) -> None:
-    instance_path = tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+    instance_path = (
+        tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+    )
     instance_path.parent.mkdir(parents=True)
     instance_path.write_text(write_aba(framework_zero_rules()), encoding="utf-8")
     job = BenchmarkJob(
@@ -505,7 +520,11 @@ def test_build_backend_command_uses_explicit_backend_and_task(tmp_path: Path) ->
 
 def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
     def timeout_child(job, *, timeout_seconds):
-        return {"status": "timeout", "reason": f"timeout>{timeout_seconds}", "error": None}
+        return {
+            "status": "timeout",
+            "reason": f"timeout>{timeout_seconds}",
+            "error": None,
+        }
 
     monkeypatch.setattr(aba_shape_benchmark, "run_native_child", timeout_child)
 
@@ -519,8 +538,12 @@ def test_run_backend_command_reports_outer_timeout(monkeypatch) -> None:
     assert result["reason"] == "timeout>0.1"
 
 
-def test_benchmark_rows_keep_commands_out_of_feature_payload(monkeypatch, tmp_path: Path) -> None:
-    instance_path = tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+def test_benchmark_rows_keep_commands_out_of_feature_payload(
+    monkeypatch, tmp_path: Path
+) -> None:
+    instance_path = (
+        tmp_path / "2025" / "extracted" / "instances" / "ABAs" / "example.aba"
+    )
     instance_path.parent.mkdir(parents=True)
     instance_path.write_text(write_aba(framework_zero_rules()), encoding="utf-8")
     job = BenchmarkJob(
@@ -547,7 +570,10 @@ def test_benchmark_rows_keep_commands_out_of_feature_payload(monkeypatch, tmp_pa
 def test_summary_is_order_invariant() -> None:
     row_a = {
         "solver_class": "aba/single-extension/preferred",
-        "buckets": {"solver_class": "aba/single-extension/preferred", "assumption_size": "small"},
+        "buckets": {
+            "solver_class": "aba/single-extension/preferred",
+            "assumption_size": "small",
+        },
         "backend_results": {
             "auto": {"status": "solved"},
             "asp": {"status": "solved"},
@@ -558,7 +584,10 @@ def test_summary_is_order_invariant() -> None:
     }
     row_b = {
         "solver_class": "aba/single-extension/stable",
-        "buckets": {"solver_class": "aba/single-extension/stable", "assumption_size": "small"},
+        "buckets": {
+            "solver_class": "aba/single-extension/stable",
+            "assumption_size": "small",
+        },
         "backend_results": {
             "auto": {"status": "timeout"},
             "asp": {"status": "timeout"},
@@ -575,14 +604,20 @@ def test_summary_is_order_invariant() -> None:
 
 
 def test_portfolio_proposal_requires_no_bucket_counterexamples() -> None:
-    bucket = {"solver_class": "aba/single-extension/preferred", "assumption_size": "small"}
+    bucket = {
+        "solver_class": "aba/single-extension/preferred",
+        "assumption_size": "small",
+    }
     rows = [
         {
             "instance": "first.aba",
             "subtrack": "SE-PR",
             "solver_class": "aba/single-extension/preferred",
             "buckets": bucket,
-            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "solved"}},
+            "backend_results": {
+                "asp": {"status": "solved"},
+                "auto": {"status": "solved"},
+            },
             "best_solved_backend": "asp",
             "all_timed_out": False,
         },
@@ -591,7 +626,10 @@ def test_portfolio_proposal_requires_no_bucket_counterexamples() -> None:
             "subtrack": "SE-PR",
             "solver_class": "aba/single-extension/preferred",
             "buckets": bucket,
-            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "solved"}},
+            "backend_results": {
+                "asp": {"status": "solved"},
+                "auto": {"status": "solved"},
+            },
             "best_solved_backend": "auto",
             "all_timed_out": False,
         },
@@ -601,14 +639,20 @@ def test_portfolio_proposal_requires_no_bucket_counterexamples() -> None:
 
 
 def test_portfolio_proposal_records_evidence_and_empty_failures() -> None:
-    bucket = {"solver_class": "aba/single-extension/preferred", "assumption_size": "small"}
+    bucket = {
+        "solver_class": "aba/single-extension/preferred",
+        "assumption_size": "small",
+    }
     rows = [
         {
             "instance": "first.aba",
             "subtrack": "SE-PR",
             "solver_class": "aba/single-extension/preferred",
             "buckets": bucket,
-            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "timeout"}},
+            "backend_results": {
+                "asp": {"status": "solved"},
+                "auto": {"status": "timeout"},
+            },
             "best_solved_backend": "asp",
             "all_timed_out": False,
         },
@@ -617,7 +661,10 @@ def test_portfolio_proposal_records_evidence_and_empty_failures() -> None:
             "subtrack": "SE-PR",
             "solver_class": "aba/single-extension/preferred",
             "buckets": bucket,
-            "backend_results": {"asp": {"status": "solved"}, "auto": {"status": "timeout"}},
+            "backend_results": {
+                "asp": {"status": "solved"},
+                "auto": {"status": "timeout"},
+            },
             "best_solved_backend": "asp",
             "all_timed_out": False,
         },

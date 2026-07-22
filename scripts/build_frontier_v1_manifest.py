@@ -82,9 +82,13 @@ def build_rows(
                 "recal_prior_status": cell["prior_status"],
                 "recal_prior_elapsed_seconds": cell["prior_elapsed_seconds"],
                 "recal_60s_status": None if r60 is None else r60.get("status"),
-                "recal_60s_elapsed_seconds": None if r60 is None else r60.get("elapsed_seconds"),
+                "recal_60s_elapsed_seconds": None
+                if r60 is None
+                else r60.get("elapsed_seconds"),
                 "recal_120s_status": None if r120 is None else r120.get("status"),
-                "recal_120s_elapsed_seconds": None if r120 is None else r120.get("elapsed_seconds"),
+                "recal_120s_elapsed_seconds": None
+                if r120 is None
+                else r120.get("elapsed_seconds"),
                 "input_sha256": sha256(instance_path),
             }
         )
@@ -113,11 +117,15 @@ def main(argv: list[str] | None = None) -> int:
     rows = build_rows(sample, runs, args.instances_root)
     rows.sort(key=lambda row: (row["subtrack"], row["relative_path"]))
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     by_class: dict[str, int] = {}
     for row in rows:
         by_class[row["recal_class"]] = by_class.get(row["recal_class"], 0) + 1
-    print(json.dumps({"rows": len(rows), "by_class": by_class}, indent=2, sort_keys=True))
+    print(
+        json.dumps({"rows": len(rows), "by_class": by_class}, indent=2, sort_keys=True)
+    )
     print(f"wrote {args.output}")
     return 0
 

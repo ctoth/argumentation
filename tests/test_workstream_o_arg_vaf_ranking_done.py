@@ -26,12 +26,12 @@ def test_workstream_o_arg_vaf_ranking_public_surface_is_closed() -> None:
     assert importlib.import_module("argumentation.frameworks.vaf").__name__ == (
         "argumentation.frameworks.vaf"
     )
-    assert importlib.import_module("argumentation.frameworks.practical_reasoning").__name__ == (
+    assert importlib.import_module(
         "argumentation.frameworks.practical_reasoning"
-    )
-    assert importlib.import_module("argumentation.structured.aspic.subjective_aspic").__name__ == (
+    ).__name__ == ("argumentation.frameworks.practical_reasoning")
+    assert importlib.import_module(
         "argumentation.structured.aspic.subjective_aspic"
-    )
+    ).__name__ == ("argumentation.structured.aspic.subjective_aspic")
     assert importlib.import_module("argumentation.ranking.ranking_axioms").__name__ == (
         "argumentation.ranking.ranking_axioms"
     )

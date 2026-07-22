@@ -196,7 +196,9 @@ def test_run_native_parallel_keeps_job_order_despite_completion_order(
         assert event["instance"] == f"case{event['index']:02d}.apx"
 
 
-def test_jobs_defaults_to_exact_serial(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_jobs_defaults_to_exact_serial(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     captured: dict[str, RunConfig] = {}
 
     def capture_run_native(config: RunConfig) -> list[dict[str, Any]]:

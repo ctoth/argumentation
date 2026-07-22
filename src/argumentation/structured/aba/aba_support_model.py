@@ -32,10 +32,7 @@ class _SupportState:
         assumptions = tuple(sorted(framework.assumptions, key=repr))
         index = {assumption: offset for offset, assumption in enumerate(assumptions)}
         supports = {
-            literal: frozenset(
-                _support_mask(support, index)
-                for support in values
-            )
+            literal: frozenset(_support_mask(support, index) for support in values)
             for literal, values in _minimal_supports(framework).items()
         }
         return cls(framework, assumptions, supports)
@@ -51,7 +48,9 @@ class _SupportState:
         return self.derives(_support_mask(extension, self.index), literal)
 
     def derives(self, mask: int, literal: Literal) -> bool:
-        return any((support & mask) == support for support in self.supports.get(literal, ()))
+        return any(
+            (support & mask) == support for support in self.supports.get(literal, ())
+        )
 
     def attacks(self, mask: int, assumption: Literal) -> bool:
         return any(
@@ -105,7 +104,9 @@ def _support_mask(
     return mask
 
 
-def _minimal_supports(framework: ABAFramework) -> dict[Literal, frozenset[AssumptionSet]]:
+def _minimal_supports(
+    framework: ABAFramework,
+) -> dict[Literal, frozenset[AssumptionSet]]:
     supports: dict[Literal, set[AssumptionSet]] = {
         literal: set() for literal in framework.language
     }
@@ -123,10 +124,7 @@ def _minimal_supports(framework: ABAFramework) -> dict[Literal, frozenset[Assump
                 if _add_minimal_support(supports[rule.consequent], support):
                     changed = True
 
-    return {
-        literal: frozenset(values)
-        for literal, values in supports.items()
-    }
+    return {literal: frozenset(values) for literal, values in supports.items()}
 
 
 def _combine_supports(
@@ -138,11 +136,7 @@ def _combine_supports(
     for choices in support_sets:
         if not choices:
             return set()
-        combined = {
-            frozenset(left | right)
-            for left in combined
-            for right in choices
-        }
+        combined = {frozenset(left | right) for left in combined for right in choices}
     return _minimal_set(combined)
 
 
@@ -160,6 +154,8 @@ def _add_minimal_support(
 
 def _minimal_set(supports: set[AssumptionSet]) -> set[AssumptionSet]:
     minimal: set[AssumptionSet] = set()
-    for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))):
+    for support in sorted(
+        supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))
+    ):
         _add_minimal_support(minimal, support)
     return minimal

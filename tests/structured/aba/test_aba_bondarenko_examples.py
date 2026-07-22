@@ -42,7 +42,11 @@ def test_bondarenko_cyras_flat_referendum_plain_aba_extensions() -> None:
 
     assert admissible(framework, frozenset({alpha}))
     assert admissible(framework, frozenset({beta}))
-    assert complete_extensions(framework) == (frozenset(), frozenset({alpha}), frozenset({beta}))
+    assert complete_extensions(framework) == (
+        frozenset(),
+        frozenset({alpha}),
+        frozenset({beta}),
+    )
     assert preferred_extensions(framework) == (frozenset({alpha}), frozenset({beta}))
     assert stable_extensions(framework) == (frozenset({alpha}), frozenset({beta}))
     assert grounded_extension(framework) == frozenset()

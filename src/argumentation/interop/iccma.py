@@ -274,7 +274,9 @@ def _parse_numeric_aba(text: str) -> ABAFramework:
         if atom_count is None:
             raise ValueError("ICCMA ABA input must start with a p aba header")
         if parts[0] == "a" and len(parts) == 2:
-            assumptions.add(_aba_numeric_literal(atoms, parts[1], atom_count, line_number))
+            assumptions.add(
+                _aba_numeric_literal(atoms, parts[1], atom_count, line_number)
+            )
             continue
         if parts[0] == "c" and len(parts) == 3:
             assumption = _aba_numeric_literal(
@@ -323,9 +325,17 @@ def write_aba(framework: ABAFramework) -> str:
     lines = ["p aba"]
     for assumption in sorted(framework.assumptions, key=repr):
         lines.append(f"a {_aba_name(assumption)}")
-    for assumption, contrary in sorted(framework.contrary.items(), key=lambda item: repr(item[0])):
+    for assumption, contrary in sorted(
+        framework.contrary.items(), key=lambda item: repr(item[0])
+    ):
         lines.append(f"c {_aba_name(assumption)} {_aba_name(contrary)}")
-    for rule in sorted(framework.rules, key=lambda item: (_aba_name(item.consequent), tuple(map(_aba_name, item.antecedents)))):
+    for rule in sorted(
+        framework.rules,
+        key=lambda item: (
+            _aba_name(item.consequent),
+            tuple(map(_aba_name, item.antecedents)),
+        ),
+    ):
         body = " ".join(_aba_name(antecedent) for antecedent in rule.antecedents)
         lines.append(f"r {_aba_name(rule.consequent)}" + (f" {body}" if body else ""))
     return "\n".join(lines) + "\n"
@@ -338,9 +348,14 @@ def write_numeric_aba(framework: ABAFramework) -> str:
     lines = [f"p aba {len(literals)}"]
     for assumption in sorted(framework.assumptions, key=repr):
         lines.append(f"a {ids[assumption]}")
-    for assumption, contrary in sorted(framework.contrary.items(), key=lambda item: repr(item[0])):
+    for assumption, contrary in sorted(
+        framework.contrary.items(), key=lambda item: repr(item[0])
+    ):
         lines.append(f"c {ids[assumption]} {ids[contrary]}")
-    for rule in sorted(framework.rules, key=lambda item: (repr(item.consequent), tuple(map(repr, item.antecedents)))):
+    for rule in sorted(
+        framework.rules,
+        key=lambda item: (repr(item.consequent), tuple(map(repr, item.antecedents))),
+    ):
         body = " ".join(ids[antecedent] for antecedent in rule.antecedents)
         lines.append(f"r {ids[rule.consequent]}" + (f" {body}" if body else ""))
     return "\n".join(lines) + "\n"
@@ -384,7 +399,9 @@ def _aba_numeric_literal(
 
 def _aba_name(literal: Literal) -> str:
     if literal.negated or literal.atom.arguments:
-        raise ValueError("compact ABA ICCMA format supports only nullary positive literals")
+        raise ValueError(
+            "compact ABA ICCMA format supports only nullary positive literals"
+        )
     return literal.atom.predicate
 
 

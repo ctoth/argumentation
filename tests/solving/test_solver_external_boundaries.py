@@ -72,8 +72,7 @@ def test_setaf_native_extensions_preserve_singleton_tail_dung_reduction(
     setaf = SETAF(
         arguments=framework.arguments,
         attacks=frozenset(
-            (frozenset({attacker}), target)
-            for attacker, target in framework.defeats
+            (frozenset({attacker}), target) for attacker, target in framework.defeats
         ),
     )
 
@@ -116,15 +115,15 @@ def test_setaf_external_backend_is_unavailable_before_any_subprocess_claim(
 
 
 def empty_adf() -> AbstractDialecticalFramework:
-    return dung_to_adf(ArgumentationFramework(arguments=frozenset(), defeats=frozenset()))
+    return dung_to_adf(
+        ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
+    )
 
 
 def _true_statements(model: frozenset[object]) -> frozenset[str]:
     values = interpretation_to_mapping(_adf_interpretation(model))
     return frozenset(
-        statement
-        for statement, value in values.items()
-        if value is ThreeValued.T
+        statement for statement, value in values.items() if value is ThreeValued.T
     )
 
 

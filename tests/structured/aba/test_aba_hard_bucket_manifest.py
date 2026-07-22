@@ -43,7 +43,9 @@ def test_hard_bucket_manifest_has_no_duplicate_instance_subtrack_pairs() -> None
     assert len(pairs) == len(set(pairs))
 
 
-def test_hard_bucket_manifest_loads_as_benchmark_jobs_without_labels(tmp_path: Path) -> None:
+def test_hard_bucket_manifest_loads_as_benchmark_jobs_without_labels(
+    tmp_path: Path,
+) -> None:
     rows = _rows()
 
     jobs = build_jobs_from_manifest(
@@ -83,7 +85,9 @@ def test_hard_bucket_runner_explicit_backend_and_subtrack_replace_defaults() -> 
     assert _values_after(command, "--subtrack") == ["SE-PR"]
 
 
-def test_hard_bucket_profile_paths_are_stable_and_backend_specific(tmp_path: Path) -> None:
+def test_hard_bucket_profile_paths_are_stable_and_backend_specific(
+    tmp_path: Path,
+) -> None:
     jobs = build_jobs_from_manifest(
         _rows(),
         data_root=tmp_path,
@@ -142,4 +146,6 @@ def test_hard_bucket_target_filter_writes_diagnostic_manifest(tmp_path: Path) ->
 
 
 def _values_after(command: list[str], flag: str) -> list[str]:
-    return [command[index + 1] for index, value in enumerate(command[:-1]) if value == flag]
+    return [
+        command[index + 1] for index, value in enumerate(command[:-1]) if value == flag
+    ]

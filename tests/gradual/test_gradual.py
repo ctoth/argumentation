@@ -136,6 +136,8 @@ def test_shapley_attack_impacts_sum_to_total_attack_removal_gain() -> None:
 
     assert result.target == "a"
     assert set(result.attack_impacts) == {("b", "a"), ("c", "a")}
-    assert sum(result.attack_impacts.values()) == pytest.approx(without_attacks - original)
+    assert sum(result.attack_impacts.values()) == pytest.approx(
+        without_attacks - original
+    )
     assert result.exact is True
     assert result.coalition_count == 4

@@ -84,7 +84,9 @@ def test_normal_candidate_frameworks_have_preferred_stable_coincidence(
     framework: ABAFramework,
 ) -> None:
     assert compute_aba_shape(framework).is_normal is True
-    assert native_aba.preferred_extensions(framework) == native_aba.stable_extensions(framework)
+    assert native_aba.preferred_extensions(framework) == native_aba.stable_extensions(
+        framework
+    )
 
 
 @given(flat_aba_frameworks(max_assumptions=4, max_rules=6))
@@ -116,7 +118,8 @@ def test_stable_extensions_contain_no_self_obstructing_assumptions(
     self_obstructing = {
         assumption
         for assumption in framework.assumptions
-        if framework.contrary[assumption] in _closure(framework, frozenset({assumption}))
+        if framework.contrary[assumption]
+        in _closure(framework, frozenset({assumption}))
     }
     for extension in native_aba.stable_extensions(framework):
         assert not (extension & self_obstructing)
@@ -136,7 +139,9 @@ def test_stable_obstruction_count_is_positive_for_impossible_self_attacker() -> 
     assert compute_aba_shape(framework).stable_obstruction_count == 1
 
 
-def _all_assumption_subsets(assumptions: frozenset[Literal]) -> tuple[AssumptionSet, ...]:
+def _all_assumption_subsets(
+    assumptions: frozenset[Literal],
+) -> tuple[AssumptionSet, ...]:
     ordered = sorted(assumptions, key=repr)
     subsets: list[AssumptionSet] = [frozenset()]
     for assumption in ordered:
@@ -144,7 +149,9 @@ def _all_assumption_subsets(assumptions: frozenset[Literal]) -> tuple[Assumption
     return tuple(subsets)
 
 
-def _closure(framework: ABAFramework, premises: Iterable[Literal]) -> frozenset[Literal]:
+def _closure(
+    framework: ABAFramework, premises: Iterable[Literal]
+) -> frozenset[Literal]:
     closure = set(premises)
     changed = True
     while changed:

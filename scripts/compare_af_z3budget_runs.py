@@ -64,7 +64,9 @@ def main() -> None:
         for key in common_solved
         if baseline[key].get("answer") != candidate[key].get("answer")
     ]
-    print(f"commonly solved: {len(common_solved)}  answer mismatches: {len(mismatches)}")
+    print(
+        f"commonly solved: {len(common_solved)}  answer mismatches: {len(mismatches)}"
+    )
     for key in mismatches:
         print(
             f"  {key}: baseline={baseline[key].get('answer')} "

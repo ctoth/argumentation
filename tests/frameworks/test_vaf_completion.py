@@ -103,7 +103,10 @@ def test_theorem_6_6_classifies_objective_subjective_and_indefensible_cases() ->
         valuation={"a1": "life"},
         audience=("life",),
     )
-    assert classify_line_of_argument(objective_vaf, objective_line) is VAFArgumentStatus.OBJECTIVE
+    assert (
+        classify_line_of_argument(objective_vaf, objective_line)
+        is VAFArgumentStatus.OBJECTIVE
+    )
 
     indefensible_vaf = ValueBasedArgumentationFramework(
         arguments=frozenset({"a1", "a2"}),
@@ -158,7 +161,9 @@ def test_theorem_6_6_classifier_fails_outside_preconditions() -> None:
         classify_line_of_argument(vaf, line)
 
 
-def _two_value_cycle(length_a: int, length_b: int, preferred: str) -> tuple[
+def _two_value_cycle(
+    length_a: int, length_b: int, preferred: str
+) -> tuple[
     ValueBasedArgumentationFramework,
     tuple[ArgumentChain, ArgumentChain],
     tuple[str, str],
@@ -173,7 +178,10 @@ def _two_value_cycle(length_a: int, length_b: int, preferred: str) -> tuple[
         arguments=frozenset(a_args + b_args),
         attacks=frozenset(attacks),
         values=frozenset({"a-value", "b-value"}),
-        valuation={**dict.fromkeys(a_args, "a-value"), **dict.fromkeys(b_args, "b-value")},
+        valuation={
+            **dict.fromkeys(a_args, "a-value"),
+            **dict.fromkeys(b_args, "b-value"),
+        },
         audience=(preferred, "b-value" if preferred == "a-value" else "a-value"),
     )
     return (
@@ -191,8 +199,12 @@ def test_corollary_6_7_two_value_cycle_matches_preferred_extension() -> None:
     # two-valued cycles matches the audience-specific preferred extension.
     vaf, chains, audience = _two_value_cycle(2, 3, "a-value")
 
-    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"a1", "b1", "b3"})
-    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"a1", "b1", "b3"})]
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset(
+        {"a1", "b1", "b3"}
+    )
+    assert vaf.preferred_extensions_for_audience(audience) == [
+        frozenset({"a1", "b1", "b3"})
+    ]
 
 
 @given(
@@ -223,7 +235,9 @@ def test_fact_value_is_ranked_above_every_ordinary_value() -> None:
     }
 
 
-def test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_extensions() -> None:
+def test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_extensions() -> (
+    None
+):
     # Bench-Capon 2003 pp. 444-447: accepted facts outrank ordinary values, but
     # factual uncertainty can create multiple preferred extensions.
     fact_blocks_life = ValueBasedArgumentationFramework(
@@ -245,7 +259,9 @@ def test_fact_argument_blocks_ordinary_attack_and_uncertainty_has_multiple_exten
         valuation={"G": FACT_VALUE, "H": FACT_VALUE, "K": "life"},
         audiences=((FACT_VALUE, "life"),),
     )
-    assert factual_uncertainty.preferred_extensions_for_audience((FACT_VALUE, "life")) == [
+    assert factual_uncertainty.preferred_extensions_for_audience(
+        (FACT_VALUE, "life")
+    ) == [
         frozenset({"G", "K"}),
         frozenset({"H", "K"}),
     ]

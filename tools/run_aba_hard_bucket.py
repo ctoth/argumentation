@@ -10,15 +10,23 @@ from tools import aba_shape_benchmark
 
 
 DEFAULT_MANIFEST = Path("tests") / "manifests" / "aba-hard-bucket-targets.json"
-DEFAULT_OUTPUT_JSON = Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.json"
-DEFAULT_OUTPUT_CSV = Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.csv"
-DEFAULT_PROFILE_DIR = Path("data") / "iccma" / "2025" / "profiles" / "aba-hard-bucket-targets"
+DEFAULT_OUTPUT_JSON = (
+    Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.json"
+)
+DEFAULT_OUTPUT_CSV = (
+    Path("data") / "iccma" / "2025" / "runs" / "aba-hard-bucket-targets.csv"
+)
+DEFAULT_PROFILE_DIR = (
+    Path("data") / "iccma" / "2025" / "profiles" / "aba-hard-bucket-targets"
+)
 DEFAULT_PROFILE_DURATION_SECONDS = 25.0
 DEFAULT_BACKENDS = ("auto", "asp", "sat")
 DEFAULT_SUBTRACKS = ("SE-PR", "SE-ST")
 
 
-def benchmark_args(args: argparse.Namespace, *, manifest: Path | None = None) -> list[str]:
+def benchmark_args(
+    args: argparse.Namespace, *, manifest: Path | None = None
+) -> list[str]:
     manifest_path = args.manifest if manifest is None else manifest
     command = [
         "--timeouts",
@@ -112,13 +120,17 @@ def selected_manifest(args: argparse.Namespace) -> Path:
         raise SystemExit(f"unknown hard-bucket target id(s): {', '.join(missing)}")
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     manifest = args.output_json.with_suffix(".manifest.json")
-    manifest.write_text(json.dumps(selected, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest.write_text(
+        json.dumps(selected, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return manifest
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    return aba_shape_benchmark.main(benchmark_args(args, manifest=selected_manifest(args)))
+    return aba_shape_benchmark.main(
+        benchmark_args(args, manifest=selected_manifest(args))
+    )
 
 
 if __name__ == "__main__":

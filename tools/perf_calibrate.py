@@ -40,18 +40,22 @@ def literal(name: str) -> Literal:
 
 def calibration_framework(size: int = 48) -> ABAFramework:
     assumptions = tuple(literal(f"a{index}") for index in range(size))
-    contraries = {assumption: literal(f"ca{index}") for index, assumption in enumerate(assumptions)}
+    contraries = {
+        assumption: literal(f"ca{index}")
+        for index, assumption in enumerate(assumptions)
+    }
     chain = tuple(literal(f"x{index}") for index in range(size))
     rules = {
-        Rule((assumptions[index],), chain[index], "strict")
-        for index in range(size)
+        Rule((assumptions[index],), chain[index], "strict") for index in range(size)
     }
     rules.update(
         Rule((chain[index - 1], assumptions[index]), chain[index], "strict")
         for index in range(1, size)
     )
     return ABAFramework(
-        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(chain),
+        language=frozenset(assumptions)
+        | frozenset(contraries.values())
+        | frozenset(chain),
         rules=frozenset(rules),
         assumptions=frozenset(assumptions),
         contrary=contraries,
@@ -80,7 +84,9 @@ def timed_record(
         elapsed_seconds=round(elapsed, 9),
         median_seconds=round(median, 9),
         operations=operations or None,
-        operations_per_second=round(operations / elapsed, 3) if operations and elapsed > 0 else None,
+        operations_per_second=round(operations / elapsed, 3)
+        if operations and elapsed > 0
+        else None,
     )
 
 
@@ -168,12 +174,16 @@ def calibration_payload(*, repeat: int) -> dict[str, Any]:
     ]
     clingo_record = clingo_operation()
     if clingo_record is None:
-        records.append(skipped_record("clingo_small_solve", repeat, "clingo package unavailable"))
+        records.append(
+            skipped_record("clingo_small_solve", repeat, "clingo package unavailable")
+        )
     else:
         records.append(clingo_record)
     z3_record = z3_operation()
     if z3_record is None:
-        records.append(skipped_record("z3_small_check", repeat, "z3 package unavailable"))
+        records.append(
+            skipped_record("z3_small_check", repeat, "z3 package unavailable")
+        )
     else:
         records.append(z3_record)
     return {
@@ -192,9 +202,17 @@ def calibration_payload(*, repeat: int) -> dict[str, Any]:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Calibrate local performance budgets.")
-    parser.add_argument("--output", type=Path, help="Optional path to write calibration JSON.")
-    parser.add_argument("--repeat", type=int, default=3, help="Number of repeats for core probes.")
-    parser.add_argument("--quiet", action="store_true", help="Suppress progress text; JSON is still emitted.")
+    parser.add_argument(
+        "--output", type=Path, help="Optional path to write calibration JSON."
+    )
+    parser.add_argument(
+        "--repeat", type=int, default=3, help="Number of repeats for core probes."
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress progress text; JSON is still emitted.",
+    )
     return parser.parse_args(argv)
 
 
