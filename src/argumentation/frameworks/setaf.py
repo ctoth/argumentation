@@ -31,7 +31,9 @@ class SETAF:
         )
         empty_tails = sorted(target for attackers, target in attacks if not attackers)
         if empty_tails:
-            raise ValueError(f"collective attack tails must be non-empty: {empty_tails!r}")
+            raise ValueError(
+                f"collective attack tails must be non-empty: {empty_tails!r}"
+            )
         unknown = sorted(
             (tuple(sorted(attackers)), target)
             for attackers, target in attacks
@@ -69,7 +71,9 @@ def defends(framework: SETAF, candidate: frozenset[str], argument: str) -> bool:
     for attackers, target in framework.attacks:
         if target != argument:
             continue
-        if not any(attacks_argument(framework, candidate, attacker) for attacker in attackers):
+        if not any(
+            attacks_argument(framework, candidate, attacker) for attacker in attackers
+        ):
             return False
     return True
 
@@ -78,8 +82,7 @@ def admissible(framework: SETAF, candidate: frozenset[str]) -> bool:
     """Return SETAF admissibility."""
     _check_candidate(framework, candidate)
     return conflict_free(framework, candidate) and all(
-        defends(framework, candidate, argument)
-        for argument in candidate
+        defends(framework, candidate, argument) for argument in candidate
     )
 
 
@@ -120,9 +123,7 @@ def preferred_extensions(framework: SETAF) -> tuple[frozenset[str], ...]:
 
 def range_of(framework: SETAF, candidate: frozenset[str]) -> frozenset[str]:
     defeated = frozenset(
-        target
-        for attackers, target in framework.attacks
-        if attackers <= candidate
+        target for attackers, target in framework.attacks if attackers <= candidate
     )
     return candidate | defeated
 

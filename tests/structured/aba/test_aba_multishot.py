@@ -63,6 +63,7 @@ def _show(extensions) -> list[list[str]]:
 # Batteries
 # ---------------------------------------------------------------------------
 
+
 def battery() -> list[ABAFramework]:
     a, b, c, d = (lit(x) for x in ("a", "b", "c", "d"))
     ca, cb, cc, cd = (lit(x) for x in ("ca", "cb", "cc", "cd"))
@@ -212,11 +213,15 @@ def _intersection(extensions):
 
 
 def _query_pool(framework: ABAFramework):
-    return sorted(framework.assumptions, key=repr) + sorted(framework.contrary.values(), key=repr) + [
-        lit("p0"),
-        lit("s1"),
-        lit("missing_sentence"),
-    ]
+    return (
+        sorted(framework.assumptions, key=repr)
+        + sorted(framework.contrary.values(), key=repr)
+        + [
+            lit("p0"),
+            lit("s1"),
+            lit("missing_sentence"),
+        ]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -233,7 +238,9 @@ NATIVE = {
 
 @pytest.mark.parametrize("framework", ALL + RANDOM)
 @pytest.mark.parametrize("semantics", ["complete", "stable", "preferred", "grounded"])
-def test_multishot_enumeration_matches_native_and_support_reference(framework, semantics) -> None:
+def test_multishot_enumeration_matches_native_and_support_reference(
+    framework, semantics
+) -> None:
     expected = _show(NATIVE[semantics](framework))
     solver = AbaIncrementalSolver(framework)
     if semantics == "complete":
@@ -247,7 +254,9 @@ def test_multishot_enumeration_matches_native_and_support_reference(framework, s
     assert _show(got) == expected
     # via the wired backend (simplify on and off)
     on = solve_aba_with_backend(framework, backend="asp", semantics=semantics)
-    off = solve_aba_with_backend(framework, backend="asp", semantics=semantics, simplify=False)
+    off = solve_aba_with_backend(
+        framework, backend="asp", semantics=semantics, simplify=False
+    )
     assert on.status == "success" and off.status == "success"
     assert _show(on.extensions) == expected
     assert _show(off.extensions) == expected
@@ -263,7 +272,9 @@ def test_multishot_enumeration_matches_subprocess_clingo(framework, semantics) -
         framework, backend="clingo_subprocess", semantics=semantics, simplify=False
     )
     if subprocess.status != "success":
-        pytest.skip(f"subprocess clingo unavailable: {subprocess.metadata.get('reason')}")
+        pytest.skip(
+            f"subprocess clingo unavailable: {subprocess.metadata.get('reason')}"
+        )
     multishot = solve_aba_with_backend(
         framework, backend="asp", semantics=semantics, simplify=False
     )
@@ -279,7 +290,9 @@ def test_preferred_single_extension_uses_limited_multishot_witness(monkeypatch) 
         limits.append(limit)
         return original(self, telemetry=telemetry, limit=limit)
 
-    monkeypatch.setattr(AbaIncrementalSolver, "enumerate_preferred", spy_enumerate_preferred)
+    monkeypatch.setattr(
+        AbaIncrementalSolver, "enumerate_preferred", spy_enumerate_preferred
+    )
 
     result = solve_aba_with_backend(
         framework,
@@ -298,7 +311,9 @@ def test_stable_single_extension_avoids_full_multishot_enumeration(monkeypatch) 
     framework = ALL[0]
 
     def forbidden_enumeration(*args, **kwargs):
-        raise AssertionError("single stable witness should not enumerate every stable extension")
+        raise AssertionError(
+            "single stable witness should not enumerate every stable extension"
+        )
 
     monkeypatch.setattr(AbaIncrementalSolver, "enumerate_stable", forbidden_enumeration)
 
@@ -339,6 +354,7 @@ def test_multishot_asp_does_not_materialize_support_facts(monkeypatch) -> None:
 # DS-PR (skeptical preferred) -- Algorithm 1
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize("framework", ALL + RANDOM)
 def test_ds_pr_matches_brute_force(framework) -> None:
     prefs = native_aba.preferred_extensions(framework)
@@ -356,7 +372,12 @@ def test_ds_pr_matches_brute_force(framework) -> None:
             framework, backend="asp", semantics="preferred", task="skeptical", query=q
         )
         off = solve_aba_with_backend(
-            framework, backend="asp", semantics="preferred", task="skeptical", query=q, simplify=False
+            framework,
+            backend="asp",
+            semantics="preferred",
+            task="skeptical",
+            query=q,
+            simplify=False,
         )
         assert on.answer == expected
         assert off.answer == expected
@@ -377,9 +398,16 @@ def test_ds_pr_matches_subprocess_clingo(framework) -> None:
             simplify=False,
         )
         if subprocess.status != "success":
-            pytest.skip(f"subprocess clingo unavailable: {subprocess.metadata.get('reason')}")
+            pytest.skip(
+                f"subprocess clingo unavailable: {subprocess.metadata.get('reason')}"
+            )
         multishot = solve_aba_with_backend(
-            framework, backend="asp", semantics="preferred", task="skeptical", query=q, simplify=False
+            framework,
+            backend="asp",
+            semantics="preferred",
+            task="skeptical",
+            query=q,
+            simplify=False,
         )
         assert multishot.answer == subprocess.answer
 
@@ -387,6 +415,7 @@ def test_ds_pr_matches_subprocess_clingo(framework) -> None:
 # ---------------------------------------------------------------------------
 # DC (credulous) -- complete and preferred coincide for derivable sentences
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("framework", ALL + RANDOM)
 def test_dc_matches_brute_force(framework) -> None:
@@ -415,6 +444,7 @@ def test_dc_matches_brute_force(framework) -> None:
 # The CEGAR loop actually iterates
 # ---------------------------------------------------------------------------
 
+
 def test_cegar_loop_accumulates_refinement_clauses() -> None:
     # ALL[-1] = the 5-assumption framework where DS-PR(a4) needs >=2 refinement
     # clauses (a counterexample is found only after the inner growth loop adds
@@ -422,7 +452,9 @@ def test_cegar_loop_accumulates_refinement_clauses() -> None:
     framework = ALL[-1]
     solver = AbaIncrementalSolver(framework)
     telemetry = IncrementalTelemetry()
-    answer, counterexample = solver.is_skeptically_accepted_preferred(lit("a4"), telemetry=telemetry)
+    answer, counterexample = solver.is_skeptically_accepted_preferred(
+        lit("a4"), telemetry=telemetry
+    )
     assert answer is False
     assert counterexample is not None
     assert telemetry.refinement_clauses >= 2
@@ -476,7 +508,9 @@ def test_incremental_solver_passes_diagnostic_control_args(monkeypatch) -> None:
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr(
+        "argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo
+    )
 
     solver = AbaIncrementalSolver(framework, control_args=("--configuration=frumpy",))
     telemetry = IncrementalTelemetry()
@@ -501,7 +535,9 @@ def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) ->
         def __init__(self, args):
             self.statistics = {
                 "summary": {"times": {"solve": 1.25}},
-                "solving": {"solvers": {"choices": 7.0, "conflicts": 3.0, "restarts": 2.0}},
+                "solving": {
+                    "solvers": {"choices": 7.0, "conflicts": 3.0, "restarts": 2.0}
+                },
             }
 
         def add(self, *args, **kwargs):
@@ -516,7 +552,9 @@ def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) ->
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr(
+        "argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo
+    )
 
     solver = AbaIncrementalSolver(framework, collect_statistics=True)
     telemetry = IncrementalTelemetry()
@@ -573,7 +611,9 @@ def test_incremental_solver_interrupts_solve_at_diagnostic_timeout(monkeypatch) 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr(
+        "argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo
+    )
 
     solver = AbaIncrementalSolver(
         framework,
@@ -634,7 +674,9 @@ def test_solve_aba_with_backend_returns_clingo_timeout_metadata(monkeypatch) -> 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr(
+        "argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo
+    )
 
     result = solve_aba_with_backend(
         framework,
@@ -701,7 +743,9 @@ def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> 
     class FakeClingo:
         Control = FakeControl
 
-    monkeypatch.setattr("argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo)
+    monkeypatch.setattr(
+        "argumentation.structured.aba.aba_incremental._load_clingo", lambda: FakeClingo
+    )
 
     solver = AbaIncrementalSolver(framework)
     telemetry = IncrementalTelemetry()
@@ -715,11 +759,14 @@ def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> 
 # Resource file is Listing 1
 # ---------------------------------------------------------------------------
 
+
 def test_com_module_resource_is_listing_one() -> None:
     from importlib import resources
 
-    text = resources.files("argumentation.encodings").joinpath("aba_com_incremental.lp").read_text(
-        encoding="utf-8"
+    text = (
+        resources.files("argumentation.encodings")
+        .joinpath("aba_com_incremental.lp")
+        .read_text(encoding="utf-8")
     )
     for needle in (
         "in(X) :- assumption(X), not out(X).",
@@ -743,6 +790,7 @@ def test_com_module_resource_is_listing_one() -> None:
 # Wave C4 regression: fact-contrary frameworks (the empty-attacker-set bug)
 # ---------------------------------------------------------------------------
 
+
 def _fact_contrary_frameworks() -> list[ABAFramework]:
     """Frameworks where some assumption's contrary is derivable from no premises.
 
@@ -753,7 +801,9 @@ def _fact_contrary_frameworks() -> list[ABAFramework]:
     p0, p1 = lit("p0"), lit("p1")
     out: list[ABAFramework] = []
     # The exact analyst repro: a0, contrary a0->p0, rule  p0 :- .
-    out.append(_framework(assumptions={a0}, contrary={a0: p0}, rules=[Rule((), p0, "strict")]))
+    out.append(
+        _framework(assumptions={a0}, contrary={a0: p0}, rules=[Rule((), p0, "strict")])
+    )
     # Two assumptions, one with a fact contrary, one free.
     out.append(
         _framework(
@@ -800,7 +850,9 @@ def test_grounded_fact_contrary_is_conflict_free(framework: ABAFramework) -> Non
 
 @pytest.mark.parametrize("framework", _fact_contrary_frameworks())
 @pytest.mark.parametrize("backend", ["asp", "clingo"])
-def test_solve_aba_grounded_fact_contrary_via_backend(framework: ABAFramework, backend: str) -> None:
+def test_solve_aba_grounded_fact_contrary_via_backend(
+    framework: ABAFramework, backend: str
+) -> None:
     pytest.importorskip("clingo")
     reference = _grounded_reference(framework)
     result = solve_aba_with_backend(

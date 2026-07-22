@@ -71,12 +71,18 @@ HAND_BUILT: list[ArgumentationFramework] = [
     _af(
         ["a1", "a2", "b1", "b2", "c1", "c2", "d1", "d2"],
         [
-            ("a1", "a2"), ("a2", "a1"),
-            ("b1", "b2"), ("b2", "b1"),
-            ("c1", "c2"), ("c2", "c1"),
-            ("d1", "d2"), ("d2", "d1"),
-            ("a1", "b1"), ("a2", "c1"),
-            ("b1", "d1"), ("c1", "d2"),
+            ("a1", "a2"),
+            ("a2", "a1"),
+            ("b1", "b2"),
+            ("b2", "b1"),
+            ("c1", "c2"),
+            ("c2", "c1"),
+            ("d1", "d2"),
+            ("d2", "d1"),
+            ("a1", "b1"),
+            ("a2", "c1"),
+            ("b1", "d1"),
+            ("c1", "d2"),
         ],
     ),
     # parallel independent SCCs: a 2-cycle and a 3-cycle, disconnected
@@ -101,7 +107,12 @@ HAND_BUILT: list[ArgumentationFramework] = [
     _af(
         ["a", "b", "c", "d"],
         [
-            ("a", "b"), ("b", "a"), ("b", "c"), ("c", "b"), ("a", "c"), ("c", "a"),
+            ("a", "b"),
+            ("b", "a"),
+            ("b", "c"),
+            ("c", "b"),
+            ("a", "c"),
+            ("c", "a"),
             ("c", "d"),
         ],
     ),
@@ -110,7 +121,9 @@ HAND_BUILT: list[ArgumentationFramework] = [
 
 @pytest.mark.parametrize("af", HAND_BUILT)
 @pytest.mark.parametrize("semantics", SEMANTICS)
-def test_hand_built_oracle_equivalence(af: ArgumentationFramework, semantics: str) -> None:
+def test_hand_built_oracle_equivalence(
+    af: ArgumentationFramework, semantics: str
+) -> None:
     reference = _brute(af, semantics)
     decomposed = set(scc_extensions(af, semantics))
     flat = set(scc_extensions(af, semantics, decompose=False))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -64,15 +63,23 @@ def test_sparse_narrow_route_rejects_locator_metadata() -> None:
 
 
 def test_large_dense_flat_aba_shape_requires_high_rule_density() -> None:
-    assert large_dense_flat_aba_shape(dense_flat_framework(200, rules_per_assumption=26))
-    assert not large_dense_flat_aba_shape(dense_flat_framework(200, rules_per_assumption=4))
+    assert large_dense_flat_aba_shape(
+        dense_flat_framework(200, rules_per_assumption=26)
+    )
+    assert not large_dense_flat_aba_shape(
+        dense_flat_framework(200, rules_per_assumption=4)
+    )
 
 
 def test_large_dense_flat_aba_shape_requires_more_than_150_assumptions() -> None:
-    assert not large_dense_flat_aba_shape(dense_flat_framework(100, rules_per_assumption=26))
+    assert not large_dense_flat_aba_shape(
+        dense_flat_framework(100, rules_per_assumption=26)
+    )
 
 
-def dense_flat_framework(assumptions: int, *, rules_per_assumption: int) -> ABAFramework:
+def dense_flat_framework(
+    assumptions: int, *, rules_per_assumption: int
+) -> ABAFramework:
     assumption_literals = tuple(lit(f"a{index}") for index in range(assumptions))
     heads = tuple(
         lit(f"h{index}_{offset}")
@@ -80,7 +87,11 @@ def dense_flat_framework(assumptions: int, *, rules_per_assumption: int) -> ABAF
         for offset in range(rules_per_assumption)
     )
     rules = frozenset(
-        Rule((assumption_literals[index],), heads[index * rules_per_assumption + offset], "strict")
+        Rule(
+            (assumption_literals[index],),
+            heads[index * rules_per_assumption + offset],
+            "strict",
+        )
         for index in range(assumptions)
         for offset in range(rules_per_assumption)
     )
@@ -98,7 +109,9 @@ def dense_flat_framework(assumptions: int, *, rules_per_assumption: int) -> ABAF
     )
 
 
-def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(monkeypatch) -> None:
+def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(
+    monkeypatch,
+) -> None:
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
 
@@ -148,7 +161,9 @@ def test_auto_single_extension_sparse_narrow_stable_uses_clingo_when_available(m
     assert "clingo_statistics" not in result.metadata
 
 
-def test_explicit_sat_single_extension_sparse_narrow_stable_uses_native_sat(monkeypatch) -> None:
+def test_explicit_sat_single_extension_sparse_narrow_stable_uses_native_sat(
+    monkeypatch,
+) -> None:
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
 
@@ -191,12 +206,16 @@ def test_explicit_sat_single_extension_sparse_narrow_stable_uses_native_sat(monk
     assert not (FORBIDDEN_LOCATOR_KEYS & set(result.metadata))
 
 
-def test_auto_single_extension_sparse_narrow_preferred_keeps_native_sat(monkeypatch) -> None:
+def test_auto_single_extension_sparse_narrow_preferred_keeps_native_sat(
+    monkeypatch,
+) -> None:
     framework = sparse_narrow_framework(700, rule_ratio=4)
     monkeypatch.setattr(solver, "_has_clingo", lambda: True)
 
     def forbidden_asp(*args, **kwargs):
-        raise AssertionError("preferred sparse/narrow auto route is not owned by this workstream")
+        raise AssertionError(
+            "preferred sparse/narrow auto route is not owned by this workstream"
+        )
 
     def native_spy(received: ABAFramework, routed_semantics: str):
         assert received == framework

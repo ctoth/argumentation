@@ -49,6 +49,7 @@ def _framework(*, assumptions, contrary, rules, extra_language=()) -> ABAFramewo
 # Hand battery
 # ---------------------------------------------------------------------------
 
+
 def battery() -> list[ABAFramework]:
     a, b, c, d = (lit(x) for x in ("a", "b", "c", "d"))
     ca, cb, cc, cd = (lit(x) for x in ("ca", "cb", "cc", "cd"))
@@ -58,9 +59,7 @@ def battery() -> list[ABAFramework]:
     # 1. Trivial: no rules at all, contraries never derivable -> grounded = all
     #    assumptions, fixed_out empty. (Actually fixed_in == all assumptions here,
     #    so it is *not* trivial; the residual is empty.)
-    frameworks.append(
-        _framework(assumptions={a, b}, contrary={a: ca, b: cb}, rules=[])
-    )
+    frameworks.append(_framework(assumptions={a, b}, contrary={a: ca, b: cb}, rules=[]))
 
     # 2. Empty grounded set: a and b attack each other -> grounded = {} -> trivial.
     frameworks.append(
@@ -117,7 +116,11 @@ def battery() -> list[ABAFramework]:
         _framework(
             assumptions={a, b, c, d},
             contrary={a: ca, b: cb, c: cc, d: cd},
-            rules=[Rule((d,), ca, "strict"), Rule((d,), cb, "strict"), Rule((c,), cd, "strict")],
+            rules=[
+                Rule((d,), ca, "strict"),
+                Rule((d,), cb, "strict"),
+                Rule((c,), cd, "strict"),
+            ],
         )
     )
 
@@ -137,7 +140,11 @@ def battery() -> list[ABAFramework]:
         _framework(
             assumptions={a, b},
             contrary={a: ca, b: cb},
-            rules=[Rule((a,), q, "strict"), Rule((q,), r, "strict"), Rule((a,), cb, "strict")],
+            rules=[
+                Rule((a,), q, "strict"),
+                Rule((q,), r, "strict"),
+                Rule((a,), cb, "strict"),
+            ],
             extra_language=[r],
         )
     )
@@ -180,6 +187,7 @@ ALL = battery()
 # ---------------------------------------------------------------------------
 # Structural invariants
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("framework", ALL)
 def test_simplify_structural_invariants(framework: ABAFramework) -> None:
@@ -244,9 +252,9 @@ def test_grounded_via_closures_matches_native_on_random() -> None:
     rng = random.Random(20260512)
     for _ in range(200):
         framework = random_framework(rng)
-        assert grounded_assumption_set_via_closures(framework) == native_aba.grounded_extension(
+        assert grounded_assumption_set_via_closures(
             framework
-        )
+        ) == native_aba.grounded_extension(framework)
 
 
 def _layered_choice_blowup_framework(levels: int) -> ABAFramework:
@@ -362,6 +370,7 @@ def test_constant_is_frozenset() -> None:
 # Oracle equivalence -- enumeration
 # ---------------------------------------------------------------------------
 
+
 def _native_extensions(framework: ABAFramework, semantics: str):
     fn = {
         "grounded": lambda f: (native_aba.grounded_extension(f),),
@@ -394,12 +403,18 @@ def _unsimplified_extensions(framework: ABAFramework, semantics: str):
         return frozenset({frozenset(native_aba.grounded_extension(framework))})
     if semantics == "ideal":
         return frozenset({frozenset(native_aba.ideal_extension(framework))})
-    return frozenset(frozenset(e) for e in aba_sat.support_extensions(framework, semantics))
+    return frozenset(
+        frozenset(e) for e in aba_sat.support_extensions(framework, semantics)
+    )
 
 
-@pytest.mark.parametrize("semantics", ["grounded", "complete", "preferred", "stable", "ideal"])
+@pytest.mark.parametrize(
+    "semantics", ["grounded", "complete", "preferred", "stable", "ideal"]
+)
 @pytest.mark.parametrize("framework", ALL)
-def test_oracle_equivalence_enumeration_battery(framework: ABAFramework, semantics: str) -> None:
+def test_oracle_equivalence_enumeration_battery(
+    framework: ABAFramework, semantics: str
+) -> None:
     native = _native_extensions(framework, semantics)
     assert _residual_extensions_via_simplify(framework, semantics) == native
     assert _unsimplified_extensions(framework, semantics) == native
@@ -410,13 +425,19 @@ def test_oracle_equivalence_enumeration_battery(framework: ABAFramework, semanti
 def test_solve_aba_with_backend_simplify_matches_native(
     framework: ABAFramework, semantics: str
 ) -> None:
-    on = solve_aba_with_backend(framework, backend="support_reference", semantics=semantics)
+    on = solve_aba_with_backend(
+        framework, backend="support_reference", semantics=semantics
+    )
     off = solve_aba_with_backend(
         framework, backend="support_reference", semantics=semantics, simplify=False
     )
     assert on.status == "success"
-    assert frozenset(frozenset(e) for e in on.extensions) == _native_extensions(framework, semantics)
-    assert frozenset(frozenset(e) for e in off.extensions) == _native_extensions(framework, semantics)
+    assert frozenset(frozenset(e) for e in on.extensions) == _native_extensions(
+        framework, semantics
+    )
+    assert frozenset(frozenset(e) for e in off.extensions) == _native_extensions(
+        framework, semantics
+    )
 
 
 def test_solve_aba_with_backend_acceptance_simplify() -> None:
@@ -459,6 +480,7 @@ def test_oracle_equivalence_enumeration_random() -> None:
 # Oracle equivalence -- acceptance (DC / DS), via the wired Z3/SAT entry points
 # ---------------------------------------------------------------------------
 
+
 def _native_dc(framework: ABAFramework, semantics: str, query: Literal) -> bool:
     exts = _native_extensions(framework, semantics)
     return any(native_aba.derives(framework, e, query) for e in exts)
@@ -489,7 +511,11 @@ def test_oracle_equivalence_acceptance_battery(framework: ABAFramework) -> None:
                 framework, semantics=semantics, task="credulous", query=query
             )
             dc_off, _ = aba_sat.sat_support_acceptance(
-                framework, semantics=semantics, task="credulous", query=query, simplify=False
+                framework,
+                semantics=semantics,
+                task="credulous",
+                query=query,
+                simplify=False,
             )
             assert dc_simpl == dc_off == _native_dc(framework, semantics, query), (
                 semantics,
@@ -499,19 +525,27 @@ def test_oracle_equivalence_acceptance_battery(framework: ABAFramework) -> None:
                 framework, semantics=semantics, task="skeptical", query=query
             )
             ds_off, _ = aba_sat.sat_support_acceptance(
-                framework, semantics=semantics, task="skeptical", query=query, simplify=False
+                framework,
+                semantics=semantics,
+                task="skeptical",
+                query=query,
+                simplify=False,
             )
             assert ds_simpl == ds_off == _native_ds(framework, semantics, query), (
                 semantics,
                 query,
             )
         # stable
-        dc_simpl, _ = aba_sat.sat_stable_acceptance(framework, task="credulous", query=query)
+        dc_simpl, _ = aba_sat.sat_stable_acceptance(
+            framework, task="credulous", query=query
+        )
         dc_off, _ = aba_sat.sat_stable_acceptance(
             framework, task="credulous", query=query, simplify=False
         )
         assert dc_simpl == dc_off == _native_dc(framework, "stable", query), query
-        ds_simpl, _ = aba_sat.sat_stable_acceptance(framework, task="skeptical", query=query)
+        ds_simpl, _ = aba_sat.sat_stable_acceptance(
+            framework, task="skeptical", query=query
+        )
         ds_off, _ = aba_sat.sat_stable_acceptance(
             framework, task="skeptical", query=query, simplify=False
         )
@@ -527,20 +561,33 @@ def test_oracle_equivalence_acceptance_random() -> None:
                 got, _ = aba_sat.sat_support_acceptance(
                     framework, semantics=semantics, task="credulous", query=query
                 )
-                assert got == _native_dc(framework, semantics, query), (semantics, query, framework)
+                assert got == _native_dc(framework, semantics, query), (
+                    semantics,
+                    query,
+                    framework,
+                )
                 got, _ = aba_sat.sat_support_acceptance(
                     framework, semantics=semantics, task="skeptical", query=query
                 )
-                assert got == _native_ds(framework, semantics, query), (semantics, query, framework)
-            got, _ = aba_sat.sat_stable_acceptance(framework, task="credulous", query=query)
+                assert got == _native_ds(framework, semantics, query), (
+                    semantics,
+                    query,
+                    framework,
+                )
+            got, _ = aba_sat.sat_stable_acceptance(
+                framework, task="credulous", query=query
+            )
             assert got == _native_dc(framework, "stable", query), (query, framework)
-            got, _ = aba_sat.sat_stable_acceptance(framework, task="skeptical", query=query)
+            got, _ = aba_sat.sat_stable_acceptance(
+                framework, task="skeptical", query=query
+            )
             assert got == _native_ds(framework, "stable", query), (query, framework)
 
 
 # ---------------------------------------------------------------------------
 # Single-extension membership (the wired finders)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize("framework", ALL)
 def test_single_extension_finders_are_valid(framework: ABAFramework) -> None:
@@ -560,9 +607,9 @@ def test_single_extension_random() -> None:
     rng = random.Random(112233)
     for _ in range(120):
         framework = random_framework(rng)
-        assert aba_sat.sat_support_extension(framework, "complete") in _native_extensions(
+        assert aba_sat.sat_support_extension(
             framework, "complete"
-        )
+        ) in _native_extensions(framework, "complete")
         pref = aba_sat.sat_support_extension(framework, "preferred")
         assert pref in _native_extensions(framework, "preferred"), framework
         stable_ref = _native_extensions(framework, "stable")

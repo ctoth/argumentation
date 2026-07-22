@@ -19,7 +19,9 @@ SMALL_ARGUMENTS = ("a", "b", "c", "d")
 def _all_subsets(arguments: frozenset[str]) -> tuple[frozenset[str], ...]:
     ordered = sorted(arguments)
     return tuple(
-        frozenset(argument for index, argument in enumerate(ordered) if mask & (1 << index))
+        frozenset(
+            argument for index, argument in enumerate(ordered) if mask & (1 << index)
+        )
         for mask in range(1 << len(ordered))
     )
 

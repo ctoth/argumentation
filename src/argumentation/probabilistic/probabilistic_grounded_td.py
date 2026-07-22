@@ -39,7 +39,10 @@ def supports_exact_dp(
         return False
     if getattr(praf, "supports", frozenset()):
         return False
-    if praf.framework.attacks is not None and praf.framework.attacks != praf.framework.defeats:
+    if (
+        praf.framework.attacks is not None
+        and praf.framework.attacks != praf.framework.defeats
+    ):
         return False
     return True
 
@@ -47,6 +50,7 @@ def supports_exact_dp(
 # ===================================================================
 # Data structures
 # ===================================================================
+
 
 @dataclass(frozen=True)
 class GroundedOutcomeProbabilities:
@@ -153,9 +157,9 @@ def compute_exact_dp_with_diagnostics(
 #   active_edges: frozenset of realized defeat edges (accumulated).
 #   present_forgotten: frozenset of forgotten args that were present.
 _RowKey = tuple[
-    tuple[tuple[str, bool], ...],      # bag_state
-    frozenset[tuple[str, str]],        # active_edges
-    frozenset[str],                    # present_forgotten
+    tuple[tuple[str, bool], ...],  # bag_state
+    frozenset[tuple[str, str]],  # active_edges
+    frozenset[str],  # present_forgotten
 ]
 DPTable = dict[_RowKey, float]
 
@@ -231,14 +235,15 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
 
     from argumentation.probabilistic.probabilistic import _expectation
 
-    p_arg: dict[str, float] = {
-        a: _expectation(praf.p_args[a]) for a in af.arguments
-    }
+    p_arg: dict[str, float] = {a: _expectation(praf.p_args[a]) for a in af.arguments}
     p_defeat: dict[tuple[str, str], float] = {
         d: _expectation(praf.p_defeats[d]) for d in af.defeats
     }
 
-    from argumentation.probabilistic.probabilistic_components import connected_components
+    from argumentation.probabilistic.probabilistic_components import (
+        connected_components,
+    )
+
     components = connected_components(praf)
 
     acceptance: dict[str, float] = {}
@@ -252,21 +257,24 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
 
     for component_index, comp_args in enumerate(components):
         comp_defeats = frozenset(
-            (f, t) for f, t in af.defeats
-            if f in comp_args and t in comp_args
+            (f, t) for f, t in af.defeats if f in comp_args and t in comp_args
         )
         comp_af = ArgumentationFramework(
             arguments=frozenset(comp_args),
             defeats=comp_defeats,
             attacks=(
                 frozenset(
-                    (f, t) for f, t in af.attacks
-                    if f in comp_args and t in comp_args
-                ) if af.attacks is not None else None
+                    (f, t) for f, t in af.attacks if f in comp_args and t in comp_args
+                )
+                if af.attacks is not None
+                else None
             ),
         )
         comp_result = _compute_grounded_dp_component_result(
-            comp_af, p_arg, p_defeat, component_index,
+            comp_af,
+            p_arg,
+            p_defeat,
+            component_index,
         )
         acceptance.update(comp_result.acceptance_probs)
         status_probabilities.update(comp_result.status_probabilities)
@@ -365,24 +373,28 @@ def _compute_grounded_dp_component_result(
         node = ntd.nodes[nid]
 
         if node.node_type == "leaf":
-            tables[nid] = {
-                _make_key({}, frozenset(), frozenset()): 1.0
-            }
+            tables[nid] = {_make_key({}, frozenset(), frozenset()): 1.0}
 
         elif node.node_type == "introduce":
             tables[nid] = _dp_introduce(
-                node, tables[node.children[0]], p_defeat,
+                node,
+                tables[node.children[0]],
+                p_defeat,
                 introduce_owns_edges[nid],
             )
 
         elif node.node_type == "forget":
             tables[nid] = _dp_forget(
-                node, tables[node.children[0]], p_arg,
+                node,
+                tables[node.children[0]],
+                p_arg,
             )
 
         elif node.node_type == "join":
             tables[nid] = _dp_join(
-                node, tables[node.children[0]], tables[node.children[1]],
+                node,
+                tables[node.children[0]],
+                tables[node.children[1]],
             )
 
         table = tables[nid]
@@ -531,7 +543,7 @@ def _dp_introduce(
                     p_edges *= p_defeat[edge]
                     new_edges.add(edge)
                 else:
-                    p_edges *= (1.0 - p_defeat[edge])
+                    p_edges *= 1.0 - p_defeat[edge]
 
             if p_edges < 1e-18:
                 continue
@@ -539,8 +551,11 @@ def _dp_introduce(
             new_state_p = dict(bag_state)
             new_state_p[v] = True
             _add_to_table(
-                new_table, new_state_p, frozenset(new_edges),
-                present_forgotten, prob * p_edges,
+                new_table,
+                new_state_p,
+                frozenset(new_edges),
+                present_forgotten,
+                prob * p_edges,
             )
 
     return new_table
@@ -582,8 +597,11 @@ def _dp_forget(
         )
 
         _add_to_table(
-            new_table, new_state, edges_fs,
-            new_present_forgotten, adjusted_prob,
+            new_table,
+            new_state,
+            edges_fs,
+            new_present_forgotten,
+            adjusted_prob,
         )
 
     return new_table
@@ -609,9 +627,7 @@ def _dp_join(
     for (state_tuple, edges_fs, pf), prob in right_table.items():
         if prob < 1e-18:
             continue
-        right_by_state.setdefault(state_tuple, []).append(
-            (edges_fs, pf, prob)
-        )
+        right_by_state.setdefault(state_tuple, []).append((edges_fs, pf, prob))
 
     for (left_state, left_edges, left_pf), left_prob in left_table.items():
         if left_prob < 1e-18:

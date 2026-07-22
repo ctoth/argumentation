@@ -54,10 +54,18 @@ _BATTERY: list[ArgumentationFramework] = [
     _af({"a", "b"}, {("a", "b"), ("b", "a")}),  # symmetric 2-cycle
     _af({"a", "b", "c"}, {("a", "b"), ("b", "c")}),  # acyclic chain
     _af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")}),  # 3-cycle
-    _af({"a", "b", "c", "d"}, {("a", "b"), ("b", "a"), ("c", "d"), ("d", "c")}),  # two 2-cycles
-    _af({"a", "b", "c"}, {("a", "a"), ("a", "b"), ("b", "c")}),  # self-attacker with out-edges
-    _af({"a", "b", "c", "d"}, {("a", "a"), ("b", "b")}),  # only self-loop sinks (+ isolated)
-    _af({"a", "b", "c"}, {("a", "a"), ("b", "c"), ("c", "a")}),  # stage breaks naive grounded reduct
+    _af(
+        {"a", "b", "c", "d"}, {("a", "b"), ("b", "a"), ("c", "d"), ("d", "c")}
+    ),  # two 2-cycles
+    _af(
+        {"a", "b", "c"}, {("a", "a"), ("a", "b"), ("b", "c")}
+    ),  # self-attacker with out-edges
+    _af(
+        {"a", "b", "c", "d"}, {("a", "a"), ("b", "b")}
+    ),  # only self-loop sinks (+ isolated)
+    _af(
+        {"a", "b", "c"}, {("a", "a"), ("b", "c"), ("c", "a")}
+    ),  # stage breaks naive grounded reduct
     _af(
         {"a", "b", "c", "d", "e"},
         {("a", "b"), ("b", "c"), ("c", "b"), ("d", "e"), ("e", "d")},
@@ -103,7 +111,10 @@ def _check_simplification_shape(
     assert simplification.residual.arguments == framework.arguments - removed
     # Residual carries exactly the attacks among its surviving arguments.
     for attacker, target in framework.defeats:
-        if attacker in simplification.residual.arguments and target in simplification.residual.arguments:
+        if (
+            attacker in simplification.residual.arguments
+            and target in simplification.residual.arguments
+        ):
             assert (attacker, target) in simplification.residual.defeats
     for attacker, target in simplification.residual.defeats:
         assert (attacker, target) in framework.defeats
@@ -111,7 +122,16 @@ def _check_simplification_shape(
 
 @pytest.mark.parametrize("framework", _BATTERY)
 def test_simplify_af_shape_on_battery(framework: ArgumentationFramework) -> None:
-    for semantics in ("complete", "preferred", "stable", "semi-stable", "stage", "grounded", "ideal", None):
+    for semantics in (
+        "complete",
+        "preferred",
+        "stable",
+        "semi-stable",
+        "stage",
+        "grounded",
+        "ideal",
+        None,
+    ):
         simplification = simplify_af(framework, semantics=semantics)
         _check_simplification_shape(framework, simplification)
 
@@ -119,8 +139,18 @@ def test_simplify_af_shape_on_battery(framework: ArgumentationFramework) -> None
 @given(_random_af(max_args=5))
 @settings(deadline=None, max_examples=80)
 def test_simplify_af_shape_random(framework: ArgumentationFramework) -> None:
-    for semantics in ("complete", "preferred", "stable", "semi-stable", "stage", "grounded", "ideal"):
-        _check_simplification_shape(framework, simplify_af(framework, semantics=semantics))
+    for semantics in (
+        "complete",
+        "preferred",
+        "stable",
+        "semi-stable",
+        "stage",
+        "grounded",
+        "ideal",
+    ):
+        _check_simplification_shape(
+            framework, simplify_af(framework, semantics=semantics)
+        )
 
 
 def test_grounded_reduct_fixes_grounded_in_and_attacked_out() -> None:
@@ -153,7 +183,9 @@ def test_diagnostics() -> None:
 # ── Oracle equivalence: simplified SAT path == brute-force reference ─
 
 
-def _native_extensions(framework: ArgumentationFramework, semantics: str) -> set[frozenset[str]]:
+def _native_extensions(
+    framework: ArgumentationFramework, semantics: str
+) -> set[frozenset[str]]:
     if semantics == "complete":
         return set(native_complete_extensions(framework))
     if semantics == "preferred":
@@ -180,7 +212,9 @@ _FINDERS = {
 }
 
 
-def _assert_finder_matches_oracle(framework: ArgumentationFramework, semantics: str) -> None:
+def _assert_finder_matches_oracle(
+    framework: ArgumentationFramework, semantics: str
+) -> None:
     finder = _FINDERS[semantics]
     native = _native_extensions(framework, semantics)
     with_simplify = finder(framework, simplify=True)
@@ -207,7 +241,9 @@ def _assert_finder_matches_oracle(framework: ArgumentationFramework, semantics: 
 
 @pytest.mark.parametrize("framework", _BATTERY)
 @pytest.mark.parametrize("semantics", sorted(_FINDERS))
-def test_finder_matches_oracle_on_battery(framework: ArgumentationFramework, semantics: str) -> None:
+def test_finder_matches_oracle_on_battery(
+    framework: ArgumentationFramework, semantics: str
+) -> None:
     _assert_finder_matches_oracle(framework, semantics)
 
 
@@ -240,16 +276,29 @@ def _native_skeptical_preferred(framework: ArgumentationFramework, query: str) -
 
 
 @pytest.mark.parametrize("framework", _BATTERY)
-def test_skeptical_preferred_matches_oracle_on_battery(framework: ArgumentationFramework) -> None:
+def test_skeptical_preferred_matches_oracle_on_battery(
+    framework: ArgumentationFramework,
+) -> None:
     for query in sorted(framework.arguments):
         expected = _native_skeptical_preferred(framework, query)
-        assert is_preferred_skeptically_accepted(framework, query, simplify=True) == expected
-        assert is_preferred_skeptically_accepted(framework, query, simplify=False) == expected
+        assert (
+            is_preferred_skeptically_accepted(framework, query, simplify=True)
+            == expected
+        )
+        assert (
+            is_preferred_skeptically_accepted(framework, query, simplify=False)
+            == expected
+        )
 
 
 @given(_random_af(max_args=4))
 @settings(deadline=None, max_examples=120)
-def test_skeptical_preferred_matches_oracle_random(framework: ArgumentationFramework) -> None:
+def test_skeptical_preferred_matches_oracle_random(
+    framework: ArgumentationFramework,
+) -> None:
     for query in sorted(framework.arguments):
         expected = _native_skeptical_preferred(framework, query)
-        assert is_preferred_skeptically_accepted(framework, query, simplify=True) == expected
+        assert (
+            is_preferred_skeptically_accepted(framework, query, simplify=True)
+            == expected
+        )

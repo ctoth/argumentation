@@ -116,7 +116,9 @@ def paper_introduce_rows(
                 witnesses=dict(row.witnesses),
                 probability=row.probability * (1.0 - p_argument),
             )
-            if argument not in queried_in and _paper_td_accepts_required_in(absent_row, queried_in):
+            if argument not in queried_in and _paper_td_accepts_required_in(
+                absent_row, queried_in
+            ):
                 introduced_rows.append(absent_row)
 
         present_arguments = row.present_arguments | frozenset({argument})
@@ -209,9 +211,7 @@ def paper_forget_rows(
             PaperTDRow(
                 present_arguments=row.present_arguments - frozenset({argument}),
                 active_defeats=frozenset(
-                    defeat
-                    for defeat in row.active_defeats
-                    if argument not in defeat
+                    defeat for defeat in row.active_defeats if argument not in defeat
                 ),
                 labels=labels,
                 witnesses=witnesses,
@@ -274,7 +274,9 @@ def paper_join_rows(
                     active_defeats=left.active_defeats,
                     labels=dict(left.labels),
                     witnesses=witnesses,
-                    probability=left.probability * right.probability / common_probability,
+                    probability=left.probability
+                    * right.probability
+                    / common_probability,
                 )
             )
 
@@ -299,11 +301,20 @@ def compute_paper_exact_extension_probability(
     intentionally scoped to the paper's complete-semantics extension query.
     """
     if semantics != "complete":
-        raise ValueError("paper TD exact extension probability currently supports complete semantics")
+        raise ValueError(
+            "paper TD exact extension probability currently supports complete semantics"
+        )
     if getattr(praf, "supports", frozenset()):
-        raise ValueError("paper TD exact extension probability does not support support relations")
-    if praf.framework.attacks is not None and praf.framework.attacks != praf.framework.defeats:
-        raise ValueError("paper TD exact extension probability requires attacks == defeats")
+        raise ValueError(
+            "paper TD exact extension probability does not support support relations"
+        )
+    if (
+        praf.framework.attacks is not None
+        and praf.framework.attacks != praf.framework.defeats
+    ):
+        raise ValueError(
+            "paper TD exact extension probability requires attacks == defeats"
+        )
 
     unknown = sorted(queried_set - praf.framework.arguments)
     if unknown:
@@ -485,12 +496,9 @@ def _paper_td_forget_accepts(row: PaperTDRow, argument: str) -> bool:
         )
     if label is PaperTDLabel.OUT:
         return argument in row.witnesses
-    return (
-        argument in row.witnesses
-        and not any(
-            target == argument and row.labels.get(source) is PaperTDLabel.IN
-            for source, target in row.active_defeats
-        )
+    return argument in row.witnesses and not any(
+        target == argument and row.labels.get(source) is PaperTDLabel.IN
+        for source, target in row.active_defeats
     )
 
 
@@ -522,7 +530,8 @@ def _paper_td_update_witnesses(
                 (
                     source
                     for source, target in sorted(active_defeats)
-                    if target == argument and labels.get(source) is PaperTDLabel.UNDECIDED
+                    if target == argument
+                    and labels.get(source) is PaperTDLabel.UNDECIDED
                 ),
                 None,
             )
@@ -562,9 +571,7 @@ def _paper_td_common_probability(
             probability *= 1.0 - p_argument
 
     bag_defeats = sorted(
-        defeat
-        for defeat in all_defeats
-        if defeat[0] in bag and defeat[1] in bag
+        defeat for defeat in all_defeats if defeat[0] in bag and defeat[1] in bag
     )
     for defeat in bag_defeats:
         p_defeat = p_defeats.get(defeat, 1.0)
@@ -616,6 +623,8 @@ def _paper_td_row_sort_key(
     return (
         tuple(sorted(row.present_arguments)),
         tuple(sorted(row.active_defeats)),
-        tuple(sorted((argument, label.value) for argument, label in row.labels.items())),
+        tuple(
+            sorted((argument, label.value) for argument, label in row.labels.items())
+        ),
         tuple(sorted(row.witnesses.items())),
     )

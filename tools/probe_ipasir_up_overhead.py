@@ -111,8 +111,7 @@ def hidden_assignment_cnf(
 ) -> list[list[int]]:
     rng = random.Random(seed)
     assignment = {
-        variable: rng.choice((False, True))
-        for variable in range(1, variables + 1)
+        variable: rng.choice((False, True)) for variable in range(1, variables + 1)
     }
     cnf: list[list[int]] = []
     for _ in range(clauses):
@@ -174,8 +173,7 @@ def summarize_pair(
         seed=seed,
     )
     baseline_runs = [
-        run_solver(cnf, variables=case.variables, noop_mode=None)
-        for _ in range(repeat)
+        run_solver(cnf, variables=case.variables, noop_mode=None) for _ in range(repeat)
     ]
     noop_runs = [
         run_solver(cnf, variables=case.variables, noop_mode=noop_mode)
@@ -183,11 +181,7 @@ def summarize_pair(
     ]
     baseline_median = median(run["elapsed_seconds"] for run in baseline_runs)
     noop_median = median(run["elapsed_seconds"] for run in noop_runs)
-    overhead_ratio = (
-        noop_median / baseline_median
-        if baseline_median > 0
-        else None
-    )
+    overhead_ratio = noop_median / baseline_median if baseline_median > 0 else None
     payload = {
         "case": case.__dict__,
         "seed": seed,

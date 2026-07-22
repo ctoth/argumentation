@@ -134,9 +134,9 @@ def test_preferred_skeptical_task_solver_handles_paper_shaped_cdas_cases() -> No
     assert PreferredSkepticalTaskSolver(af({"q"}, {("q", "q")})).decide("q") is False
     assert PreferredSkepticalTaskSolver(af({"q", "b"}, set())).decide("q") is True
     assert (
-        PreferredSkepticalTaskSolver(
-            af({"q", "b"}, {("q", "b"), ("b", "q")})
-        ).decide("q")
+        PreferredSkepticalTaskSolver(af({"q", "b"}, {("q", "b"), ("b", "q")})).decide(
+            "q"
+        )
         is False
     )
 
@@ -145,11 +145,14 @@ def test_preferred_super_core_fast_path_accepts_without_attacker_churn() -> None
     framework = af({"q", "b"}, set())
     checks: list[SATCheck] = []
 
-    assert PreferredSkepticalTaskSolver(
-        framework,
-        trace_sink=checks.append,
-        metadata={"subtrack": "DS-PR"},
-    ).decide("q") is True
+    assert (
+        PreferredSkepticalTaskSolver(
+            framework,
+            trace_sink=checks.append,
+            metadata={"subtrack": "DS-PR"},
+        ).decide("q")
+        is True
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert utility_names == ["preferred_skeptical_shortcut_unattacked_query"]
@@ -159,39 +162,59 @@ def test_preferred_super_core_fast_path_accepts_without_attacker_churn() -> None
 def test_preferred_skeptical_shortcuts_are_traceable_and_exact() -> None:
     self_attacking = af({"q"}, {("q", "q")})
     self_checks: list[SATCheck] = []
-    assert PreferredSkepticalTaskSolver(
-        self_attacking,
-        trace_sink=self_checks.append,
-    ).decide("q") is False
-    assert self_checks[0].utility_name == "preferred_skeptical_shortcut_self_attacking_query"
+    assert (
+        PreferredSkepticalTaskSolver(
+            self_attacking,
+            trace_sink=self_checks.append,
+        ).decide("q")
+        is False
+    )
+    assert (
+        self_checks[0].utility_name
+        == "preferred_skeptical_shortcut_self_attacking_query"
+    )
     assert self_checks[0].result == "rejected"
 
     acyclic = af({"a", "q"}, {("a", "q")})
     acyclic_checks: list[SATCheck] = []
-    assert PreferredSkepticalTaskSolver(
-        acyclic,
-        trace_sink=acyclic_checks.append,
-    ).decide("q") is False
-    assert acyclic_checks[0].utility_name == "preferred_skeptical_shortcut_grounded_attacked"
+    assert (
+        PreferredSkepticalTaskSolver(
+            acyclic,
+            trace_sink=acyclic_checks.append,
+        ).decide("q")
+        is False
+    )
+    assert (
+        acyclic_checks[0].utility_name
+        == "preferred_skeptical_shortcut_grounded_attacked"
+    )
     assert acyclic_checks[0].result == "rejected"
 
 
 def test_preferred_skeptical_grounded_shortcuts_are_traceable_and_ordered() -> None:
     grounded_in = af({"q", "a", "g"}, {("a", "q"), ("g", "a")})
     grounded_in_checks: list[SATCheck] = []
-    assert PreferredSkepticalTaskSolver(
-        grounded_in,
-        trace_sink=grounded_in_checks.append,
-    ).decide("q") is True
-    assert grounded_in_checks[0].utility_name == "preferred_skeptical_shortcut_grounded_in"
+    assert (
+        PreferredSkepticalTaskSolver(
+            grounded_in,
+            trace_sink=grounded_in_checks.append,
+        ).decide("q")
+        is True
+    )
+    assert (
+        grounded_in_checks[0].utility_name == "preferred_skeptical_shortcut_grounded_in"
+    )
     assert grounded_in_checks[0].result == "accepted"
 
     grounded_attacked = af({"g", "q", "a"}, {("g", "q"), ("q", "a")})
     grounded_attacked_checks: list[SATCheck] = []
-    assert PreferredSkepticalTaskSolver(
-        grounded_attacked,
-        trace_sink=grounded_attacked_checks.append,
-    ).decide("q") is False
+    assert (
+        PreferredSkepticalTaskSolver(
+            grounded_attacked,
+            trace_sink=grounded_attacked_checks.append,
+        ).decide("q")
+        is False
+    )
     assert grounded_attacked_checks[0].utility_name == (
         "preferred_skeptical_shortcut_grounded_attacked"
     )
@@ -199,7 +222,9 @@ def test_preferred_skeptical_grounded_shortcuts_are_traceable_and_ordered() -> N
 
     undecided = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("a", "b")})
     undecided_checks: list[SATCheck] = []
-    PreferredSkepticalTaskSolver(undecided, trace_sink=undecided_checks.append).decide("q")
+    PreferredSkepticalTaskSolver(undecided, trace_sink=undecided_checks.append).decide(
+        "q"
+    )
     utility_names = [check.utility_name for check in undecided_checks]
     assert "preferred_skeptical_shortcut_grounded_in" not in utility_names
     assert "preferred_skeptical_shortcut_grounded_attacked" not in utility_names
@@ -210,7 +235,10 @@ def test_preferred_super_core_outside_argument_routes_to_cdas() -> None:
     framework = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("a", "b")})
     checks: list[SATCheck] = []
 
-    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is False
+    assert (
+        PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q")
+        is False
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert "preferred_super_core_admissible_attacker" in utility_names
@@ -250,7 +278,9 @@ def test_preferred_skeptical_learning_store_traces_witness_regions() -> None:
     assert checks[-1].learned_count == 1
 
 
-def test_preferred_skeptical_decide_loop_has_no_admissible_superset_maximisation() -> None:
+def test_preferred_skeptical_decide_loop_has_no_admissible_superset_maximisation() -> (
+    None
+):
     """Thimm 2021 Algorithm 2 (CDAS) never maximises the extended set (no AdmSup)."""
     framework = af(
         {"a", "b", "c", "q"},
@@ -258,7 +288,10 @@ def test_preferred_skeptical_decide_loop_has_no_admissible_superset_maximisation
     )
     checks: list[SATCheck] = []
 
-    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is True
+    assert (
+        PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q")
+        is True
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert "preferred_skeptical_extend_attacker" in utility_names
@@ -269,7 +302,10 @@ def test_preferred_skeptical_seed_unsat_skips_maximal_growth() -> None:
     framework = af({"q", "a", "b"}, {("a", "q"), ("b", "a"), ("b", "b")})
     checks: list[SATCheck] = []
 
-    assert PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q") is False
+    assert (
+        PreferredSkepticalTaskSolver(framework, trace_sink=checks.append).decide("q")
+        is False
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert "preferred_skeptical_seed" in utility_names
@@ -281,11 +317,14 @@ def test_kernel_direct_skeptical_preferred_traces_loop_fingerprints() -> None:
     framework = af({"q", "b"}, {("q", "b"), ("b", "q")})
     checks: list[SATCheck] = []
 
-    assert PreferredSkepticalTaskSolver(
-        framework,
-        trace_sink=checks.append,
-        metadata={"subtrack": "DS-PR"},
-    ).decide("q") is False
+    assert (
+        PreferredSkepticalTaskSolver(
+            framework,
+            trace_sink=checks.append,
+            metadata={"subtrack": "DS-PR"},
+        ).decide("q")
+        is False
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert utility_names[:2] == [
@@ -364,11 +403,14 @@ def test_kernel_range_cardinality_constraints_match_model_range() -> None:
     problem.add_range_definition()
     problem.require_range_size_exactly(2)
 
-    assert problem.check(
-        "test_range_exact",
-        range_bound=2,
-        range_constraint="exact",
-    ) == "sat"
+    assert (
+        problem.check(
+            "test_range_exact",
+            range_bound=2,
+            range_constraint="exact",
+        )
+        == "sat"
+    )
     assert problem.model_range_size() == 2
     assert len(range_of(problem.model_extension(), framework.defeats)) == 2
 
@@ -401,11 +443,14 @@ def test_kernel_range_bound_trace_fields_are_recorded() -> None:
     problem.add_range_definition()
     problem.require_range_size_at_least(2)
 
-    assert problem.check(
-        "test_range_at_least",
-        range_bound=2,
-        range_constraint="at_least",
-    ) == "sat"
+    assert (
+        problem.check(
+            "test_range_at_least",
+            range_bound=2,
+            range_constraint="at_least",
+        )
+        == "sat"
+    )
     assert checks[0].range_bound == 2
     assert checks[0].range_constraint == "at_least"
 
@@ -427,8 +472,7 @@ def test_stage_search_uses_cardinality_max_range_on_iccma_slow_row() -> None:
     deciding_checks = [
         check
         for check in checks
-        if check.utility_name
-        in {"stage_stable_first_witness", "stage_max_range_exact"}
+        if check.utility_name in {"stage_stable_first_witness", "stage_max_range_exact"}
         and check.result == "sat"
     ]
     assert deciding_checks
@@ -478,15 +522,16 @@ def test_semi_stable_stable_first_global_decides_constrained_query() -> None:
     framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("a", "c"), ("c", "c")})
     checks: list[SATCheck] = []
 
-    assert not any(
-        "b" in extension for extension in semi_stable_extensions(framework)
+    assert not any("b" in extension for extension in semi_stable_extensions(framework))
+    assert (
+        find_semi_stable_extension(
+            framework,
+            require_in="b",
+            trace_sink=checks.append,
+            simplify=False,
+        )
+        is None
     )
-    assert find_semi_stable_extension(
-        framework,
-        require_in="b",
-        trace_sink=checks.append,
-        simplify=False,
-    ) is None
 
     assert [check.utility_name for check in checks] == [
         "semi_stable_base_feasibility",
@@ -499,15 +544,16 @@ def test_stage_stable_first_global_decides_constrained_query() -> None:
     framework = af({"a", "b", "c"}, {("a", "b"), ("b", "a"), ("a", "c"), ("c", "c")})
     checks: list[SATCheck] = []
 
-    assert not any(
-        "b" in extension for extension in stage_extensions(framework)
+    assert not any("b" in extension for extension in stage_extensions(framework))
+    assert (
+        find_stage_extension(
+            framework,
+            require_in="b",
+            trace_sink=checks.append,
+            simplify=False,
+        )
+        is None
     )
-    assert find_stage_extension(
-        framework,
-        require_in="b",
-        trace_sink=checks.append,
-        simplify=False,
-    ) is None
 
     assert [check.utility_name for check in checks] == [
         "stage_base_feasibility",
@@ -529,9 +575,10 @@ def test_semi_stable_acyclic_af_answers_from_grounded() -> None:
     assert witness in set(semi_stable_extensions(framework))
     assert [check.utility_name for check in checks] == ["semi_stable_acyclic_grounded"]
     assert find_semi_stable_extension(framework, require_in="b", simplify=False) is None
-    assert find_semi_stable_extension(
-        framework, require_out="b", simplify=False
-    ) == grounded
+    assert (
+        find_semi_stable_extension(framework, require_out="b", simplify=False)
+        == grounded
+    )
 
 
 def test_stage_acyclic_af_answers_from_grounded() -> None:
@@ -594,11 +641,14 @@ def test_high_range_shortcut_respects_global_max_for_query_witnesses() -> None:
     )
     checks: list[SATCheck] = []
 
-    assert find_stage_extension(
-        framework,
-        require_in="d",
-        trace_sink=checks.append,
-    ) is None
+    assert (
+        find_stage_extension(
+            framework,
+            require_in="d",
+            trace_sink=checks.append,
+        )
+        is None
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert "stage_high_range_shortcut" in utility_names
@@ -632,12 +682,15 @@ def test_constrained_range_task_checks_base_feasibility_before_range_search() ->
     framework = af({"a", "b", "c"}, {("a", "b"), ("b", "c"), ("c", "a")})
     checks: list[SATCheck] = []
 
-    assert find_semi_stable_extension(
-        framework,
-        require_in="b",
-        trace_sink=checks.append,
-        simplify=False,
-    ) is None
+    assert (
+        find_semi_stable_extension(
+            framework,
+            require_in="b",
+            trace_sink=checks.append,
+            simplify=False,
+        )
+        is None
+    )
 
     utility_names = [check.utility_name for check in checks]
     assert utility_names[0] == "semi_stable_base_feasibility"
@@ -705,7 +758,9 @@ def test_kernel_ideal_extension_uses_direct_ideal_utilities() -> None:
     framework = af({"a", "b"}, {("a", "b")})
     checks: list[SATCheck] = []
 
-    assert find_ideal_extension(framework, trace_sink=checks.append, simplify=False) == frozenset({"a"})
+    assert find_ideal_extension(
+        framework, trace_sink=checks.append, simplify=False
+    ) == frozenset({"a"})
 
     utility_names = [check.utility_name for check in checks]
     assert utility_names
@@ -1029,8 +1084,7 @@ def test_sat_extensions_are_invariant_under_argument_renaming(
 ) -> None:
     renamed = _rename_framework(framework)
     original_by_renamed = {
-        f"renamed_{argument}": argument
-        for argument in framework.arguments
+        f"renamed_{argument}": argument for argument in framework.arguments
     }
 
     for semantics in SAT_EXTENSION_ORACLES:
@@ -1048,9 +1102,7 @@ def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
     results: list[frozenset[str]] = []
     for mask in range(1 << len(arguments)):
         candidate = frozenset(
-            argument
-            for index, argument in enumerate(arguments)
-            if mask & (1 << index)
+            argument for index, argument in enumerate(arguments) if mask & (1 << index)
         )
         if admissible(
             candidate,

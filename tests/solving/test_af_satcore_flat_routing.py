@@ -50,6 +50,7 @@ def _big_defeat_framework() -> ArgumentationFramework:
 
 # --- Contract (a): engine-resolution predicate ---------------------------------
 
+
 def test_flat_engine_complete_is_satcore():
     assert _flat_sat_engine("complete", _three_cycle()) == "sat-core"
 
@@ -76,6 +77,7 @@ def test_flat_engine_stable_and_ideal_keep_smt():
 
 # --- Contract (a)/(c): engine observable in telemetry --------------------------
 
+
 def _engines_seen(framework, *, semantics, task, query):
     seen: list[str] = []
 
@@ -96,16 +98,21 @@ def _engines_seen(framework, *, semantics, task, query):
 
 
 def test_flat_complete_acceptance_emits_satcore_engine():
-    seen = _engines_seen(_three_cycle(), semantics="complete", task="credulous", query="a")
+    seen = _engines_seen(
+        _three_cycle(), semantics="complete", task="credulous", query="a"
+    )
     assert seen and all(e == "sat-core" for e in seen)
 
 
 def test_flat_stable_acceptance_emits_smt_engine():
-    seen = _engines_seen(_three_cycle(), semantics="stable", task="credulous", query="a")
+    seen = _engines_seen(
+        _three_cycle(), semantics="stable", task="credulous", query="a"
+    )
     assert seen and all(e == "smt" for e in seen)
 
 
 # --- Contract (b): answer preservation vs native enumerator --------------------
+
 
 @pytest.mark.parametrize("seed", range(8))
 @pytest.mark.parametrize(
@@ -132,7 +139,9 @@ def test_flat_routing_answers_match_native(seed, semantics, task):
 @pytest.mark.parametrize("seed", range(6))
 def test_flat_se_preferred_matches_native_membership(seed):
     fw = _dense_framework(9, 7, seed=seed)
-    ext = solve_dung_single_extension(fw, semantics="preferred", backend="sat").extension
+    ext = solve_dung_single_extension(
+        fw, semantics="preferred", backend="sat"
+    ).extension
     # A returned preferred extension must be a genuine preferred extension:
     # every argument in it is credulously preferred-accepted natively.
     for arg in ext or frozenset():

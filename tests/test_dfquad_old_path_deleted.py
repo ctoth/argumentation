@@ -15,7 +15,10 @@ def test_compute_dfquad_strengths_is_not_defined_in_argumentation() -> None:
     for path in src_root.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == "compute_dfquad_strengths":
+            if (
+                isinstance(node, ast.FunctionDef)
+                and node.name == "compute_dfquad_strengths"
+            ):
                 definitions.append(str(path.relative_to(src_root)))
 
     assert definitions == []

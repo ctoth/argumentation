@@ -65,7 +65,9 @@ def stable_diagnostics(
         "z3_timeout_ms": z3_timeout_ms,
         "dependency_scc_count": len(sccs),
         "dependency_scc_max_size": max((len(scc) for scc in sccs), default=0),
-        "dependency_scc_sizes_desc": sorted((len(scc) for scc in sccs), reverse=True)[:20],
+        "dependency_scc_sizes_desc": sorted((len(scc) for scc in sccs), reverse=True)[
+            :20
+        ],
         "scc_seconds": scc_seconds,
         **profile,
     }
@@ -87,17 +89,23 @@ def _rank_strategy_profile(
     solver = z3.Solver()
     solver.set(timeout=z3_timeout_ms)
     if rank_kind == "integer":
-        derived = aba_sat._add_ranked_closure_constraints(z3, solver, framework, variables)
+        derived = aba_sat._add_ranked_closure_constraints(
+            z3, solver, framework, variables
+        )
         rank_variables = len(framework.language)
         rank_variable_kind = "int"
     elif rank_kind == "bitvec":
-        derived = _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables)
+        derived = _add_bitvec_ranked_closure_constraints(
+            z3, solver, framework, variables
+        )
         rank_variables = len(framework.language)
         rank_variable_kind = "bitvec"
     else:
         raise ValueError(f"unknown rank kind: {rank_kind}")
     for assumption in sorted(framework.assumptions, key=repr):
-        _add_forced_literal_constraints(z3, solver, framework, variables, assumption, force_trivial)
+        _add_forced_literal_constraints(
+            z3, solver, framework, variables, assumption, force_trivial
+        )
         solver.add(
             z3.Implies(
                 variables[assumption],
@@ -141,9 +149,13 @@ def _ladder_strategy_profile(
     }
     solver = z3.Solver()
     solver.set(timeout=z3_timeout_ms)
-    derived, ladder_variable_count = _add_ladder_closure_constraints(z3, solver, framework, variables)
+    derived, ladder_variable_count = _add_ladder_closure_constraints(
+        z3, solver, framework, variables
+    )
     for assumption in sorted(framework.assumptions, key=repr):
-        _add_forced_literal_constraints(z3, solver, framework, variables, assumption, force_trivial)
+        _add_forced_literal_constraints(
+            z3, solver, framework, variables, assumption, force_trivial
+        )
         solver.add(
             z3.Implies(
                 variables[assumption],
@@ -211,7 +223,9 @@ def _support_strategy_profile(
     solver = z3.Solver()
     solver.set(timeout=z3_timeout_ms)
     for assumption in sorted(framework.assumptions, key=repr):
-        _add_forced_literal_constraints(z3, solver, framework, variables, assumption, force_trivial)
+        _add_forced_literal_constraints(
+            z3, solver, framework, variables, assumption, force_trivial
+        )
         attacked = aba_sat._any_support_selected(
             z3,
             variables,
@@ -289,19 +303,25 @@ def _minimal_supports_worker(
     try:
         supports = _minimal_supports(framework)
     except BaseException as exc:  # pragma: no cover - child process diagnostic path
-        result_queue.put({
-            "status": "error",
-            "reason": f"{type(exc).__name__}: {exc}",
-        })
+        result_queue.put(
+            {
+                "status": "error",
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+        )
         return
-    result_queue.put({
-        "status": "success",
-        "reason": None,
-        "supports": supports,
-    })
+    result_queue.put(
+        {
+            "status": "success",
+            "reason": None,
+            "supports": supports,
+        }
+    )
 
 
-def _add_forced_literal_constraints(z3, solver, framework, variables, assumption, enabled: bool) -> None:
+def _add_forced_literal_constraints(
+    z3, solver, framework, variables, assumption, enabled: bool
+) -> None:
     if not enabled:
         return
     if derives(framework, frozenset(), framework.contrary[assumption]):
@@ -316,8 +336,7 @@ def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
     rank_bits = max(1, (rank_bound + 1).bit_length())
     rank_bound_value = z3.BitVecVal(rank_bound, rank_bits)
     derived = {
-        literal: z3.Bool(f"der_{aba_sat._literal_key(literal)}")
-        for literal in literals
+        literal: z3.Bool(f"der_{aba_sat._literal_key(literal)}") for literal in literals
     }
     ranks = {
         literal: z3.BitVec(f"rank_bv_{aba_sat._literal_key(literal)}", rank_bits)
@@ -336,7 +355,11 @@ def _add_bitvec_ranked_closure_constraints(z3, solver, framework, variables):
         solver.add(z3.ULE(ranks[literal], rank_bound_value))
     for assumption in sorted(framework.assumptions, key=repr):
         solver.add(derived[assumption] == variables[assumption])
-        solver.add(z3.Implies(variables[assumption], ranks[assumption] == z3.BitVecVal(0, rank_bits)))
+        solver.add(
+            z3.Implies(
+                variables[assumption], ranks[assumption] == z3.BitVecVal(0, rank_bits)
+            )
+        )
     for rule in sorted(framework.rules, key=repr):
         antecedents = tuple(rule.antecedents)
         if not antecedents:
@@ -394,8 +417,7 @@ def _add_ladder_closure_constraints(z3, solver, framework, variables):
         for rank in range(rank_bound + 1)
     }
     derived = {
-        literal: z3.Bool(f"der_{aba_sat._literal_key(literal)}")
-        for literal in literals
+        literal: z3.Bool(f"der_{aba_sat._literal_key(literal)}") for literal in literals
     }
 
     for literal in literals:
@@ -417,7 +439,9 @@ def _add_ladder_closure_constraints(z3, solver, framework, variables):
                     support_terms.append(z3.BoolVal(True))
                     continue
                 support_terms.append(
-                    z3.And(*(ladder[(antecedent, rank - 1)] for antecedent in antecedents))
+                    z3.And(
+                        *(ladder[(antecedent, rank - 1)] for antecedent in antecedents)
+                    )
                 )
             solver.add(ladder[(literal, rank)] == z3.Or(*support_terms))
     for literal in literals:
@@ -475,13 +499,20 @@ def _tarjan_sccs(graph: dict[Literal, set[Literal]]) -> list[frozenset[Literal]]
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Diagnose the current ABA stable SAT encoding.")
+    parser = argparse.ArgumentParser(
+        description="Diagnose the current ABA stable SAT encoding."
+    )
     parser.add_argument("instance", type=Path)
     parser.add_argument("--z3-timeout-ms", type=int, default=15_000)
     parser.add_argument("--support-timeout-seconds", type=float, default=60.0)
     parser.add_argument(
         "--strategy",
-        choices=("integer-rank", "bitvec-rank", "boolean-ladder", "support-materialized"),
+        choices=(
+            "integer-rank",
+            "bitvec-rank",
+            "boolean-ladder",
+            "support-materialized",
+        ),
         default="integer-rank",
     )
     parser.add_argument("--force-trivial", action="store_true")

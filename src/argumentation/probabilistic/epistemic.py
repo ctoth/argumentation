@@ -65,9 +65,13 @@ class OperationalFormula:
 
     def __post_init__(self) -> None:
         if not self.terms:
-            raise ValueError("operational formula must contain at least one probability term")
+            raise ValueError(
+                "operational formula must contain at least one probability term"
+            )
         if len(self.operators) != len(self.terms) - 1:
-            raise ValueError("operational formula operators must connect probability terms")
+            raise ValueError(
+                "operational formula operators must connect probability terms"
+            )
 
 
 ComparisonOperator = Literal["=", "!=", "<", "<=", ">", ">="]
@@ -81,7 +85,9 @@ class EpistemicAtom:
 
     def __post_init__(self) -> None:
         if self.operator not in {"=", "!=", "<", "<=", ">", ">="}:
-            raise ValueError(f"unsupported epistemic comparison operator: {self.operator}")
+            raise ValueError(
+                f"unsupported epistemic comparison operator: {self.operator}"
+            )
         if not 0.0 <= self.threshold <= 1.0:
             raise ValueError("epistemic atom thresholds must lie in [0, 1]")
 
@@ -126,8 +132,12 @@ class ProbabilityFunction:
         }
         worlds = frozenset(possible_worlds(arguments))
         if frozenset(normalized) != worlds:
-            raise ValueError("probability function must assign all possible worlds exactly once")
-        negative = sorted(world for world, probability in normalized.items() if probability < 0.0)
+            raise ValueError(
+                "probability function must assign all possible worlds exactly once"
+            )
+        negative = sorted(
+            world for world, probability in normalized.items() if probability < 0.0
+        )
         if negative:
             raise ValueError(f"world probabilities must be nonnegative: {negative!r}")
         total = sum(normalized.values())
@@ -143,7 +153,11 @@ def possible_worlds(arguments: frozenset[str]) -> tuple[frozenset[str], ...]:
     worlds: list[frozenset[str]] = []
     for mask in range(1 << len(ordered)):
         worlds.append(
-            frozenset(argument for index, argument in enumerate(ordered) if mask & (1 << index))
+            frozenset(
+                argument
+                for index, argument in enumerate(ordered)
+                if mask & (1 << index)
+            )
         )
     return tuple(sorted(worlds, key=lambda world: (len(world), tuple(sorted(world)))))
 
@@ -175,7 +189,9 @@ def operational_value(
     distribution: ProbabilityFunction,
 ) -> float:
     value = term_probability(formula.terms[0].term, distribution)
-    for operator, probability_term in zip(formula.operators, formula.terms[1:], strict=True):
+    for operator, probability_term in zip(
+        formula.operators, formula.terms[1:], strict=True
+    ):
         term_value = term_probability(probability_term.term, distribution)
         if operator == "+":
             value += term_value
@@ -197,19 +213,25 @@ def evaluate_epistemic_formula(
     if isinstance(formula, NotFormula):
         return not evaluate_epistemic_formula(formula.formula, distribution)
     if isinstance(formula, AndFormula):
-        return evaluate_epistemic_formula(formula.left, distribution) and evaluate_epistemic_formula(
+        return evaluate_epistemic_formula(
+            formula.left, distribution
+        ) and evaluate_epistemic_formula(
             formula.right,
             distribution,
         )
     if isinstance(formula, OrFormula):
-        return evaluate_epistemic_formula(formula.left, distribution) or evaluate_epistemic_formula(
+        return evaluate_epistemic_formula(
+            formula.left, distribution
+        ) or evaluate_epistemic_formula(
             formula.right,
             distribution,
         )
     raise TypeError(f"unsupported epistemic formula: {formula!r}")
 
 
-def induced_probability_labelling(distribution: ProbabilityFunction) -> dict[str, float]:
+def induced_probability_labelling(
+    distribution: ProbabilityFunction,
+) -> dict[str, float]:
     """Return the argument-probability labelling induced by a belief distribution."""
     return {
         argument: term_probability(ArgumentTerm(argument), distribution)
@@ -217,7 +239,9 @@ def induced_probability_labelling(distribution: ProbabilityFunction) -> dict[str
     }
 
 
-_TOKEN_RE = re.compile(r"\s*(<=|>=|!=|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\.[0-9]+)?|[()!&|+\-=<>])")
+_TOKEN_RE = re.compile(
+    r"\s*(<=|>=|!=|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\.[0-9]+)?|[()!&|+\-=<>])"
+)
 
 
 def parse_term(text: str) -> Term:
@@ -351,7 +375,9 @@ class _TokenParser:
         formula = self.parse_operational_formula()
         operator = self.take()
         if operator not in {"=", "!=", "<", "<=", ">", ">="}:
-            raise ValueError(f"expected epistemic comparison operator, got {operator!r}")
+            raise ValueError(
+                f"expected epistemic comparison operator, got {operator!r}"
+            )
         threshold = float(self.take())
         return EpistemicAtom(formula, operator, threshold)  # type: ignore[arg-type]
 
@@ -459,7 +485,9 @@ class LabelledEpistemicGraph:
             if arc.source not in arguments or arc.target not in arguments
         )
         if unknown:
-            raise ValueError(f"labelled arcs must reference declared arguments: {unknown!r}")
+            raise ValueError(
+                f"labelled arcs must reference declared arguments: {unknown!r}"
+            )
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "arcs", frozenset(self.arcs))
 
@@ -560,7 +588,9 @@ def least_squares_update_labelling(
     missing = sorted(arguments - set(current))
     extra = sorted(set(current) - arguments)
     if missing or extra:
-        raise ValueError(f"current labelling keys must match arguments: missing={missing!r}, extra={extra!r}")
+        raise ValueError(
+            f"current labelling keys must match arguments: missing={missing!r}, extra={extra!r}"
+        )
     if any(value < 0.0 or value > 1.0 for value in current.values()):
         raise ValueError("current labelling values must lie in [0, 1]")
     if all(constraint.satisfied_by(current) for constraint in constraints):
@@ -599,7 +629,9 @@ def _linear_expr(variables, constraint: LinearAtomicConstraint):
     return expr
 
 
-def _add_linear_constraint(solver, variables, constraint: LinearAtomicConstraint) -> None:
+def _add_linear_constraint(
+    solver, variables, constraint: LinearAtomicConstraint
+) -> None:
     expr = _linear_expr(variables, constraint)
     if constraint.relation == LinearRelation.LE:
         solver.add(expr <= constraint.constant)
@@ -611,7 +643,9 @@ def _add_linear_constraint(solver, variables, constraint: LinearAtomicConstraint
         raise ValueError(f"unsupported linear relation: {constraint.relation}")
 
 
-def _add_negated_linear_constraint(solver, variables, constraint: LinearAtomicConstraint) -> None:
+def _add_negated_linear_constraint(
+    solver, variables, constraint: LinearAtomicConstraint
+) -> None:
     expr = _linear_expr(variables, constraint)
     if constraint.relation == LinearRelation.LE:
         solver.add(expr > constraint.constant)
@@ -660,7 +694,10 @@ def _project_labelling(
             max_violation = max(max_violation, abs(violation))
             if abs(violation) <= 1e-12:
                 continue
-            norm = sum(coefficient * coefficient for coefficient in constraint.coefficients.values())
+            norm = sum(
+                coefficient * coefficient
+                for coefficient in constraint.coefficients.values()
+            )
             if norm == 0.0:
                 continue
             for argument, coefficient in constraint.coefficients.items():
@@ -695,7 +732,9 @@ class BeliefConstraint:
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.lower <= self.upper <= 1.0:
-            raise ValueError("belief constraint bounds must satisfy 0 <= lower <= upper <= 1")
+            raise ValueError(
+                "belief constraint bounds must satisfy 0 <= lower <= upper <= 1"
+            )
 
 
 @dataclass(frozen=True)
@@ -712,14 +751,18 @@ class EpistemicGraph:
             if influence.source not in arguments or influence.target not in arguments
         )
         if unknown_influences:
-            raise ValueError(f"influences must reference declared arguments: {unknown_influences!r}")
+            raise ValueError(
+                f"influences must reference declared arguments: {unknown_influences!r}"
+            )
         unknown_constraints = sorted(
             constraint.argument
             for constraint in self.constraints
             if constraint.argument not in arguments
         )
         if unknown_constraints:
-            raise ValueError(f"constraints must reference declared arguments: {unknown_constraints!r}")
+            raise ValueError(
+                f"constraints must reference declared arguments: {unknown_constraints!r}"
+            )
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "influences", frozenset(self.influences))
         object.__setattr__(self, "constraints", tuple(self.constraints))
@@ -747,12 +790,12 @@ def _validate_assignment(
     missing = sorted(graph.arguments - set(assignment))
     extra = sorted(set(assignment) - graph.arguments)
     if missing or extra:
-        raise ValueError(f"assignment keys must match graph arguments: missing={missing!r}, extra={extra!r}")
+        raise ValueError(
+            f"assignment keys must match graph arguments: missing={missing!r}, extra={extra!r}"
+        )
     normalized = {argument: float(value) for argument, value in assignment.items()}
     out_of_range = sorted(
-        argument
-        for argument, value in normalized.items()
-        if not 0.0 <= value <= 1.0
+        argument for argument, value in normalized.items() if not 0.0 <= value <= 1.0
     )
     if out_of_range:
         raise ValueError(f"assignment values must be in [0, 1]: {out_of_range!r}")

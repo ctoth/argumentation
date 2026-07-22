@@ -69,9 +69,7 @@ from argumentation.core.finite import (
 from argumentation.core.preprocessing import simplify_af
 from argumentation.core.reduct import SemanticReduct
 
-SCC_RECURSIVE_SEMANTICS: frozenset[str] = frozenset(
-    {"complete", "preferred", "stable"}
-)
+SCC_RECURSIVE_SEMANTICS: frozenset[str] = frozenset({"complete", "preferred", "stable"})
 
 
 @dataclass
@@ -138,9 +136,7 @@ def _base_preferred_in_c(
     return maximal_sets(completes)
 
 
-def _flat_enumerate(
-    semantics: str, af: ArgumentationFramework
-) -> list[frozenset[str]]:
+def _flat_enumerate(semantics: str, af: ArgumentationFramework) -> list[frozenset[str]]:
     """The existing flat (non-SCC, non-preprocessed) enumerator for ``semantics``.
 
     This is exactly the path ``decompose=False`` and the previous (pre-Wave-B2)
@@ -198,7 +194,11 @@ def _topological_scc_order(
             indeg[j] += 1
     # deterministic: break ties by sorted member tuple
     order_key = [tuple(sorted(scc)) for scc in sccs]
-    ready = deque(sorted((i for i in range(len(sccs)) if indeg[i] == 0), key=lambda i: order_key[i]))
+    ready = deque(
+        sorted(
+            (i for i in range(len(sccs)) if indeg[i] == 0), key=lambda i: order_key[i]
+        )
+    )
     result: list[int] = []
     while ready:
         i = ready.popleft()
@@ -244,18 +244,14 @@ def _gf(
         new_partials: list[frozenset[str]] = []
         for e in partials:
             e_out = e & outparents  # part of E that lies outside S
-            d_set = {
-                a
-                for a in scc
-                if any((b, a) in af.defeats for b in e_out)
-            }
+            d_set = {a for a in scc if any((b, a) in af.defeats for b in e_out)}
             up_set = scc - d_set
             u_set = set()
             for a in up_set:
                 # a not attacked from outside by E:
                 if any((b, a) in af.defeats for b in e_out):
                     continue
-                ext_attackers = (attackers_index.get(a, frozenset()) & outparents)
+                ext_attackers = attackers_index.get(a, frozenset()) & outparents
                 # every external attacker b of a is itself attacked by E
                 if all(any((d, b) in af.defeats for d in e) for b in ext_attackers):
                     u_set.add(a)

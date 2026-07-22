@@ -17,10 +17,12 @@ def test_aba_asp_stable_matches_support_reference() -> None:
     not_beta = Literal(GroundAtom("not_beta"))
     framework = ABAFramework(
         language=frozenset({alpha, beta, not_alpha, not_beta}),
-        rules=frozenset({
-            Rule((alpha,), not_beta, "strict"),
-            Rule((beta,), not_alpha, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((alpha,), not_beta, "strict"),
+                Rule((beta,), not_alpha, "strict"),
+            }
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: not_alpha, beta: not_beta},
     )
@@ -61,7 +63,9 @@ def small_aba_frameworks(draw):
 
 @given(small_aba_frameworks(), st.sampled_from(("complete", "stable", "preferred")))
 @settings(deadline=10000, max_examples=50)
-def test_aba_asp_matches_support_reference_on_generated_frameworks(framework, semantics) -> None:
+def test_aba_asp_matches_support_reference_on_generated_frameworks(
+    framework, semantics
+) -> None:
     result = solve_aba_with_backend(framework, backend="asp", semantics=semantics)
 
     assert result.status == "success"

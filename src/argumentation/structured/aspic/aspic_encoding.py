@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
@@ -32,11 +33,20 @@ class ASPICEncoding:
     literal_by_id: dict[str, Literal] = field(default_factory=dict)
 
 
+class ASPICQueryStatus(StrEnum):
+    """Execution status for a package-native ASPIC+ query."""
+
+    SUCCESS = "success"
+    UNAVAILABLE_BACKEND = "unavailable_backend"
+    BACKEND_ERROR = "backend_error"
+    PROTOCOL_ERROR = "protocol_error"
+
+
 @dataclass(frozen=True)
 class ASPICQueryResult:
     """Result for a package-native ASPIC+ query surface."""
 
-    status: str
+    status: ASPICQueryStatus
     semantics: str
     backend: str
     accepted_argument_ids: frozenset[str]
@@ -141,7 +151,7 @@ def solve_aspic_grounded(
         for argument_id in accepted_argument_ids
     )
     return ASPICQueryResult(
-        status="success",
+        status=ASPICQueryStatus.SUCCESS,
         semantics="grounded",
         backend="materialized_reference",
         accepted_argument_ids=accepted_argument_ids,
@@ -170,7 +180,7 @@ def solve_aspic_with_backend(
     encoding = encode_aspic_theory(system, kb, pref)
     if semantics not in {"grounded", "admissible", "complete", "stable", "preferred"}:
         return _backend_failure_result(
-            status="unavailable_backend",
+            status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
             semantics=semantics,
             backend=backend,
             encoding=encoding,
@@ -178,7 +188,7 @@ def solve_aspic_with_backend(
         )
     if backend == "asp" and pref.link == "weakest":
         return _backend_failure_result(
-            status="unavailable_backend",
+            status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
             semantics=semantics,
             backend=backend,
             encoding=encoding,
@@ -208,7 +218,9 @@ def solve_aspic_with_backend(
         if not pref.rule_order and not pref.premise_order:
             facts, element_ids = _source_aspic_facts(system, kb, pref, encoding)
             module_semantics = "complete" if semantics == "grounded" else semantics
-            module_semantics = "admissible" if module_semantics == "preferred" else module_semantics
+            module_semantics = (
+                "admissible" if module_semantics == "preferred" else module_semantics
+            )
             result = clingo.run_extension_enumeration_protocol(
                 facts=facts,
                 encoding_modules=(f"aspic_{module_semantics}.lp",),
@@ -224,11 +236,15 @@ def solve_aspic_with_backend(
                 if semantics == "preferred":
                     kept = _maximal_extension_indexes(extensions)
                     extensions = tuple(extensions[index] for index in kept)
-                    extension_literal_ids = tuple(extension_literal_ids[index] for index in kept)
+                    extension_literal_ids = tuple(
+                        extension_literal_ids[index] for index in kept
+                    )
                 elif semantics == "grounded":
                     kept = _minimal_extension_indexes(extensions)
                     extensions = tuple(extensions[index] for index in kept)
-                    extension_literal_ids = tuple(extension_literal_ids[index] for index in kept)
+                    extension_literal_ids = tuple(
+                        extension_literal_ids[index] for index in kept
+                    )
                 return _aspic_source_task_result(
                     encoding=encoding,
                     semantics=semantics,
@@ -246,13 +262,17 @@ def solve_aspic_with_backend(
                 )
             if isinstance(result, clingo.ClingoUnavailable):
                 return _backend_failure_result(
-                    status="unavailable_backend",
+                    status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
                     semantics=semantics,
                     backend=backend,
                     encoding=encoding,
                     reason=result.reason,
                 )
-            status = "backend_error" if isinstance(result, clingo.ClingoProcessError) else "protocol_error"
+            status = (
+                ASPICQueryStatus.BACKEND_ERROR
+                if isinstance(result, clingo.ClingoProcessError)
+                else ASPICQueryStatus.PROTOCOL_ERROR
+            )
             return _backend_failure_result(
                 status=status,
                 semantics=semantics,
@@ -265,7 +285,9 @@ def solve_aspic_with_backend(
 
         projection = build_abstract_framework(system, kb, pref)
         module_semantics = "complete" if semantics == "grounded" else semantics
-        module_semantics = "admissible" if module_semantics == "preferred" else module_semantics
+        module_semantics = (
+            "admissible" if module_semantics == "preferred" else module_semantics
+        )
         # AF preprocessing (Wave A): shrink the projected Dung framework with the
         # grounded reduct + self-loop-sink removal before handing it to clingo,
         # then lift every returned extension back to the full argument set.
@@ -300,7 +322,9 @@ def solve_aspic_with_backend(
             problem=f"ASPIC-{semantics.upper()}",
         )
         if isinstance(result, clingo.ClingoExtensionEnumerationSuccess):
-            extensions = tuple(simplification.lift(extension) for extension in result.extensions)
+            extensions = tuple(
+                simplification.lift(extension) for extension in result.extensions
+            )
             if semantics == "preferred":
                 extensions = _maximal_extensions(extensions)
             elif semantics == "grounded":
@@ -322,7 +346,7 @@ def solve_aspic_with_backend(
             )
         if isinstance(result, clingo.ClingoUnavailable):
             return _backend_failure_result(
-                status="unavailable_backend",
+                status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
                 semantics=semantics,
                 backend=backend,
                 encoding=encoding,
@@ -330,7 +354,7 @@ def solve_aspic_with_backend(
             )
         if isinstance(result, clingo.ClingoProcessError):
             return _backend_failure_result(
-                status="backend_error",
+                status=ASPICQueryStatus.BACKEND_ERROR,
                 semantics=semantics,
                 backend=backend,
                 encoding=encoding,
@@ -339,7 +363,7 @@ def solve_aspic_with_backend(
                 stderr=result.stderr,
             )
         return _backend_failure_result(
-            status="protocol_error",
+            status=ASPICQueryStatus.PROTOCOL_ERROR,
             semantics=semantics,
             backend=backend,
             encoding=encoding,
@@ -349,7 +373,7 @@ def solve_aspic_with_backend(
         )
 
     return ASPICQueryResult(
-        status="unavailable_backend",
+        status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
         semantics=semantics,
         backend=backend,
         accepted_argument_ids=frozenset(),
@@ -364,7 +388,7 @@ def solve_aspic_with_backend(
 
 def _backend_failure_result(
     *,
-    status: str,
+    status: ASPICQueryStatus,
     semantics: str,
     backend: str,
     encoding: ASPICEncoding,
@@ -429,14 +453,20 @@ def _source_aspic_facts(
         {_literal_id(premise) for premise in kb.premises}
         | set(defeasible_rule_ids.values())
     )
-    supports = _source_literal_supports(system, kb, strict_rule_ids, defeasible_rule_ids)
+    supports = _source_literal_supports(
+        system, kb, strict_rule_ids, defeasible_rule_ids
+    )
     for rule in system.strict_rules:
         facts.add(f"s_body_count({strict_rule_ids[rule]},{len(rule.antecedents)}).")
     for rule in system.defeasible_rules:
         facts.add(f"d_body_count({defeasible_rule_ids[rule]},{len(rule.antecedents)}).")
     support_index = 0
-    for literal, literal_supports in sorted(supports.items(), key=lambda item: repr(item[0])):
-        for support in sorted(literal_supports, key=lambda item: (len(item), tuple(sorted(item)))):
+    for literal, literal_supports in sorted(
+        supports.items(), key=lambda item: repr(item[0])
+    ):
+        for support in sorted(
+            literal_supports, key=lambda item: (len(item), tuple(sorted(item)))
+        ):
             support_id = f"sup_{support_index}"
             support_index += 1
             facts.add(f"support_concludes({support_id},{_literal_id(literal)}).")
@@ -464,13 +494,16 @@ def _source_literal_supports(
         changed = False
         for rule in sorted(system.strict_rules | system.defeasible_rules, key=repr):
             antecedent_supports = tuple(
-                supports.get(antecedent, set())
-                for antecedent in rule.antecedents
+                supports.get(antecedent, set()) for antecedent in rule.antecedents
             )
             for support in _combine_source_supports(antecedent_supports):
                 if rule.kind == "defeasible":
-                    support = frozenset(support | frozenset({defeasible_rule_ids[rule]}))
-                if _add_minimal_source_support(supports.setdefault(rule.consequent, set()), support):
+                    support = frozenset(
+                        support | frozenset({defeasible_rule_ids[rule]})
+                    )
+                if _add_minimal_source_support(
+                    supports.setdefault(rule.consequent, set()), support
+                ):
                     changed = True
     return {literal: frozenset(values) for literal, values in supports.items()}
 
@@ -484,11 +517,7 @@ def _combine_source_supports(
     for choices in support_sets:
         if not choices:
             return set()
-        combined = {
-            frozenset(left | right)
-            for left in combined
-            for right in choices
-        }
+        combined = {frozenset(left | right) for left in combined for right in choices}
     return _minimal_source_supports(combined)
 
 
@@ -539,13 +568,15 @@ def _aspic_task_result(
     metadata: dict[str, str],
 ) -> ASPICQueryResult:
     extension_conclusions = tuple(
-        frozenset(conc(projection.id_to_argument[argument_id]) for argument_id in extension)
+        frozenset(
+            conc(projection.id_to_argument[argument_id]) for argument_id in extension
+        )
         for extension in extensions
     )
     if task == "enum":
         selected = extensions[0] if len(extensions) == 1 else frozenset()
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
             accepted_argument_ids=selected,
@@ -557,7 +588,7 @@ def _aspic_task_result(
         )
     if query is None:
         return _backend_failure_result(
-            status="protocol_error",
+            status=ASPICQueryStatus.PROTOCOL_ERROR,
             semantics=semantics,
             backend=backend,
             encoding=encoding,
@@ -567,17 +598,21 @@ def _aspic_task_result(
         witness = next(
             (
                 extension
-                for extension, conclusions in zip(extensions, extension_conclusions, strict=True)
+                for extension, conclusions in zip(
+                    extensions, extension_conclusions, strict=True
+                )
                 if query in conclusions
             ),
             None,
         )
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
             accepted_argument_ids=witness or frozenset(),
-            accepted_conclusions=_conclusions_for_ids(projection, witness or frozenset()),
+            accepted_conclusions=_conclusions_for_ids(
+                projection, witness or frozenset()
+            ),
             encoding=encoding,
             metadata=metadata | {"task": task},
             extensions=extensions,
@@ -589,17 +624,21 @@ def _aspic_task_result(
         counterexample = next(
             (
                 extension
-                for extension, conclusions in zip(extensions, extension_conclusions, strict=True)
+                for extension, conclusions in zip(
+                    extensions, extension_conclusions, strict=True
+                )
                 if query not in conclusions
             ),
             None,
         )
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
             accepted_argument_ids=counterexample or frozenset(),
-            accepted_conclusions=_conclusions_for_ids(projection, counterexample or frozenset()),
+            accepted_conclusions=_conclusions_for_ids(
+                projection, counterexample or frozenset()
+            ),
             encoding=encoding,
             metadata=metadata | {"task": task},
             extensions=extensions,
@@ -608,7 +647,7 @@ def _aspic_task_result(
             counterexample=counterexample,
         )
     return _backend_failure_result(
-        status="unavailable_backend",
+        status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
         semantics=semantics,
         backend=backend,
         encoding=encoding,
@@ -634,11 +673,15 @@ def _aspic_source_task_result(
     if task == "enum":
         selected_index = 0 if len(extensions) == 1 else None
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
-            accepted_argument_ids=extensions[selected_index] if selected_index is not None else frozenset(),
-            accepted_conclusions=extension_conclusions[selected_index] if selected_index is not None else frozenset(),
+            accepted_argument_ids=extensions[selected_index]
+            if selected_index is not None
+            else frozenset(),
+            accepted_conclusions=extension_conclusions[selected_index]
+            if selected_index is not None
+            else frozenset(),
             encoding=encoding,
             metadata=metadata | {"task": task},
             extensions=extensions,
@@ -646,7 +689,7 @@ def _aspic_source_task_result(
         )
     if query is None:
         return _backend_failure_result(
-            status="protocol_error",
+            status=ASPICQueryStatus.PROTOCOL_ERROR,
             semantics=semantics,
             backend=backend,
             encoding=encoding,
@@ -654,15 +697,23 @@ def _aspic_source_task_result(
         )
     if task == "credulous":
         witness_index = next(
-            (index for index, conclusions in enumerate(extension_conclusions) if query in conclusions),
+            (
+                index
+                for index, conclusions in enumerate(extension_conclusions)
+                if query in conclusions
+            ),
             None,
         )
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
-            accepted_argument_ids=extensions[witness_index] if witness_index is not None else frozenset(),
-            accepted_conclusions=extension_conclusions[witness_index] if witness_index is not None else frozenset(),
+            accepted_argument_ids=extensions[witness_index]
+            if witness_index is not None
+            else frozenset(),
+            accepted_conclusions=extension_conclusions[witness_index]
+            if witness_index is not None
+            else frozenset(),
             encoding=encoding,
             metadata=metadata | {"task": task},
             extensions=extensions,
@@ -672,24 +723,34 @@ def _aspic_source_task_result(
         )
     if task == "skeptical":
         counterexample_index = next(
-            (index for index, conclusions in enumerate(extension_conclusions) if query not in conclusions),
+            (
+                index
+                for index, conclusions in enumerate(extension_conclusions)
+                if query not in conclusions
+            ),
             None,
         )
         return ASPICQueryResult(
-            status="success",
+            status=ASPICQueryStatus.SUCCESS,
             semantics=semantics,
             backend=backend,
-            accepted_argument_ids=extensions[counterexample_index] if counterexample_index is not None else frozenset(),
-            accepted_conclusions=extension_conclusions[counterexample_index] if counterexample_index is not None else frozenset(),
+            accepted_argument_ids=extensions[counterexample_index]
+            if counterexample_index is not None
+            else frozenset(),
+            accepted_conclusions=extension_conclusions[counterexample_index]
+            if counterexample_index is not None
+            else frozenset(),
             encoding=encoding,
             metadata=metadata | {"task": task},
             extensions=extensions,
             extension_conclusions=extension_conclusions,
             answer=counterexample_index is None,
-            counterexample=extensions[counterexample_index] if counterexample_index is not None else None,
+            counterexample=extensions[counterexample_index]
+            if counterexample_index is not None
+            else None,
         )
     return _backend_failure_result(
-        status="unavailable_backend",
+        status=ASPICQueryStatus.UNAVAILABLE_BACKEND,
         semantics=semantics,
         backend=backend,
         encoding=encoding,
@@ -697,22 +758,44 @@ def _aspic_source_task_result(
     )
 
 
-def _conclusions_for_ids(projection, argument_ids: frozenset[str]) -> frozenset[Literal]:
-    return frozenset(conc(projection.id_to_argument[argument_id]) for argument_id in argument_ids)
+def _conclusions_for_ids(
+    projection, argument_ids: frozenset[str]
+) -> frozenset[Literal]:
+    return frozenset(
+        conc(projection.id_to_argument[argument_id]) for argument_id in argument_ids
+    )
 
 
-def _maximal_extensions(extensions: tuple[frozenset[str], ...]) -> tuple[frozenset[str], ...]:
-    return tuple(extension for extension in extensions if not any(extension < other for other in extensions))
+def _maximal_extensions(
+    extensions: tuple[frozenset[str], ...],
+) -> tuple[frozenset[str], ...]:
+    return tuple(
+        extension
+        for extension in extensions
+        if not any(extension < other for other in extensions)
+    )
 
 
-def _minimal_extensions(extensions: tuple[frozenset[str], ...]) -> tuple[frozenset[str], ...]:
+def _minimal_extensions(
+    extensions: tuple[frozenset[str], ...],
+) -> tuple[frozenset[str], ...]:
     if not extensions:
         return tuple()
-    minimal = [extension for extension in extensions if not any(other < extension for other in extensions)]
-    return tuple(sorted(minimal, key=lambda extension: (len(extension), tuple(sorted(extension)))))[:1]
+    minimal = [
+        extension
+        for extension in extensions
+        if not any(other < extension for other in extensions)
+    ]
+    return tuple(
+        sorted(
+            minimal, key=lambda extension: (len(extension), tuple(sorted(extension)))
+        )
+    )[:1]
 
 
-def _maximal_extension_indexes(extensions: tuple[frozenset[str], ...]) -> tuple[int, ...]:
+def _maximal_extension_indexes(
+    extensions: tuple[frozenset[str], ...],
+) -> tuple[int, ...]:
     return tuple(
         index
         for index, extension in enumerate(extensions)
@@ -720,7 +803,9 @@ def _maximal_extension_indexes(extensions: tuple[frozenset[str], ...]) -> tuple[
     )
 
 
-def _minimal_extension_indexes(extensions: tuple[frozenset[str], ...]) -> tuple[int, ...]:
+def _minimal_extension_indexes(
+    extensions: tuple[frozenset[str], ...],
+) -> tuple[int, ...]:
     if not extensions:
         return tuple()
     candidates = [
@@ -728,7 +813,9 @@ def _minimal_extension_indexes(extensions: tuple[frozenset[str], ...]) -> tuple[
         for index, extension in enumerate(extensions)
         if not any(other < extension for other in extensions)
     ]
-    index, _extension = min(candidates, key=lambda item: (len(item[1]), tuple(sorted(item[1]))))
+    index, _extension = min(
+        candidates, key=lambda item: (len(item[1]), tuple(sorted(item[1])))
+    )
     return (index,)
 
 
@@ -748,10 +835,7 @@ def _literal_id(literal: Literal) -> str:
 
 
 def _strict_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
-    return {
-        rule: f"s_{index}"
-        for index, rule in enumerate(sorted(rules, key=repr))
-    }
+    return {rule: f"s_{index}" for index, rule in enumerate(sorted(rules, key=repr))}
 
 
 def _defeasible_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
@@ -760,9 +844,7 @@ def _defeasible_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
         if rule.name is not None:
             rules_by_name.setdefault(rule.name, []).append(rule)
     duplicates = sorted(
-        (name, rules)
-        for name, rules in rules_by_name.items()
-        if len(rules) > 1
+        (name, rules) for name, rules in rules_by_name.items() if len(rules) > 1
     )
     if duplicates:
         name, duplicate_rules = duplicates[0]
@@ -789,6 +871,7 @@ def _rule_id(
 __all__ = [
     "ASPICEncoding",
     "ASPICQueryResult",
+    "ASPICQueryStatus",
     "encode_aspic_theory",
     "solve_aspic_grounded",
     "solve_aspic_with_backend",

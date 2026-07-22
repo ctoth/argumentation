@@ -24,8 +24,12 @@ def test_weak_and_strong_applicability_follow_labelling_statuses() -> None:
 
     weak_only = _labelling({"a": Label.UNDEC, "u": Label.UNDEC, "s": Label.IN})
     strong = _labelling({"a": Label.UNDEC, "u": Label.OUT, "s": Label.IN})
-    blocked_by_undercutter = _labelling({"a": Label.UNDEC, "u": Label.IN, "s": Label.IN})
-    blocked_by_subargument = _labelling({"a": Label.UNDEC, "u": Label.OUT, "s": Label.OUT})
+    blocked_by_undercutter = _labelling(
+        {"a": Label.UNDEC, "u": Label.IN, "s": Label.IN}
+    )
+    blocked_by_subargument = _labelling(
+        {"a": Label.UNDEC, "u": Label.OUT, "s": Label.OUT}
+    )
 
     assert weakly_applicable(argument, weak_only)
     assert not strongly_applicable(argument, weak_only)
@@ -34,18 +38,24 @@ def test_weak_and_strong_applicability_follow_labelling_statuses() -> None:
     assert not weakly_applicable(argument, blocked_by_subargument)
 
 
-def test_accrual_envelope_groups_same_conclusion_arguments_without_subset_blowup() -> None:
+def test_accrual_envelope_groups_same_conclusion_arguments_without_subset_blowup() -> (
+    None
+):
     a = AccrualArgument("a", "p")
     b = AccrualArgument("b", "p", undercutters=frozenset({"u"}))
     c = AccrualArgument("c", "q")
-    labelling = _labelling({
-        "a": Label.UNDEC,
-        "b": Label.UNDEC,
-        "c": Label.UNDEC,
-        "u": Label.UNDEC,
-    })
+    labelling = _labelling(
+        {
+            "a": Label.UNDEC,
+            "b": Label.UNDEC,
+            "c": Label.UNDEC,
+            "u": Label.UNDEC,
+        }
+    )
 
-    envelope = accrual_envelope(frozenset({a, b, c}), conclusion="p", labelling=labelling)
+    envelope = accrual_envelope(
+        frozenset({a, b, c}), conclusion="p", labelling=labelling
+    )
 
     assert envelope.conclusion == "p"
     assert envelope.strongly_applicable == frozenset({"a"})
@@ -55,12 +65,14 @@ def test_accrual_envelope_groups_same_conclusion_arguments_without_subset_blowup
 
 
 def test_accrual_grounded_labelling_reaches_fixed_point() -> None:
-    arguments = frozenset({
-        AccrualArgument("a", "p"),
-        AccrualArgument("b", "p", immediate_subarguments=frozenset({"a"})),
-        AccrualArgument("u", "not-p"),
-        AccrualArgument("c", "p", undercutters=frozenset({"u"})),
-    })
+    arguments = frozenset(
+        {
+            AccrualArgument("a", "p"),
+            AccrualArgument("b", "p", immediate_subarguments=frozenset({"a"})),
+            AccrualArgument("u", "not-p"),
+            AccrualArgument("c", "p", undercutters=frozenset({"u"})),
+        }
+    )
 
     labelling = accrual_grounded_labelling(arguments)
 

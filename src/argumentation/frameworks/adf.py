@@ -166,10 +166,15 @@ class AbstractDialecticalFramework:
     def __post_init__(self) -> None:
         statements = frozenset(self.statements)
         links = frozenset((str(parent), str(child)) for parent, child in self.links)
-        if any(parent not in statements or child not in statements for parent, child in links):
+        if any(
+            parent not in statements or child not in statements
+            for parent, child in links
+        ):
             raise ValueError("ADF links must reference declared statements")
         if set(self.acceptance_conditions) != set(statements):
-            raise ValueError("ADF acceptance_conditions must have one entry per statement")
+            raise ValueError(
+                "ADF acceptance_conditions must have one entry per statement"
+            )
         canonical_conditions = {
             statement: _canonical(condition)
             for statement, condition in self.acceptance_conditions.items()
@@ -190,7 +195,9 @@ class AbstractDialecticalFramework:
 
 
 def interpretation_from_mapping(values: Mapping[str, ThreeValued]) -> Interpretation:
-    return frozenset((statement, ThreeValued(value)) for statement, value in values.items())
+    return frozenset(
+        (statement, ThreeValued(value)) for statement, value in values.items()
+    )
 
 
 def interpretation_to_mapping(interpretation: Interpretation) -> dict[str, ThreeValued]:
@@ -205,7 +212,9 @@ def gamma(
     result: dict[str, ThreeValued] = {}
     for statement in sorted(framework.statements):
         parents = sorted(framework.parents(statement))
-        parent_values = {parent: values.get(parent, ThreeValued.U) for parent in parents}
+        parent_values = {
+            parent: values.get(parent, ThreeValued.U) for parent in parents
+        }
         completions = _two_valued_completions(parent_values)
         evaluations = [
             framework.acceptance_conditions[statement].evaluate(completion)
@@ -250,7 +259,9 @@ def admissible_interpretations(
     )
 
 
-def complete_models(framework: AbstractDialecticalFramework) -> tuple[Interpretation, ...]:
+def complete_models(
+    framework: AbstractDialecticalFramework,
+) -> tuple[Interpretation, ...]:
     return tuple(
         interpretation
         for interpretation in _all_interpretations(framework.statements)
@@ -266,7 +277,9 @@ def model_models(framework: AbstractDialecticalFramework) -> tuple[Interpretatio
     )
 
 
-def preferred_models(framework: AbstractDialecticalFramework) -> tuple[Interpretation, ...]:
+def preferred_models(
+    framework: AbstractDialecticalFramework,
+) -> tuple[Interpretation, ...]:
     admissible = admissible_interpretations(framework)
     maximal = [
         interpretation
@@ -279,7 +292,9 @@ def preferred_models(framework: AbstractDialecticalFramework) -> tuple[Interpret
     return tuple(sorted(maximal, key=_interpretation_sort_key))
 
 
-def stable_models(framework: AbstractDialecticalFramework) -> tuple[Interpretation, ...]:
+def stable_models(
+    framework: AbstractDialecticalFramework,
+) -> tuple[Interpretation, ...]:
     stable = [
         interpretation
         for interpretation in model_models(framework)
@@ -322,7 +337,11 @@ def dung_to_adf(framework: ArgumentationFramework) -> AbstractDialecticalFramewo
     links = frozenset((attacker, target) for attacker, target in framework.defeats)
     conditions = {
         argument: And(
-            tuple(Not(Atom(attacker)) for attacker, target in sorted(framework.defeats) if target == argument)
+            tuple(
+                Not(Atom(attacker))
+                for attacker, target in sorted(framework.defeats)
+                if target == argument
+            )
         )
         for argument in framework.arguments
     }
@@ -340,7 +359,9 @@ def adf_to_dung(framework: AbstractDialecticalFramework) -> ArgumentationFramewo
         if attackers is None:
             raise ValueError("ADF is not in Dung-encoded conjunctive-negative form")
         defeats.update((attacker, statement) for attacker in attackers)
-    return ArgumentationFramework(arguments=framework.statements, defeats=frozenset(defeats))
+    return ArgumentationFramework(
+        arguments=framework.statements, defeats=frozenset(defeats)
+    )
 
 
 def _canonical(condition: AcceptanceCondition) -> AcceptanceCondition:
@@ -401,9 +422,19 @@ def _replace_false_atoms(
     if isinstance(condition, _Not):
         return Not(_replace_false_atoms(condition.child, false_statements))
     if isinstance(condition, _And):
-        return And(tuple(_replace_false_atoms(child, false_statements) for child in condition.children))
+        return And(
+            tuple(
+                _replace_false_atoms(child, false_statements)
+                for child in condition.children
+            )
+        )
     if isinstance(condition, _Or):
-        return Or(tuple(_replace_false_atoms(child, false_statements) for child in condition.children))
+        return Or(
+            tuple(
+                _replace_false_atoms(child, false_statements)
+                for child in condition.children
+            )
+        )
     return condition
 
 
@@ -416,7 +447,9 @@ def _condition_sort_key(condition: AcceptanceCondition) -> str:
 def _two_valued_completions(
     parent_values: Mapping[str, ThreeValued],
 ) -> list[dict[str, bool]]:
-    unknown = [parent for parent, value in parent_values.items() if value is ThreeValued.U]
+    unknown = [
+        parent for parent, value in parent_values.items() if value is ThreeValued.U
+    ]
     fixed = {
         parent: value is ThreeValued.T
         for parent, value in parent_values.items()
@@ -461,11 +494,17 @@ def _all_interpretations(statements: frozenset[str]) -> tuple[Interpretation, ..
     return tuple(sorted(interpretations, key=_interpretation_sort_key))
 
 
-def _interpretation_sort_key(interpretation: Interpretation) -> tuple[tuple[str, str], ...]:
-    return tuple(sorted((statement, value.value) for statement, value in interpretation))
+def _interpretation_sort_key(
+    interpretation: Interpretation,
+) -> tuple[tuple[str, str], ...]:
+    return tuple(
+        sorted((statement, value.value) for statement, value in interpretation)
+    )
 
 
-def _dung_attackers_from_condition(condition: AcceptanceCondition) -> frozenset[str] | None:
+def _dung_attackers_from_condition(
+    condition: AcceptanceCondition,
+) -> frozenset[str] | None:
     condition = _canonical(condition)
     if isinstance(condition, True_):
         return frozenset()
@@ -514,7 +553,7 @@ class _FormulaParser:
     def expect_end(self) -> None:
         self._skip_ws()
         if self.index != len(self.text):
-            raise ValueError(f"unexpected formula suffix: {self.text[self.index:]!r}")
+            raise ValueError(f"unexpected formula suffix: {self.text[self.index :]!r}")
 
     def _name(self) -> str:
         self._skip_ws()
@@ -525,7 +564,7 @@ class _FormulaParser:
             self.index += 1
         if start == self.index:
             raise ValueError(f"expected formula token at {self.index}")
-        return self.text[start:self.index]
+        return self.text[start : self.index]
 
     def _literal(self, value: str) -> None:
         self._skip_ws()

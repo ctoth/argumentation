@@ -41,9 +41,8 @@ def weakly_applicable(argument: AccrualArgument, labelling: Labelling) -> bool:
     immediate subarguments labelled out.
     """
     _validate_known(argument, labelling)
-    return (
-        not (argument.undercutters & labelling.in_arguments)
-        and not (argument.immediate_subarguments & labelling.out_arguments)
+    return not (argument.undercutters & labelling.in_arguments) and not (
+        argument.immediate_subarguments & labelling.out_arguments
     )
 
 
@@ -72,8 +71,7 @@ def accrual_envelope(
 ) -> AccrualEnvelope:
     """Return strong and weak same-conclusion accrual candidates."""
     same_conclusion = frozenset(
-        argument for argument in arguments
-        if argument.conclusion == conclusion
+        argument for argument in arguments if argument.conclusion == conclusion
     )
     strong = frozenset(
         argument.identifier
@@ -135,7 +133,11 @@ def accrual_grounded_labelling(
 
 
 def _validate_known(argument: AccrualArgument, labelling: Labelling) -> None:
-    required = {argument.identifier} | set(argument.undercutters) | set(argument.immediate_subarguments)
+    required = (
+        {argument.identifier}
+        | set(argument.undercutters)
+        | set(argument.immediate_subarguments)
+    )
     unknown = sorted(required - labelling.arguments)
     if unknown:
         raise ValueError(f"labelling is missing accrual arguments: {unknown!r}")

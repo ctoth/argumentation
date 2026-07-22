@@ -6,10 +6,16 @@ import time
 import pytest
 
 from argumentation.structured.aba.aba import ABAFramework
-from argumentation.structured.aba.aba_incremental import AbaIncrementalSolver, IncrementalTelemetry
+from argumentation.structured.aba.aba_incremental import (
+    AbaIncrementalSolver,
+    IncrementalTelemetry,
+)
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 import argumentation.solving.solver as solver_module
-from argumentation.solving.solver import SingleExtensionSolverSuccess, solve_aba_single_extension
+from argumentation.solving.solver import (
+    SingleExtensionSolverSuccess,
+    solve_aba_single_extension,
+)
 from tests import performance_contracts
 from tests.performance_contracts import (
     CALIBRATION_ENV,
@@ -28,7 +34,9 @@ def lit(name: str) -> Literal:
 
 def no_attack_framework(size: int) -> ABAFramework:
     assumptions = frozenset(lit(f"a{index}") for index in range(size))
-    contraries = {assumption: lit(f"ca{index}") for index, assumption in enumerate(assumptions)}
+    contraries = {
+        assumption: lit(f"ca{index}") for index, assumption in enumerate(assumptions)
+    }
     return ABAFramework(
         language=assumptions | frozenset(contraries.values()),
         rules=frozenset(),
@@ -45,15 +53,21 @@ def dense_flat_stable_framework(size: int) -> ABAFramework:
     also satisfies the sparse-narrow shape.
     """
     assumptions = tuple(lit(f"a{index}") for index in range(size))
-    contraries = {assumption: lit(f"ca{index}") for index, assumption in enumerate(assumptions)}
-    heads = tuple(lit(f"h{index}_{offset}") for index in range(size) for offset in range(26))
+    contraries = {
+        assumption: lit(f"ca{index}") for index, assumption in enumerate(assumptions)
+    }
+    heads = tuple(
+        lit(f"h{index}_{offset}") for index in range(size) for offset in range(26)
+    )
     rules = frozenset(
         Rule((assumptions[index],), heads[index * 26 + offset], "strict")
         for index in range(size)
         for offset in range(26)
     )
     return ABAFramework(
-        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        language=frozenset(assumptions)
+        | frozenset(contraries.values())
+        | frozenset(heads),
         rules=rules,
         assumptions=frozenset(assumptions),
         contrary=contraries,
@@ -92,8 +106,9 @@ def test_calibration_payload_has_expected_shape() -> None:
 def test_calibrated_budget_uses_fallback_without_calibration(monkeypatch) -> None:
     monkeypatch.delenv(CALIBRATION_ENV, raising=False)
 
-    assert calibrated_budget("aba_no_attack_preferred") == (
-        performance_contracts.FALLBACK_BUDGETS_SECONDS["aba_no_attack_preferred"]
+    assert (
+        calibrated_budget("aba_no_attack_preferred")
+        == (performance_contracts.FALLBACK_BUDGETS_SECONDS["aba_no_attack_preferred"])
     )
 
 
@@ -128,14 +143,18 @@ def test_no_attack_preferred_has_bounded_solver_calls() -> None:
     framework = no_attack_framework(10)
     telemetry = IncrementalTelemetry()
 
-    witness = AbaIncrementalSolver(framework).find_preferred_extension(telemetry=telemetry)
+    witness = AbaIncrementalSolver(framework).find_preferred_extension(
+        telemetry=telemetry
+    )
 
     assert witness == framework.assumptions
     assert telemetry.solver_calls <= 2
     assert telemetry.outer_iterations <= 1
 
 
-def test_large_dense_stable_auto_route_uses_asp_when_not_sparse_narrow(monkeypatch) -> None:
+def test_large_dense_stable_auto_route_uses_asp_when_not_sparse_narrow(
+    monkeypatch,
+) -> None:
     framework = large_dense_stable_framework()
     witness = frozenset({min(framework.assumptions, key=repr)})
 

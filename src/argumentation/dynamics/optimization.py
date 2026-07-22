@@ -104,8 +104,7 @@ def optimize_framework(
     arguments = tuple(sorted(framework.arguments))
     candidates = tuple(sorted(policy.candidates))
     variables = {
-        argument: z3.Bool(f"in_{_z3_safe_name(argument)}")
-        for argument in arguments
+        argument: z3.Bool(f"in_{_z3_safe_name(argument)}") for argument in arguments
     }
     optimizer = z3.Optimize()
     optimizer.set(priority="lex")
@@ -116,8 +115,12 @@ def optimize_framework(
     if policy.semantics == "admissible":
         _add_admissibility_constraints(z3, optimizer, variables, framework)
 
-    objective_terms = _objective_terms(z3, variables, policy.objectives, tuple(features))
-    for objective in sorted(policy.objectives, key=lambda item: (item.priority, item.name)):
+    objective_terms = _objective_terms(
+        z3, variables, policy.objectives, tuple(features)
+    )
+    for objective in sorted(
+        policy.objectives, key=lambda item: (item.priority, item.name)
+    ):
         term = objective_terms[objective.name]
         if objective.direction == "maximize":
             optimizer.maximize(term)
@@ -148,10 +151,14 @@ def optimize_framework(
         None,
     )
     objective_values = {
-        objective.name: _model_int(model.eval(objective_terms[objective.name], model_completion=True))
+        objective.name: _model_int(
+            model.eval(objective_terms[objective.name], model_completion=True)
+        )
         for objective in policy.objectives
     }
-    objective_values["tie_break"] = _model_int(model.eval(tie_break, model_completion=True))
+    objective_values["tie_break"] = _model_int(
+        model.eval(tie_break, model_completion=True)
+    )
     return OptimizationResult(
         status="optimal",
         selected_arguments=selected_arguments,
@@ -172,15 +179,21 @@ def optimize_framework(
     )
 
 
-def _validate_policy(framework: ArgumentationFramework, policy: OptimizationPolicy) -> None:
-    unknown = (policy.candidates | policy.required | policy.forbidden) - framework.arguments
+def _validate_policy(
+    framework: ArgumentationFramework, policy: OptimizationPolicy
+) -> None:
+    unknown = (
+        policy.candidates | policy.required | policy.forbidden
+    ) - framework.arguments
     if unknown:
         raise ValueError(f"policy references unknown arguments: {sorted(unknown)!r}")
     if not policy.candidates:
         raise ValueError("optimization policy requires at least one candidate")
     overlap = policy.required & policy.forbidden
     if overlap:
-        raise ValueError(f"arguments cannot be both required and forbidden: {sorted(overlap)!r}")
+        raise ValueError(
+            f"arguments cannot be both required and forbidden: {sorted(overlap)!r}"
+        )
 
 
 def _add_candidate_constraints(
@@ -226,8 +239,12 @@ def _add_admissibility_constraints(
     # Dung 1995, p.326, Definition 6: each selected argument must be acceptable
     # with respect to the selected set, i.e. every attacker is counter-attacked
     # by some selected argument.
-    attackers: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
-    defenders: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    attackers: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
+    defenders: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
     for attacker, target in framework.defeats:
         attackers[target].add(attacker)
         defenders[target].add(attacker)
@@ -235,10 +252,11 @@ def _add_admissibility_constraints(
     for argument in sorted(framework.arguments):
         for attacker in sorted(attackers[argument]):
             selected_defenders = [
-                variables[defender]
-                for defender in sorted(defenders[attacker])
+                variables[defender] for defender in sorted(defenders[attacker])
             ]
-            defended = z3.Or(selected_defenders) if selected_defenders else z3.BoolVal(False)
+            defended = (
+                z3.Or(selected_defenders) if selected_defenders else z3.BoolVal(False)
+            )
             optimizer.add(z3.Implies(variables[argument], defended))
 
 
@@ -252,15 +270,20 @@ def _objective_terms(
     feature_values: dict[tuple[str, str], int] = {}
     for feature in features:
         if feature.argument not in variables:
-            raise ValueError(f"feature references unknown argument: {feature.argument!r}")
-        feature_values[(feature.argument, feature.name)] = feature_values.get((feature.argument, feature.name), 0) + feature.value
+            raise ValueError(
+                f"feature references unknown argument: {feature.argument!r}"
+            )
+        feature_values[(feature.argument, feature.name)] = (
+            feature_values.get((feature.argument, feature.name), 0) + feature.value
+        )
 
     for objective in objectives:
         terms[objective.name] = z3.Sum(
             [
                 z3.If(
                     variables[argument],
-                    objective.weight * feature_values.get((argument, objective.name), 0),
+                    objective.weight
+                    * feature_values.get((argument, objective.name), 0),
                     0,
                 )
                 for argument in sorted(variables)

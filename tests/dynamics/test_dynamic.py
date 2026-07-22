@@ -117,9 +117,7 @@ def test_update_stream_operations_match_dynamic_track_set_effects(
     if del_a:
         updates.append(DynamicUpdate("del_arg", "a"))
         expected_arguments.discard("a")
-        expected_defeats = {
-            defeat for defeat in expected_defeats if "a" not in defeat
-        }
+        expected_defeats = {defeat for defeat in expected_defeats if "a" not in defeat}
 
     oracle = DynamicRecomputeOracle(
         ArgumentationFramework(arguments=frozenset(), defeats=frozenset())
@@ -163,7 +161,9 @@ def test_incremental_algorithm_reuses_extension_for_irrelevant_stable_update() -
     assert result.fallback_reason is None
 
 
-def test_incremental_algorithm_falls_back_when_stable_reduced_af_has_no_extension() -> None:
+def test_incremental_algorithm_falls_back_when_stable_reduced_af_has_no_extension() -> (
+    None
+):
     framework = example_6_framework()
 
     result = incremental_extension_update(
@@ -183,7 +183,9 @@ def test_incremental_algorithm_falls_back_when_stable_reduced_af_has_no_extensio
     assert result.extension in extensions_for(result.updated_framework, "stable")
 
 
-def test_incremental_algorithm_combines_reduced_preferred_extension_without_fallback() -> None:
+def test_incremental_algorithm_combines_reduced_preferred_extension_without_fallback() -> (
+    None
+):
     framework = example_6_framework()
 
     result = incremental_extension_update(
@@ -223,7 +225,9 @@ def test_incremental_state_queries_expose_witnesses_and_counterexamples() -> Non
     assert skeptical.counterexample == frozenset({"a", "c"})
 
 
-def test_incremental_state_reports_honest_recompute_for_unsupported_update_kind() -> None:
+def test_incremental_state_reports_honest_recompute_for_unsupported_update_kind() -> (
+    None
+):
     dynamic = IncrementalDynamicArgumentationFramework(
         ArgumentationFramework(arguments=frozenset({"a"}), defeats=frozenset()),
         semantics="grounded",

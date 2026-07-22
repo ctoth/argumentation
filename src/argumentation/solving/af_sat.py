@@ -179,7 +179,11 @@ class AfSatKernel:
 
     @property
     def conflict_relation(self) -> frozenset[tuple[str, str]]:
-        return self.framework.attacks if self.framework.attacks is not None else self.framework.defeats
+        return (
+            self.framework.attacks
+            if self.framework.attacks is not None
+            else self.framework.defeats
+        )
 
     def add_conflict_free(self) -> None:
         if "conflict_free" in self._added:
@@ -219,7 +223,9 @@ class AfSatKernel:
             return
         for argument in self.arguments:
             self.solver.add(
-                self.z3.Not(self.z3.And(self.in_vars[argument], self.out_vars[argument]))
+                self.z3.Not(
+                    self.z3.And(self.in_vars[argument], self.out_vars[argument])
+                )
             )
 
         for argument in self.arguments:
@@ -262,7 +268,9 @@ class AfSatKernel:
                 self.in_vars[argument],
                 *(
                     self.in_vars[attacker]
-                    for attacker in sorted(self.attackers_index.get(argument, frozenset()))
+                    for attacker in sorted(
+                        self.attackers_index.get(argument, frozenset())
+                    )
                 ),
             ]
             self.solver.add(self.range_vars[argument] == self.z3.Or(*range_sources))
@@ -296,7 +304,9 @@ class AfSatKernel:
         self.add_range_definition()
         if arguments:
             self.solver.add(
-                self.z3.Or(*(self.range_vars[argument] for argument in sorted(arguments)))
+                self.z3.Or(
+                    *(self.range_vars[argument] for argument in sorted(arguments))
+                )
             )
 
     def require_range_size_at_least(self, size: int) -> None:
@@ -322,9 +332,7 @@ class AfSatKernel:
     def require_attacks_any(self, targets: frozenset[str]) -> None:
         self._validate(targets)
         attackers = frozenset(
-            attacker
-            for attacker, target in self.framework.defeats
-            if target in targets
+            attacker for attacker, target in self.framework.defeats if target in targets
         )
         if attackers:
             self.require_any_in(attackers)
@@ -334,14 +342,15 @@ class AfSatKernel:
     def exclude_extension(self, extension: frozenset[str]) -> None:
         self._validate(extension)
         self.solver.add(
-            self.z3.Or(*(self.z3.Not(self.in_vars[argument]) for argument in sorted(extension)))
+            self.z3.Or(
+                *(self.z3.Not(self.in_vars[argument]) for argument in sorted(extension))
+            )
         )
 
     def exclude_exact_extension(self, extension: frozenset[str]) -> None:
         self._validate(extension)
         literals = [
-            self.z3.Not(self.in_vars[argument])
-            for argument in sorted(extension)
+            self.z3.Not(self.in_vars[argument]) for argument in sorted(extension)
         ]
         literals.extend(
             self.in_vars[argument]
@@ -493,7 +502,11 @@ def find_stable_extension(
     engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
-        framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
+        framework,
+        "stable",
+        simplify=simplify,
+        require_in=require_in,
+        require_out=require_out,
     )
     if prepared is None:
         return None
@@ -531,7 +544,11 @@ def explain_stable_unsat(
     """
     started = perf_counter()
     prepared = _prepare(
-        framework, "stable", simplify=simplify, require_in=require_in, require_out=require_out
+        framework,
+        "stable",
+        simplify=simplify,
+        require_in=require_in,
+        require_out=require_out,
     )
     if prepared is None:
         return StableUnsatExplanation(
@@ -545,7 +562,9 @@ def explain_stable_unsat(
             core_argument_ids=tuple(),
             core_attack_ids=tuple(),
             coverage_argument_ids=tuple(),
-            requirement_argument_ids=tuple(sorted(arg for arg in (require_in, require_out) if arg is not None)),
+            requirement_argument_ids=tuple(
+                sorted(arg for arg in (require_in, require_out) if arg is not None)
+            ),
             clause_group_count=0,
             runtime_seconds=perf_counter() - started,
             simplification_fixed_in_count=0,
@@ -558,7 +577,9 @@ def explain_stable_unsat(
     solver = z3.Solver()
     _apply_check_budget(solver, check_budget_seconds)
     arguments = tuple(sorted(residual.arguments))
-    in_vars = {argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)}
+    in_vars = {
+        argument: z3.Bool(f"af_in_{index}") for index, argument in enumerate(arguments)
+    }
     attackers_index = predecessors_index(residual.defeats)
     label_map: dict[str, tuple[str, object]] = {}
 
@@ -567,7 +588,9 @@ def explain_stable_unsat(
         label_map[str(label)] = (kind, payload)
         solver.assert_and_track(expression, label)
 
-    conflict_relation = residual.attacks if residual.attacks is not None else residual.defeats
+    conflict_relation = (
+        residual.attacks if residual.attacks is not None else residual.defeats
+    )
     for attacker, target in sorted(conflict_relation):
         track(
             "conflict",
@@ -625,7 +648,11 @@ def explain_stable_unsat(
         core_arguments.add(attacker)
         core_arguments.add(target)
 
-    status = "sat" if solver_result == "sat" else ("unsat" if solver_result == "unsat" else "unknown")
+    status = (
+        "sat"
+        if solver_result == "sat"
+        else ("unsat" if solver_result == "unsat" else "unknown")
+    )
     return StableUnsatExplanation(
         status=status,
         stable_exists=solver_result == "sat",
@@ -660,7 +687,11 @@ def find_complete_extension(
     engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
-        framework, "complete", simplify=simplify, require_in=require_in, require_out=require_out
+        framework,
+        "complete",
+        simplify=simplify,
+        require_in=require_in,
+        require_out=require_out,
     )
     if prepared is None:
         return None
@@ -693,7 +724,11 @@ def find_preferred_extension(
     engine: str = "smt",
 ) -> frozenset[str] | None:
     prepared = _prepare(
-        framework, "preferred", simplify=simplify, require_in=require_in, require_out=require_out
+        framework,
+        "preferred",
+        simplify=simplify,
+        require_in=require_in,
+        require_out=require_out,
     )
     if prepared is None:
         return None
@@ -767,12 +802,20 @@ def is_preferred_skeptically_accepted(
         simplification = simplify_af(framework, semantics="preferred")
         if query in simplification.fixed_in:
             _emit_preprocessing_shortcut(
-                framework, trace_sink, metadata, "preferred_skeptical_preprocessing_grounded_in", accepted=True
+                framework,
+                trace_sink,
+                metadata,
+                "preferred_skeptical_preprocessing_grounded_in",
+                accepted=True,
             )
             return True
         if query in simplification.fixed_out:
             _emit_preprocessing_shortcut(
-                framework, trace_sink, metadata, "preferred_skeptical_preprocessing_forced_out", accepted=False
+                framework,
+                trace_sink,
+                metadata,
+                "preferred_skeptical_preprocessing_forced_out",
+                accepted=False,
             )
             return False
         framework = simplification.residual
@@ -873,7 +916,9 @@ class PreferredSkepticalTaskSolver:
 
     def _shortcut(self, query: str) -> bool | None:
         if (query, query) in self.framework.defeats:
-            self._emit_shortcut("preferred_skeptical_shortcut_self_attacking_query", False)
+            self._emit_shortcut(
+                "preferred_skeptical_shortcut_self_attacking_query", False
+            )
             return False
         attackers = self._attackers_of(query)
         if not attackers:
@@ -888,15 +933,15 @@ class PreferredSkepticalTaskSolver:
             return False
         if _is_acyclic(self.framework):
             accepted = query in grounded_extension(self.framework)
-            self._emit_shortcut("preferred_skeptical_shortcut_acyclic_grounded", accepted)
+            self._emit_shortcut(
+                "preferred_skeptical_shortcut_acyclic_grounded", accepted
+            )
             return accepted
         return None
 
     def _attackers_of(self, query: str) -> frozenset[str]:
         return frozenset(
-            attacker
-            for attacker, target in self.framework.defeats
-            if target == query
+            attacker for attacker, target in self.framework.defeats if target == query
         )
 
     def _emit_shortcut(self, utility_name: str, accepted: bool) -> None:
@@ -1002,7 +1047,11 @@ def _find_range_maximal_task_extension(
     stable-first dispatch).
     """
     prepared = _prepare(
-        framework, semantics, simplify=simplify, require_in=require_in, require_out=require_out
+        framework,
+        semantics,
+        simplify=simplify,
+        require_in=require_in,
+        require_out=require_out,
     )
     if prepared is None:
         return None
@@ -1147,13 +1196,16 @@ def _run_extension(
             problem.exclude_exact_extension(blocked)
         for blocked_range in excluded_range_subsets or []:
             problem.exclude_range_subset(blocked_range)
-        if problem.check(
-            utility_name,
-            range_bound=range_bound,
-            range_constraint=range_constraint,
-            loop_index=loop_index,
-            learned_count=learned_count,
-        ) != "sat":
+        if (
+            problem.check(
+                utility_name,
+                range_bound=range_bound,
+                range_constraint=range_constraint,
+                loop_index=loop_index,
+                learned_count=learned_count,
+            )
+            != "sat"
+        ):
             return None
         return problem.model_extension()
     finally:
@@ -1208,11 +1260,14 @@ def _admissible_extension(
         problem.require_in(required_in)
         problem.require_out(required_out)
         problem.require_any_in(require_any_in)
-        if problem.check(
-            utility_name,
-            loop_index=loop_index,
-            learned_count=learned_count,
-        ) != "sat":
+        if (
+            problem.check(
+                utility_name,
+                loop_index=loop_index,
+                learned_count=learned_count,
+            )
+            != "sat"
+        ):
             return None
         return problem.model_extension()
     finally:
@@ -1268,7 +1323,9 @@ class _PreferredSkepticalAttackerSolver:
         self.learned_count = 0
 
         _add_admissible_constraints(self.z3, self.solver, framework, self.attacker_vars)
-        _add_admissible_constraints(self.z3, self.solver, framework, self.candidate_vars)
+        _add_admissible_constraints(
+            self.z3, self.solver, framework, self.candidate_vars
+        )
         for argument in sorted(required_in):
             self.solver.add(self.candidate_vars[argument])
 
@@ -1276,7 +1333,9 @@ class _PreferredSkepticalAttackerSolver:
             self.z3.And(self.attacker_vars[attacker], self.candidate_vars[target])
             for attacker, target in sorted(framework.defeats)
         ]
-        self.solver.add(self.z3.Or(*attack_pairs) if attack_pairs else self.z3.BoolVal(False))
+        self.solver.add(
+            self.z3.Or(*attack_pairs) if attack_pairs else self.z3.BoolVal(False)
+        )
 
     def find_attacker(self, *, loop_index: int) -> frozenset[str] | None:
         started = perf_counter()
@@ -1320,11 +1379,15 @@ class _PreferredSkepticalAttackerSolver:
             if self.z3.is_true(model.evaluate(variable, model_completion=True))
         )
 
-    def learn_witness_region(self, extension: frozenset[str], *, loop_index: int) -> None:
+    def learn_witness_region(
+        self, extension: frozenset[str], *, loop_index: int
+    ) -> None:
         outside = self.framework.arguments - extension
         if outside:
             self.solver.add(
-                self.z3.Or(*(self.attacker_vars[argument] for argument in sorted(outside)))
+                self.z3.Or(
+                    *(self.attacker_vars[argument] for argument in sorted(outside))
+                )
             )
         else:
             self.solver.add(self.z3.BoolVal(False))
@@ -1404,7 +1467,9 @@ def _add_admissible_constraints(
     framework: ArgumentationFramework,
     in_vars: Mapping[str, Any],
 ) -> None:
-    conflict_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    conflict_relation = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
     for attacker, target in sorted(conflict_relation):
         solver.add(z3.Or(z3.Not(in_vars[attacker]), z3.Not(in_vars[target])))
 
@@ -1426,7 +1491,9 @@ def _add_admissible_constraints(
         if any(attacker in undefended_attackers for attacker in attackers):
             solver.add(z3.Not(in_vars[argument]))
             continue
-        defense_requirements = tuple(defense_by_attacker[attacker] for attacker in attackers)
+        defense_requirements = tuple(
+            defense_by_attacker[attacker] for attacker in attackers
+        )
         defended = (
             defense_requirements[0]
             if len(defense_requirements) == 1
@@ -1542,9 +1609,8 @@ def _acyclic_fragment_answer(
     if not _is_acyclic(residual):
         return False, None
     grounded = grounded_extension(residual)
-    satisfied = (
-        prepared.required_in <= grounded
-        and prepared.required_out.isdisjoint(grounded)
+    satisfied = prepared.required_in <= grounded and prepared.required_out.isdisjoint(
+        grounded
     )
     answer = grounded if satisfied else None
     _emit_fragment_shortcut(
@@ -1810,7 +1876,9 @@ def _bounded_missing_sets(
         if selected_size == depth:
             continue
         for index in range(start, len(arguments)):
-            pending.append((index + 1, (*selected, arguments[index]), selected_size + 1))
+            pending.append(
+                (index + 1, (*selected, arguments[index]), selected_size + 1)
+            )
 
 
 def _seed_label_base(seed_utility_name: str) -> str:
@@ -1909,7 +1977,9 @@ def _apply_range_size_constraints(
     required_range_size_at_least: int | None,
 ) -> tuple[int | None, str | None]:
     if required_range_size is not None and required_range_size_at_least is not None:
-        raise ValueError("range size exact and lower-bound constraints are mutually exclusive")
+        raise ValueError(
+            "range size exact and lower-bound constraints are mutually exclusive"
+        )
     if required_range_size is not None:
         problem.require_range_size_exactly(required_range_size)
         return required_range_size, "exact"

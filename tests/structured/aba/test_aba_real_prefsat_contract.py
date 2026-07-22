@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any
 
-import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -11,7 +10,10 @@ from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from tests.aba_hypothesis_generators import renamed_framework
-from tools.aba_shape_benchmark import compute_aba_shape, route_candidates_from_shape_data
+from tools.aba_shape_benchmark import (
+    compute_aba_shape,
+    route_candidates_from_shape_data,
+)
 
 
 REAL_PREFSAT_PAGE_IMAGES = (
@@ -89,7 +91,13 @@ def small_flat_aba_for_real_prefsat(draw) -> ABAFramework:
     ]
     empty_body_rule = [Rule((), atoms[-1], "strict")]
     rules = frozenset((*generated_rules, *cycle_rules, *empty_body_rule))
-    language = frozenset((*assumptions, *atoms, *(literal for rule in rules for literal in rule.antecedents)))
+    language = frozenset(
+        (
+            *assumptions,
+            *atoms,
+            *(literal for rule in rules for literal in rule.antecedents),
+        )
+    )
     return ABAFramework(
         language=language,
         assumptions=frozenset(assumptions),
@@ -106,7 +114,9 @@ def test_real_prefsat_exposes_three_valued_labelling_surface() -> None:
     assert result.route_metadata["algorithm"] == "complete-labelling-prefsat"
     assert set(result.prefsat_in) == framework.assumptions, REAL_PREFSAT_PAGE_IMAGES[0]
     assert set(result.prefsat_out) == framework.assumptions, REAL_PREFSAT_PAGE_IMAGES[0]
-    assert set(result.prefsat_undec) == framework.assumptions, REAL_PREFSAT_PAGE_IMAGES[0]
+    assert set(result.prefsat_undec) == framework.assumptions, REAL_PREFSAT_PAGE_IMAGES[
+        0
+    ]
     for assumption in framework.assumptions:
         labels = (
             result.prefsat_in[assumption],
@@ -170,7 +180,9 @@ def test_real_prefsat_route_ignores_filename_and_manifest_identity() -> None:
 def test_dense_flat_real_prefsat_does_not_materialize_minimal_supports() -> None:
     result = aba_sat.real_prefsat_extension(_dense_flat_framework(8))
 
-    assert result.telemetry["prefsat_support_materializations"] == 0, REAL_PREFSAT_PAGE_IMAGES[8]
+    assert result.telemetry["prefsat_support_materializations"] == 0, (
+        REAL_PREFSAT_PAGE_IMAGES[8]
+    )
 
 
 @given(st.integers(min_value=3, max_value=9).filter(lambda size: size % 2 == 1))
@@ -205,8 +217,9 @@ def test_real_prefsat_support_pressure_stays_structural(size: int) -> None:
     )
     assert telemetry["prefsat_attacker_solver_builds"] == 0, REAL_PREFSAT_PAGE_IMAGES[4]
     assert telemetry["prefsat_attacker_solver_checks"] == 0
-    assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
-        telemetry["prefsat_attacker_bitset_shrink_checks"]
+    assert (
+        telemetry["prefsat_attacker_bitset_closure_checks"]
+        >= (telemetry["prefsat_attacker_bitset_shrink_checks"])
     )
     assert telemetry["prefsat_attacker_bitset_rule_firings"] <= (
         telemetry["prefsat_attacker_bitset_closure_checks"]
@@ -235,8 +248,14 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     attack_edge_count = aba_sat.real_prefsat_attack_edge_count(framework)
 
     assert set(REQUIRED_TELEMETRY_FIELDS) <= set(telemetry)
-    assert telemetry["prefsat_solver_checks"] <= 2 * telemetry["prefsat_candidate_blocks"] + 4
-    assert telemetry["prefsat_candidate_models"] <= telemetry["prefsat_candidate_blocks"] + 2
+    assert (
+        telemetry["prefsat_solver_checks"]
+        <= 2 * telemetry["prefsat_candidate_blocks"] + 4
+    )
+    assert (
+        telemetry["prefsat_candidate_models"]
+        <= telemetry["prefsat_candidate_blocks"] + 2
+    )
     assert telemetry["prefsat_candidate_blocks"] <= len(framework.assumptions) + 2
     assert telemetry["prefsat_labelling_variables"] == 3 * len(framework.assumptions)
     assert telemetry["prefsat_exactly_one_clauses"] == len(framework.assumptions)
@@ -245,8 +264,9 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
     )
     assert telemetry["prefsat_attacker_solver_builds"] == 0
     assert telemetry["prefsat_attacker_solver_checks"] == 0
-    assert telemetry["prefsat_attacker_bitset_closure_checks"] >= (
-        telemetry["prefsat_attacker_bitset_shrink_checks"]
+    assert (
+        telemetry["prefsat_attacker_bitset_closure_checks"]
+        >= (telemetry["prefsat_attacker_bitset_shrink_checks"])
     )
     assert telemetry["prefsat_attacker_bitset_rule_firings"] <= (
         telemetry["prefsat_attacker_bitset_closure_checks"]
@@ -256,7 +276,9 @@ def test_real_prefsat_operational_bounds(framework: ABAFramework) -> None:
 
 @given(small_flat_aba_for_real_prefsat())
 @settings(max_examples=40, deadline=None)
-def test_real_prefsat_labelling_matches_closure_observations(framework: ABAFramework) -> None:
+def test_real_prefsat_labelling_matches_closure_observations(
+    framework: ABAFramework,
+) -> None:
     result = aba_sat.real_prefsat_extension(framework)
     closure = _closure(framework, result.extension)
 
@@ -268,7 +290,9 @@ def test_real_prefsat_labelling_matches_closure_observations(framework: ABAFrame
         )
         assert sum(bool(label) for label in labels) == 1
         assert result.prefsat_in[assumption] is (assumption in result.extension)
-        assert result.prefsat_out[assumption] is (framework.contrary[assumption] in closure)
+        assert result.prefsat_out[assumption] is (
+            framework.contrary[assumption] in closure
+        )
         assert result.prefsat_undec[assumption] is (
             assumption not in result.extension
             and framework.contrary[assumption] not in closure
@@ -298,9 +322,13 @@ def test_real_prefsat_residual_reduction_progress(framework: ABAFramework) -> No
 
 @given(small_flat_aba_for_real_prefsat())
 @settings(max_examples=20, deadline=None)
-def test_real_prefsat_renaming_preserves_extension_size(framework: ABAFramework) -> None:
+def test_real_prefsat_renaming_preserves_extension_size(
+    framework: ABAFramework,
+) -> None:
     renamed, mapping = renamed_framework(framework)
-    inverse = {renamed_literal: original for original, renamed_literal in mapping.items()}
+    inverse = {
+        renamed_literal: original for original, renamed_literal in mapping.items()
+    }
 
     original = aba_sat.real_prefsat_extension(framework).extension
     renamed_extension = aba_sat.real_prefsat_extension(renamed).extension
@@ -309,7 +337,9 @@ def test_real_prefsat_renaming_preserves_extension_size(framework: ABAFramework)
     assert len(original) == len(lifted)
 
 
-def _real_prefsat_route_signature(shape_data: dict[str, Any]) -> tuple[tuple[Any, ...], ...]:
+def _real_prefsat_route_signature(
+    shape_data: dict[str, Any],
+) -> tuple[tuple[Any, ...], ...]:
     candidates = route_candidates_from_shape_data(
         shape_data,
         "aba/single-extension/preferred",
@@ -338,10 +368,12 @@ def _two_choice_framework() -> ABAFramework:
         language=frozenset({a0, a1, c0, c1}),
         assumptions=frozenset({a0, a1}),
         contrary={a0: c0, a1: c1},
-        rules=frozenset({
-            Rule((a0,), c1, "strict"),
-            Rule((a1,), c0, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((a0,), c1, "strict"),
+                Rule((a1,), c0, "strict"),
+            }
+        ),
     )
 
 
@@ -350,7 +382,9 @@ def _dense_flat_framework(size: int) -> ABAFramework:
     atoms = tuple(lit(f"x{index}") for index in range(size))
     rules = frozenset(
         Rule(
-            tuple(assumptions[(index + offset) % size] for offset in range(min(3, size))),
+            tuple(
+                assumptions[(index + offset) % size] for offset in range(min(3, size))
+            ),
             atoms[index],
             "strict",
         )
@@ -359,7 +393,9 @@ def _dense_flat_framework(size: int) -> ABAFramework:
     return ABAFramework(
         language=frozenset((*assumptions, *atoms)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: atoms[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: atoms[index] for index, assumption in enumerate(assumptions)
+        },
         rules=rules,
     )
 
@@ -374,7 +410,10 @@ def _odd_cycle_framework(size: int) -> ABAFramework:
     return ABAFramework(
         language=frozenset((*assumptions, *contraries)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: contraries[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: contraries[index]
+            for index, assumption in enumerate(assumptions)
+        },
         rules=rules,
     )
 
@@ -388,17 +427,26 @@ def _support_pressure_framework(size: int) -> ABAFramework:
         next_assumption = assumptions[(index + 1) % size]
         previous_assumption = assumptions[(index - 1) % size]
         rules.append(Rule((assumption,), helper[index], "strict"))
-        rules.append(Rule((helper[index], next_assumption), contraries[index], "strict"))
-        rules.append(Rule((previous_assumption, next_assumption), contraries[index], "strict"))
+        rules.append(
+            Rule((helper[index], next_assumption), contraries[index], "strict")
+        )
+        rules.append(
+            Rule((previous_assumption, next_assumption), contraries[index], "strict")
+        )
     return ABAFramework(
         language=frozenset((*assumptions, *contraries, *helper)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: contraries[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: contraries[index]
+            for index, assumption in enumerate(assumptions)
+        },
         rules=frozenset(rules),
     )
 
 
-def _closure(framework: ABAFramework, extension: frozenset[Literal]) -> frozenset[Literal]:
+def _closure(
+    framework: ABAFramework, extension: frozenset[Literal]
+) -> frozenset[Literal]:
     derived = set(extension)
     changed = True
     while changed:

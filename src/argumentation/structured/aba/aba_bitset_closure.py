@@ -39,7 +39,11 @@ class _BitsetHornClosure:
             | set(framework.assumptions)
             | set(framework.contrary.values())
             | {rule.consequent for rule in framework.rules}
-            | {antecedent for rule in framework.rules for antecedent in rule.antecedents},
+            | {
+                antecedent
+                for rule in framework.rules
+                for antecedent in rule.antecedents
+            },
             key=repr,
         )
         literal_bits = {literal: 1 << index for index, literal in enumerate(literals)}
@@ -53,8 +57,7 @@ class _BitsetHornClosure:
         zero_consequents: list[int] = []
         for rule in sorted(framework.rules, key=repr):
             antecedent_bits = tuple(
-                literal_bits[antecedent]
-                for antecedent in frozenset(rule.antecedents)
+                literal_bits[antecedent] for antecedent in frozenset(rule.antecedents)
             )
             consequent = literal_bits[rule.consequent]
             if antecedent_bits:
@@ -65,10 +68,7 @@ class _BitsetHornClosure:
                     waiting_lists[bit].append(rule_index)
             else:
                 zero_consequents.append(consequent)
-        waiting = {
-            bit: tuple(indices)
-            for bit, indices in waiting_lists.items()
-        }
+        waiting = {bit: tuple(indices) for bit, indices in waiting_lists.items()}
         return cls(
             literal_bits,
             assumption_bits,

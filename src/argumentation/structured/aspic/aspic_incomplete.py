@@ -100,7 +100,12 @@ def _completion_subsets(
 def _sort_completions(
     completions: list[frozenset[Literal]],
 ) -> tuple[frozenset[Literal], ...]:
-    return tuple(sorted(completions, key=lambda completion: tuple(map(repr, sorted(completion, key=repr)))))
+    return tuple(
+        sorted(
+            completions,
+            key=lambda completion: tuple(map(repr, sorted(completion, key=repr))),
+        )
+    )
 
 
 __all__ = [

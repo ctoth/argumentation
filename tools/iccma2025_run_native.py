@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=None,
         help=(
-            "JSON file mapping subtrack (e.g. \"DS-PR\") to a per-row wall-clock "
+            'JSON file mapping subtrack (e.g. "DS-PR") to a per-row wall-clock '
             "budget in seconds; subtracks absent from the file fall back to "
             "--timeout-seconds. Omit for the flat single-timeout behaviour."
         ),
@@ -175,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         help=(
-            "Run only this track (e.g. \"main\"); repeat to run multiple tracks. "
+            'Run only this track (e.g. "main"); repeat to run multiple tracks. '
             "Default runs every track, matching the pre-existing behaviour."
         ),
     )
@@ -225,10 +225,14 @@ def main(argv: list[str] | None = None) -> int:
     json_path = output_dir / f"{contest_tag}-{args.label}.json"
     csv_path = output_dir / f"{contest_tag}-{args.label}.csv"
     summary_path = output_dir / f"{contest_tag}-{args.label}-summary.json"
-    json_path.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    json_path.write_text(
+        json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     write_csv(csv_path, rows)
     summary = summarize(rows)
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    summary_path.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(f"wrote {json_path}")
     print(f"wrote {csv_path}")
     print(f"wrote {summary_path}")
@@ -258,7 +262,9 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         config,
         "iccma_manifest_loaded",
         manifest_path=str(manifest_path),
-        task_matrix_path=str(task_matrix_path) if task_matrix_path is not None else None,
+        task_matrix_path=str(task_matrix_path)
+        if task_matrix_path is not None
+        else None,
         instances=len(manifest),
     )
     task_matrix = (
@@ -271,7 +277,8 @@ def run_native(config: RunConfig) -> list[dict[str, Any]]:
         (instance, task)
         for instance in manifest
         if normalized_instance_kind(instance) in {"af", "aba"}
-        if not config.only_instances or str(instance["relative_path"]) in config.only_instances
+        if not config.only_instances
+        or str(instance["relative_path"]) in config.only_instances
         for task in task_matrix
         if task["instance_kind"] == normalized_instance_kind(instance)
         if not config.only_subtracks or str(task["subtrack"]) in config.only_subtracks
@@ -296,7 +303,9 @@ def run_rows_in_job_order(
     """
     total = len(jobs)
 
-    def run_row(index: int, instance: dict[str, Any], task: dict[str, Any]) -> dict[str, Any]:
+    def run_row(
+        index: int, instance: dict[str, Any], task: dict[str, Any]
+    ) -> dict[str, Any]:
         if config.progress:
             log_row_start(config, instance, task, index=index, total=total)
         row = run_or_skip(config, instance, task)
@@ -344,7 +353,9 @@ def normalized_instance_kind(instance: dict[str, Any]) -> str:
     return "af" if kind in AF_KINDS else kind
 
 
-def infer_task_matrix(root: Path, manifest: list[dict[str, Any]]) -> list[dict[str, str]]:
+def infer_task_matrix(
+    root: Path, manifest: list[dict[str, Any]]
+) -> list[dict[str, str]]:
     has_af = any(normalized_instance_kind(instance) == "af" for instance in manifest)
     if not has_af:
         return []
@@ -369,7 +380,11 @@ def infer_af_subtracks(root: Path) -> tuple[str, ...]:
 
 def supported_runner_subtrack(subtrack: str) -> bool:
     parts = subtrack.split("-", maxsplit=1)
-    return len(parts) == 2 and parts[0] in {"DC", "DS", "SE"} and parts[1] in TASK_TO_SEMANTICS
+    return (
+        len(parts) == 2
+        and parts[0] in {"DC", "DS", "SE"}
+        and parts[1] in TASK_TO_SEMANTICS
+    )
 
 
 def log_progress(
@@ -452,13 +467,19 @@ def load_task_budgets(path: Path | None) -> dict[str, float]:
         return {}
     raw = load_json(path)
     if not isinstance(raw, dict):
-        raise ValueError(f"budgets JSON {path} must be an object mapping subtrack to seconds")
+        raise ValueError(
+            f"budgets JSON {path} must be an object mapping subtrack to seconds"
+        )
     budgets: dict[str, float] = {}
     for subtrack, seconds in raw.items():
         if not isinstance(seconds, (int, float)) or isinstance(seconds, bool):
-            raise ValueError(f"budget for {subtrack!r} in {path} must be a number, got {seconds!r}")
+            raise ValueError(
+                f"budget for {subtrack!r} in {path} must be a number, got {seconds!r}"
+            )
         if seconds <= 0:
-            raise ValueError(f"budget for {subtrack!r} in {path} must be positive, got {seconds!r}")
+            raise ValueError(
+                f"budget for {subtrack!r} in {path} must be positive, got {seconds!r}"
+            )
         budgets[str(subtrack)] = float(seconds)
     return budgets
 
@@ -519,7 +540,9 @@ def run_or_skip(
         "backend": config.backend,
         "iccma_binary": config.iccma_binary,
         "solver_timeout_seconds": budget_seconds,
-        "event_log_path": str(config.event_log_path) if config.event_log_path is not None else None,
+        "event_log_path": str(config.event_log_path)
+        if config.event_log_path is not None
+        else None,
         "profile_path": str(worker_profile_path(config, instance, task))
         if should_profile_worker(config, task)
         else None,
@@ -540,7 +563,9 @@ def run_or_skip(
     }
 
 
-def af_argument_count_for_cap(config: RunConfig, instance: dict[str, Any]) -> int | None:
+def af_argument_count_for_cap(
+    config: RunConfig, instance: dict[str, Any]
+) -> int | None:
     if normalized_instance_kind(instance) != "af" or config.max_af_arguments < 0:
         return None
     manifest_count = instance.get("arguments_or_atoms")
@@ -548,7 +573,9 @@ def af_argument_count_for_cap(config: RunConfig, instance: dict[str, Any]) -> in
         return int(manifest_count)
     try:
         path = resolve_instance_path(config.root, instance)
-        return scan_af_argument_count(path, kind=instance["kind"], cap=config.max_af_arguments)
+        return scan_af_argument_count(
+            path, kind=instance["kind"], cap=config.max_af_arguments
+        )
     except Exception:
         return None
 
@@ -801,7 +828,11 @@ def worker_profile_path(
     digest = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:12]
     leaf = Path(relative_path).name
     safe_leaf = re.sub(r"[^A-Za-z0-9_.-]+", "_", leaf)[:80] or "instance"
-    extension = "json" if config.profile_workers_format in {"speedscope", "chrometrace"} else "txt"
+    extension = (
+        "json"
+        if config.profile_workers_format in {"speedscope", "chrometrace"}
+        else "txt"
+    )
     return (
         config.profile_workers_dir
         / f"{task['track']}-{task['subtrack']}-{safe_leaf}-{digest}.{config.profile_workers_format}.{extension}"
@@ -848,12 +879,14 @@ def resolve_instance_path(root: Path, instance: dict[str, Any]) -> Path:
     matches = sorted(
         candidate
         for candidate in instances_root.rglob(relative.name)
-        if candidate.parts[-len(relative.parts):] == relative.parts
+        if candidate.parts[-len(relative.parts) :] == relative.parts
         or candidate.name == relative.name
     )
     if matches:
         return matches[0]
-    raise FileNotFoundError(f"could not resolve instance path: {instance['relative_path']}")
+    raise FileNotFoundError(
+        f"could not resolve instance path: {instance['relative_path']}"
+    )
 
 
 def archive_directory_prefix(archive: str | None) -> str | None:
@@ -876,9 +909,13 @@ def find_query_path(instance_path: Path) -> Path | None:
         candidates.append(instance_path.with_suffix(".arg"))
     name = instance_path.name
     if name.endswith(".apx.lzma"):
-        candidates.append(instance_path.with_name(name.removesuffix(".apx.lzma") + ".apx_arg.lzma"))
+        candidates.append(
+            instance_path.with_name(name.removesuffix(".apx.lzma") + ".apx_arg.lzma")
+        )
     if name.endswith(".tgf.lzma"):
-        candidates.append(instance_path.with_name(name.removesuffix(".tgf.lzma") + ".tgf_arg.lzma"))
+        candidates.append(
+            instance_path.with_name(name.removesuffix(".tgf.lzma") + ".tgf_arg.lzma")
+        )
     for candidate in candidates:
         if candidate.exists():
             return candidate
@@ -1196,13 +1233,21 @@ def solved_decision(
     if problem == "DC":
         answer = any(accepted_by_extension)
         witness = next(
-            (extension for extension, accepted in zip(extension_sets, accepted_by_extension) if accepted),
+            (
+                extension
+                for extension, accepted in zip(extension_sets, accepted_by_extension)
+                if accepted
+            ),
             None,
         )
     elif problem == "DS":
         answer = bool(accepted_by_extension) and all(accepted_by_extension)
         witness = next(
-            (extension for extension, accepted in zip(extension_sets, accepted_by_extension) if not accepted),
+            (
+                extension
+                for extension, accepted in zip(extension_sets, accepted_by_extension)
+                if not accepted
+            ),
             None,
         )
     else:

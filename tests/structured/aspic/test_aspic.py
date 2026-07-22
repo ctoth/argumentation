@@ -26,14 +26,34 @@ from hypothesis import HealthCheck, given, settings, assume
 from hypothesis import strategies as st
 
 from argumentation.structured.aspic.aspic import (
-    Literal, GroundAtom, ContrarinessFn, Rule, transposition_closure,
-    PremiseArg, StrictArg, DefeasibleArg, Argument, Attack,
-    KnowledgeBase, ArgumentationSystem, PreferenceConfig,
-    build_arguments, compute_attacks, compute_defeats,
-    _set_strictly_less, _strictly_weaker, _is_preference_independent_attack,
-    conc, prem, sub, top_rule,
-    def_rules, last_def_rules, prem_p, is_firm, is_strict,
-    CSAF, is_c_consistent, strict_closure,
+    Literal,
+    GroundAtom,
+    ContrarinessFn,
+    Rule,
+    transposition_closure,
+    PremiseArg,
+    StrictArg,
+    DefeasibleArg,
+    Attack,
+    KnowledgeBase,
+    ArgumentationSystem,
+    PreferenceConfig,
+    build_arguments,
+    compute_attacks,
+    compute_defeats,
+    _set_strictly_less,
+    _strictly_weaker,
+    _is_preference_independent_attack,
+    conc,
+    prem,
+    sub,
+    top_rule,
+    def_rules,
+    is_firm,
+    is_strict,
+    CSAF,
+    is_c_consistent,
+    strict_closure,
 )
 from argumentation.core.dung import (
     ArgumentationFramework,
@@ -70,7 +90,10 @@ def logical_language(draw, max_atoms=4):
     )
     # Build contrariness function: each atom and its negation are contradictories
     contradictory_pairs = frozenset(
-        (Literal(atom=GroundAtom(a), negated=False), Literal(atom=GroundAtom(a), negated=True))
+        (
+            Literal(atom=GroundAtom(a), negated=False),
+            Literal(atom=GroundAtom(a), negated=True),
+        )
         for a in atoms
     )
     cfn = ContrarinessFn(contradictories=contradictory_pairs)
@@ -96,9 +119,7 @@ class TestLanguageProperties:
         """
         L, _cfn = lang_cfn
         for lit in L:
-            assert lit.contrary in L, (
-                f"{lit}.contrary = {lit.contrary} not in L"
-            )
+            assert lit.contrary in L, f"{lit}.contrary = {lit.contrary} not in L"
 
     @given(logical_language())
     @settings(deadline=None)
@@ -144,9 +165,7 @@ class TestLanguageProperties:
         """
         L, cfn = lang_cfn
         for lit in L:
-            assert not cfn.is_contrary(lit, lit), (
-                f"{lit} is contrary to itself"
-            )
+            assert not cfn.is_contrary(lit, lit), f"{lit} is contrary to itself"
             assert not cfn.is_contradictory(lit, lit), (
                 f"{lit} is contradictory to itself"
             )
@@ -289,9 +308,7 @@ def strict_rules(draw, language, contrariness, max_rules=4):
     seed_rules: list[Rule] = []
     for _ in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(
-            draw(st.sampled_from(L_list)) for _ in range(n_ante)
-        )
+        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
         consequent = draw(st.sampled_from(L_list))
         # Filter: consequent must not appear in antecedents
         if consequent in antecedents:
@@ -320,16 +337,14 @@ def strict_seed_rules(draw, language, contrariness, max_rules=4):
     seed_rules: list[Rule] = []
     for _ in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(
-            draw(st.sampled_from(L_list)) for _ in range(n_ante)
-        )
+        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
         consequent = draw(st.sampled_from(L_list))
         if consequent in antecedents:
             continue
         if any(
             contrariness.is_contradictory(left, right)
             for index, left in enumerate(antecedents)
-            for right in antecedents[index + 1:]
+            for right in antecedents[index + 1 :]
         ):
             continue
         seed_rules.append(
@@ -392,7 +407,7 @@ def _schema_transpositions(
                 if any(
                     contrariness.is_contradictory(left, right)
                     for left_index, left in enumerate(candidate.antecedents)
-                    for right in candidate.antecedents[left_index + 1:]
+                    for right in candidate.antecedents[left_index + 1 :]
                 ):
                     continue
                 transpositions.add(candidate)
@@ -417,9 +432,7 @@ def defeasible_rules(draw, language, max_rules=4):
     rules: list[Rule] = []
     for i in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(
-            draw(st.sampled_from(L_list)) for _ in range(n_ante)
-        )
+        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
         consequent = draw(st.sampled_from(L_list))
         # Filter: consequent must not appear in antecedents
         if consequent in antecedents:
@@ -447,12 +460,14 @@ class TestRuleProperties:
 
     pytestmark = pytest.mark.property
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_strict_rules_all_strict(self, lc_rules):
         """Every rule from strict_rules() has kind == 'strict'.
@@ -463,12 +478,14 @@ class TestRuleProperties:
         for r in rules:
             assert r.kind == "strict", f"Rule {r} has kind={r.kind}, expected 'strict'"
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            defeasible_rules(language=lc[0]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                defeasible_rules(language=lc[0]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_defeasible_rules_all_defeasible(self, lc_rules):
         """Every rule from defeasible_rules() has kind == 'defeasible'.
@@ -481,12 +498,14 @@ class TestRuleProperties:
                 f"Rule {r} has kind={r.kind}, expected 'defeasible'"
             )
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            defeasible_rules(language=lc[0]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                defeasible_rules(language=lc[0]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_defeasible_rules_all_named(self, lc_rules):
         """Every defeasible rule has name is not None.
@@ -498,13 +517,15 @@ class TestRuleProperties:
         for r in rules:
             assert r.name is not None, f"Defeasible rule {r} has no name"
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
-            defeasible_rules(language=lc[0]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+                defeasible_rules(language=lc[0]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_rule_antecedents_in_language(self, lc_sr_dr):
         """All antecedents and consequents are in L.
@@ -518,13 +539,15 @@ class TestRuleProperties:
                 assert ante in L, f"Antecedent {ante} of rule {r} not in L"
             assert r.consequent in L, f"Consequent {r.consequent} of rule {r} not in L"
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
-            defeasible_rules(language=lc[0]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+                defeasible_rules(language=lc[0]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_consequent_not_in_antecedents(self, lc_sr_dr):
         """No rule has its consequent appearing in its antecedents.
@@ -554,14 +577,18 @@ class TestTranspositionClosure:
 
     pytestmark = pytest.mark.property
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_seed_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_seed_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
-    def test_transposition_closure_is_extensive_for_well_formed_seed_rules(self, lc_rules):
+    def test_transposition_closure_is_extensive_for_well_formed_seed_rules(
+        self, lc_rules
+    ):
         """Seed strict rules are retained by closure.
 
         Grounded in
@@ -573,13 +600,15 @@ class TestTranspositionClosure:
         closed, _post_language = transposition_closure(seed_rules, language, cfn)
         assert seed_rules <= closed
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_seed_rules(language=lc[0], contrariness=lc[1]),
-            strict_seed_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_seed_rules(language=lc[0], contrariness=lc[1]),
+                strict_seed_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_transposition_closure_is_monotone_over_added_seed_rules(self, lc_rules):
         """Adding strict rules cannot shrink the transposition closure.
@@ -598,14 +627,18 @@ class TestTranspositionClosure:
 
         assert closed_seed <= closed_union
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_seed_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_seed_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
-    def test_every_added_rule_matches_prakken_2010_page_12_transposition_schema(self, lc_rules):
+    def test_every_added_rule_matches_prakken_2010_page_12_transposition_schema(
+        self, lc_rules
+    ):
         """Every non-seed closure member is generated by the transposition schema.
 
         Grounded in
@@ -623,12 +656,14 @@ class TestTranspositionClosure:
 
         assert closed - seed_rules <= schema_rules
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_transposition_closure_complete(self, lc_rules):
         """For every strict rule A1,...,An -> C, for every i, the transposed
@@ -655,12 +690,14 @@ class TestTranspositionClosure:
                     f"Transposition of {r} at position {i} missing: {transposed}"
                 )
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_transposition_closure_idempotent(self, lc_rules):
         """Applying transposition_closure again produces no new rules.
@@ -675,12 +712,14 @@ class TestTranspositionClosure:
             f"Closure not idempotent: {len(closed_again)} rules vs {len(rules)}"
         )
 
-    @given(logical_language().flatmap(
-        lambda lc: st.tuples(
-            st.just(lc),
-            strict_rules(language=lc[0], contrariness=lc[1]),
+    @given(
+        logical_language().flatmap(
+            lambda lc: st.tuples(
+                st.just(lc),
+                strict_rules(language=lc[0], contrariness=lc[1]),
+            )
         )
-    ))
+    )
     @settings(deadline=None)
     def test_transposition_closure_preserves_kind(self, lc_rules):
         """All transposed rules have kind == 'strict'.
@@ -700,14 +739,20 @@ class TestTranspositionClosure:
 
         Trivial base case: no rules means no transpositions to generate.
         """
-        L = frozenset({Literal(GroundAtom("p")), Literal(GroundAtom("p"), negated=True)})
+        L = frozenset(
+            {Literal(GroundAtom("p")), Literal(GroundAtom("p"), negated=True)}
+        )
         cfn = ContrarinessFn(
-            contradictories=frozenset({(Literal(GroundAtom("p")), Literal(GroundAtom("p"), negated=True))})
+            contradictories=frozenset(
+                {(Literal(GroundAtom("p")), Literal(GroundAtom("p"), negated=True))}
+            )
         )
         result, _post_language = transposition_closure(frozenset(), L, cfn)
         assert result == frozenset(), f"Expected empty set, got {result}"
 
-    def test_transposition_closure_does_not_erase_unrelated_rules_on_singleton_inconsistency(self):
+    def test_transposition_closure_does_not_erase_unrelated_rules_on_singleton_inconsistency(
+        self,
+    ):
         """Transposition closure must not wipe out unrelated strict rules.
 
         Prakken 2010, Defs 5.1-5.3 (pp. 141-142; local page image
@@ -727,12 +772,14 @@ class TestTranspositionClosure:
         not_s = Literal(GroundAtom("s"), negated=True)
         language = frozenset({p, not_p, q, not_q, r, not_r, s, not_s})
         cfn = ContrarinessFn(
-            contradictories=frozenset({
-                (p, not_p),
-                (q, not_q),
-                (r, not_r),
-                (s, not_s),
-            })
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                    (r, not_r),
+                    (s, not_s),
+                }
+            )
         )
         unrelated = Rule(antecedents=(r,), consequent=s, kind="strict")
         rules = frozenset(
@@ -748,7 +795,9 @@ class TestTranspositionClosure:
         assert unrelated in closed
         assert closed != frozenset()
 
-    def test_transposition_closure_uses_explicit_contradictories_from_contrariness(self):
+    def test_transposition_closure_uses_explicit_contradictories_from_contrariness(
+        self,
+    ):
         """Transposition must follow the supplied contradictory relation.
 
         Prakken 2010, Def. 5.1 (p. 141; local page image
@@ -768,16 +817,20 @@ class TestTranspositionClosure:
         not_s = Literal(GroundAtom("s"), negated=True)
         language = frozenset({p, not_p, q, not_q, r, not_r, s, not_s})
         cfn = ContrarinessFn(
-            contradictories=frozenset({
-                (p, q),
-                (not_p, not_q),
-                (r, s),
-                (not_r, not_s),
-            })
+            contradictories=frozenset(
+                {
+                    (p, q),
+                    (not_p, not_q),
+                    (r, s),
+                    (not_r, not_s),
+                }
+            )
         )
         original = Rule(antecedents=(p,), consequent=r, kind="strict")
 
-        closed, _post_language = transposition_closure(frozenset({original}), language, cfn)
+        closed, _post_language = transposition_closure(
+            frozenset({original}), language, cfn
+        )
 
         assert Rule(antecedents=(s,), consequent=q, kind="strict") in closed
 
@@ -803,10 +856,12 @@ class TestRuleConcrete:
 
         L = frozenset({married, not_married, bachelor, not_bachelor})
         cfn = ContrarinessFn(
-            contradictories=frozenset({
-                (married, not_married),
-                (bachelor, not_bachelor),
-            })
+            contradictories=frozenset(
+                {
+                    (married, not_married),
+                    (bachelor, not_bachelor),
+                }
+            )
         )
 
         # Original rule: married -> ~bachelor
@@ -862,16 +917,12 @@ def knowledge_base(draw, language, strict_rules, defeasible_rules):
         forced_premises = frozenset(target.antecedents)
 
     # Draw additional K_p members from L (up to 4 total)
-    extra_kp = draw(
-        st.frozensets(st.sampled_from(L_list), max_size=4)
-    )
+    extra_kp = draw(st.frozensets(st.sampled_from(L_list), max_size=4))
     K_p = forced_premises | extra_kp
 
     # Draw K_n members from L (up to 2), ensuring consistency
     # (no literal and its contrary both in K_n)
-    K_n_candidates = draw(
-        st.frozensets(st.sampled_from(L_list), max_size=2)
-    )
+    K_n_candidates = draw(st.frozensets(st.sampled_from(L_list), max_size=2))
     # Filter: no contradictory pair in K_n
     K_n = frozenset()
     for lit in K_n_candidates:
@@ -885,40 +936,38 @@ def knowledge_base(draw, language, strict_rules, defeasible_rules):
 
 
 @st.composite
-def well_defined_knowledge_base(draw, language, strict_rules, defeasible_rules, contrariness):
+def well_defined_knowledge_base(
+    draw, language, strict_rules, defeasible_rules, contrariness
+):
     """Generate a KB whose axioms and full base are c-consistent."""
     L_list = sorted(language, key=repr)
     all_rules = list(strict_rules) + list(defeasible_rules)
 
     forced_premises: frozenset[Literal] = frozenset()
     candidate_rules = [
-        rule for rule in all_rules
+        rule
+        for rule in all_rules
         if is_c_consistent(frozenset(rule.antecedents), strict_rules, contrariness)
     ]
     if candidate_rules:
         target = draw(st.sampled_from(candidate_rules))
         forced_premises = frozenset(target.antecedents)
 
-    extra_kp = draw(
-        st.frozensets(st.sampled_from(L_list), max_size=4)
-    )
+    extra_kp = draw(st.frozensets(st.sampled_from(L_list), max_size=4))
     K_p = frozenset(forced_premises)
     for lit in extra_kp:
         tentative = K_p | {lit}
         if is_c_consistent(tentative, strict_rules, contrariness):
             K_p = tentative
 
-    K_n_candidates = draw(
-        st.frozensets(st.sampled_from(L_list), max_size=2)
-    )
+    K_n_candidates = draw(st.frozensets(st.sampled_from(L_list), max_size=2))
     K_n = frozenset()
     for lit in K_n_candidates:
         if lit in K_p:
             continue
         tentative = K_n | {lit}
-        if (
-            is_c_consistent(tentative, strict_rules, contrariness)
-            and is_c_consistent(tentative | K_p, strict_rules, contrariness)
+        if is_c_consistent(tentative, strict_rules, contrariness) and is_c_consistent(
+            tentative | K_p, strict_rules, contrariness
         ):
             K_n = tentative
 
@@ -977,9 +1026,7 @@ class TestArgumentConstructionProperties:
         kb = data.draw(knowledge_base(L, R_s, R_d))
         arguments = build_arguments(system, kb)
         for arg in arguments:
-            assert arg in sub(arg), (
-                f"Argument {arg} not in its own sub-arguments"
-            )
+            assert arg in sub(arg), f"Argument {arg} not in its own sub-arguments"
 
     @given(data=st.data())
     @settings(deadline=None)
@@ -998,9 +1045,7 @@ class TestArgumentConstructionProperties:
         arguments = build_arguments(system, kb)
         for arg in arguments:
             for b in sub(arg):
-                assert sub(b) <= sub(arg), (
-                    f"sub({b}) not subset of sub({arg})"
-                )
+                assert sub(b) <= sub(arg), f"sub({b}) not subset of sub({arg})"
 
     @given(data=st.data())
     @settings(deadline=None)
@@ -1049,9 +1094,7 @@ class TestArgumentConstructionProperties:
         kb = data.draw(knowledge_base(L, R_s, R_d))
         arguments = build_arguments(system, kb)
         for arg in arguments:
-            assert conc(arg) in L, (
-                f"conc({arg}) = {conc(arg)} not in L"
-            )
+            assert conc(arg) in L, f"conc({arg}) = {conc(arg)} not in L"
 
     @given(data=st.data())
     @settings(deadline=None)
@@ -1135,8 +1178,7 @@ class TestArgumentConstructionProperties:
         for arg in arguments:
             expected = prem(arg) <= kb.axioms
             assert is_firm(arg) == expected, (
-                f"is_firm({arg}) = {is_firm(arg)}, "
-                f"but prem(A) <= K_n is {expected}"
+                f"is_firm({arg}) = {is_firm(arg)}, but prem(A) <= K_n is {expected}"
             )
 
     @given(data=st.data())
@@ -1183,9 +1225,9 @@ class TestArgumentConstructionProperties:
         # property must restrict itself to that well-defined fragment.
         assume(is_c_consistent(kb.axioms, R_s, cfn))
         arguments = build_arguments(system, kb)
-        assert any(
-            is_firm(a) and is_strict(a) for a in arguments
-        ), "K_n nonempty but no firm+strict argument found"
+        assert any(is_firm(a) and is_strict(a) for a in arguments), (
+            "K_n nonempty but no firm+strict argument found"
+        )
 
     @given(data=st.data())
     @settings(deadline=None)
@@ -1207,18 +1249,18 @@ class TestArgumentConstructionProperties:
         system = ArgumentationSystem(L, cfn, R_s, R_d)
         kb = data.draw(knowledge_base(L, R_s, R_d))
         arguments = build_arguments(system, kb)
-        assume(any(
-            frozenset(rule.antecedents) <= (kb.axioms | kb.premises)
-            and is_c_consistent(
-                frozenset(rule.antecedents),
-                system.strict_rules,
-                system.contrariness,
+        assume(
+            any(
+                frozenset(rule.antecedents) <= (kb.axioms | kb.premises)
+                and is_c_consistent(
+                    frozenset(rule.antecedents),
+                    system.strict_rules,
+                    system.contrariness,
+                )
+                for rule in all_rules
             )
-            for rule in all_rules
-        ))
-        non_premise = [
-            a for a in arguments if not isinstance(a, PremiseArg)
-        ]
+        )
+        non_premise = [a for a in arguments if not isinstance(a, PremiseArg)]
         assert len(non_premise) > 0, (
             "Rules exist and antecedents are in K, "
             "but no non-PremiseArg was constructed"
@@ -1248,9 +1290,15 @@ class TestArgumentConstructionConcrete:
         not_r = r.contrary
 
         L = frozenset({p, q, r, not_p, not_q, not_r})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q), (r, not_r),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                    (r, not_r),
+                }
+            )
+        )
 
         rule_pq_r = Rule(
             antecedents=(p, q),
@@ -1288,9 +1336,7 @@ class TestArgumentConstructionConcrete:
         )
 
         # Conclusion of the compound is r
-        assert conc(compound) == r, (
-            f"Expected conc = r, got {conc(compound)}"
-        )
+        assert conc(compound) == r, f"Expected conc = r, got {conc(compound)}"
 
     def test_c_inconsistent_argument_is_not_constructed(self):
         """An argument with c-inconsistent premises must be excluded."""
@@ -1302,15 +1348,23 @@ class TestArgumentConstructionConcrete:
         not_r = r.contrary
 
         L = frozenset({p, not_p, q, not_q, r, not_r})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q), (r, not_r),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                    (r, not_r),
+                }
+            )
+        )
         strict_rules, _post_language = transposition_closure(
-            frozenset({
-                Rule((p,), q, "strict"),
-                Rule((not_q,), not_p, "strict"),
-                Rule((p, not_q), r, "strict"),
-            }),
+            frozenset(
+                {
+                    Rule((p,), q, "strict"),
+                    Rule((not_q,), not_p, "strict"),
+                    Rule((p, not_q), r, "strict"),
+                }
+            ),
             L,
             cfn,
         )
@@ -1395,11 +1449,10 @@ class TestAttackProperties:
             if atk.kind == "rebutting":
                 tr = top_rule(atk.target_sub)
                 assert tr is not None, (
-                    f"Rebutting target_sub has no top rule (PremiseArg)"
+                    "Rebutting target_sub has no top rule (PremiseArg)"
                 )
                 assert tr.kind == "defeasible", (
-                    f"Rebutting target_sub top rule is {tr.kind}, "
-                    f"expected 'defeasible'"
+                    f"Rebutting target_sub top rule is {tr.kind}, expected 'defeasible'"
                 )
 
     @given(data=st.data())
@@ -1422,7 +1475,7 @@ class TestAttackProperties:
             if atk.kind == "undercutting":
                 tr = top_rule(atk.target_sub)
                 assert tr is not None, (
-                    f"Undercutting target_sub has no top rule (PremiseArg)"
+                    "Undercutting target_sub has no top rule (PremiseArg)"
                 )
                 assert tr.kind == "defeasible", (
                     f"Undercutting target_sub top rule is {tr.kind}, "
@@ -1449,8 +1502,7 @@ class TestAttackProperties:
         attacks = compute_attacks(arguments, system)
         for atk in attacks:
             assert not (is_firm(atk.target_sub) and is_strict(atk.target_sub)), (
-                f"Attack {atk.kind} targets firm+strict sub-argument "
-                f"{atk.target_sub}"
+                f"Attack {atk.kind} targets firm+strict sub-argument {atk.target_sub}"
             )
 
     @given(data=st.data())
@@ -1472,9 +1524,7 @@ class TestAttackProperties:
             assert atk.attacker in arguments, (
                 f"Attacker {atk.attacker} not in argument set"
             )
-            assert atk.target in arguments, (
-                f"Target {atk.target} not in argument set"
-            )
+            assert atk.target in arguments, f"Target {atk.target} not in argument set"
 
     @given(data=st.data())
     @settings(deadline=None)
@@ -1593,17 +1643,25 @@ class TestAttackConcrete:
         not_q = q.contrary
 
         L = frozenset({p, not_p, q, not_q})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                }
+            )
+        )
 
         rule_p_q = Rule(
-            antecedents=(p,), consequent=q,
-            kind="defeasible", name="d0",
+            antecedents=(p,),
+            consequent=q,
+            kind="defeasible",
+            name="d0",
         )
 
         system = ArgumentationSystem(
-            language=L, contrariness=cfn,
+            language=L,
+            contrariness=cfn,
             strict_rules=frozenset(),
             defeasible_rules=frozenset({rule_p_q}),
         )
@@ -1618,7 +1676,8 @@ class TestAttackConcrete:
         prem_p_arg = PremiseArg(premise=p, is_axiom=False)
         prem_not_p_arg = PremiseArg(premise=not_p, is_axiom=False)
         compound_q = DefeasibleArg(
-            sub_args=(prem_p_arg,), rule=rule_p_q,
+            sub_args=(prem_p_arg,),
+            rule=rule_p_q,
         )
 
         # The argument for ~p undermines the argument for q on PremiseArg(p)
@@ -1654,17 +1713,26 @@ class TestAttackConcrete:
         not_d0 = d0.contrary
 
         L = frozenset({p, not_p, q, not_q, d0, not_d0})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q), (d0, not_d0),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                    (d0, not_d0),
+                }
+            )
+        )
 
         rule_p_q = Rule(
-            antecedents=(p,), consequent=q,
-            kind="defeasible", name="d0",
+            antecedents=(p,),
+            consequent=q,
+            kind="defeasible",
+            name="d0",
         )
 
         system = ArgumentationSystem(
-            language=L, contrariness=cfn,
+            language=L,
+            contrariness=cfn,
             strict_rules=frozenset(),
             defeasible_rules=frozenset({rule_p_q}),
         )
@@ -1679,7 +1747,8 @@ class TestAttackConcrete:
         prem_p_arg = PremiseArg(premise=p, is_axiom=False)
         prem_not_d0_arg = PremiseArg(premise=not_d0, is_axiom=False)
         compound_q = DefeasibleArg(
-            sub_args=(prem_p_arg,), rule=rule_p_q,
+            sub_args=(prem_p_arg,),
+            rule=rule_p_q,
         )
 
         # The argument for ~d0 undercuts the argument for q
@@ -1814,8 +1883,7 @@ class TestDefeatProperties:
 
         # Every undercutting attack must appear in defeats
         undercutting_attacks = {
-            (atk.attacker, atk.target)
-            for atk in attacks if atk.kind == "undercutting"
+            (atk.attacker, atk.target) for atk in attacks if atk.kind == "undercutting"
         }
         defeat_pairs = {(d.attacker, d.target) for d in defeats}
         for pair in undercutting_attacks:
@@ -1843,10 +1911,7 @@ class TestDefeatProperties:
         pref = data.draw(preference_config(R_d, kb.premises))
         defeats = compute_defeats(attacks, arguments, system, kb, pref)
 
-        attack_pairs = {
-            (atk.attacker, atk.target, atk.target_sub)
-            for atk in attacks
-        }
+        attack_pairs = {(atk.attacker, atk.target, atk.target_sub) for atk in attacks}
         for d in defeats:
             assert (d.attacker, d.target, d.target_sub) in attack_pairs, (
                 f"Defeat {d} has no corresponding attack"
@@ -1907,10 +1972,7 @@ class TestDefeatProperties:
         pref = data.draw(preference_config(R_d, kb.premises))
         defeats = compute_defeats(attacks, arguments, system, kb, pref)
 
-        attack_pairs = {
-            (atk.attacker, atk.target, atk.target_sub)
-            for atk in attacks
-        }
+        attack_pairs = {(atk.attacker, atk.target, atk.target_sub) for atk in attacks}
         for d in defeats:
             # The defeat must correspond to an attack in the same direction.
             assert (d.attacker, d.target, d.target_sub) in attack_pairs, (
@@ -1996,9 +2058,7 @@ class TestDefeatProperties:
         for atk in attacks:
             if atk.attacker == atk.target:
                 expected = _is_preference_independent_attack(atk, system) or (
-                    not _strictly_weaker(
-                        atk.attacker, atk.target_sub, pref_weakest, kb
-                    )
+                    not _strictly_weaker(atk.attacker, atk.target_sub, pref_weakest, kb)
                 )
                 actual = atk in defeats
                 assert actual == expected, (
@@ -2061,15 +2121,9 @@ class TestSetComparisonProperties:
     def test_elitist_matches_definition_19(self, ranking, gamma, gamma_prime):
         order_index = {item: idx for idx, item in enumerate(ranking)}
         base_order = frozenset(
-            (x, y)
-            for x in ranking
-            for y in ranking
-            if order_index[x] < order_index[y]
+            (x, y) for x in ranking for y in ranking if order_index[x] < order_index[y]
         )
-        expected = any(
-            all((x, y) in base_order for y in gamma_prime)
-            for x in gamma
-        )
+        expected = any(all((x, y) in base_order for y in gamma_prime) for x in gamma)
         actual = _set_strictly_less(
             frozenset(gamma),
             frozenset(gamma_prime),
@@ -2087,15 +2141,9 @@ class TestSetComparisonProperties:
     def test_democratic_matches_definition_19(self, ranking, gamma, gamma_prime):
         order_index = {item: idx for idx, item in enumerate(ranking)}
         base_order = frozenset(
-            (x, y)
-            for x in ranking
-            for y in ranking
-            if order_index[x] < order_index[y]
+            (x, y) for x in ranking for y in ranking if order_index[x] < order_index[y]
         )
-        expected = all(
-            any((x, y) in base_order for y in gamma_prime)
-            for x in gamma
-        )
+        expected = all(any((x, y) in base_order for y in gamma_prime) for x in gamma)
         actual = _set_strictly_less(
             frozenset(gamma),
             frozenset(gamma_prime),
@@ -2210,22 +2258,32 @@ class TestDefeatConcrete:
         not_q = q.contrary
 
         L = frozenset({p, not_p, q, not_q})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                }
+            )
+        )
 
         # Two defeasible rules: both from p, one to q, one to ~q
         rule_strong = Rule(
-            antecedents=(p,), consequent=q,
-            kind="defeasible", name="d_strong",
+            antecedents=(p,),
+            consequent=q,
+            kind="defeasible",
+            name="d_strong",
         )
         rule_weak = Rule(
-            antecedents=(p,), consequent=not_q,
-            kind="defeasible", name="d_weak",
+            antecedents=(p,),
+            consequent=not_q,
+            kind="defeasible",
+            name="d_weak",
         )
 
         system = ArgumentationSystem(
-            language=L, contrariness=cfn,
+            language=L,
+            contrariness=cfn,
             strict_rules=frozenset(),
             defeasible_rules=frozenset({rule_strong, rule_weak}),
         )
@@ -2253,13 +2311,11 @@ class TestDefeatConcrete:
         # Strong defeats weak (A's attack on B succeeds: A not < B)
         defeat_pairs = {(d.attacker, d.target) for d in defeats}
         assert (arg_q, arg_not_q) in defeat_pairs, (
-            f"Stronger argument should defeat weaker. "
-            f"Defeats: {defeat_pairs}"
+            f"Stronger argument should defeat weaker. Defeats: {defeat_pairs}"
         )
         # Weak does NOT defeat strong (B's attack on A fails: B < A)
         assert (arg_not_q, arg_q) not in defeat_pairs, (
-            f"Weaker argument should not defeat stronger. "
-            f"Defeats: {defeat_pairs}"
+            f"Weaker argument should not defeat stronger. Defeats: {defeat_pairs}"
         )
 
     def test_equal_strength_mutual_defeat(self):
@@ -2276,21 +2332,31 @@ class TestDefeatConcrete:
         not_q = q.contrary
 
         L = frozenset({p, not_p, q, not_q})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (p, not_p), (q, not_q),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (p, not_p),
+                    (q, not_q),
+                }
+            )
+        )
 
         rule_a = Rule(
-            antecedents=(p,), consequent=q,
-            kind="defeasible", name="d_a",
+            antecedents=(p,),
+            consequent=q,
+            kind="defeasible",
+            name="d_a",
         )
         rule_b = Rule(
-            antecedents=(p,), consequent=not_q,
-            kind="defeasible", name="d_b",
+            antecedents=(p,),
+            consequent=not_q,
+            kind="defeasible",
+            name="d_b",
         )
 
         system = ArgumentationSystem(
-            language=L, contrariness=cfn,
+            language=L,
+            contrariness=cfn,
             strict_rules=frozenset(),
             defeasible_rules=frozenset({rule_a, rule_b}),
         )
@@ -2318,12 +2384,10 @@ class TestDefeatConcrete:
         defeat_pairs = {(d.attacker, d.target) for d in defeats}
         # Both directions should be defeats (mutual defeat)
         assert (arg_q, arg_not_q) in defeat_pairs, (
-            f"Equal-strength: arg_q should defeat arg_not_q. "
-            f"Defeats: {defeat_pairs}"
+            f"Equal-strength: arg_q should defeat arg_not_q. Defeats: {defeat_pairs}"
         )
         assert (arg_not_q, arg_q) in defeat_pairs, (
-            f"Equal-strength: arg_not_q should defeat arg_q. "
-            f"Defeats: {defeat_pairs}"
+            f"Equal-strength: arg_not_q should defeat arg_q. Defeats: {defeat_pairs}"
         )
 
     def test_elitist_last_link_blocks_rebut_when_attacker_is_strictly_weaker(self):
@@ -2432,11 +2496,13 @@ class TestDefeatConcrete:
         attacks = compute_attacks(arguments, system)
 
         pref_last = PreferenceConfig(
-            rule_order=frozenset({
-                (d_weak, t_mid),
-                (t_mid, d_strong),
-                (d_weak, d_strong),
-            }),
+            rule_order=frozenset(
+                {
+                    (d_weak, t_mid),
+                    (t_mid, d_strong),
+                    (d_weak, d_strong),
+                }
+            ),
             premise_order=frozenset(),
             comparison="elitist",
             link="last",
@@ -2508,9 +2574,7 @@ def well_formed_csaf(draw, max_atoms=4, max_strict=3, max_defeasible=4):
     defeat_attacks = compute_defeats(attacks, arguments, system, kb, pref)
 
     # Extract defeat pairs (Argument, Argument) from Attack objects
-    defeats = frozenset(
-        (atk.attacker, atk.target) for atk in defeat_attacks
-    )
+    defeats = frozenset((atk.attacker, atk.target) for atk in defeat_attacks)
 
     # Build Dung AF
     # Assign string IDs to arguments for the Dung layer
@@ -2533,9 +2597,15 @@ def well_formed_csaf(draw, max_atoms=4, max_strict=3, max_defeasible=4):
     )
 
     return CSAF(
-        system=system, kb=kb, pref=pref, arguments=arguments,
-        attacks=attacks, defeats=defeats, framework=af,
-        arg_to_id=arg_to_id, id_to_arg=id_to_arg,
+        system=system,
+        kb=kb,
+        pref=pref,
+        arguments=arguments,
+        attacks=attacks,
+        defeats=defeats,
+        framework=af,
+        arg_to_id=arg_to_id,
+        id_to_arg=id_to_arg,
     )
 
 
@@ -2599,9 +2669,7 @@ class TestRationalityPostulates:
             csaf.framework,
             max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
         ):
-            conclusions = frozenset(
-                conc(csaf.id_to_arg[aid]) for aid in ext_ids
-            )
+            conclusions = frozenset(conc(csaf.id_to_arg[aid]) for aid in ext_ids)
             closed = strict_closure(conclusions, csaf.system.strict_rules)
             assert closed == conclusions, (
                 f"Strict closure added: {closed - conclusions}"
@@ -2625,7 +2693,7 @@ class TestRationalityPostulates:
         ):
             conclusions = [conc(csaf.id_to_arg[aid]) for aid in ext_ids]
             for i, c1 in enumerate(conclusions):
-                for c2 in conclusions[i + 1:]:
+                for c2 in conclusions[i + 1 :]:
                     assert not csaf.system.contrariness.is_contradictory(c1, c2), (
                         f"Direct inconsistency: {c1} and {c2} are contradictories"
                     )
@@ -2649,13 +2717,11 @@ class TestRationalityPostulates:
             csaf.framework,
             max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
         ):
-            conclusions = frozenset(
-                conc(csaf.id_to_arg[aid]) for aid in ext_ids
-            )
+            conclusions = frozenset(conc(csaf.id_to_arg[aid]) for aid in ext_ids)
             closed = strict_closure(conclusions, csaf.system.strict_rules)
             closed_list = list(closed)
             for i, c1 in enumerate(closed_list):
-                for c2 in closed_list[i + 1:]:
+                for c2 in closed_list[i + 1 :]:
                     assert not csaf.system.contrariness.is_contradictory(c1, c2), (
                         f"Indirect inconsistency: {c1} and {c2} are "
                         f"contradictories in Cl_Rs(Conc(E))"
@@ -2675,8 +2741,7 @@ class TestRationalityPostulates:
         9-11, p.17), this means they are in every complete extension.
         """
         firm_strict_ids = {
-            csaf.arg_to_id[a] for a in csaf.arguments
-            if is_firm(a) and is_strict(a)
+            csaf.arg_to_id[a] for a in csaf.arguments if is_firm(a) and is_strict(a)
         }
         for ext_ids in complete_extensions(
             csaf.framework,
@@ -2723,8 +2788,7 @@ class TestRationalityPostulates:
             max_candidates=ASPIC_RATIONALITY_MAX_COMPLETE_CANDIDATES,
         ):
             assert conflict_free(ext_ids, csaf.framework.attacks), (
-                f"Complete extension {ext_ids} is not attack-based "
-                f"conflict-free"
+                f"Complete extension {ext_ids} is not attack-based conflict-free"
             )
 
     @given(exact_complete_extension_csaf())
@@ -2783,10 +2847,14 @@ class TestRationalityPostulatesConcrete:
         not_bachelor = Literal(GroundAtom("bachelor"), negated=True)
 
         L = frozenset({married, not_married, bachelor, not_bachelor})
-        cfn = ContrarinessFn(contradictories=frozenset({
-            (married, not_married),
-            (bachelor, not_bachelor),
-        }))
+        cfn = ContrarinessFn(
+            contradictories=frozenset(
+                {
+                    (married, not_married),
+                    (bachelor, not_bachelor),
+                }
+            )
+        )
 
         # Strict rule: married -> ~bachelor
         rule_m_nb = Rule(
@@ -2800,7 +2868,8 @@ class TestRationalityPostulatesConcrete:
         R_s, _post_language = transposition_closure(frozenset({rule_m_nb}), L, cfn)
 
         system = ArgumentationSystem(
-            language=L, contrariness=cfn,
+            language=L,
+            contrariness=cfn,
             strict_rules=R_s,
             defeasible_rules=frozenset(),
         )
@@ -2819,9 +2888,7 @@ class TestRationalityPostulatesConcrete:
         arguments = build_arguments(system, kb)
         attacks_set = compute_attacks(arguments, system)
         defeat_attacks = compute_defeats(attacks_set, arguments, system, kb, pref)
-        defeats = frozenset(
-            (atk.attacker, atk.target) for atk in defeat_attacks
-        )
+        defeats = frozenset((atk.attacker, atk.target) for atk in defeat_attacks)
 
         arg_list = sorted(arguments, key=lambda a: repr(a))
         arg_to_id = {a: f"arg_{i}" for i, a in enumerate(arg_list)}
@@ -2842,9 +2909,15 @@ class TestRationalityPostulatesConcrete:
         )
 
         csaf = CSAF(
-            system=system, kb=kb, pref=pref, arguments=arguments,
-            attacks=attacks_set, defeats=defeats, framework=af,
-            arg_to_id=arg_to_id, id_to_arg=id_to_arg,
+            system=system,
+            kb=kb,
+            pref=pref,
+            arguments=arguments,
+            attacks=attacks_set,
+            defeats=defeats,
+            framework=af,
+            arg_to_id=arg_to_id,
+            id_to_arg=id_to_arg,
         )
 
         # Compute grounded extension

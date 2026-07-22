@@ -32,9 +32,15 @@ def to_json(condition: AcceptanceCondition) -> dict[str, Any]:
     if isinstance(condition, _Not):
         return {"op": "Not", "child": to_json(condition.child)}
     if isinstance(condition, _And):
-        return {"op": "And", "children": [to_json(child) for child in condition.children]}
+        return {
+            "op": "And",
+            "children": [to_json(child) for child in condition.children],
+        }
     if isinstance(condition, _Or):
-        return {"op": "Or", "children": [to_json(child) for child in condition.children]}
+        return {
+            "op": "Or",
+            "children": [to_json(child) for child in condition.children],
+        }
     if isinstance(condition, True_):
         return {"op": "True"}
     if isinstance(condition, False_):
@@ -66,9 +72,17 @@ def write_iccma_formula(condition: AcceptanceCondition) -> str:
     if isinstance(condition, _Not):
         return f"not({write_iccma_formula(condition.child)})"
     if isinstance(condition, _And):
-        return "and(" + ",".join(write_iccma_formula(child) for child in condition.children) + ")"
+        return (
+            "and("
+            + ",".join(write_iccma_formula(child) for child in condition.children)
+            + ")"
+        )
     if isinstance(condition, _Or):
-        return "or(" + ",".join(write_iccma_formula(child) for child in condition.children) + ")"
+        return (
+            "or("
+            + ",".join(write_iccma_formula(child) for child in condition.children)
+            + ")"
+        )
     if isinstance(condition, True_):
         return "true"
     if isinstance(condition, False_):
@@ -116,7 +130,7 @@ class _FormulaParser:
     def expect_end(self) -> None:
         self._skip_ws()
         if self.index != len(self.text):
-            raise ValueError(f"unexpected formula suffix: {self.text[self.index:]!r}")
+            raise ValueError(f"unexpected formula suffix: {self.text[self.index :]!r}")
 
     def _name(self) -> str:
         self._skip_ws()
@@ -127,7 +141,7 @@ class _FormulaParser:
             self.index += 1
         if start == self.index:
             raise ValueError(f"expected formula token at {self.index}")
-        return self.text[start:self.index]
+        return self.text[start : self.index]
 
     def _literal(self, value: str) -> None:
         self._skip_ws()

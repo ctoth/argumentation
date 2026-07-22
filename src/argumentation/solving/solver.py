@@ -17,7 +17,6 @@ from argumentation.structured.aba.aba_sat import (
     sat_stable_extension as sat_aba_stable_extension,
     sat_support_acceptance as sat_aba_support_acceptance,
     sat_support_extension as sat_aba_support_extension,
-    support_extensions as sat_aba_support_extensions,
 )
 from argumentation.solving.af_sat import (
     AfSatCheckTimeout,
@@ -219,9 +218,8 @@ def solve_aba_single_extension(
     if backend == "sat":
         if not isinstance(framework, ABAFramework):
             return _aba_sat_requires_flat_framework()
-        if (
-            semantics in {"preferred", "stable"}
-            and sparse_narrow_native_sat_shape(framework)
+        if semantics in {"preferred", "stable"} and sparse_narrow_native_sat_shape(
+            framework
         ):
             try:
                 result = native_sparse_narrow_aba_extension(framework, semantics)
@@ -405,7 +403,9 @@ def solve_dung_single_extension(
             if semantics == "complete":
                 single_kwargs["engine"] = _flat_sat_engine("complete", framework)
             elif semantics == "preferred":
-                single_kwargs["engine"] = _flat_sat_engine("preferred_witness", framework)
+                single_kwargs["engine"] = _flat_sat_engine(
+                    "preferred_witness", framework
+                )
             try:
                 return SingleExtensionSolverSuccess(
                     extension=find_single(framework, **single_kwargs),
@@ -518,7 +518,8 @@ def _auto_dung_single_backend(backend: str, semantics: str) -> str:
     if backend == "auto":
         return (
             "sat"
-            if semantics in {"complete", "ideal", "preferred", "semi-stable", "stable", "stage"}
+            if semantics
+            in {"complete", "ideal", "preferred", "semi-stable", "stable", "stage"}
             else "native"
         )
     return backend
@@ -536,16 +537,10 @@ def _auto_dung_acceptance_backend(backend: str, semantics: str, task: str) -> st
 
 def _auto_aba_backend(backend: str, semantics: str, *, task: str) -> str:
     if backend == "auto":
-        if (
-            _has_clingo()
-            and (
-                semantics == "grounded"
-                or (
-                    semantics == "preferred"
-                    and task in {"single-extension", "skeptical"}
-                )
-                or (semantics == "stable" and task == "single-extension")
-            )
+        if _has_clingo() and (
+            semantics == "grounded"
+            or (semantics == "preferred" and task in {"single-extension", "skeptical"})
+            or (semantics == "stable" and task == "single-extension")
         ):
             return "asp"
         return "sat" if semantics in {"complete", "preferred", "stable"} else "native"
@@ -667,7 +662,9 @@ def _solve_asp_aba_single_extension(
     )
     if result.status == "success":
         extension = result.extensions[0] if result.extensions else None
-        return SingleExtensionSolverSuccess(extension=extension, metadata=dict(result.metadata))
+        return SingleExtensionSolverSuccess(
+            extension=extension, metadata=dict(result.metadata)
+        )
     return _aba_asp_failure(result)
 
 
@@ -692,7 +689,9 @@ def _solve_asp_aba_acceptance(
             answer=result.answer,
             witness=result.witness if task == "credulous" and result.answer else None,
             counterexample=(
-                result.counterexample if task == "skeptical" and not result.answer else None
+                result.counterexample
+                if task == "skeptical" and not result.answer
+                else None
             ),
             metadata=dict(result.metadata),
         )
@@ -701,7 +700,12 @@ def _solve_asp_aba_acceptance(
 
 def _aba_asp_failure(
     result,
-) -> SolverBackendUnavailable | SolverBackendError | SolverBackendTimeout | SolverProtocolError:
+) -> (
+    SolverBackendUnavailable
+    | SolverBackendError
+    | SolverBackendTimeout
+    | SolverProtocolError
+):
     reason = result.metadata.get("reason", result.status)
     stdout = result.metadata.get("stdout", "")
     stderr = result.metadata.get("stderr", "")
@@ -822,7 +826,7 @@ def _solve_sat_acceptance(
     (framework, *, require_in/require_out, trace_sink, metadata,
     check_budget_seconds) signature. ``engine`` is forwarded only when set, so
     finders without an engine parameter (semi-stable, stage) keep working."""
-    shared = dict(
+    shared: dict[str, object] = dict(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
@@ -1184,13 +1188,21 @@ def _adf_models(
     if semantics == "grounded":
         return (frozenset(adf_semantics.grounded_interpretation(framework)),)
     if semantics == "complete":
-        return tuple(frozenset(model) for model in adf_semantics.complete_models(framework))
+        return tuple(
+            frozenset(model) for model in adf_semantics.complete_models(framework)
+        )
     if semantics == "model":
-        return tuple(frozenset(model) for model in adf_semantics.model_models(framework))
+        return tuple(
+            frozenset(model) for model in adf_semantics.model_models(framework)
+        )
     if semantics == "preferred":
-        return tuple(frozenset(model) for model in adf_semantics.preferred_models(framework))
+        return tuple(
+            frozenset(model) for model in adf_semantics.preferred_models(framework)
+        )
     if semantics == "stable":
-        return tuple(frozenset(model) for model in adf_semantics.stable_models(framework))
+        return tuple(
+            frozenset(model) for model in adf_semantics.stable_models(framework)
+        )
     raise ValueError(f"Unknown ADF semantics: {semantics}")
 
 
@@ -1201,15 +1213,30 @@ def _setaf_extensions(
     if semantics == "grounded":
         return (frozenset(setaf_semantics.grounded_extension(framework)),)
     if semantics == "complete":
-        return tuple(frozenset(extension) for extension in setaf_semantics.complete_extensions(framework))
+        return tuple(
+            frozenset(extension)
+            for extension in setaf_semantics.complete_extensions(framework)
+        )
     if semantics == "preferred":
-        return tuple(frozenset(extension) for extension in setaf_semantics.preferred_extensions(framework))
+        return tuple(
+            frozenset(extension)
+            for extension in setaf_semantics.preferred_extensions(framework)
+        )
     if semantics == "stable":
-        return tuple(frozenset(extension) for extension in setaf_semantics.stable_extensions(framework))
+        return tuple(
+            frozenset(extension)
+            for extension in setaf_semantics.stable_extensions(framework)
+        )
     if semantics == "semi-stable":
-        return tuple(frozenset(extension) for extension in setaf_semantics.semi_stable_extensions(framework))
+        return tuple(
+            frozenset(extension)
+            for extension in setaf_semantics.semi_stable_extensions(framework)
+        )
     if semantics == "stage":
-        return tuple(frozenset(extension) for extension in setaf_semantics.stage_extensions(framework))
+        return tuple(
+            frozenset(extension)
+            for extension in setaf_semantics.stage_extensions(framework)
+        )
     raise ValueError(f"Unknown SETAF semantics: {semantics}")
 
 

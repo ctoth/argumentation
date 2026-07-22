@@ -33,7 +33,9 @@ from argumentation.structured.aba.aba_preprocessing import (
     grounded_assumption_set_via_closures,
 )
 
-DATA_ROOT = Path(r"C:\Users\Q\code\argumentation\data\iccma\2025\extracted\instances\ABAs")
+DATA_ROOT = Path(
+    r"C:\Users\Q\code\argumentation\data\iccma\2025\extracted\instances\ABAs"
+)
 NAMED_ROWS = ("aba_2000_0.1_5_5_1.aba", "aba_2000_0.1_5_5_6.aba")
 # Small instances where the CURRENT implementation is expected to finish, for the
 # equivalence check (the 2000-atom siblings may hit the same blow-up when the
@@ -97,8 +99,10 @@ def main() -> None:
     for name in NAMED_ROWS:
         path = DATA_ROOT / name
         framework = _load(path)
-        print(f"== {name}: atoms={len(framework.language)} "
-              f"asms={len(framework.assumptions)} rules={len(framework.rules)}")
+        print(
+            f"== {name}: atoms={len(framework.language)} "
+            f"asms={len(framework.assumptions)} rules={len(framework.rules)}"
+        )
 
         started = time.perf_counter()
         fact_closure = _forward_closure(framework, frozenset())
@@ -109,31 +113,45 @@ def main() -> None:
         bailout_fact = any(
             framework.contrary[a] in fact_closure for a in framework.assumptions
         )
-        print(f"  bail-out closures: {time.perf_counter() - started:.3f}s "
-              f"(all-contraries-derivable={bailout_all}, "
-              f"contrary-is-fact={bailout_fact}, "
-              f"bails-out={bailout_all and not bailout_fact})")
+        print(
+            f"  bail-out closures: {time.perf_counter() - started:.3f}s "
+            f"(all-contraries-derivable={bailout_all}, "
+            f"contrary-is-fact={bailout_fact}, "
+            f"bails-out={bailout_all and not bailout_fact})"
+        )
 
         started = time.perf_counter()
         grounded = closure_grounded_prototype(framework)
-        print(f"  closure-based grounded prototype: "
-              f"{time.perf_counter() - started:.3f}s |grounded|={len(grounded)}")
+        print(
+            f"  closure-based grounded prototype: "
+            f"{time.perf_counter() - started:.3f}s |grounded|={len(grounded)}"
+        )
 
         started = time.perf_counter()
         try:
             completed = subprocess.run(
-                [sys.executable, __file__, "--mode", "supports",
-                 "--instance", str(path)],
+                [
+                    sys.executable,
+                    __file__,
+                    "--mode",
+                    "supports",
+                    "--instance",
+                    str(path),
+                ],
                 capture_output=True,
                 text=True,
                 timeout=SUPPORTS_TIMEOUT_SECONDS,
             )
-            print(f"  _SupportState.from_framework: "
-                  f"{completed.stdout.strip()} rc={completed.returncode}")
+            print(
+                f"  _SupportState.from_framework: "
+                f"{completed.stdout.strip()} rc={completed.returncode}"
+            )
         except subprocess.TimeoutExpired:
-            print(f"  _SupportState.from_framework: TIMEOUT "
-                  f">{SUPPORTS_TIMEOUT_SECONDS:.0f}s "
-                  f"(killed after {time.perf_counter() - started:.1f}s)")
+            print(
+                f"  _SupportState.from_framework: TIMEOUT "
+                f">{SUPPORTS_TIMEOUT_SECONDS:.0f}s "
+                f"(killed after {time.perf_counter() - started:.1f}s)"
+            )
 
     for name in EQUIVALENCE_ROWS:
         path = DATA_ROOT / name
@@ -144,9 +162,11 @@ def main() -> None:
         started = time.perf_counter()
         prototype = closure_grounded_prototype(framework)
         prototype_elapsed = time.perf_counter() - started
-        print(f"== {name}: current={current_elapsed:.3f}s "
-              f"prototype={prototype_elapsed:.3f}s "
-              f"equal={current == prototype} |grounded|={len(current)}")
+        print(
+            f"== {name}: current={current_elapsed:.3f}s "
+            f"prototype={prototype_elapsed:.3f}s "
+            f"equal={current == prototype} |grounded|={len(current)}"
+        )
 
 
 if __name__ == "__main__":

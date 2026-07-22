@@ -138,7 +138,9 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
     contrary_literals = tuple(framework.contrary.values())
     contrary_target_counts = Counter(contrary_literals)
     rules_by_contrary = Counter(
-        rule.consequent for rule in framework.rules if rule.consequent in set(contrary_literals)
+        rule.consequent
+        for rule in framework.rules
+        if rule.consequent in set(contrary_literals)
     )
     assumptions = len(framework.assumptions)
     language_literals = len(framework.language)
@@ -183,7 +185,9 @@ def compute_aba_shape(framework: ABAFramework) -> AbaShape:
         residual_assumptions=grounded["residual_assumptions"],
         residual_rules=grounded["residual_rules"],
         decomp_component_count=decomposition["decomp_component_count"],
-        decomp_max_component_assumptions=decomposition["decomp_max_component_assumptions"],
+        decomp_max_component_assumptions=decomposition[
+            "decomp_max_component_assumptions"
+        ],
         decomp_no_reduction_reason=decomposition["decomp_no_reduction_reason"],
         preprocessing_collapsed=grounded["preprocessing_collapsed"],
         grounded_shape_status=grounded["grounded_shape_status"],
@@ -319,7 +323,9 @@ def _dependency_shape(framework: ABAFramework) -> dict[str, Any]:
                 self_loop = True
     components = _strongly_connected_components(nodes, edges)
     cyclic_components = [
-        component for component in components if len(component) > 1 or any(node in edges.get(node, ()) for node in component)
+        component
+        for component in components
+        if len(component) > 1 or any(node in edges.get(node, ()) for node in component)
     ]
     if self_loop and not cyclic_components:
         cyclic_components = [frozenset()]
@@ -374,7 +380,9 @@ def _strongly_connected_components(
         while stack:
             node = stack.pop()
             component.add(node)
-            for predecessor in sorted(reverse_edges.get(node, ()), key=repr, reverse=True):
+            for predecessor in sorted(
+                reverse_edges.get(node, ()), key=repr, reverse=True
+            ):
                 if predecessor not in assigned:
                     assigned.add(predecessor)
                     stack.append(predecessor)
@@ -388,7 +396,10 @@ def _closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Lite
     while changed:
         changed = False
         for rule in framework.rules:
-            if all(antecedent in closure for antecedent in rule.antecedents) and rule.consequent not in closure:
+            if (
+                all(antecedent in closure for antecedent in rule.antecedents)
+                and rule.consequent not in closure
+            ):
                 closure.add(rule.consequent)
                 changed = True
     return frozenset(closure)
@@ -449,7 +460,10 @@ def _closure_growth_sample(framework: ABAFramework) -> float:
     if not framework.language:
         return 0.0
     samples: list[AssumptionSet] = [frozenset(), framework.assumptions]
-    samples.extend(frozenset({assumption}) for assumption in sorted(framework.assumptions, key=repr)[:5])
+    samples.extend(
+        frozenset({assumption})
+        for assumption in sorted(framework.assumptions, key=repr)[:5]
+    )
     growth = [
         _ratio(len(_closure(framework, sample)) - len(sample), len(framework.language))
         for sample in samples
@@ -461,7 +475,8 @@ def _stable_obstruction_count(framework: ABAFramework) -> int:
     return sum(
         1
         for assumption in framework.assumptions
-        if framework.contrary[assumption] in _closure(framework, frozenset({assumption}))
+        if framework.contrary[assumption]
+        in _closure(framework, frozenset({assumption}))
     )
 
 
@@ -515,7 +530,9 @@ def shape_buckets(shape: AbaShape, solver_class_name: str) -> dict[str, str]:
             medium_max=MAX_ARITY_THRESHOLDS["medium_max"],
             labels=("low", "medium", "high"),
         ),
-        "preprocessing": "collapsed" if shape.preprocessing_collapsed else "not_collapsed",
+        "preprocessing": "collapsed"
+        if shape.preprocessing_collapsed
+        else "not_collapsed",
         "solver_class": solver_class_name,
     }
 
@@ -697,7 +714,9 @@ def shape_bucket_id(buckets: Mapping[str, str]) -> str:
     return "|".join(f"{key}={value}" for key, value in sorted(buckets.items()))
 
 
-def backend_outcomes(backend_results: Mapping[str, Mapping[str, Any]]) -> dict[str, str]:
+def backend_outcomes(
+    backend_results: Mapping[str, Mapping[str, Any]],
+) -> dict[str, str]:
     return {
         backend: str(result.get("status", "unknown"))
         for backend, result in sorted(backend_results.items())
@@ -724,7 +743,9 @@ def route_counterexamples(
         examples: list[dict[str, Any]] = []
         result = backend_results.get(candidate.backend)
         if result is not None:
-            validation_status = str(result.get("validation", {}).get("status", "not_checked"))
+            validation_status = str(
+                result.get("validation", {}).get("status", "not_checked")
+            )
             status = str(result.get("status", "unknown"))
             if status != "solved" or validation_status == "invalid":
                 examples.append(
@@ -847,7 +868,9 @@ def _relative_instance_path(path: Path, instances_root: Path) -> Path:
     try:
         return path.relative_to(instances_root)
     except ValueError as exc:
-        raise ValueError(f"explicit instances must live under {instances_root}: {path}") from exc
+        raise ValueError(
+            f"explicit instances must live under {instances_root}: {path}"
+        ) from exc
 
 
 def _year_from_root(root: Path) -> int | None:
@@ -868,7 +891,9 @@ def run_backend_matrix(
 ) -> dict[str, dict[str, Any]]:
     results: dict[str, dict[str, Any]] = {}
     for backend in backends:
-        command = build_backend_command(job, backend=backend, timeout_seconds=timeout_seconds)
+        command = build_backend_command(
+            job, backend=backend, timeout_seconds=timeout_seconds
+        )
         emit_event(
             "aba_shape_backend_start",
             instance=job.instance,
@@ -899,7 +924,9 @@ def run_backend_matrix(
         elapsed = time.perf_counter() - started
         materialized = dict(result)
         materialized["elapsed_seconds"] = elapsed
-        materialized["validation"] = validate_result(framework, job.subtrack, materialized)
+        materialized["validation"] = validate_result(
+            framework, job.subtrack, materialized
+        )
         results[backend] = materialized
         emit_event(
             "aba_shape_backend_done",
@@ -1019,7 +1046,9 @@ def _parse_json_line(stdout: str) -> dict[str, Any] | None:
     return None
 
 
-def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, Any]) -> dict[str, Any]:
+def validate_result(
+    framework: ABAFramework, subtrack: str, result: dict[str, Any]
+) -> dict[str, Any]:
     if result.get("status") != "solved":
         return {"status": "not_checked", "reason": "solver did not return solved"}
     witness_text = result.get("witness")
@@ -1031,9 +1060,13 @@ def validate_result(framework: ABAFramework, subtrack: str, result: dict[str, An
         return _large_witness_validation(framework, subtrack, witness)
     semantics = solver_class("aba", subtrack).split("/")[-1]
     if semantics == "stable":
-        valid = native_aba.closed(framework, witness) and native_aba.conflict_free(framework, witness) and all(
-            native_aba.attacks(framework, witness, frozenset({assumption}))
-            for assumption in framework.assumptions - witness
+        valid = (
+            native_aba.closed(framework, witness)
+            and native_aba.conflict_free(framework, witness)
+            and all(
+                native_aba.attacks(framework, witness, frozenset({assumption}))
+                for assumption in framework.assumptions - witness
+            )
         )
         return {"status": "valid" if valid else "invalid", "check": "stable"}
     if semantics == "preferred":
@@ -1055,8 +1088,7 @@ def _large_witness_validation(
         return {"status": "invalid", "check": f"{semantics}_large_witness_subset"}
     closure = native_aba._closure(framework, witness)
     conflict_free = not any(
-        framework.contrary[assumption] in closure
-        for assumption in witness
+        framework.contrary[assumption] in closure for assumption in witness
     )
     if semantics == "preferred":
         return {
@@ -1076,7 +1108,9 @@ def _large_witness_validation(
 
 
 def _parse_witness(framework: ABAFramework, witness_text: str) -> AssumptionSet:
-    assumptions_by_repr = {repr(assumption): assumption for assumption in framework.assumptions}
+    assumptions_by_repr = {
+        repr(assumption): assumption for assumption in framework.assumptions
+    }
     result: set[Literal] = set()
     for token in witness_text.split():
         assumption = assumptions_by_repr.get(token)
@@ -1090,11 +1124,14 @@ def best_solved_backend(backend_results: dict[str, dict[str, Any]]) -> str | Non
     solved = [
         (backend, result)
         for backend, result in backend_results.items()
-        if result.get("status") == "solved" and result.get("validation", {}).get("status") != "invalid"
+        if result.get("status") == "solved"
+        and result.get("validation", {}).get("status") != "invalid"
     ]
     if not solved:
         return None
-    return min(solved, key=lambda item: float(item[1].get("elapsed_seconds", float("inf"))))[0]
+    return min(
+        solved, key=lambda item: float(item[1].get("elapsed_seconds", float("inf")))
+    )[0]
 
 
 def benchmark_rows(
@@ -1110,9 +1147,21 @@ def benchmark_rows(
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, job in enumerate(jobs, start=1):
-        emit_event("aba_shape_parse_start", index=index, total=len(jobs), instance=job.instance, subtrack=job.subtrack)
+        emit_event(
+            "aba_shape_parse_start",
+            index=index,
+            total=len(jobs),
+            instance=job.instance,
+            subtrack=job.subtrack,
+        )
         framework = parse_aba(job.path.read_text(encoding="utf-8"))
-        emit_event("aba_shape_compute_start", index=index, total=len(jobs), instance=job.instance, subtrack=job.subtrack)
+        emit_event(
+            "aba_shape_compute_start",
+            index=index,
+            total=len(jobs),
+            instance=job.instance,
+            subtrack=job.subtrack,
+        )
         shape = compute_aba_shape(framework)
         emit_event(
             "aba_shape_compute_done",
@@ -1157,7 +1206,9 @@ def benchmark_rows(
             "backend_outcomes": backend_outcomes(backend_results),
             "witness_validation_results": witness_validation_results(backend_results),
             "best_solved_backend": best,
-            "all_timed_out": all(result.get("status") == "timeout" for result in backend_results.values()),
+            "all_timed_out": all(
+                result.get("status") == "timeout" for result in backend_results.values()
+            ),
             "route_candidates": [asdict(candidate) for candidate in candidates],
             "route_evidence_ids": [
                 candidate.evidence_id
@@ -1184,10 +1235,16 @@ def benchmark_rows(
 
 
 def emit_event(event: str, **fields: Any) -> None:
-    print(json.dumps({"event": event, **fields}, sort_keys=True), file=sys.stderr, flush=True)
+    print(
+        json.dumps({"event": event, **fields}, sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
 
 
-def summarize(rows: list[dict[str, Any]], *, backends: tuple[str, ...]) -> dict[str, Any]:
+def summarize(
+    rows: list[dict[str, Any]], *, backends: tuple[str, ...]
+) -> dict[str, Any]:
     return {
         "by_solver_class": _count_by(rows, "solver_class"),
         "by_backend": _backend_summary(rows, backends),
@@ -1202,10 +1259,14 @@ def _count_by(rows: list[dict[str, Any]], key: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def _backend_summary(rows: list[dict[str, Any]], backends: tuple[str, ...]) -> dict[str, dict[str, int]]:
+def _backend_summary(
+    rows: list[dict[str, Any]], backends: tuple[str, ...]
+) -> dict[str, dict[str, int]]:
     summary: dict[str, dict[str, int]] = {}
     for backend in backends:
-        statuses = Counter(str(row["backend_results"][backend].get("status")) for row in rows)
+        statuses = Counter(
+            str(row["backend_results"][backend].get("status")) for row in rows
+        )
         summary[backend] = dict(sorted(statuses.items()))
     return summary
 
@@ -1214,15 +1275,25 @@ def _shape_bucket_summary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     counts: dict[tuple[tuple[str, str], ...], Counter[str]] = defaultdict(Counter)
     for row in rows:
         key = tuple(sorted(row["buckets"].items()))
-        status = "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}"
+        status = (
+            "all_timeout"
+            if row["all_timed_out"]
+            else f"best:{row['best_solved_backend']}"
+        )
         counts[key][status] += 1
     return [
-        {"bucket": dict(key), "outcomes": dict(sorted(counter.items())), "total": sum(counter.values())}
+        {
+            "bucket": dict(key),
+            "outcomes": dict(sorted(counter.items())),
+            "total": sum(counter.values()),
+        }
         for key, counter in sorted(counts.items())
     ]
 
 
-def propose_portfolio_rules(rows: list[dict[str, Any]], *, backends: tuple[str, ...]) -> list[dict[str, Any]]:
+def propose_portfolio_rules(
+    rows: list[dict[str, Any]], *, backends: tuple[str, ...]
+) -> list[dict[str, Any]]:
     grouped: dict[tuple[tuple[str, str], ...], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         grouped[tuple(sorted(row["buckets"].items()))].append(row)
@@ -1230,7 +1301,11 @@ def propose_portfolio_rules(rows: list[dict[str, Any]], *, backends: tuple[str, 
     for key, bucket_rows in sorted(grouped.items()):
         if len(bucket_rows) < 2:
             continue
-        counts = Counter(row["best_solved_backend"] for row in bucket_rows if row["best_solved_backend"])
+        counts = Counter(
+            row["best_solved_backend"]
+            for row in bucket_rows
+            if row["best_solved_backend"]
+        )
         if not counts:
             continue
         backend, count = counts.most_common(1)[0]
@@ -1239,7 +1314,9 @@ def propose_portfolio_rules(rows: list[dict[str, Any]], *, backends: tuple[str, 
         counterexamples = [
             {
                 "instance": row["instance"],
-                "outcome": "all_timeout" if row["all_timed_out"] else f"best:{row['best_solved_backend']}",
+                "outcome": "all_timeout"
+                if row["all_timed_out"]
+                else f"best:{row['best_solved_backend']}",
                 "solver_class": row["solver_class"],
             }
             for row in bucket_rows
@@ -1272,10 +1349,14 @@ def propose_portfolio_rules(rows: list[dict[str, Any]], *, backends: tuple[str, 
 
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
-def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ...]) -> None:
+def write_csv(
+    path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ...]
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = [
         "instance",
@@ -1299,7 +1380,9 @@ def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ..
     shape_fields = list(AbaShape.__dataclass_fields__)
     bucket_fields = ["assumption_size", "rule_density", "max_arity", "preprocessing"]
     with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=[*fields, *shape_fields, *bucket_fields])
+        writer = csv.DictWriter(
+            handle, fieldnames=[*fields, *shape_fields, *bucket_fields]
+        )
         writer.writeheader()
         for row in rows:
             for backend in backends:
@@ -1316,10 +1399,12 @@ def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ..
                         "instance": row["instance"],
                         "reason": result.get("reason"),
                         "route_candidate_predicates": " ".join(
-                            candidate["predicate"] for candidate in row["route_candidates"]
+                            candidate["predicate"]
+                            for candidate in row["route_candidates"]
                         ),
                         "route_counterexample_count": sum(
-                            len(examples) for examples in row["route_counterexamples"].values()
+                            len(examples)
+                            for examples in row["route_counterexamples"].values()
                         ),
                         "route_evidence_ids": " ".join(row["route_evidence_ids"]),
                         "shape_bucket_id": row["shape_bucket_id"],
@@ -1327,7 +1412,9 @@ def write_csv(path: Path, rows: list[dict[str, Any]], *, backends: tuple[str, ..
                         "status": result.get("status"),
                         "subtrack": row["subtrack"],
                         "validation_status": result.get("validation", {}).get("status"),
-                        "witness_validation_result": row["witness_validation_results"].get(backend),
+                        "witness_validation_result": row[
+                            "witness_validation_results"
+                        ].get(backend),
                         "witness_size": result.get("witness_size"),
                     }
                 )
@@ -1367,7 +1454,9 @@ def build_payload(
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Benchmark ABA solver backends by framework shape.")
+    parser = argparse.ArgumentParser(
+        description="Benchmark ABA solver backends by framework shape."
+    )
     parser.add_argument("--instance", action="append", type=Path, default=[])
     parser.add_argument("--timeouts", type=Path)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
@@ -1408,7 +1497,11 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
     if args.instance:
-        jobs.extend(build_jobs_from_instances(args.instance, root=args.root, subtracks=subtracks))
+        jobs.extend(
+            build_jobs_from_instances(
+                args.instance, root=args.root, subtracks=subtracks
+            )
+        )
     if not jobs:
         raise SystemExit("no ABA benchmark jobs selected")
     rows = benchmark_rows(
@@ -1433,7 +1526,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     write_json(args.output_json, payload)
     write_csv(args.output_csv, rows, backends=backends)
-    print(json.dumps({"output_json": str(args.output_json), "output_csv": str(args.output_csv), "summary": payload["summary"]}, indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "output_json": str(args.output_json),
+                "output_csv": str(args.output_csv),
+                "summary": payload["summary"],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 

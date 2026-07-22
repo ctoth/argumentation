@@ -177,15 +177,16 @@ def is_well_formed(caf: ClaimAugmentedAF) -> bool:
     """Return whether same-claim arguments have identical attack targets."""
     outgoing = {
         argument: frozenset(
-            target
-            for attacker, target in caf.framework.defeats
-            if attacker == argument
+            target for attacker, target in caf.framework.defeats if attacker == argument
         )
         for argument in caf.framework.arguments
     }
     for left in caf.framework.arguments:
         for right in caf.framework.arguments:
-            if caf.claims[left] == caf.claims[right] and outgoing[left] != outgoing[right]:
+            if (
+                caf.claims[left] == caf.claims[right]
+                and outgoing[left] != outgoing[right]
+            ):
                 return False
     return True
 
@@ -232,7 +233,9 @@ def _argument_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
     return subsets
 
 
-def _maximal_claim_sets(claim_sets: Iterable[frozenset[str]]) -> tuple[frozenset[str], ...]:
+def _maximal_claim_sets(
+    claim_sets: Iterable[frozenset[str]],
+) -> tuple[frozenset[str], ...]:
     projected = list(_deduplicate_claim_sets(claim_sets))
     return tuple(maximal_sets(projected))
 

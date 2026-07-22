@@ -41,7 +41,9 @@ def normalize_binary_relation(
     if value is None:
         normalized = frozenset((source, target) for source, target in relation)
     else:
-        normalized = frozenset((value(source), value(target)) for source, target in relation)
+        normalized = frozenset(
+            (value(source), value(target)) for source, target in relation
+        )
     unknown = sorted(
         (source, target)
         for source, target in normalized
@@ -63,10 +65,7 @@ def predecessors_index(
         predecessors = {node: set() for node in nodes}
     for source, target in relation:
         predecessors.setdefault(target, set()).add(source)
-    return {
-        target: frozenset(sources)
-        for target, sources in predecessors.items()
-    }
+    return {target: frozenset(sources) for target, sources in predecessors.items()}
 
 
 def successors_index(
@@ -80,10 +79,7 @@ def successors_index(
         successors = {node: set() for node in nodes}
     for source, target in relation:
         successors.setdefault(source, set()).add(target)
-    return {
-        source: frozenset(targets)
-        for source, targets in successors.items()
-    }
+    return {source: frozenset(targets) for source, targets in successors.items()}
 
 
 def iter_subsets_bitmask(
@@ -95,9 +91,7 @@ def iter_subsets_bitmask(
     ordered = _ordered_items(items, key)
     for mask in range(1 << len(ordered)):
         yield frozenset(
-            ordered[index]
-            for index in range(len(ordered))
-            if mask & (1 << index)
+            ordered[index] for index in range(len(ordered)) if mask & (1 << index)
         )
 
 
@@ -118,7 +112,9 @@ def subsets_by_size(
     """Return all subsets ordered by size, then sorted item order."""
     ordered = _ordered_items(items, key)
     return [
-        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
+        frozenset(
+            ordered[index] for index in range(len(ordered)) if mask & (1 << index)
+        )
         for size in range(len(ordered) + 1)
         for mask in range(1 << len(ordered))
         if mask.bit_count() == size
@@ -146,7 +142,9 @@ def sorted_extensions(
         values = {frozenset(extension) for extension in extensions}
     else:
         values = extensions
-    return tuple(sorted(values, key=lambda extension: extension_sort_key(extension, key=key)))
+    return tuple(
+        sorted(values, key=lambda extension: extension_sort_key(extension, key=key))
+    )
 
 
 def maximal_by(
@@ -196,8 +194,7 @@ def strongly_connected_components(
         nodes.update(successors)
 
     successors_by_node = {
-        node: _ordered_items(graph.get(node, ()), key)
-        for node in nodes
+        node: _ordered_items(graph.get(node, ()), key) for node in nodes
     }
     predecessors_by_node: dict[T, set[T]] = {node: set() for node in nodes}
     for source, successors in successors_by_node.items():
@@ -237,7 +234,9 @@ def strongly_connected_components(
         while component_stack:
             current = component_stack.pop()
             component.add(current)
-            for predecessor in _ordered_items(predecessors_by_node.get(current, ()), key):
+            for predecessor in _ordered_items(
+                predecessors_by_node.get(current, ()), key
+            ):
                 if predecessor in assigned:
                     continue
                 assigned.add(predecessor)
@@ -270,8 +269,7 @@ def is_acyclic(
         nodes.update(successors)
 
     successors_by_node = {
-        node: _ordered_items(graph.get(node, ()), key)
-        for node in nodes
+        node: _ordered_items(graph.get(node, ()), key) for node in nodes
     }
 
     visiting: set[T] = set()

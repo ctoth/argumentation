@@ -57,21 +57,31 @@ def main() -> int:
         print(f"MISSING run outputs for: {missing}")
     print(f"\n{'family':12} {'subtrack':8} {'solved':>6} {'timeout':>7} {'other':>6}")
     tot = defaultdict(int)
-    for (fam, st) in sorted(cells):
+    for fam, st in sorted(cells):
         c = cells[(fam, st)]
         solved = c.get("solved", 0)
         timeout = c.get("timeout", 0)
         other = sum(v for k, v in c.items() if k not in ("solved", "timeout"))
-        othertxt = "" if not other else " ".join(f"{k}={v}" for k, v in c.items() if k not in ("solved", "timeout"))
+        othertxt = (
+            ""
+            if not other
+            else " ".join(
+                f"{k}={v}" for k, v in c.items() if k not in ("solved", "timeout")
+            )
+        )
         print(f"{fam:12} {st:8} {solved:>6} {timeout:>7} {other:>6}  {othertxt}")
         tot["solved"] += solved
         tot["timeout"] += timeout
         tot["other"] += other
     total_rows = tot["solved"] + tot["timeout"] + tot["other"]
-    print(f"\nTOTAL rows={total_rows} solved={tot['solved']} timeout={tot['timeout']} other={tot['other']}")
+    print(
+        f"\nTOTAL rows={total_rows} solved={tot['solved']} timeout={tot['timeout']} other={tot['other']}"
+    )
     if total_rows:
         frac = tot["solved"] / total_rows
-        print(f"budget-artifact fraction (solved@600 / sampled timeouts) = {tot['solved']}/{total_rows} = {frac:.3f}")
+        print(
+            f"budget-artifact fraction (solved@600 / sampled timeouts) = {tot['solved']}/{total_rows} = {frac:.3f}"
+        )
     return 0
 
 

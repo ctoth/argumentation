@@ -23,7 +23,9 @@ def test_potyka_basics_possible_worlds_are_all_argument_subsets() -> None:
     )
 
 
-def test_potyka_basics_induced_argument_probabilities_sum_worlds_containing_argument() -> None:
+def test_potyka_basics_induced_argument_probabilities_sum_worlds_containing_argument() -> (
+    None
+):
     distribution = ProbabilityFunction(
         arguments=frozenset({"a", "b"}),
         probabilities={
@@ -58,7 +60,9 @@ def normalized_distributions(draw: st.DrawFn) -> ProbabilityFunction:
     worlds = possible_worlds(arguments)
     raw_weights = draw(
         st.lists(
-            st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+            st.floats(
+                min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+            ),
             min_size=len(worlds),
             max_size=len(worlds),
         )
@@ -68,7 +72,9 @@ def normalized_distributions(draw: st.DrawFn) -> ProbabilityFunction:
         weights = [1.0 / len(worlds) for _ in worlds]
     else:
         weights = [weight / total for weight in raw_weights]
-    return ProbabilityFunction(arguments=arguments, probabilities=dict(zip(worlds, weights, strict=True)))
+    return ProbabilityFunction(
+        arguments=arguments, probabilities=dict(zip(worlds, weights, strict=True))
+    )
 
 
 @given(normalized_distributions())

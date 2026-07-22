@@ -182,7 +182,9 @@ def grounded_assumption_set_via_closures(framework: ABAFramework) -> AssumptionS
         selected = next_selected
 
 
-def _forward_closure(framework: ABAFramework, premises: AssumptionSet) -> frozenset[Literal]:
+def _forward_closure(
+    framework: ABAFramework, premises: AssumptionSet
+) -> frozenset[Literal]:
     from argumentation.structured.aba.aba import _closure
 
     return _closure(framework, premises)
@@ -217,11 +219,7 @@ def _residual_framework(
     rule_literals = frozenset(
         chain.from_iterable(rule.antecedents for rule in rules)
     ) | frozenset(rule.consequent for rule in rules)
-    language = (
-        rule_literals
-        | frozenset(survivors)
-        | frozenset(contrary.values())
-    )
+    language = rule_literals | frozenset(survivors) | frozenset(contrary.values())
     return ABAFramework(
         language=language,
         rules=frozenset(rules),
@@ -246,7 +244,10 @@ def simplify_aba(
     if isinstance(framework, ABAPlusFramework):
         base = framework.framework
         return SemanticReduct(base, base, frozenset(), frozenset())
-    if semantics is not None and _normalize_semantics(semantics) not in GROUNDED_REDUCT_ABA_SEMANTICS:
+    if (
+        semantics is not None
+        and _normalize_semantics(semantics) not in GROUNDED_REDUCT_ABA_SEMANTICS
+    ):
         return SemanticReduct(framework, framework, frozenset(), frozenset())
 
     # Cheap O(|rules|) bail-out: if every assumption's contrary is forward-derivable
@@ -257,9 +258,11 @@ def simplify_aba(
     fact_closure = _forward_closure(framework, frozenset())
     all_closure = _forward_closure(framework, framework.assumptions)
     if all(
-        framework.contrary[assumption] in all_closure for assumption in framework.assumptions
+        framework.contrary[assumption] in all_closure
+        for assumption in framework.assumptions
     ) and not any(
-        framework.contrary[assumption] in fact_closure for assumption in framework.assumptions
+        framework.contrary[assumption] in fact_closure
+        for assumption in framework.assumptions
     ):
         return SemanticReduct(framework, framework, frozenset(), frozenset())
 

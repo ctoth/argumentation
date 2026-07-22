@@ -70,15 +70,11 @@ def support_extensions(
     state = _SupportState.from_framework(framework)
     if semantics == "stable":
         masks = [
-            mask
-            for mask in range(1 << len(state.assumptions))
-            if state.stable(mask)
+            mask for mask in range(1 << len(state.assumptions)) if state.stable(mask)
         ]
     elif semantics == "complete":
         masks = [
-            mask
-            for mask in range(1 << len(state.assumptions))
-            if state.complete(mask)
+            mask for mask in range(1 << len(state.assumptions)) if state.complete(mask)
         ]
     elif semantics == "preferred":
         admissible = [
@@ -89,7 +85,9 @@ def support_extensions(
         masks = [
             mask
             for mask in admissible
-            if not any(mask != other and (mask | other) == other for other in admissible)
+            if not any(
+                mask != other and (mask | other) == other for other in admissible
+            )
         ]
     else:
         raise ValueError(f"unsupported ABA support semantics: {semantics}")
@@ -245,6 +243,7 @@ class _BatchDimacsCadical:
     def get_model(self) -> list[int] | None:
         return self._model
 
+
 # Provisional structural thresholds; frozen after the dev-slice calibration in
 # the Wave-2 record. Routes only the giant recursive-core class (glucose4 times
 # out) to the strong engine, keeping glucose4 for everything it already solves.
@@ -340,7 +339,9 @@ def should_use_native_cnf_prefsat(framework: ABAFramework) -> bool:
     return native_cnf_prefsat_dense_shape(
         is_flat=True,
         assumptions=assumption_count,
-        rule_density=(len(framework.rules) / assumption_count) if assumption_count else 0.0,
+        rule_density=(len(framework.rules) / assumption_count)
+        if assumption_count
+        else 0.0,
     )
 
 
@@ -356,7 +357,11 @@ def support_acceptance(
     extensions = support_extensions(framework, semantics)
     if task == "credulous":
         witness = next(
-            (extension for extension in extensions if state.derives_extension(extension, query)),
+            (
+                extension
+                for extension in extensions
+                if state.derives_extension(extension, query)
+            ),
             None,
         )
         return witness is not None, witness
@@ -399,7 +404,9 @@ def sat_support_acceptance(
         return witness is not None, witness
     if task == "skeptical":
         if semantics == "preferred":
-            counterexample = _sat_preferred_counterexample_not_deriving(framework, query)
+            counterexample = _sat_preferred_counterexample_not_deriving(
+                framework, query
+            )
             return counterexample is None, counterexample
         counterexample = sat_support_extension(
             framework,
@@ -458,7 +465,11 @@ def sat_support_extension(
     """Return one complete/preferred ABA extension using support-aware SAT."""
     if semantics not in {"complete", "preferred"}:
         raise ValueError(f"unsupported ABA support SAT semantics: {semantics}")
-    if semantics == "preferred" and require_derived is None and require_not_derived is None:
+    if (
+        semantics == "preferred"
+        and require_derived is None
+        and require_not_derived is None
+    ):
         stable_witness = sat_stable_extension(framework, simplify=False)
         if stable_witness is not None and require_assumptions <= stable_witness:
             return stable_witness
@@ -488,13 +499,24 @@ def sat_support_extension(
             )
             return None if witness is None else prepared.lift(witness)
     if require_derived is not None and require_derived not in framework.language:
-        raise ValueError(f"required literal is not in framework language: {require_derived!r}")
-    if require_not_derived is not None and require_not_derived not in framework.language:
+        raise ValueError(
+            f"required literal is not in framework language: {require_derived!r}"
+        )
+    if (
+        require_not_derived is not None
+        and require_not_derived not in framework.language
+    ):
         raise ValueError(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
-    if semantics == "preferred" and require_derived is None and require_not_derived is None:
-        from argumentation.structured.aba.aba_decomposition import decomposed_prefsat_extension
+    if (
+        semantics == "preferred"
+        and require_derived is None
+        and require_not_derived is None
+    ):
+        from argumentation.structured.aba.aba_decomposition import (
+            decomposed_prefsat_extension,
+        )
 
         decomposed = decomposed_prefsat_extension(
             framework,
@@ -552,14 +574,20 @@ def sat_support_extension(
         try:
             for assumption in sorted(current, key=repr):
                 solver.add(variables[assumption])
-            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+            solver.add(
+                z3.Or(
+                    *(variables[assumption] for assumption in sorted(outside, key=repr))
+                )
+            )
             if solver.check() != z3.sat:
                 return current
             larger = _model_extension(z3, solver, variables)
         finally:
             solver.pop()
         if not current < larger:
-            raise RuntimeError("ABA preferred SAT growth did not produce a strict superset")
+            raise RuntimeError(
+                "ABA preferred SAT growth did not produce a strict superset"
+            )
         current = larger
 
 
@@ -607,7 +635,11 @@ def _sat_preferred_extension_satisfying(
             return preferred
         outside = framework.assumptions - preferred
         if outside:
-            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+            solver.add(
+                z3.Or(
+                    *(variables[assumption] for assumption in sorted(outside, key=repr))
+                )
+            )
         else:
             solver.add(z3.BoolVal(False))
     return None
@@ -621,7 +653,9 @@ class _NativeCnfPrefSatSolver:
         self._next_var = 1
         self.in_vars = {assumption: self._new_var() for assumption in self.assumptions}
         self.out_vars = {assumption: self._new_var() for assumption in self.assumptions}
-        self.undec_vars = {assumption: self._new_var() for assumption in self.assumptions}
+        self.undec_vars = {
+            assumption: self._new_var() for assumption in self.assumptions
+        }
         self.solver = solver_class(name="glucose4")
         self.telemetry = {
             "native_cnf_variables": self._next_var - 1,
@@ -653,13 +687,17 @@ class _NativeCnfPrefSatSolver:
             self.telemetry,
         )
         self._contrary_bits = {
-            assumption: self._attacker_closure.literal_bits[framework.contrary[assumption]]
+            assumption: self._attacker_closure.literal_bits[
+                framework.contrary[assumption]
+            ]
             for assumption in self.assumptions
         }
         self._empty_closure_mask = self._attacker_closure.closure_mask(frozenset())
         self._add_labelling_skeleton()
         self._add_static_conflict_clauses()
-        self.solver.set_phases([self.in_vars[assumption] for assumption in self.assumptions])
+        self.solver.set_phases(
+            [self.in_vars[assumption] for assumption in self.assumptions]
+        )
 
     def _new_var(self) -> int:
         variable = self._next_var
@@ -714,7 +752,9 @@ class _NativeCnfPrefSatSolver:
                 self.telemetry["prefsat_final_in_count"] = len(current)
                 return current
             if not current < larger:
-                raise RuntimeError("native CNF PrefSat grow step did not produce a strict superset")
+                raise RuntimeError(
+                    "native CNF PrefSat grow step did not produce a strict superset"
+                )
             self._record_progress()
             current = larger
 
@@ -724,13 +764,18 @@ class _NativeCnfPrefSatSolver:
         require_in: AssumptionSet = frozenset(),
         require_any_in: AssumptionSet = frozenset(),
     ) -> AssumptionSet | None:
-        assumptions = [self.in_vars[assumption] for assumption in sorted(require_in, key=repr)]
+        assumptions = [
+            self.in_vars[assumption] for assumption in sorted(require_in, key=repr)
+        ]
         if require_any_in:
             guard = self._new_var()
             self.telemetry["native_cnf_variables"] = self._next_var - 1
             self._add_clause(
                 [
-                    *(self.in_vars[assumption] for assumption in sorted(require_any_in, key=repr)),
+                    *(
+                        self.in_vars[assumption]
+                        for assumption in sorted(require_any_in, key=repr)
+                    ),
                     -guard,
                 ]
             )
@@ -767,7 +812,9 @@ class _NativeCnfPrefSatSolver:
         for target in sorted(candidate, key=repr):
             if closure & self._contrary_bits[target]:
                 contrary = self.framework.contrary[target]
-                attack_support = self._attacker_closure.shrink_support(candidate, contrary)
+                attack_support = self._attacker_closure.shrink_support(
+                    candidate, contrary
+                )
                 return [
                     -self.in_vars[target],
                     *(
@@ -785,7 +832,10 @@ class _NativeCnfPrefSatSolver:
         if outside_candidate:
             return [
                 -self.in_vars[target],
-                *(self.in_vars[assumption] for assumption in sorted(outside_candidate, key=repr)),
+                *(
+                    self.in_vars[assumption]
+                    for assumption in sorted(outside_candidate, key=repr)
+                ),
             ]
         return [-self.in_vars[target]]
 
@@ -841,7 +891,9 @@ class _NativeCnfPrefSatSolver:
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
         closure = _closure(self.framework, extension)
-        prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
+        prefsat_in = {
+            assumption: assumption in extension for assumption in self.assumptions
+        }
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
             for assumption in self.assumptions
@@ -1002,7 +1054,7 @@ def _first_directed_edge_cycle(
             if successor_state == 2:
                 continue
             if successor_state == 1:
-                cycle_nodes = path[path.index(successor):] + [successor]
+                cycle_nodes = path[path.index(successor) :] + [successor]
                 return tuple(zip(cycle_nodes, cycle_nodes[1:]))
             state[successor] = 1
             path.append(successor)
@@ -1022,7 +1074,11 @@ class _NativeSparseNarrowStableSolver:
                 | set(framework.assumptions)
                 | set(framework.contrary.values())
                 | {rule.consequent for rule in framework.rules}
-                | {antecedent for rule in framework.rules for antecedent in rule.antecedents},
+                | {
+                    antecedent
+                    for rule in framework.rules
+                    for antecedent in rule.antecedents
+                },
                 key=repr,
             )
         )
@@ -1031,9 +1087,7 @@ class _NativeSparseNarrowStableSolver:
         self.derived_vars = {literal: self._new_var() for literal in self.literals}
         self.rules = tuple(sorted(framework.rules, key=repr))
         self.support_vars = {
-            rule: self._new_var()
-            for rule in self.rules
-            if rule.antecedents
+            rule: self._new_var() for rule in self.rules if rule.antecedents
         }
         self.telemetry = {
             "clingo_solver_calls": 0,
@@ -1055,13 +1109,10 @@ class _NativeSparseNarrowStableSolver:
         }
         self._closure = _BitsetHornClosure.from_framework(framework, self.telemetry)
         self._literal_by_bit = {
-            bit: literal
-            for literal, bit in self._closure.literal_bits.items()
+            bit: literal for literal, bit in self._closure.literal_bits.items()
         }
         self._zero_rule_heads = frozenset(
-            rule.consequent
-            for rule in self.rules
-            if not rule.antecedents
+            rule.consequent for rule in self.rules if not rule.antecedents
         )
         self._internal_atoms_by_rule = self._build_arc_shape()
         self.just_vars = {
@@ -1079,13 +1130,19 @@ class _NativeSparseNarrowStableSolver:
                 key=repr,
             )
         }
-        self.telemetry["native_sparse_narrow_acyc_recursive_rules"] = len(self.just_vars)
+        self.telemetry["native_sparse_narrow_acyc_recursive_rules"] = len(
+            self.just_vars
+        )
         self.telemetry["native_sparse_narrow_acyc_edges"] = len(self.edge_vars)
-        self.engine = engine if engine is not None else _stable_engine_for(
-            recursive_rules=len(self.just_vars),
-            edges=len(self.edge_vars),
-            assumptions=len(self.assumptions),
-            rules=len(self.rules),
+        self.engine = (
+            engine
+            if engine is not None
+            else _stable_engine_for(
+                recursive_rules=len(self.just_vars),
+                edges=len(self.edge_vars),
+                assumptions=len(self.assumptions),
+                rules=len(self.rules),
+            )
         )
         self.telemetry["native_sparse_narrow_engine"] = self.engine
         if self.engine == "cadical221-batch":
@@ -1115,10 +1172,12 @@ class _NativeSparseNarrowStableSolver:
 
     def _add_completion_clauses(self) -> None:
         for assumption in self.assumptions:
-            self._add_clause([
-                -self.in_vars[assumption],
-                self.derived_vars[assumption],
-            ])
+            self._add_clause(
+                [
+                    -self.in_vars[assumption],
+                    self.derived_vars[assumption],
+                ]
+            )
         for rule in self.rules:
             head = self.derived_vars[rule.consequent]
             body = [self.derived_vars[antecedent] for antecedent in rule.antecedents]
@@ -1138,10 +1197,12 @@ class _NativeSparseNarrowStableSolver:
             if literal in self.in_vars:
                 support_options.append(self.in_vars[literal])
             if support_options:
-                self._add_clause([
-                    -self.derived_vars[literal],
-                    *support_options,
-                ])
+                self._add_clause(
+                    [
+                        -self.derived_vars[literal],
+                        *support_options,
+                    ]
+                )
             else:
                 self._add_clause([-self.derived_vars[literal]])
         for assumption in self.assumptions:
@@ -1189,17 +1250,20 @@ class _NativeSparseNarrowStableSolver:
 
     def _add_arc_acyclic_clauses(self) -> None:
         demanding_rules: dict[tuple[Literal, Literal], list[int]] = defaultdict(list)
-        for rule, internal_atoms in sorted(self._internal_atoms_by_rule.items(), key=lambda item: repr(item[0])):
+        for rule, internal_atoms in sorted(
+            self._internal_atoms_by_rule.items(), key=lambda item: repr(item[0])
+        ):
             just = self.just_vars[rule]
             support = self.support_vars[rule]
             edge_variables = [
-                self.edge_vars[(atom, rule.consequent)]
-                for atom in internal_atoms
+                self.edge_vars[(atom, rule.consequent)] for atom in internal_atoms
             ]
             self._add_clause([-just, support])
             for edge_variable in edge_variables:
                 self._add_clause([-just, edge_variable])
-            self._add_clause([just, -support, *[-variable for variable in edge_variables]])
+            self._add_clause(
+                [just, -support, *[-variable for variable in edge_variables]]
+            )
             for atom in internal_atoms:
                 demanding_rules[(atom, rule.consequent)].append(just)
         for edge, variable in self.edge_vars.items():
@@ -1208,7 +1272,9 @@ class _NativeSparseNarrowStableSolver:
         if cycles is not None:
             for cycle in cycles:
                 self._add_clause([-self.edge_vars[edge] for edge in cycle])
-            self.telemetry["native_sparse_narrow_acyc_eager_cycle_clauses"] = len(cycles)
+            self.telemetry["native_sparse_narrow_acyc_eager_cycle_clauses"] = len(
+                cycles
+            )
             return
         # Cap tripped: block 2-cycles eagerly, longer cycles lazily in the
         # solve loop's edge-cycle CEGAR.
@@ -1224,7 +1290,10 @@ class _NativeSparseNarrowStableSolver:
         *,
         require_assumptions: AssumptionSet = frozenset(),
     ) -> AssumptionSet | None:
-        assumptions = [self.in_vars[assumption] for assumption in sorted(require_assumptions, key=repr)]
+        assumptions = [
+            self.in_vars[assumption]
+            for assumption in sorted(require_assumptions, key=repr)
+        ]
         while True:
             self.telemetry["native_sparse_narrow_solver_checks"] += 1
             started = time.perf_counter()
@@ -1247,9 +1316,7 @@ class _NativeSparseNarrowStableSolver:
     def _selected_edge_cycle(self) -> tuple[tuple[Literal, Literal], ...] | None:
         model = _positive_solver_model(self.solver)
         selected = [
-            edge
-            for edge, variable in self.edge_vars.items()
-            if variable in model
+            edge for edge, variable in self.edge_vars.items() if variable in model
         ]
         return _first_directed_edge_cycle(selected)
 
@@ -1269,10 +1336,7 @@ class _NativeSparseNarrowStableSolver:
         unsupported = derived & ~closure
         if unsupported:
             unfounded = sorted(
-                (
-                    repr(self._literal_by_bit[bit])
-                    for bit in self._bits(unsupported)
-                ),
+                (repr(self._literal_by_bit[bit]) for bit in self._bits(unsupported)),
             )
             raise RuntimeError(
                 "arc-acyclic stable encoding produced an unfounded model: "
@@ -1309,10 +1373,18 @@ def _native_sparse_narrow_telemetry(telemetry: dict[str, int]) -> dict[str, int]
     return {
         **telemetry,
         "clingo_solver_calls": 0,
-        "native_sparse_narrow_solver_checks": telemetry.get("native_cnf_solver_checks", 0),
-        "native_sparse_narrow_candidate_models": telemetry.get("native_cnf_candidate_models", 0),
-        "native_sparse_narrow_learned_clauses": telemetry.get("native_cnf_candidate_blocks", 0),
-        "native_sparse_narrow_z3_main_checks": telemetry.get("native_cnf_z3_main_checks", 0),
+        "native_sparse_narrow_solver_checks": telemetry.get(
+            "native_cnf_solver_checks", 0
+        ),
+        "native_sparse_narrow_candidate_models": telemetry.get(
+            "native_cnf_candidate_models", 0
+        ),
+        "native_sparse_narrow_learned_clauses": telemetry.get(
+            "native_cnf_candidate_blocks", 0
+        ),
+        "native_sparse_narrow_z3_main_checks": telemetry.get(
+            "native_cnf_z3_main_checks", 0
+        ),
         "native_sparse_narrow_closure_checks": telemetry.get(
             "prefsat_attacker_bitset_closure_checks",
             0,
@@ -1400,7 +1472,9 @@ class _RealPrefSatSolver:
             framework,
             self.telemetry,
         )
-        self.derived = self._add_closure_constraints("prefsat", self.solver, self.prefsat_in)
+        self.derived = self._add_closure_constraints(
+            "prefsat", self.solver, self.prefsat_in
+        )
         self._add_labelling_constraints()
 
     def _add_closure_constraints(self, prefix: str, solver, variables):
@@ -1448,7 +1522,9 @@ class _RealPrefSatSolver:
                 self.telemetry["prefsat_final_in_count"] = len(current)
                 return current
             if not current < larger:
-                raise RuntimeError("real ABA PrefSat grow step did not produce a strict superset")
+                raise RuntimeError(
+                    "real ABA PrefSat grow step did not produce a strict superset"
+                )
             self.telemetry["prefsat_candidate_blocks"] += 1
             self._record_progress()
             current = larger
@@ -1517,7 +1593,9 @@ class _RealPrefSatSolver:
         for target in sorted(candidate, key=repr):
             conclusion = self.framework.contrary[target]
             if self._attacker_closure.contains(attacker_closure, conclusion):
-                return target, self._attacker_closure.shrink_support(available, conclusion)
+                return target, self._attacker_closure.shrink_support(
+                    available, conclusion
+                )
         return None
 
     def _defense_refinement_clause(self, counterexample):
@@ -1560,7 +1638,9 @@ class _RealPrefSatSolver:
 
     def result(self, extension: AssumptionSet) -> RealPrefSatResult:
         closure = _closure(self.framework, extension)
-        prefsat_in = {assumption: assumption in extension for assumption in self.assumptions}
+        prefsat_in = {
+            assumption: assumption in extension for assumption in self.assumptions
+        }
         prefsat_out = {
             assumption: self.framework.contrary[assumption] in closure
             for assumption in self.assumptions
@@ -1611,8 +1691,13 @@ def _sat_ranked_stable_extension(
     require_not_derived: Literal | None = None,
 ) -> AssumptionSet | None:
     if require_derived is not None and require_derived not in framework.language:
-        raise ValueError(f"required literal is not in framework language: {require_derived!r}")
-    if require_not_derived is not None and require_not_derived not in framework.language:
+        raise ValueError(
+            f"required literal is not in framework language: {require_derived!r}"
+        )
+    if (
+        require_not_derived is not None
+        and require_not_derived not in framework.language
+    ):
         raise ValueError(
             f"excluded literal is not in framework language: {require_not_derived!r}"
         )
@@ -1650,7 +1735,9 @@ def sat_stable_acceptance(
     if task == "credulous":
         witness = sat_stable_extension(framework, require_derived=query, simplify=False)
         return witness is not None, witness
-    counterexample = sat_stable_extension(framework, require_not_derived=query, simplify=False)
+    counterexample = sat_stable_extension(
+        framework, require_not_derived=query, simplify=False
+    )
     return counterexample is None, counterexample
 
 
@@ -1678,8 +1765,7 @@ def _emit_ranked_closure_constraints(
         for literal in literals
     }
     ranks = {
-        literal: z3.Int(f"{rank_prefix}{_literal_key(literal)}")
-        for literal in literals
+        literal: z3.Int(f"{rank_prefix}{_literal_key(literal)}") for literal in literals
     }
     rules_by_consequent = _rules_by_consequent(framework, literals)
     clause_count = 0
@@ -1764,10 +1850,7 @@ def _rules_by_consequent(framework: ABAFramework, literals: tuple[Literal, ...])
     grouped: dict[Literal, list[Rule]] = {literal: [] for literal in literals}
     for rule in sorted(framework.rules, key=repr):
         grouped[rule.consequent].append(rule)
-    return {
-        literal: tuple(rules)
-        for literal, rules in grouped.items()
-    }
+    return {literal: tuple(rules) for literal, rules in grouped.items()}
 
 
 def _any_support_selected(z3, variables, supports: frozenset[AssumptionSet]):
@@ -1776,7 +1859,9 @@ def _any_support_selected(z3, variables, supports: frozenset[AssumptionSet]):
     return z3.Or(
         *(
             _support_selected(z3, variables, support)
-            for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item)))))
+            for support in sorted(
+                supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))
+            )
         )
     )
 
@@ -1821,7 +1906,11 @@ def _sat_preferred_counterexample_not_deriving(
             return preferred
         outside = framework.assumptions - preferred
         if outside:
-            solver.add(z3.Or(*(variables[assumption] for assumption in sorted(outside, key=repr))))
+            solver.add(
+                z3.Or(
+                    *(variables[assumption] for assumption in sorted(outside, key=repr))
+                )
+            )
         else:
             solver.add(z3.BoolVal(False))
     return None
@@ -1888,7 +1977,11 @@ def _add_derived_constraints(
     require_not_derived: Literal | None,
 ) -> None:
     if require_derived is not None:
-        solver.add(_any_support_selected(z3, variables, supports.get(require_derived, frozenset())))
+        solver.add(
+            _any_support_selected(
+                z3, variables, supports.get(require_derived, frozenset())
+            )
+        )
     if require_not_derived is not None:
         solver.add(
             z3.Not(
@@ -1925,9 +2018,13 @@ def _extension_satisfies_constraints(
     require_derived: Literal | None,
     require_not_derived: Literal | None,
 ) -> bool:
-    if require_derived is not None and not _extension_derives(extension, require_derived, supports):
+    if require_derived is not None and not _extension_derives(
+        extension, require_derived, supports
+    ):
         return False
-    if require_not_derived is not None and _extension_derives(extension, require_not_derived, supports):
+    if require_not_derived is not None and _extension_derives(
+        extension, require_not_derived, supports
+    ):
         return False
     return True
 

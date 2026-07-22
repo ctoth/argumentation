@@ -21,7 +21,9 @@ from argumentation.solving.solver import (
     solve_aba_single_extension,
 )
 
-DATA_ROOT = Path(r"C:\Users\Q\code\argumentation\data\iccma\2025\extracted\instances\ABAs")
+DATA_ROOT = Path(
+    r"C:\Users\Q\code\argumentation\data\iccma\2025\extracted\instances\ABAs"
+)
 NAMED_ROWS = ("aba_2000_0.1_5_5_1.aba", "aba_2000_0.1_5_5_6.aba")
 
 

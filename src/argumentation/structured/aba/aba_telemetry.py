@@ -106,7 +106,9 @@ def _assumption_dependency_graph(
     assumptions: tuple[Literal, ...],
     rules: tuple,
 ) -> dict[int, set[int]]:
-    assumption_index = {assumption: index for index, assumption in enumerate(assumptions)}
+    assumption_index = {
+        assumption: index for index, assumption in enumerate(assumptions)
+    }
     targets_by_contrary = {
         contrary: assumption_index[assumption]
         for assumption, contrary in framework.contrary.items()
@@ -131,8 +133,7 @@ def _closure_probe_growth(
 ) -> list[int]:
     probes = assumptions[: min(16, len(assumptions))]
     return [
-        max(0, len(_closure_from((assumption,), rules)) - 1)
-        for assumption in probes
+        max(0, len(_closure_from((assumption,), rules)) - 1) for assumption in probes
     ]
 
 
@@ -145,7 +146,10 @@ def _scc_count(graph: dict[int, set[int]]) -> int:
 
 
 def _max_scc_size(graph: dict[int, set[int]]) -> int:
-    return max((len(component) for component in _strongly_connected_components(graph)), default=0)
+    return max(
+        (len(component) for component in _strongly_connected_components(graph)),
+        default=0,
+    )
 
 
 def _strongly_connected_components(graph: dict[int, set[int]]) -> list[set[int]]:

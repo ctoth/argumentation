@@ -84,7 +84,9 @@ def _parser() -> argparse.ArgumentParser:
         prog="argumentation.solving.iccma_cli",
         description="Solve ICCMA-style abstract argumentation tasks.",
     )
-    parser.add_argument("-p", "--problem", required=True, help="ICCMA problem, e.g. SE-ST")
+    parser.add_argument(
+        "-p", "--problem", required=True, help="ICCMA problem, e.g. SE-ST"
+    )
     parser.add_argument(
         "-f",
         "--file",
@@ -292,7 +294,9 @@ def _aba_witness_line(framework: ABAFramework, extension: frozenset[object]) -> 
         if item not in framework.assumptions:
             continue
         ids.append(literal_ids[item])
-    return "w" + "".join(f" {atom_id}" for atom_id in sorted(ids, key=_numeric_sort_key))
+    return "w" + "".join(
+        f" {atom_id}" for atom_id in sorted(ids, key=_numeric_sort_key)
+    )
 
 
 def _aba_query(framework: ABAFramework, atom_id: str) -> Literal:
@@ -300,7 +304,9 @@ def _aba_query(framework: ABAFramework, atom_id: str) -> Literal:
     try:
         return by_id[atom_id]
     except KeyError as exc:
-        raise ValueError(f"query atom is not in framework language: {atom_id!r}") from exc
+        raise ValueError(
+            f"query atom is not in framework language: {atom_id!r}"
+        ) from exc
 
 
 def _aba_literal_ids(framework: ABAFramework) -> dict[Literal, str]:

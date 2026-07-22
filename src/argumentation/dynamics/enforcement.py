@@ -119,7 +119,9 @@ class ExpansionEnforcementResult:
         return self.expansion.cost
 
 
-def apply_edit(framework: ArgumentationFramework, edit: AFEdit) -> ArgumentationFramework:
+def apply_edit(
+    framework: ArgumentationFramework, edit: AFEdit
+) -> ArgumentationFramework:
     """Return the AF obtained by applying ``edit`` to ``framework``."""
     arguments = (framework.arguments | edit.add_arguments) - edit.remove_arguments
     defeats = (framework.defeats - edit.remove_defeats) | edit.add_defeats
@@ -158,7 +160,9 @@ def build_expansion(
         if argument not in arguments
     )
     if unknown:
-        raise ValueError(f"added defeats mention unknown arguments: {sorted(unknown)!r}")
+        raise ValueError(
+            f"added defeats mention unknown arguments: {sorted(unknown)!r}"
+        )
     defeats = framework.defeats | added_defeats
     attacks = None if framework.attacks is None else framework.attacks | added_defeats
     return ArgumentationFramework(arguments=arguments, defeats=defeats, attacks=attacks)
@@ -169,7 +173,10 @@ def is_expansion(
     expanded: ArgumentationFramework,
 ) -> bool:
     """Return whether ``expanded`` preserves all old arguments and defeats."""
-    return original.arguments <= expanded.arguments and original.defeats <= expanded.defeats
+    return (
+        original.arguments <= expanded.arguments
+        and original.defeats <= expanded.defeats
+    )
 
 
 def is_normal_expansion(
@@ -307,7 +314,9 @@ def _minimal_result(
     )
 
 
-def _expansion_predicate(kind: ExpansionKind) -> Callable[
+def _expansion_predicate(
+    kind: ExpansionKind,
+) -> Callable[
     [ArgumentationFramework, ArgumentationFramework],
     bool,
 ]:
@@ -350,8 +359,12 @@ def _all_expansions(
                 if (attacker, target) not in framework.defeats
                 and (attacker in new_arguments or target in new_arguments)
             )
-            for added_count in range(min(max_added_defeats, len(possible_added_defeats)) + 1):
-                for added_defeats_tuple in combinations(possible_added_defeats, added_count):
+            for added_count in range(
+                min(max_added_defeats, len(possible_added_defeats)) + 1
+            ):
+                for added_defeats_tuple in combinations(
+                    possible_added_defeats, added_count
+                ):
                     expanded = build_expansion(
                         framework,
                         new_arguments=new_arguments,
@@ -429,7 +442,9 @@ def enforce_credulous(
         semantics=semantics,
         max_cost=max_cost,
         mode="credulous",
-        accepts=lambda extensions: any(argument in extension for extension in extensions),
+        accepts=lambda extensions: any(
+            argument in extension for extension in extensions
+        ),
     )
 
 
@@ -448,8 +463,9 @@ def enforce_skeptical(
         semantics=semantics,
         max_cost=max_cost,
         mode="skeptical",
-        accepts=lambda extensions: bool(extensions)
-        and all(argument in extension for extension in extensions),
+        accepts=lambda extensions: (
+            bool(extensions) and all(argument in extension for extension in extensions)
+        ),
     )
 
 
@@ -467,7 +483,9 @@ def enforce_extension(
     ``variant="non-strict"`` requires an extension containing ``target``.
     """
     if not target <= framework.arguments:
-        raise ValueError(f"target contains unknown arguments: {sorted(target - framework.arguments)!r}")
+        raise ValueError(
+            f"target contains unknown arguments: {sorted(target - framework.arguments)!r}"
+        )
     if variant not in {"strict", "non-strict"}:
         raise ValueError(f"unsupported enforcement variant: {variant}")
     return _minimal_result(
@@ -476,9 +494,11 @@ def enforce_extension(
         max_cost=max_cost,
         mode="extension",
         accepts=(
-            lambda extensions: target in extensions
-            if variant == "strict"
-            else any(target <= extension for extension in extensions)
+            lambda extensions: (
+                target in extensions
+                if variant == "strict"
+                else any(target <= extension for extension in extensions)
+            )
         ),
     )
 
@@ -504,7 +524,9 @@ def enforce_expansion_credulous(
         max_new_arguments=max_new_arguments,
         max_added_defeats=max_added_defeats,
         mode="credulous",
-        accepts=lambda extensions: any(argument in extension for extension in extensions),
+        accepts=lambda extensions: any(
+            argument in extension for extension in extensions
+        ),
     )
 
 
@@ -529,8 +551,9 @@ def enforce_expansion_skeptical(
         max_new_arguments=max_new_arguments,
         max_added_defeats=max_added_defeats,
         mode="skeptical",
-        accepts=lambda extensions: bool(extensions)
-        and all(argument in extension for extension in extensions),
+        accepts=lambda extensions: (
+            bool(extensions) and all(argument in extension for extension in extensions)
+        ),
     )
 
 
@@ -547,7 +570,9 @@ def enforce_expansion_extension(
 ) -> ExpansionEnforcementResult:
     """Find a minimal Baumann-style expansion enforcing an extension target."""
     if not target <= framework.arguments:
-        raise ValueError(f"target contains unknown arguments: {sorted(target - framework.arguments)!r}")
+        raise ValueError(
+            f"target contains unknown arguments: {sorted(target - framework.arguments)!r}"
+        )
     if variant not in {"strict", "non-strict"}:
         raise ValueError(f"unsupported enforcement variant: {variant}")
     return _minimal_expansion_result(
@@ -559,9 +584,11 @@ def enforce_expansion_extension(
         max_added_defeats=max_added_defeats,
         mode="extension",
         accepts=(
-            lambda extensions: target in extensions
-            if variant == "strict"
-            else any(target <= extension for extension in extensions)
+            lambda extensions: (
+                target in extensions
+                if variant == "strict"
+                else any(target <= extension for extension in extensions)
+            )
         ),
     )
 
@@ -571,7 +598,9 @@ def _validate_liberal_semantics(
     target_semantics: SemanticsName,
 ) -> None:
     if source_semantics == target_semantics:
-        raise ValueError("liberal enforcement requires source_semantics != target_semantics")
+        raise ValueError(
+            "liberal enforcement requires source_semantics != target_semantics"
+        )
 
 
 def enforce_liberal_expansion_credulous(
@@ -597,7 +626,9 @@ def enforce_liberal_expansion_credulous(
         max_new_arguments=max_new_arguments,
         max_added_defeats=max_added_defeats,
         mode="credulous",
-        accepts=lambda extensions: any(argument in extension for extension in extensions),
+        accepts=lambda extensions: any(
+            argument in extension for extension in extensions
+        ),
         source_semantics=source_semantics,
     )
 
@@ -625,8 +656,9 @@ def enforce_liberal_expansion_skeptical(
         max_new_arguments=max_new_arguments,
         max_added_defeats=max_added_defeats,
         mode="skeptical",
-        accepts=lambda extensions: bool(extensions)
-        and all(argument in extension for extension in extensions),
+        accepts=lambda extensions: (
+            bool(extensions) and all(argument in extension for extension in extensions)
+        ),
         source_semantics=source_semantics,
     )
 
@@ -646,7 +678,9 @@ def enforce_liberal_expansion_extension(
     """Find a minimal liberal expansion enforcing an extension target."""
     _validate_liberal_semantics(source_semantics, target_semantics)
     if not target <= framework.arguments:
-        raise ValueError(f"target contains unknown arguments: {sorted(target - framework.arguments)!r}")
+        raise ValueError(
+            f"target contains unknown arguments: {sorted(target - framework.arguments)!r}"
+        )
     if variant not in {"strict", "non-strict"}:
         raise ValueError(f"unsupported enforcement variant: {variant}")
     return _minimal_expansion_result(
@@ -658,9 +692,11 @@ def enforce_liberal_expansion_extension(
         max_added_defeats=max_added_defeats,
         mode="extension",
         accepts=(
-            lambda extensions: target in extensions
-            if variant == "strict"
-            else any(target <= extension for extension in extensions)
+            lambda extensions: (
+                target in extensions
+                if variant == "strict"
+                else any(target <= extension for extension in extensions)
+            )
         ),
         source_semantics=source_semantics,
     )

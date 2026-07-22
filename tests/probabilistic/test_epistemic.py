@@ -16,7 +16,10 @@ def test_assignment_satisfies_interval_constraints_and_influences() -> None:
     graph = EpistemicGraph(
         arguments=frozenset({"a", "b"}),
         influences=frozenset({Influence("a", "b", InfluenceKind.POSITIVE)}),
-        constraints=(BeliefConstraint("a", lower=0.6), BeliefConstraint("b", lower=0.5),),
+        constraints=(
+            BeliefConstraint("a", lower=0.6),
+            BeliefConstraint("b", lower=0.5),
+        ),
     )
 
     assert belief_assignment_satisfies(graph, {"a": 0.8, "b": 0.8}) is True
@@ -53,7 +56,10 @@ def test_negative_influence_projection_to_constellation_praf() -> None:
     graph = EpistemicGraph(
         arguments=frozenset({"a", "b"}),
         influences=frozenset({Influence("a", "b", InfluenceKind.NEGATIVE)}),
-        constraints=(BeliefConstraint("a", lower=0.25), BeliefConstraint("b", upper=0.75),),
+        constraints=(
+            BeliefConstraint("a", lower=0.25),
+            BeliefConstraint("b", upper=0.75),
+        ),
     )
 
     praf = project_to_constellation_praf(graph)

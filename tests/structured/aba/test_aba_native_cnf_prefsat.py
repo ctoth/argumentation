@@ -6,7 +6,9 @@ from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba import aba_decomposition
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from tests.structured.aba.test_aba_real_prefsat_contract import small_flat_aba_for_real_prefsat
+from tests.structured.aba.test_aba_real_prefsat_contract import (
+    small_flat_aba_for_real_prefsat,
+)
 
 
 NATIVE_CNF_PREFSAT_PAGE_IMAGES = (
@@ -74,10 +76,14 @@ def test_dense_flat_prefsat_dispatches_to_native_cnf(monkeypatch) -> None:
     result = aba_decomposition.decomposed_prefsat_extension(framework)
 
     assert calls == [(framework, frozenset())]
-    assert result.component_results[0].route_metadata["algorithm"] == "native-cnf-prefsat"
+    assert (
+        result.component_results[0].route_metadata["algorithm"] == "native-cnf-prefsat"
+    )
 
 
-def test_dense_flat_sat_support_extension_bypasses_support_preprocessing(monkeypatch) -> None:
+def test_dense_flat_sat_support_extension_bypasses_support_preprocessing(
+    monkeypatch,
+) -> None:
     framework = _dense_flat_framework(151, rules_per_assumption=26)
     calls = []
 
@@ -106,7 +112,9 @@ def test_dense_flat_sat_support_extension_bypasses_support_preprocessing(monkeyp
         )
 
     def preprocessing_spy(*args, **kwargs):
-        raise AssertionError("dense native CNF route must not materialize supports in preprocessing")
+        raise AssertionError(
+            "dense native CNF route must not materialize supports in preprocessing"
+        )
 
     monkeypatch.setattr(aba_sat, "native_cnf_prefsat_extension", native_spy)
     monkeypatch.setattr(aba_sat, "_aba_simplification", preprocessing_spy)
@@ -127,7 +135,9 @@ def test_native_cnf_prefsat_matches_preferred_oracle(framework: ABAFramework) ->
 
 @given(small_flat_aba_for_real_prefsat())
 @settings(max_examples=30, deadline=None)
-def test_native_cnf_prefsat_reports_operational_contract(framework: ABAFramework) -> None:
+def test_native_cnf_prefsat_reports_operational_contract(
+    framework: ABAFramework,
+) -> None:
     result = aba_sat.native_cnf_prefsat_extension(framework)
     telemetry = result.telemetry
 
@@ -135,18 +145,28 @@ def test_native_cnf_prefsat_reports_operational_contract(framework: ABAFramework
     assert telemetry["native_cnf_variables"] >= 3 * len(framework.assumptions)
     assert telemetry["native_cnf_clauses"] >= len(framework.assumptions)
     assert telemetry["native_cnf_solver_checks"] >= 1
-    assert telemetry["native_cnf_candidate_models"] <= telemetry["native_cnf_solver_checks"]
-    assert telemetry["native_cnf_candidate_blocks"] <= telemetry["native_cnf_candidate_models"]
+    assert (
+        telemetry["native_cnf_candidate_models"]
+        <= telemetry["native_cnf_solver_checks"]
+    )
+    assert (
+        telemetry["native_cnf_candidate_blocks"]
+        <= telemetry["native_cnf_candidate_models"]
+    )
     assert telemetry["native_cnf_z3_main_checks"] == 0
     assert telemetry["native_cnf_closure_materializations"] == 0
 
 
 @given(small_flat_aba_for_real_prefsat())
 @settings(max_examples=20, deadline=None)
-def test_native_cnf_prefsat_respects_required_assumptions(framework: ABAFramework) -> None:
+def test_native_cnf_prefsat_respects_required_assumptions(
+    framework: ABAFramework,
+) -> None:
     oracle_extensions = aba_sat.support_extensions(framework, "preferred")
     required = next(iter(framework.assumptions))
-    expected = tuple(extension for extension in oracle_extensions if required in extension)
+    expected = tuple(
+        extension for extension in oracle_extensions if required in extension
+    )
 
     result = aba_sat.native_cnf_prefsat_extension(
         framework,
@@ -176,7 +196,9 @@ def _dense_flat_framework(size: int, *, rules_per_assumption: int) -> ABAFramewo
     return ABAFramework(
         language=frozenset((*assumptions, *atoms)),
         assumptions=frozenset(assumptions),
-        contrary={assumption: atoms[index] for index, assumption in enumerate(assumptions)},
+        contrary={
+            assumption: atoms[index] for index, assumption in enumerate(assumptions)
+        },
         rules=frozenset(rules),
     )
 

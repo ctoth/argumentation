@@ -22,14 +22,16 @@ from argumentation.ranking.ranking import (
 def _bonzon_example() -> ArgumentationFramework:
     return ArgumentationFramework(
         arguments=frozenset({"a", "b", "c", "d", "e"}),
-        defeats=frozenset({
-            ("a", "e"),
-            ("b", "a"),
-            ("b", "c"),
-            ("c", "e"),
-            ("d", "a"),
-            ("e", "d"),
-        }),
+        defeats=frozenset(
+            {
+                ("a", "e"),
+                ("b", "a"),
+                ("b", "c"),
+                ("c", "e"),
+                ("d", "a"),
+                ("e", "d"),
+            }
+        ),
     )
 
 
@@ -61,13 +63,15 @@ def test_burden_numbers_match_bonzon_running_example_steps() -> None:
     assert burdens.converged is False
     assert burdens.semantics == "burden"
     assert burdens.iterations == 2
-    assert burdens.scores == pytest.approx({
-        "a": 2.5,
-        "b": 1.0,
-        "c": 2.0,
-        "d": 1.3333333333,
-        "e": 1.8333333333,
-    })
+    assert burdens.scores == pytest.approx(
+        {
+            "a": 2.5,
+            "b": 1.0,
+            "c": 2.0,
+            "d": 1.3333333333,
+            "e": 1.8333333333,
+        }
+    )
 
     ranking = burden_ranking(_bonzon_example(), iterations=2)
     assert ranking.scores == {
@@ -180,15 +184,17 @@ def test_discussion_ranking_counts_linear_discussions_with_multiplicity() -> Non
     # multiplicity and incorrectly ties the arguments.
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b", "c", "d", "x", "y", "z", "w"}),
-        defeats=frozenset({
-            ("b", "a"),
-            ("c", "a"),
-            ("d", "b"),
-            ("d", "c"),
-            ("y", "x"),
-            ("z", "x"),
-            ("w", "y"),
-        }),
+        defeats=frozenset(
+            {
+                ("b", "a"),
+                ("c", "a"),
+                ("d", "b"),
+                ("d", "c"),
+                ("y", "x"),
+                ("z", "x"),
+                ("w", "y"),
+            }
+        ),
     )
 
     result = discussion_based_ranking(framework, max_depth=3)
@@ -245,7 +251,10 @@ def test_additional_ranking_semantics_return_total_preorders(semantic) -> None:
     assert isinstance(result, RankingResult)
     assert set(result.scores) == _bonzon_example().arguments
     assert set().union(*result.ranking) == _bonzon_example().arguments
-    assert all(result.equivalent(argument, argument) for argument in _bonzon_example().arguments)
+    assert all(
+        result.equivalent(argument, argument)
+        for argument in _bonzon_example().arguments
+    )
 
 
 def test_false_scalar_iterated_graded_paper_export_is_absent() -> None:
@@ -257,7 +266,9 @@ def test_false_scalar_iterated_graded_paper_export_is_absent() -> None:
 
 def _small_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
     arguments = ("a", "b", "c", "d")
-    possible_attacks = [(attacker, target) for attacker in arguments for target in arguments]
+    possible_attacks = [
+        (attacker, target) for attacker in arguments for target in arguments
+    ]
     return st.builds(
         lambda attacks: ArgumentationFramework(
             arguments=frozenset(arguments),
@@ -296,7 +307,9 @@ def _small_acyclic_frameworks() -> st.SearchStrategy[ArgumentationFramework]:
     )
 
 
-def _branch_lengths(framework: ArgumentationFramework, argument: str) -> tuple[int, ...]:
+def _branch_lengths(
+    framework: ArgumentationFramework, argument: str
+) -> tuple[int, ...]:
     attackers = tuple(
         attacker for attacker, target in framework.defeats if target == argument
     )
@@ -356,30 +369,34 @@ def test_tuples_ranking_preserves_exact_branch_tuples_and_incomparability() -> N
     # [(2),(1)]; ``x`` has [(2,2),(1,1)]. More defenses and more attacks are
     # conflicting criteria, so neither argument outranks the other.
     framework = ArgumentationFramework(
-        arguments=frozenset({
-            "a",
-            "a_direct",
-            "a_mid",
-            "a_deep",
-            "x",
-            "x_direct_1",
-            "x_direct_2",
-            "x_mid_1",
-            "x_mid_2",
-            "x_deep_1",
-            "x_deep_2",
-        }),
-        defeats=frozenset({
-            ("a_direct", "a"),
-            ("a_mid", "a"),
-            ("a_deep", "a_mid"),
-            ("x_direct_1", "x"),
-            ("x_direct_2", "x"),
-            ("x_mid_1", "x"),
-            ("x_mid_2", "x"),
-            ("x_deep_1", "x_mid_1"),
-            ("x_deep_2", "x_mid_2"),
-        }),
+        arguments=frozenset(
+            {
+                "a",
+                "a_direct",
+                "a_mid",
+                "a_deep",
+                "x",
+                "x_direct_1",
+                "x_direct_2",
+                "x_mid_1",
+                "x_mid_2",
+                "x_deep_1",
+                "x_deep_2",
+            }
+        ),
+        defeats=frozenset(
+            {
+                ("a_direct", "a"),
+                ("a_mid", "a"),
+                ("a_deep", "a_mid"),
+                ("x_direct_1", "x"),
+                ("x_direct_2", "x"),
+                ("x_mid_1", "x"),
+                ("x_mid_2", "x"),
+                ("x_deep_1", "x_mid_1"),
+                ("x_deep_2", "x_mid_2"),
+            }
+        ),
     )
 
     result = tuples_ranking(framework)
@@ -418,8 +435,12 @@ def test_tuples_ranking_matches_branch_multisets_and_is_a_partial_preorder(
             assert value.attack_lengths == ()
         else:
             assert value.infinite_defense_zeros is False
-            assert value.defense_lengths == tuple(length for length in lengths if length % 2 == 0)
-            assert value.attack_lengths == tuple(length for length in lengths if length % 2 == 1)
+            assert value.defense_lengths == tuple(
+                length for length in lengths if length % 2 == 0
+            )
+            assert value.attack_lengths == tuple(
+                length for length in lengths if length % 2 == 1
+            )
 
     for left in framework.arguments:
         assert result.at_least_as_acceptable(left, left)
@@ -488,5 +509,7 @@ def test_generated_ranking_results_are_reflexive_and_transitive(
     for left in framework.arguments:
         for middle in framework.arguments:
             for right in framework.arguments:
-                if result.strictly_prefers(left, middle) and result.strictly_prefers(middle, right):
+                if result.strictly_prefers(left, middle) and result.strictly_prefers(
+                    middle, right
+                ):
                     assert result.strictly_prefers(left, right)

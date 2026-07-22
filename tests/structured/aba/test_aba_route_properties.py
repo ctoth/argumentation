@@ -87,7 +87,9 @@ def test_shuffling_manifest_row_order_does_not_change_route_decision(
 def test_atom_renaming_does_not_change_route_decision(framework: ABAFramework) -> None:
     renamed, _ = renamed_framework(framework)
 
-    assert _candidate_signature(route_candidates(compute_aba_shape(framework), SOLVER_CLASS)) == (
+    assert _candidate_signature(
+        route_candidates(compute_aba_shape(framework), SOLVER_CLASS)
+    ) == (
         _candidate_signature(route_candidates(compute_aba_shape(renamed), SOLVER_CLASS))
     )
 
@@ -103,8 +105,12 @@ def test_rule_order_permutation_does_not_change_route_decision(spec) -> None:
         rules=frozenset(reversed(spec.rules)),
     )
 
-    assert _candidate_signature(route_candidates(compute_aba_shape(forward), SOLVER_CLASS)) == (
-        _candidate_signature(route_candidates(compute_aba_shape(reversed_rules), SOLVER_CLASS))
+    assert _candidate_signature(
+        route_candidates(compute_aba_shape(forward), SOLVER_CLASS)
+    ) == (
+        _candidate_signature(
+            route_candidates(compute_aba_shape(reversed_rules), SOLVER_CLASS)
+        )
     )
 
 
@@ -200,7 +206,9 @@ def test_large_dense_stable_route_ignores_locator_fields() -> None:
         row_number=1,
     )
 
-    assert _route_signature(left, solver_class_name=STABLE_SOLVER_CLASS) == _route_signature(
+    assert _route_signature(
+        left, solver_class_name=STABLE_SOLVER_CLASS
+    ) == _route_signature(
         right,
         solver_class_name=STABLE_SOLVER_CLASS,
     )
@@ -234,7 +242,8 @@ def test_large_dense_preferred_asp_candidate_is_not_production_route() -> None:
     asp_candidates = [
         candidate
         for candidate in candidates
-        if candidate.backend == "asp" and candidate.predicate == "flat_direct_asp_candidate"
+        if candidate.backend == "asp"
+        and candidate.predicate == "flat_direct_asp_candidate"
     ]
     assert asp_candidates
     assert all(not candidate.production for candidate in asp_candidates)

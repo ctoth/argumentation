@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
 from argumentation.probabilistic.probabilistic_grounded_td import (
     compute_exact_dp,
     compute_exact_dp_with_diagnostics,
@@ -36,25 +39,33 @@ def _praf(
 
 def test_treewidth_estimation_for_empty_path_and_clique() -> None:
     assert estimate_treewidth(ArgumentationFramework(frozenset(), frozenset())) == 0
-    assert estimate_treewidth(
-        ArgumentationFramework(
-            arguments=frozenset({"a", "b", "c"}),
-            defeats=frozenset({("a", "b"), ("b", "c")}),
+    assert (
+        estimate_treewidth(
+            ArgumentationFramework(
+                arguments=frozenset({"a", "b", "c"}),
+                defeats=frozenset({("a", "b"), ("b", "c")}),
+            )
         )
-    ) == 1
-    assert estimate_treewidth(
-        ArgumentationFramework(
-            arguments=frozenset({"a", "b", "c"}),
-            defeats=frozenset({
-                ("a", "b"),
-                ("b", "a"),
-                ("a", "c"),
-                ("c", "a"),
-                ("b", "c"),
-                ("c", "b"),
-            }),
+        == 1
+    )
+    assert (
+        estimate_treewidth(
+            ArgumentationFramework(
+                arguments=frozenset({"a", "b", "c"}),
+                defeats=frozenset(
+                    {
+                        ("a", "b"),
+                        ("b", "a"),
+                        ("a", "c"),
+                        ("c", "a"),
+                        ("b", "c"),
+                        ("c", "b"),
+                    }
+                ),
+            )
         )
-    ) == 2
+        == 2
+    )
 
 
 def test_tree_decomposition_validates_path_framework() -> None:
@@ -147,7 +158,9 @@ def test_exact_dp_diagnostics_expose_grounded_status_witnesses() -> None:
 
 def test_exact_dp_rejects_richer_support_worlds() -> None:
     praf = ProbabilisticAF(
-        framework=ArgumentationFramework(arguments=frozenset({"a", "b"}), defeats=frozenset()),
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a", "b"}), defeats=frozenset()
+        ),
         p_args={"a": 1.0, "b": 1.0},
         p_defeats={},
         supports=frozenset({("a", "b")}),

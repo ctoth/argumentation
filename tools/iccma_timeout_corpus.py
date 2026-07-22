@@ -44,11 +44,15 @@ def collect_timeout_rows(csv_paths: Iterable[Path]) -> list[dict[str, Any]]:
                     continue
                 rows.append(
                     {
-                        "arguments_or_atoms": _optional_int(source.get("arguments_or_atoms")),
+                        "arguments_or_atoms": _optional_int(
+                            source.get("arguments_or_atoms")
+                        ),
                         "attacks": _optional_int(source.get("attacks")),
                         "backend": source.get("backend") or "",
                         "contraries": _optional_int(source.get("contraries")),
-                        "elapsed_seconds": _optional_float(source.get("elapsed_seconds")),
+                        "elapsed_seconds": _optional_float(
+                            source.get("elapsed_seconds")
+                        ),
                         "error": source.get("error") or "",
                         "instance": source.get("instance") or "",
                         "instance_kind": source.get("instance_kind") or "",
@@ -86,11 +90,20 @@ def summarize_timeout_rows(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
         }
         for (year, track, subtrack, instance_kind), count in counts.items()
     ]
-    by_group.sort(key=lambda row: (row["track"], row["year"], row["subtrack"], row["instance_kind"]))
+    by_group.sort(
+        key=lambda row: (
+            row["track"],
+            row["year"],
+            row["subtrack"],
+            row["instance_kind"],
+        )
+    )
     return {"by_group": by_group, "total_timeouts": len(materialized)}
 
 
-def add_input_hashes(rows: Iterable[dict[str, Any]], input_root: Path) -> list[dict[str, Any]]:
+def add_input_hashes(
+    rows: Iterable[dict[str, Any]], input_root: Path
+) -> list[dict[str, Any]]:
     checked_rows: list[dict[str, Any]] = []
     for row in rows:
         checked = dict(row)
@@ -118,12 +131,18 @@ def _sha256(path: Path) -> str:
 
 def _write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Collect ICCMA timeout rows from result CSVs.")
-    parser.add_argument("--csv", action="append", dest="csv_paths", required=True, type=Path)
+    parser = argparse.ArgumentParser(
+        description="Collect ICCMA timeout rows from result CSVs."
+    )
+    parser.add_argument(
+        "--csv", action="append", dest="csv_paths", required=True, type=Path
+    )
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--label", default="cap100-timeouts")
     parser.add_argument("--checked-manifest", type=Path)
@@ -136,7 +155,11 @@ def main(argv: list[str] | None = None) -> int:
     summary_path = args.output_dir / f"{args.label}-summary.json"
     _write_json(rows_path, rows)
     _write_json(summary_path, summary)
-    result = {"summary": summary, "timeouts": str(rows_path), "summary_path": str(summary_path)}
+    result = {
+        "summary": summary,
+        "timeouts": str(rows_path),
+        "summary_path": str(summary_path),
+    }
     if args.checked_manifest is not None:
         if args.input_root is None:
             parser.error("--input-root is required with --checked-manifest")

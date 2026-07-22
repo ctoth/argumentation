@@ -66,7 +66,9 @@ def small_flat_aba_frameworks(draw):
     contraries = [lit(f"c{i}") for i in range(assumption_count)]
     derived = [lit(f"d{i}") for i in range(derived_count)]
     language = frozenset([*assumptions, *contraries, *derived])
-    contrary = {assumption: contraries[index] for index, assumption in enumerate(assumptions)}
+    contrary = {
+        assumption: contraries[index] for index, assumption in enumerate(assumptions)
+    }
     possible_bodies = [*assumptions, *derived]
     rule_specs = draw(
         st.lists(

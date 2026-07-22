@@ -42,9 +42,7 @@ def main() -> int:
                 "recursive_rules": solver.telemetry[
                     "native_sparse_narrow_acyc_recursive_rules"
                 ],
-                "dependency_edges": solver.telemetry[
-                    "native_sparse_narrow_acyc_edges"
-                ],
+                "dependency_edges": solver.telemetry["native_sparse_narrow_acyc_edges"],
             },
             indent=2,
             sort_keys=True,

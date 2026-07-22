@@ -71,8 +71,7 @@ class Labelling:
                 f"missing={missing!r}, extra={extra!r}"
             )
         normalized = {
-            argument: _normalize_label(status)
-            for argument, status in statuses.items()
+            argument: _normalize_label(status) for argument, status in statuses.items()
         }
         return cls(normalized)
 
@@ -132,9 +131,7 @@ class Labelling:
 
     def _arguments_with_label(self, label: Label) -> frozenset[str]:
         return frozenset(
-            argument
-            for argument, status in self.statuses.items()
-            if status == label
+            argument for argument, status in self.statuses.items() if status == label
         )
 
 
@@ -199,18 +196,23 @@ def complete_labellings(
         return [grounded_labelling(framework)]
 
     results: list[Labelling] = []
-    for candidate_count, extension in enumerate(_all_subsets(framework.arguments), start=1):
+    for candidate_count, extension in enumerate(
+        _all_subsets(framework.arguments), start=1
+    ):
         if max_candidates is not None and candidate_count > max_candidates:
             raise ExactEnumerationExceeded(
                 "complete labellings exact enumeration exceeded "
                 f"{max_candidates} candidate subsets for "
                 f"{len(framework.arguments)} arguments"
             )
-        if characteristic_fn(
-            extension,
-            framework.arguments,
-            framework.defeats,
-        ) != extension:
+        if (
+            characteristic_fn(
+                extension,
+                framework.arguments,
+                framework.defeats,
+            )
+            != extension
+        ):
             continue
         if not admissible(extension, framework.arguments, framework.defeats):
             continue
@@ -246,8 +248,7 @@ def preferred_labellings(framework: ArgumentationFramework) -> list[Labelling]:
             labelling
             for labelling in labellings
             if not any(
-                labelling.in_arguments < other.in_arguments
-                for other in labellings
+                labelling.in_arguments < other.in_arguments for other in labellings
             )
         ]
     )
@@ -317,7 +318,9 @@ def _all_subsets(arguments: frozenset[str]) -> Iterator[frozenset[str]]:
 
 
 def _is_acyclic(framework: ArgumentationFramework) -> bool:
-    outgoing: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    outgoing: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
     for attacker, target in framework.defeats:
         outgoing.setdefault(attacker, set()).add(target)
     return is_acyclic(outgoing)

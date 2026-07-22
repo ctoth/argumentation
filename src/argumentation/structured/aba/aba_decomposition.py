@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
-from argumentation.structured.aba.aba_preprocessing import _prepare_residual_requirements
+from argumentation.structured.aba.aba_preprocessing import (
+    _prepare_residual_requirements,
+)
 from argumentation.structured.aspic.aspic import Literal, Rule
 
 
@@ -209,7 +209,9 @@ def _proof_contrary_incidence_graph(
     return graph
 
 
-def _connected_components(graph: dict[Literal, set[Literal]]) -> tuple[frozenset[Literal], ...]:
+def _connected_components(
+    graph: dict[Literal, set[Literal]],
+) -> tuple[frozenset[Literal], ...]:
     remaining = set(graph)
     components: list[frozenset[Literal]] = []
     while remaining:
@@ -256,7 +258,9 @@ def _component_job(
         for rule in framework.rules
         if {rule.consequent, *rule.antecedents} <= component
     )
-    contrary = {assumption: framework.contrary[assumption] for assumption in assumptions}
+    contrary = {
+        assumption: framework.contrary[assumption] for assumption in assumptions
+    }
     rule_literals = frozenset(
         literal for rule in rules for literal in (rule.consequent, *rule.antecedents)
     )
@@ -286,7 +290,9 @@ def _plan(
         jobs=jobs,
         no_reduction_reason=no_reduction_reason,
         component_count=component_count,
-        max_component_assumptions=max((len(job.assumptions) for job in jobs), default=0),
+        max_component_assumptions=max(
+            (len(job.assumptions) for job in jobs), default=0
+        ),
         max_component_rules=max((len(job.rules) for job in jobs), default=0),
     )
 
@@ -324,7 +330,9 @@ def _validation_success(framework: ABAFramework, extension: AssumptionSet) -> in
     return int(extension in aba_sat.support_extensions(framework, "preferred"))
 
 
-def _add_edge(graph: dict[Literal, set[Literal]], left: Literal, right: Literal) -> None:
+def _add_edge(
+    graph: dict[Literal, set[Literal]], left: Literal, right: Literal
+) -> None:
     graph.setdefault(left, set()).add(right)
     graph.setdefault(right, set()).add(left)
 

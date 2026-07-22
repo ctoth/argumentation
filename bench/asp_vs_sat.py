@@ -30,7 +30,15 @@ def main() -> None:
     with out_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["family", "size", "semantics", "backend", "status", "extensions", "seconds"],
+            fieldnames=[
+                "family",
+                "size",
+                "semantics",
+                "backend",
+                "status",
+                "extensions",
+                "seconds",
+            ],
         )
         writer.writeheader()
         writer.writerows(rows)
@@ -48,7 +56,17 @@ def _run_aba(size: int, timeout: float) -> list[dict[str, str]]:
                 semantics=semantics,
                 timeout_seconds=timeout,
             )
-            rows.append(_row("aba", size, semantics, backend, result.status, len(result.extensions), start))
+            rows.append(
+                _row(
+                    "aba",
+                    size,
+                    semantics,
+                    backend,
+                    result.status,
+                    len(result.extensions),
+                    start,
+                )
+            )
     return rows
 
 
@@ -66,7 +84,17 @@ def _run_aspic(size: int, timeout: float) -> list[dict[str, str]]:
                 semantics=semantics,
                 timeout_seconds=timeout,
             )
-            rows.append(_row("aspic", size, semantics, backend, result.status, len(result.extensions), start))
+            rows.append(
+                _row(
+                    "aspic",
+                    size,
+                    semantics,
+                    backend,
+                    result.status,
+                    len(result.extensions),
+                    start,
+                )
+            )
     return rows
 
 

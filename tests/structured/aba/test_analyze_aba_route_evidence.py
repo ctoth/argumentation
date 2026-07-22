@@ -3,7 +3,9 @@ from __future__ import annotations
 from tools.analyze_aba_route_evidence import analyze_payload
 
 
-def test_analyze_payload_classifies_zero_counterexample_wins_and_mixed_signatures() -> None:
+def test_analyze_payload_classifies_zero_counterexample_wins_and_mixed_signatures() -> (
+    None
+):
     payload = {
         "rows": [
             _row("a.aba", "SE-PR", "asp", False, {"asp": "solved", "sat": "timeout"}),
@@ -128,7 +130,9 @@ def _row(
         "instance": instance,
         "subtrack": subtrack,
         "solver_class": solver_class,
-        "shape_bucket_id": "stable-bucket" if subtrack == "SE-ST" else "preferred-bucket",
+        "shape_bucket_id": "stable-bucket"
+        if subtrack == "SE-ST"
+        else "preferred-bucket",
         "best_solved_backend": best_backend,
         "all_timed_out": all_timed_out,
         "backend_outcomes": backend_outcomes,
@@ -175,7 +179,9 @@ def _signature(solver_class: str) -> dict:
     }
 
 
-def _ref(instance: str, subtrack: str, best_backend: str | None, all_timed_out: bool) -> dict:
+def _ref(
+    instance: str, subtrack: str, best_backend: str | None, all_timed_out: bool
+) -> dict:
     solver_class = (
         "aba/single-extension/stable"
         if subtrack == "SE-ST"

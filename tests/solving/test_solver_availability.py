@@ -54,14 +54,18 @@ def _simple_aba_framework() -> ABAFramework:
 def _large_dense_aba_framework() -> ABAFramework:
     assumptions = tuple(_literal(f"a{index}") for index in range(151))
     contraries = {_literal(f"a{index}"): _literal(f"ca{index}") for index in range(151)}
-    heads = tuple(_literal(f"h{index}_{offset}") for index in range(151) for offset in range(26))
+    heads = tuple(
+        _literal(f"h{index}_{offset}") for index in range(151) for offset in range(26)
+    )
     rules = frozenset(
         Rule((assumptions[index],), heads[index * 26 + offset], "strict")
         for index in range(151)
         for offset in range(26)
     )
     return ABAFramework(
-        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        language=frozenset(assumptions)
+        | frozenset(contraries.values())
+        | frozenset(heads),
         rules=rules,
         assumptions=frozenset(assumptions),
         contrary=contraries,
@@ -92,7 +96,9 @@ def _large_dense_non_sparse_narrow_aba_framework() -> ABAFramework:
         for offset in range(26)
     )
     return ABAFramework(
-        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        language=frozenset(assumptions)
+        | frozenset(contraries.values())
+        | frozenset(heads),
         rules=rules,
         assumptions=frozenset(assumptions),
         contrary=contraries,
@@ -102,9 +108,7 @@ def _large_dense_non_sparse_narrow_aba_framework() -> ABAFramework:
 def _sparse_narrow_large_dense_aba_framework() -> ABAFramework:
     """Mirror the ICCMA abcgen shape: sparse-narrow AND large dense flat."""
     assumptions = tuple(_literal(f"a{index}") for index in range(700))
-    contraries = {
-        assumptions[index]: _literal(f"ca{index}") for index in range(700)
-    }
+    contraries = {assumptions[index]: _literal(f"ca{index}") for index in range(700)}
     heads = tuple(
         _literal(f"h{index}_{offset}") for index in range(700) for offset in range(26)
     )
@@ -114,7 +118,9 @@ def _sparse_narrow_large_dense_aba_framework() -> ABAFramework:
         for offset in range(26)
     )
     return ABAFramework(
-        language=frozenset(assumptions) | frozenset(contraries.values()) | frozenset(heads),
+        language=frozenset(assumptions)
+        | frozenset(contraries.values())
+        | frozenset(heads),
         rules=rules,
         assumptions=frozenset(assumptions),
         contrary=contraries,
@@ -265,7 +271,9 @@ def test_solve_dung_extensions_default_auto_uses_sat_for_stable(monkeypatch) -> 
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default stable solving should not call native enumeration")
+        raise AssertionError(
+            "default stable solving should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -325,7 +333,9 @@ def test_solve_dung_extensions_reports_unavailable_external_sat_backend() -> Non
     assert result.reason == "external SAT backend is not configured"
 
 
-def test_sat_backend_solves_stable_single_extension_without_native_enumeration() -> None:
+def test_sat_backend_solves_stable_single_extension_without_native_enumeration() -> (
+    None
+):
     arguments = frozenset(str(index) for index in range(1, 71))
     defeats = frozenset(
         {("1", str(index)) for index in range(2, 71)} | {("2", "3"), ("3", "2")}
@@ -401,7 +411,9 @@ def test_default_single_extension_uses_auto_complete_sat_backend(monkeypatch) ->
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default complete solving should not call native enumeration")
+        raise AssertionError(
+            "default complete solving should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -418,7 +430,9 @@ def test_default_acceptance_uses_auto_complete_sat_backend(monkeypatch) -> None:
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default complete solving should not call native enumeration")
+        raise AssertionError(
+            "default complete solving should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -450,7 +464,9 @@ def test_default_single_extension_uses_auto_preferred_sat_backend(monkeypatch) -
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default preferred witness should not call native enumeration")
+        raise AssertionError(
+            "default preferred witness should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -469,7 +485,9 @@ def test_default_credulous_acceptance_uses_auto_preferred_sat_backend(
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default preferred acceptance should not call native enumeration")
+        raise AssertionError(
+            "default preferred acceptance should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -494,7 +512,9 @@ def test_default_skeptical_preferred_acceptance_uses_auto_sat_backend(
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default skeptical preferred acceptance should not call native enumeration")
+        raise AssertionError(
+            "default skeptical preferred acceptance should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -519,7 +539,9 @@ def test_default_single_extension_uses_auto_semi_stable_sat_backend(
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default semi-stable witness should not call native enumeration")
+        raise AssertionError(
+            "default semi-stable witness should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -575,7 +597,9 @@ def test_default_acceptance_uses_auto_ideal_sat_backend(monkeypatch) -> None:
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default ideal acceptance should not call native enumeration")
+        raise AssertionError(
+            "default ideal acceptance should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
     monkeypatch.setattr(
@@ -602,7 +626,9 @@ def test_default_acceptance_uses_auto_semi_stable_sat_backend(monkeypatch) -> No
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default semi-stable acceptance should not call native enumeration")
+        raise AssertionError(
+            "default semi-stable acceptance should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -634,7 +660,9 @@ def test_default_acceptance_uses_auto_stage_sat_backend(monkeypatch) -> None:
     )
 
     def forbidden_native_extensions(*args, **kwargs):
-        raise AssertionError("default stage acceptance should not call native enumeration")
+        raise AssertionError(
+            "default stage acceptance should not call native enumeration"
+        )
 
     monkeypatch.setattr(solver_module, "_dung_extensions", forbidden_native_extensions)
 
@@ -749,7 +777,10 @@ def test_solve_dung_extensions_rejects_iccma_single_witness_backend() -> None:
     )
 
     assert isinstance(result, SolverBackendUnavailable)
-    assert result.reason == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    assert (
+        result.reason
+        == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    )
 
 
 def test_solve_dung_single_extension_routes_explicit_iccma_backend(monkeypatch) -> None:
@@ -879,7 +910,9 @@ def test_solve_dung_single_extension_maps_iccma_solver_error(monkeypatch) -> Non
     assert result.details["stderr"] == "bad input"
 
 
-def test_solve_dung_single_extension_preserves_iccma_protocol_error(monkeypatch) -> None:
+def test_solve_dung_single_extension_preserves_iccma_protocol_error(
+    monkeypatch,
+) -> None:
     framework = ArgumentationFramework(arguments=frozenset({"1"}), defeats=frozenset())
 
     def fake_solve_af_extensions(*, framework, semantics, binary, timeout_seconds):
@@ -1126,6 +1159,9 @@ def test_iccma_single_extension_backend_is_not_enumeration_for_multi_extension_a
     single = solve_dung_single_extension(framework, semantics="preferred")
 
     assert isinstance(enumeration, SolverBackendUnavailable)
-    assert enumeration.reason == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    assert (
+        enumeration.reason
+        == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    )
     assert isinstance(single, SingleExtensionSolverSuccess)
     assert not isinstance(single, ExtensionSolverSuccess)

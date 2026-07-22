@@ -228,7 +228,10 @@ def solve_af_acceptance(
 def supports_af_problem(task: str, semantics: str) -> bool:
     prefix = ACCEPTANCE_TASK_TO_PREFIX.get(task, task)
     semantics_code = SEMANTICS_TO_CODE.get(semantics)
-    return semantics_code is not None and f"{prefix}-{semantics_code}" in SUPPORTED_AF_PROBLEMS
+    return (
+        semantics_code is not None
+        and f"{prefix}-{semantics_code}" in SUPPORTED_AF_PROBLEMS
+    )
 
 
 def _unsupported_problem(binary: str, problem: str) -> ICCMASolverUnavailable:
@@ -322,16 +325,22 @@ def _validate_iccma_certificate(
     if prefix == "SE":
         if output.no_extension:
             return
-        _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
+        _validate_witness_certificate(
+            framework, _problem_semantics(problem), output.witness
+        )
         return
 
     if prefix == "DC":
         if output.answer is True:
-            _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
+            _validate_witness_certificate(
+                framework, _problem_semantics(problem), output.witness
+            )
         return
     if prefix == "DS":
         if output.answer is False:
-            _validate_witness_certificate(framework, _problem_semantics(problem), output.witness)
+            _validate_witness_certificate(
+                framework, _problem_semantics(problem), output.witness
+            )
         return
     raise ICCMAOutputParseError(f"unsupported ICCMA AF problem: {problem}")
 
@@ -352,9 +361,13 @@ def _validate_witness_certificate(
     witness = _required_witness(witness)
     unknown = sorted(witness - framework.arguments)
     if unknown:
-        raise ICCMAOutputParseError(f"witness references unknown arguments: {unknown!r}")
+        raise ICCMAOutputParseError(
+            f"witness references unknown arguments: {unknown!r}"
+        )
 
-    cf_relation = framework.attacks if framework.attacks is not None else framework.defeats
+    cf_relation = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
     if not conflict_free(witness, cf_relation):
         raise ICCMAOutputParseError("witness is not conflict-free")
 
@@ -368,7 +381,9 @@ def _validate_witness_certificate(
         return
     if semantics == "grounded":
         if witness != grounded_extension(framework):
-            raise ICCMAOutputParseError("grounded witness is not the grounded extension")
+            raise ICCMAOutputParseError(
+                "grounded witness is not the grounded extension"
+            )
         return
     if semantics in {"preferred", "ideal"}:
         if not admissible(
@@ -381,7 +396,9 @@ def _validate_witness_certificate(
         return
     if semantics == "semi-stable":
         if not _is_complete_certificate(framework, witness):
-            raise ICCMAOutputParseError("semi-stable witness is not a complete extension")
+            raise ICCMAOutputParseError(
+                "semi-stable witness is not a complete extension"
+            )
         return
     if semantics == "stage":
         return
@@ -398,16 +415,20 @@ def _is_complete_certificate(
     framework: ArgumentationFramework,
     witness: frozenset[str],
 ) -> bool:
-    return admissible(
-        witness,
-        framework.arguments,
-        framework.defeats,
-        attacks=framework.attacks,
-    ) and characteristic_fn(
-        witness,
-        framework.arguments,
-        framework.defeats,
-    ) == witness
+    return (
+        admissible(
+            witness,
+            framework.arguments,
+            framework.defeats,
+            attacks=framework.attacks,
+        )
+        and characteristic_fn(
+            witness,
+            framework.arguments,
+            framework.defeats,
+        )
+        == witness
+    )
 
 
 def _command(
@@ -469,7 +490,9 @@ def _parse_decision_output(
         raise ICCMAOutputParseError("decision output must start with YES or NO")
     if not certificate_required:
         if len(lines) != 1:
-            raise ICCMAOutputParseError("non-certificate decision output must be YES or NO")
+            raise ICCMAOutputParseError(
+                "non-certificate decision output must be YES or NO"
+            )
         return ICCMAOutput(
             problem=problem,
             kind=ICCMAOutputKind.DECISION,

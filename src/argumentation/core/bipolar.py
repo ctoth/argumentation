@@ -123,7 +123,11 @@ def cayrol_derived_defeats(
 
         for defeated, target in working_defeats:
             for source, reachable in support_reach.items():
-                if defeated in reachable and source != target and (source, target) not in working_defeats:
+                if (
+                    defeated in reachable
+                    and source != target
+                    and (source, target) not in working_defeats
+                ):
                     new_derived.add((source, target))
 
         for source, defeated in working_defeats:
@@ -134,7 +138,9 @@ def cayrol_derived_defeats(
                 if source != target and (source, target) not in working_defeats:
                     new_derived.add((source, target))
 
-        new_derived = {(source, target) for source, target in new_derived if source != target}
+        new_derived = {
+            (source, target) for source, target in new_derived if source != target
+        }
         if not new_derived:
             break
 
@@ -166,21 +172,14 @@ def _set_defeats(
     target: str,
     defeat_closure: frozenset[tuple[str, str]],
 ) -> bool:
-    return target in {
-        defeated
-        for source, defeated in defeat_closure
-        if source in args
-    }
+    return target in {defeated for source, defeated in defeat_closure if source in args}
 
 
 def _conflict_free(
     args: frozenset[str],
     defeat_closure: frozenset[tuple[str, str]],
 ) -> bool:
-    return not any(
-        _set_defeats(args, target, defeat_closure)
-        for target in args
-    )
+    return not any(_set_defeats(args, target, defeat_closure) for target in args)
 
 
 def _safe(
@@ -506,6 +505,7 @@ def bipolar_complete_extensions(
             framework,
             defeat_closure=defeat_closure,
             attackers_index=attackers_index,
-        ) == candidate
+        )
+        == candidate
     ]
     return sorted(completes, key=extension_sort_key)

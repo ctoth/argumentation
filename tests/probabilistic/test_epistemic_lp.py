@@ -21,9 +21,15 @@ from argumentation.probabilistic.epistemic import (
 def test_hunter_definition_2_1_labelled_graph_allows_multiple_arc_labels() -> None:
     graph = LabelledEpistemicGraph(
         arguments=frozenset({"a", "b"}),
-        arcs=frozenset({
-            LabelledArc("a", "b", frozenset({EpistemicLabel.POSITIVE, EpistemicLabel.DEPENDENT})),
-        }),
+        arcs=frozenset(
+            {
+                LabelledArc(
+                    "a",
+                    "b",
+                    frozenset({EpistemicLabel.POSITIVE, EpistemicLabel.DEPENDENT}),
+                ),
+            }
+        ),
     )
 
     assert graph.parents("b") == frozenset({"a"})
@@ -40,7 +46,9 @@ def test_hunter_definition_2_1_labelled_graph_rejects_empty_or_unknown_labels() 
     with pytest.raises(ValueError, match="declared arguments"):
         LabelledEpistemicGraph(
             arguments=frozenset({"a"}),
-            arcs=frozenset({LabelledArc("a", "b", frozenset({EpistemicLabel.NEGATIVE}))}),
+            arcs=frozenset(
+                {LabelledArc("a", "b", frozenset({EpistemicLabel.NEGATIVE}))}
+            ),
         )
 
 
@@ -110,14 +118,18 @@ def test_potyka_update_operator_is_idempotent_when_evidence_already_satisfied() 
     constraints = (LinearAtomicConstraint({"a": 1.0}, LinearRelation.GE, 0.4),)
     current = {"a": 0.5}
 
-    assert least_squares_update_labelling(frozenset({"a"}), current, constraints) == pytest.approx(
-        current
-    )
+    assert least_squares_update_labelling(
+        frozenset({"a"}), current, constraints
+    ) == pytest.approx(current)
 
 
 @given(
-    attacker=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
-    target=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    attacker=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    ),
+    target=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    ),
 )
 @settings(max_examples=100)
 def test_potyka_coherence_attack_constraint_matches_paper_inequality(

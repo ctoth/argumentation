@@ -113,9 +113,7 @@ def query_cone_arguments(
             if parent not in reached:
                 reached.add(parent)
                 frontier.append(parent)
-    return frozenset(
-        argument for component in reached for argument in sccs[component]
-    )
+    return frozenset(argument for component in reached for argument in sccs[component])
 
 
 def least_complete_closure(
@@ -220,9 +218,7 @@ def solve_cone_acceptance(
         )
     if semantics == "preferred":
         if len(cone_framework.defeats) < PREFERRED_CONE_MIN_DEFEATS:
-            LAST_CONE.notes.append(
-                "preferred cone below defeat threshold -> flat CDAS"
-            )
+            LAST_CONE.notes.append("preferred cone below defeat threshold -> flat CDAS")
             return None
         LAST_CONE.conclusive = True
         return AcceptanceSuccess(

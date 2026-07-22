@@ -52,7 +52,10 @@ def test_docs_example_iccma_witness_is_not_enumeration() -> None:
     )
 
     assert isinstance(result, SolverUnavailable)
-    assert result.reason == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    assert (
+        result.reason
+        == "ICCMA AF SE tasks return one extension witness, not enumeration"
+    )
 
 
 def test_docs_example_flat_aba_preferred_extensions() -> None:
@@ -63,10 +66,12 @@ def test_docs_example_flat_aba_preferred_extensions() -> None:
 
     framework = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({
-            Rule((alpha,), leave, "strict"),
-            Rule((beta,), stay, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((alpha,), leave, "strict"),
+                Rule((beta,), stay, "strict"),
+            }
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )

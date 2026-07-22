@@ -91,10 +91,12 @@ def test_semantic_link_classifier_covers_all_four_behavioral_classes() -> None:
         "support": Atom("p"),
         "attack": Not(Atom("p")),
         "both": Atom("q"),
-        "neither": Or((
-            And((Atom("p"), Atom("q"))),
-            And((Not(Atom("p")), Atom("r"))),
-        )),
+        "neither": Or(
+            (
+                And((Atom("p"), Atom("q"))),
+                And((Not(Atom("p")), Atom("r"))),
+            )
+        ),
     }
 
     for child, condition in conditions.items():
@@ -131,9 +133,7 @@ class _CountingCondition(AcceptanceCondition):
 
 
 def test_semantic_link_classifier_evaluates_each_assignment_pair_once() -> None:
-    condition = _CountingCondition(
-        Or((And((Atom("p"), Atom("q"))), Not(Atom("r"))))
-    )
+    condition = _CountingCondition(Or((And((Atom("p"), Atom("q"))), Not(Atom("r")))))
     framework = AbstractDialecticalFramework(
         statements=frozenset({"p", "q", "r", "c"}),
         links=frozenset({("p", "c"), ("q", "c"), ("r", "c")}),
@@ -211,4 +211,8 @@ def test_semantic_link_classifier_matches_truth_table_oracle(
 
 
 def test_three_valued_interpretation_values_are_exported() -> None:
-    assert {ThreeValued.T.value, ThreeValued.F.value, ThreeValued.U.value} == {"t", "f", "u"}
+    assert {ThreeValued.T.value, ThreeValued.F.value, ThreeValued.U.value} == {
+        "t",
+        "f",
+        "u",
+    }

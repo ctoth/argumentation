@@ -16,7 +16,9 @@ from argumentation.dynamics.optimization import (
 
 
 @st.composite
-def small_af_with_candidates(draw: st.DrawFn) -> tuple[ArgumentationFramework, frozenset[str]]:
+def small_af_with_candidates(
+    draw: st.DrawFn,
+) -> tuple[ArgumentationFramework, frozenset[str]]:
     arguments = frozenset(
         draw(
             st.sets(
@@ -27,9 +29,17 @@ def small_af_with_candidates(draw: st.DrawFn) -> tuple[ArgumentationFramework, f
         )
     )
     possible_defeats = tuple((left, right) for left in arguments for right in arguments)
-    defeats = frozenset(draw(st.sets(st.sampled_from(possible_defeats), max_size=len(possible_defeats))))
+    defeats = frozenset(
+        draw(st.sets(st.sampled_from(possible_defeats), max_size=len(possible_defeats)))
+    )
     candidates = frozenset(
-        draw(st.sets(st.sampled_from(tuple(sorted(arguments))), min_size=1, max_size=len(arguments)))
+        draw(
+            st.sets(
+                st.sampled_from(tuple(sorted(arguments))),
+                min_size=1,
+                max_size=len(arguments),
+            )
+        )
     )
     return ArgumentationFramework(arguments=arguments, defeats=defeats), candidates
 
@@ -67,7 +77,9 @@ def test_admissible_policy_selects_admissible_arguments(
     assert result.status in {"optimal", "unsat"}
     if result.status == "optimal":
         assert result.selected_candidate in candidates
-        assert admissible(result.selected_arguments, framework.arguments, framework.defeats)
+        assert admissible(
+            result.selected_arguments, framework.arguments, framework.defeats
+        )
 
 
 def test_admissible_policy_rejects_undefended_candidate() -> None:
@@ -148,7 +160,9 @@ def test_candidate_selection_is_exactly_one_declared_candidate(
     assert result.status in {"optimal", "unsat"}
     if result.status == "optimal":
         assert result.selected_candidate in candidates
-        assert sum(candidate == result.selected_candidate for candidate in candidates) == 1
+        assert (
+            sum(candidate == result.selected_candidate for candidate in candidates) == 1
+        )
 
 
 def test_tie_break_is_stable_under_input_order_permutations() -> None:
@@ -164,9 +178,14 @@ def test_tie_break_is_stable_under_input_order_permutations() -> None:
             OptimizationPolicy(
                 semantics="conflict_free",
                 candidates=frozenset(ordered_candidates),
-                objectives=(OptimizationObjective("score", direction="maximize", priority=0),),
+                objectives=(
+                    OptimizationObjective("score", direction="maximize", priority=0),
+                ),
             ),
-            tuple(OptimizationFeature(candidate, "score", 10) for candidate in ordered_candidates),
+            tuple(
+                OptimizationFeature(candidate, "score", 10)
+                for candidate in ordered_candidates
+            ),
         )
         selected.add(result.selected_candidate)
 

@@ -39,11 +39,7 @@ def matt_toni_strength(
     if not proponent:
         return 0.0
 
-    opponents = [
-        subset
-        for subset in _all_subsets(framework.arguments)
-        if subset
-    ]
+    opponents = [subset for subset in _all_subsets(framework.arguments) if subset]
     if not opponents:
         return 1.0
 
@@ -145,8 +141,14 @@ def _dominance_reduced(matrix: list[list[float]]) -> list[list[float]]:
             for row in range(row_count)
             if any(
                 row != other
-                and all(reduced[other][column] >= reduced[row][column] for column in range(column_count))
-                and any(reduced[other][column] > reduced[row][column] for column in range(column_count))
+                and all(
+                    reduced[other][column] >= reduced[row][column]
+                    for column in range(column_count)
+                )
+                and any(
+                    reduced[other][column] > reduced[row][column]
+                    for column in range(column_count)
+                )
                 for other in range(row_count)
             )
         }
@@ -165,8 +167,14 @@ def _dominance_reduced(matrix: list[list[float]]) -> list[list[float]]:
             for column in range(column_count)
             if any(
                 column != other
-                and all(reduced[row][other] <= reduced[row][column] for row in range(row_count))
-                and any(reduced[row][other] < reduced[row][column] for row in range(row_count))
+                and all(
+                    reduced[row][other] <= reduced[row][column]
+                    for row in range(row_count)
+                )
+                and any(
+                    reduced[row][other] < reduced[row][column]
+                    for row in range(row_count)
+                )
                 for other in range(column_count)
             )
         }

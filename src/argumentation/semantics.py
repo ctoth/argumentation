@@ -48,16 +48,20 @@ SemanticsUndefined: Final = SemanticsUndefinedType()
 def _sorted_extensions(
     values: list[frozenset[str]] | tuple[frozenset[str], ...],
 ) -> tuple[frozenset[str], ...]:
-    return tuple(sorted(
-        (frozenset(value) for value in values),
-        key=lambda extension: (len(extension), tuple(sorted(extension))),
-    ))
+    return tuple(
+        sorted(
+            (frozenset(value) for value in values),
+            key=lambda extension: (len(extension), tuple(sorted(extension))),
+        )
+    )
 
 
 def _unique_sorted_extensions(
     values: list[frozenset[str]] | tuple[frozenset[str], ...],
 ) -> tuple[frozenset[str], ...]:
-    return _sorted_extensions(tuple(dict.fromkeys(frozenset(value) for value in values)))
+    return _sorted_extensions(
+        tuple(dict.fromkeys(frozenset(value) for value in values))
+    )
 
 
 def _dung_extensions(
@@ -120,9 +124,7 @@ def _partial_extensions(
 
     completion_extensions: list[frozenset[str]] = []
     for completion in enumerate_completions(framework):
-        completion_extensions.extend(
-            _dung_extensions(completion, semantics=semantics)
-        )
+        completion_extensions.extend(_dung_extensions(completion, semantics=semantics))
     return _unique_sorted_extensions(tuple(completion_extensions))
 
 
@@ -148,7 +150,12 @@ def accepted_arguments(
     mode: str = "credulous",
 ) -> frozenset[str] | SemanticsUndefinedType:
     """Return credulously or skeptically accepted arguments."""
-    if mode not in {"credulous", "skeptical", "necessary_skeptical", "possible_skeptical"}:
+    if mode not in {
+        "credulous",
+        "skeptical",
+        "necessary_skeptical",
+        "possible_skeptical",
+    }:
         raise ValueError(
             "mode must be 'credulous', 'skeptical', "
             "'necessary_skeptical', or 'possible_skeptical'"
@@ -163,7 +170,9 @@ def accepted_arguments(
         if mode == "possible_skeptical":
             accepted: set[str] = set()
             for completion in enumerate_completions(framework):
-                completion_extensions = _dung_extensions(completion, semantics=semantics)
+                completion_extensions = _dung_extensions(
+                    completion, semantics=semantics
+                )
                 if not completion_extensions:
                     continue
                 skeptical = set(completion_extensions[0])

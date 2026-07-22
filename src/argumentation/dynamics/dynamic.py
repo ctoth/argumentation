@@ -128,7 +128,9 @@ class DynamicArgumentationFramework:
     ) -> bool:
         self._require_arguments(argument)
         extensions = extensions_for(self.framework, semantics)
-        return bool(extensions) and all(argument in extension for extension in extensions)
+        return bool(extensions) and all(
+            argument in extension for extension in extensions
+        )
 
     def apply(self, update: DynamicUpdate) -> None:
         if update.kind == "add_arg":
@@ -170,11 +172,7 @@ def _extension_status(
     )
     return {
         argument: (
-            "IN"
-            if argument in extension
-            else "OUT"
-            if argument in attacked
-            else "UN"
+            "IN" if argument in extension else "OUT" if argument in attacked else "UN"
         )
         for argument in framework.arguments
     }
@@ -213,7 +211,9 @@ def _first_extension(
     extensions = extensions_for(framework, semantics)
     if not extensions:
         return None
-    return sorted(extensions, key=lambda extension: (len(extension), tuple(sorted(extension))))[0]
+    return sorted(
+        extensions, key=lambda extension: (len(extension), tuple(sorted(extension)))
+    )[0]
 
 
 def _is_extension(
@@ -232,11 +232,17 @@ def _validate_single_attack_update(
         raise ValueError("incremental_extension_update supports single attack updates")
     if update.target is None:
         raise ValueError(f"{update.kind} update requires a target")
-    if update.source not in framework.arguments or update.target not in framework.arguments:
+    if (
+        update.source not in framework.arguments
+        or update.target not in framework.arguments
+    ):
         raise ValueError("single attack updates require existing arguments")
     if update.kind == "add_att" and (update.source, update.target) in framework.defeats:
         raise ValueError("add_att update requires a missing attack")
-    if update.kind == "del_att" and (update.source, update.target) not in framework.defeats:
+    if (
+        update.kind == "del_att"
+        and (update.source, update.target) not in framework.defeats
+    ):
         raise ValueError("del_att update requires an existing attack")
     return update.source, update.target
 
@@ -256,9 +262,7 @@ def influenced_arguments(
 
     reachable = _reachable_from(framework, target)
     if any(
-        source != attacker
-        and source in initial_extension
-        and source not in reachable
+        source != attacker and source in initial_extension and source not in reachable
         for source, attacked in framework.defeats
         if attacked == target
     ):
@@ -308,7 +312,11 @@ def reduced_framework(
         if defeat[0] in influenced and defeat[1] in influenced
     }
     for source, target in updated.defeats:
-        if source not in influenced and source in initial_extension and target in influenced:
+        if (
+            source not in influenced
+            and source in initial_extension
+            and target in influenced
+        ):
             arguments.add(source)
             arguments.add(target)
             defeats.add((source, target))
@@ -342,7 +350,9 @@ def incremental_extension_update(
         if initial_extension is None:
             raise ValueError(f"no initial {semantics} extension exists")
     if not _is_extension(framework, semantics, initial_extension):
-        raise ValueError("initial_extension is not an extension of the original framework")
+        raise ValueError(
+            "initial_extension is not an extension of the original framework"
+        )
 
     updated = _apply_update(framework, update)
     influenced = influenced_arguments(
@@ -455,7 +465,9 @@ class IncrementalDynamicArgumentationFramework:
             mode="credulous",
             accepted=witness is not None,
             witness=witness,
-            counterexample=None if witness is not None else (extensions[0] if extensions else None),
+            counterexample=None
+            if witness is not None
+            else (extensions[0] if extensions else None),
         )
 
     def query_skeptical(self, argument: str) -> DynamicAcceptanceAnswer:
@@ -516,7 +528,9 @@ def parse_update_stream(text: str) -> tuple[DynamicUpdate, ...]:
             updates.append(DynamicUpdate(cast(UpdateKind, parts[0]), parts[1]))
             continue
         if parts[0] in {"add_att", "del_att"} and len(parts) == 3:
-            updates.append(DynamicUpdate(cast(UpdateKind, parts[0]), parts[1], parts[2]))
+            updates.append(
+                DynamicUpdate(cast(UpdateKind, parts[0]), parts[1], parts[2])
+            )
             continue
         raise ValueError(f"invalid dynamic update line {line_number}: {line!r}")
     return tuple(updates)

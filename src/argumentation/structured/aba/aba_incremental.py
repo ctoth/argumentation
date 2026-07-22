@@ -36,7 +36,9 @@ from typing import Any
 from argumentation.core.finite import sorted_extensions
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet
 from argumentation.structured.aba.aba_asp import ABAEncoding, encode_aba_theory
-from argumentation.structured.aba.aba_preprocessing import grounded_assumption_set_via_closures
+from argumentation.structured.aba.aba_preprocessing import (
+    grounded_assumption_set_via_closures,
+)
 from argumentation.structured.aspic.aspic import Literal
 
 _COM_MODULE_RESOURCE = "aba_com_incremental.lp"
@@ -63,12 +65,16 @@ def _load_clingo():
     try:
         return importlib.import_module("clingo")
     except ImportError as exc:  # pragma: no cover - exercised only without clingo
-        raise RuntimeError("incremental ABA solving requires the clingo Python package") from exc
+        raise RuntimeError(
+            "incremental ABA solving requires the clingo Python package"
+        ) from exc
 
 
 def _com_module_text() -> str:
-    return resources.files("argumentation.encodings").joinpath(_COM_MODULE_RESOURCE).read_text(
-        encoding="utf-8"
+    return (
+        resources.files("argumentation.encodings")
+        .joinpath(_COM_MODULE_RESOURCE)
+        .read_text(encoding="utf-8")
     )
 
 
@@ -94,7 +100,9 @@ class ClingoSolveTimeout(TimeoutError):
 
 def _sanitize_clingo_statistics(value: Any) -> Any:
     if isinstance(value, Mapping) or hasattr(value, "items"):
-        return {str(key): _sanitize_clingo_statistics(item) for key, item in value.items()}
+        return {
+            str(key): _sanitize_clingo_statistics(item) for key, item in value.items()
+        }
     if isinstance(value, (list, tuple)):
         return [_sanitize_clingo_statistics(item) for item in value]
     if isinstance(value, (str, int, float, bool)) or value is None:
@@ -171,7 +179,9 @@ class AbaGroundingObserver:
             result: Counter[str] = Counter()
             for atom, count in counter.items():
                 symbol = symbols.get(atom)
-                result[_symbol_predicate(symbol) if symbol is not None else "<unknown>"] += count
+                result[
+                    _symbol_predicate(symbol) if symbol is not None else "<unknown>"
+                ] += count
             return dict(sorted(result.items()))
 
         return {
@@ -263,8 +273,12 @@ class AbaAssignmentProbe:
         return {
             "watched_by_predicate": dict(sorted(self.watched_by_predicate.items())),
             "changes_by_predicate": dict(sorted(self.changes_by_predicate.items())),
-            "true_changes_by_predicate": dict(sorted(self.true_changes_by_predicate.items())),
-            "false_changes_by_predicate": dict(sorted(self.false_changes_by_predicate.items())),
+            "true_changes_by_predicate": dict(
+                sorted(self.true_changes_by_predicate.items())
+            ),
+            "false_changes_by_predicate": dict(
+                sorted(self.false_changes_by_predicate.items())
+            ),
             "propagate_calls": self.propagate_calls,
             "check_calls": self.check_calls,
             "decide_calls": self.decide_calls,
@@ -305,21 +319,27 @@ class AbaIncrementalSolver:
         self._com_text = _com_module_text()
         self._assumption_by_id = dict(encoding.assumption_by_id)
         self._id_by_assumption = {
-            assumption: assumption_id for assumption_id, assumption in encoding.assumption_by_id.items()
+            assumption: assumption_id
+            for assumption_id, assumption in encoding.assumption_by_id.items()
         }
         self._literal_by_id = dict(encoding.literal_by_id)
         self._id_by_literal = {
-            literal: literal_id for literal_id, literal in encoding.literal_by_id.items()
+            literal: literal_id
+            for literal_id, literal in encoding.literal_by_id.items()
         }
         self._clingo = _load_clingo()
         self.control_args = DEFAULT_CLINGO_CONTROL_ARGS + tuple(control_args)
         self.collect_statistics = collect_statistics
         self.solve_timeout_seconds = solve_timeout_seconds
-        self._instrumentation_by_control: dict[int, tuple[AbaGroundingObserver, AbaAssignmentProbe]] = {}
+        self._instrumentation_by_control: dict[
+            int, tuple[AbaGroundingObserver, AbaAssignmentProbe]
+        ] = {}
 
     # -- low-level Control construction -------------------------------------
 
-    def _new_control(self, *, extra_program: str = "", telemetry: IncrementalTelemetry | None = None) -> Any:
+    def _new_control(
+        self, *, extra_program: str = "", telemetry: IncrementalTelemetry | None = None
+    ) -> Any:
         ctl = self._clingo.Control(list(self.control_args))
         observer: AbaGroundingObserver | None = None
         probe: AbaAssignmentProbe | None = None
@@ -347,7 +367,9 @@ class AbaIncrementalSolver:
         if telemetry is not None:
             telemetry.clingo_control_args = self.control_args
 
-    def _record_telemetry_grounding(self, ctl, telemetry: IncrementalTelemetry | None) -> None:
+    def _record_telemetry_grounding(
+        self, ctl, telemetry: IncrementalTelemetry | None
+    ) -> None:
         if telemetry is not None and self.collect_statistics:
             instrumentation = self._instrumentation_by_control.get(id(ctl))
             if instrumentation is not None:
@@ -355,7 +377,9 @@ class AbaIncrementalSolver:
                 symbolic_atoms = getattr(ctl, "symbolic_atoms", ())
                 telemetry.clingo_grounding = observer.snapshot(symbolic_atoms)
 
-    def _record_telemetry_statistics(self, ctl, telemetry: IncrementalTelemetry | None) -> None:
+    def _record_telemetry_statistics(
+        self, ctl, telemetry: IncrementalTelemetry | None
+    ) -> None:
         if telemetry is not None and self.collect_statistics:
             telemetry.clingo_statistics = _sanitize_clingo_statistics(ctl.statistics)
             instrumentation = self._instrumentation_by_control.get(id(ctl))
@@ -364,7 +388,9 @@ class AbaIncrementalSolver:
                 telemetry.clingo_assignment_probe = probe.snapshot()
 
     def _symbol_in(self, assumption: Literal):
-        return self._clingo.Function("in", [self._clingo.Function(self._id_by_assumption[assumption])])
+        return self._clingo.Function(
+            "in", [self._clingo.Function(self._id_by_assumption[assumption])]
+        )
 
     def _symbol_supported(self, literal: Literal):
         literal_id = self._id_by_literal.get(literal)
@@ -427,7 +453,9 @@ class AbaIncrementalSolver:
 
     # -- complete / stable: single solve, Control reused --------------------
 
-    def _enumerate(self, *, stable: bool, telemetry: IncrementalTelemetry | None) -> tuple[AssumptionSet, ...]:
+    def _enumerate(
+        self, *, stable: bool, telemetry: IncrementalTelemetry | None
+    ) -> tuple[AssumptionSet, ...]:
         extra = ":- out(X), not defeated(X)." if stable else ""
         ctl = self._new_control(extra_program=extra, telemetry=telemetry)
         found: list[AssumptionSet] = []
@@ -442,20 +470,30 @@ class AbaIncrementalSolver:
         self._record_telemetry_statistics(ctl, telemetry)
         return _sorted_extensions(found)
 
-    def enumerate_complete(self, *, telemetry: IncrementalTelemetry | None = None) -> tuple[AssumptionSet, ...]:
+    def enumerate_complete(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> tuple[AssumptionSet, ...]:
         return self._enumerate(stable=False, telemetry=telemetry)
 
-    def enumerate_stable(self, *, telemetry: IncrementalTelemetry | None = None) -> tuple[AssumptionSet, ...]:
+    def enumerate_stable(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> tuple[AssumptionSet, ...]:
         return self._enumerate(stable=True, telemetry=telemetry)
 
-    def find_complete_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+    def find_complete_extension(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> AssumptionSet | None:
         ctl = self._new_control(telemetry=telemetry)
         if telemetry is not None:
             telemetry.solver_calls += 1
         return self._solve_one(ctl, telemetry=telemetry)
 
-    def find_stable_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
-        ctl = self._new_control(extra_program=":- out(X), not defeated(X).", telemetry=telemetry)
+    def find_stable_extension(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> AssumptionSet | None:
+        ctl = self._new_control(
+            extra_program=":- out(X), not defeated(X).", telemetry=telemetry
+        )
         if telemetry is not None:
             telemetry.solver_calls += 1
         return self._solve_one(ctl, telemetry=telemetry)
@@ -481,7 +519,10 @@ class AbaIncrementalSolver:
         """
         if not out_assumptions:
             return None
-        body = ", ".join(f"out({self._id_by_assumption[a]})" for a in sorted(out_assumptions, key=repr))
+        body = ", ".join(
+            f"out({self._id_by_assumption[a]})"
+            for a in sorted(out_assumptions, key=repr)
+        )
         return f":- {body}."
 
     def _grow_to_maximal_not_deriving(
@@ -506,7 +547,9 @@ class AbaIncrementalSolver:
             if not add_refinement(out_set):
                 return current_in  # constr(out(I)) is :- ; no proper superset possible
             # search for a complete set still not deriving s with in(I) <= it
-            in_assumptions = [(self._symbol_in(a), True) for a in sorted(current_in, key=repr)]
+            in_assumptions = [
+                (self._symbol_in(a), True) for a in sorted(current_in, key=repr)
+            ]
             transient = list(in_assumptions)
             if query_symbol is not None:
                 transient.append((query_symbol, False))
@@ -557,13 +600,19 @@ class AbaIncrementalSolver:
             if telemetry is not None:
                 telemetry.solver_calls += 1
                 telemetry.outer_iterations += 1
-            seed = self._solve_one(ctl, assumptions=[(query_symbol, False)], telemetry=telemetry)
+            seed = self._solve_one(
+                ctl, assumptions=[(query_symbol, False)], telemetry=telemetry
+            )
             if seed is None:
                 # all complete sets derive s -> skeptically accepted.
                 return True, None
             # Lines 5-7: grow to a maximal complete set not deriving s.
             final_in = self._grow_to_maximal_not_deriving(
-                ctl, seed, query_symbol, add_refinement=add_refinement, telemetry=telemetry
+                ctl,
+                seed,
+                query_symbol,
+                add_refinement=add_refinement,
+                telemetry=telemetry,
             )
             if permanently_unsat["flag"]:
                 # the last constr(out(I)) was :- ; final_in = all assumptions and
@@ -578,17 +627,23 @@ class AbaIncrementalSolver:
             # supported(s) ban)?  The accumulated constr(out(I)) clauses rule out
             # final_in and its subsets, so any model is a *proper* superset; if it
             # also derives s, final_in is not preferred -> keep searching.
-            in_assumptions = [(self._symbol_in(a), True) for a in sorted(final_in, key=repr)]
+            in_assumptions = [
+                (self._symbol_in(a), True) for a in sorted(final_in, key=repr)
+            ]
             if telemetry is not None:
                 telemetry.solver_calls += 1
-            superset_model = self._solve_one(ctl, assumptions=in_assumptions, telemetry=telemetry)
+            superset_model = self._solve_one(
+                ctl, assumptions=in_assumptions, telemetry=telemetry
+            )
             if superset_model is None:
                 # final_in is a preferred assumption set not deriving s -> NO.
                 return False, final_in
             # otherwise final_in dominated; the constr(out(I)) banning final_in's
             # subsets is still in ctl; loop back to Line 2.
 
-    def find_preferred_extension(self, *, telemetry: IncrementalTelemetry | None = None) -> AssumptionSet | None:
+    def find_preferred_extension(
+        self, *, telemetry: IncrementalTelemetry | None = None
+    ) -> AssumptionSet | None:
         extensions = self.enumerate_preferred(telemetry=telemetry, limit=1)
         return extensions[0] if extensions else None
 
@@ -638,7 +693,9 @@ class AbaIncrementalSolver:
 
     # -- credulous helpers (NP queries) ------------------------------------
 
-    def is_credulously_accepted_complete(self, query: Literal) -> tuple[bool, AssumptionSet | None]:
+    def is_credulously_accepted_complete(
+        self, query: Literal
+    ) -> tuple[bool, AssumptionSet | None]:
         query_symbol = self._symbol_supported(query)
         if query_symbol is None:
             return False, None
@@ -648,7 +705,9 @@ class AbaIncrementalSolver:
             return False, None
         return True, witness
 
-    def is_credulously_accepted_stable(self, query: Literal) -> tuple[bool, AssumptionSet | None]:
+    def is_credulously_accepted_stable(
+        self, query: Literal
+    ) -> tuple[bool, AssumptionSet | None]:
         query_symbol = self._symbol_supported(query)
         if query_symbol is None:
             return False, None

@@ -9,7 +9,6 @@ from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.solving.solver import (
-    AcceptanceSolverSuccess,
     ExtensionSolverSuccess,
     SingleExtensionSolverSuccess,
     solve_aba_acceptance,
@@ -38,12 +37,8 @@ def flat_aba_frameworks(draw):
     )
     assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
     contraries = {literal(f"c{index}") for index in range(1, size + 1)}
-    assumption_by_index = {
-        index: literal(f"a{index}") for index in range(1, size + 1)
-    }
-    contrary_by_index = {
-        index: literal(f"c{index}") for index in range(1, size + 1)
-    }
+    assumption_by_index = {index: literal(f"a{index}") for index in range(1, size + 1)}
+    contrary_by_index = {index: literal(f"c{index}") for index in range(1, size + 1)}
     return ABAFramework(
         language=frozenset(assumptions | contraries),
         rules=frozenset(
@@ -104,7 +99,9 @@ def test_differential_helper_rejects_enumeration_single_extension_mismatch() -> 
         )
 
 
-def test_benchmark_smoke_reads_manifest_without_external_solver_execution(tmp_path) -> None:
+def test_benchmark_smoke_reads_manifest_without_external_solver_execution(
+    tmp_path,
+) -> None:
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
         json.dumps(
@@ -143,6 +140,7 @@ def test_capability_matrix_reports_unsupported_combinations_explicitly() -> None
         and entry.supported
         for entry in matrix
     )
+
 
 def literal(name: str) -> Literal:
     return Literal(GroundAtom(name))

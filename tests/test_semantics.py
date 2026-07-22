@@ -31,11 +31,14 @@ def test_accepted_arguments_supports_credulous_and_skeptical_modes() -> None:
         semantics="preferred",
         mode="credulous",
     ) == frozenset({"a", "b"})
-    assert accepted_arguments(
-        framework,
-        semantics="preferred",
-        mode="skeptical",
-    ) == frozenset()
+    assert (
+        accepted_arguments(
+            framework,
+            semantics="preferred",
+            mode="skeptical",
+        )
+        == frozenset()
+    )
 
 
 def test_empty_stable_extension_family_returns_sentinel() -> None:
@@ -82,11 +85,14 @@ def test_partial_af_extensions_are_completion_based() -> None:
         semantics="grounded",
         mode="credulous",
     ) == frozenset({"a"})
-    assert accepted_arguments(
-        framework,
-        semantics="grounded",
-        mode="necessary_skeptical",
-    ) == frozenset()
+    assert (
+        accepted_arguments(
+            framework,
+            semantics="grounded",
+            mode="necessary_skeptical",
+        )
+        == frozenset()
+    )
     assert accepted_arguments(
         framework,
         semantics="grounded",

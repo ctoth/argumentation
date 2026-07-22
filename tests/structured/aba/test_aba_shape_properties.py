@@ -141,7 +141,9 @@ def test_scc_count_and_size_match_independent_graph(framework: ABAFramework) -> 
     shape = compute_aba_shape(framework)
 
     assert shape.dependency_scc_count == len(components)
-    assert shape.dependency_scc_max_size == max((len(component) for component in components), default=0)
+    assert shape.dependency_scc_max_size == max(
+        (len(component) for component in components), default=0
+    )
 
 
 @given(flat_aba_specs())
@@ -194,7 +196,9 @@ def _fresh_pair(framework: ABAFramework) -> tuple[Literal, Literal]:
         index += 1
 
 
-def _closure(framework: ABAFramework, premises: frozenset[Literal]) -> frozenset[Literal]:
+def _closure(
+    framework: ABAFramework, premises: frozenset[Literal]
+) -> frozenset[Literal]:
     closure = set(premises)
     changed = True
     while changed:

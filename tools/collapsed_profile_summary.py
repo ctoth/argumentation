@@ -91,7 +91,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=20)
     args = parser.parse_args(argv)
 
-    print(json.dumps(summarize(args.profile, limit=args.limit), indent=2, sort_keys=True))
+    print(
+        json.dumps(summarize(args.profile, limit=args.limit), indent=2, sort_keys=True)
+    )
     return 0
 
 

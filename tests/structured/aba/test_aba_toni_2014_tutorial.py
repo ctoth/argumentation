@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.structured.aba.aba import ABAArgument, ABAFramework, NotFlatABAError, argument_for, attacks, derives
+from argumentation.structured.aba.aba import (
+    ABAArgument,
+    ABAFramework,
+    NotFlatABAError,
+    argument_for,
+    attacks,
+    derives,
+)
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 
 
@@ -17,7 +24,9 @@ def test_toni_forward_deduction_and_attack_views() -> None:
     stay = lit("stay")
     framework = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}),
+        rules=frozenset(
+            {Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )

@@ -56,7 +56,9 @@ class TestStrictlyWeakerConcrete:
         assert strictly_weaker([], [3, 4], "elitist") is False
         assert strictly_weaker([], [3, 4], "democratic") is False
 
-    def test_ws_o_arg_non_empty_set_is_strictly_weaker_than_empty_boundary(self) -> None:
+    def test_ws_o_arg_non_empty_set_is_strictly_weaker_than_empty_boundary(
+        self,
+    ) -> None:
         """Bug 6: Modgil-Prakken Def 19 makes non-empty gamma < empty gamma'."""
         assert strictly_weaker([1, 2], [], "elitist") is True
         assert strictly_weaker([1, 2], [], "democratic") is True

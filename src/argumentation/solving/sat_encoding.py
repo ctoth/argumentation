@@ -56,9 +56,7 @@ def _admissible_sets(framework: ArgumentationFramework) -> list[frozenset[str]]:
     results: list[frozenset[str]] = []
     for mask in range(1 << len(arguments)):
         candidate = frozenset(
-            argument
-            for index, argument in enumerate(arguments)
-            if mask & (1 << index)
+            argument for index, argument in enumerate(arguments) if mask & (1 << index)
         )
         if admissible(
             candidate,

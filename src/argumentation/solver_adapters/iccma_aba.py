@@ -170,7 +170,10 @@ def solve_aba_acceptance(
 def supports_aba_problem(task: str, semantics: str) -> bool:
     prefix = ACCEPTANCE_TASK_TO_PREFIX.get(task, task)
     semantics_code = SEMANTICS_TO_CODE.get(semantics)
-    return semantics_code is not None and f"{prefix}-{semantics_code}" in SUPPORTED_ABA_PROBLEMS
+    return (
+        semantics_code is not None
+        and f"{prefix}-{semantics_code}" in SUPPORTED_ABA_PROBLEMS
+    )
 
 
 def _run_iccma_aba_solver(

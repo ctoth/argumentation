@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import functools
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import TYPE_CHECKING, TypeAlias, TypeVar, Union
 
 if TYPE_CHECKING:
@@ -165,19 +166,19 @@ class Rule:
 @dataclass(frozen=True)
 class PremiseArg:
     """Argument from a premise. Modgil & Prakken 2018, Def 5 clause 1."""
+
     premise: Literal
     is_axiom: bool  # True if in K_n, False if in K_p
-    _hash: int | None = field(default=None, init=False, repr=False, compare=False, hash=False)
+    _hash: int | None = field(
+        default=None, init=False, repr=False, compare=False, hash=False
+    )
 
     def __eq__(self, other: object) -> bool:
         if self is other:
             return True
         if not isinstance(other, PremiseArg):
             return NotImplemented
-        return (
-            self.premise == other.premise
-            and self.is_axiom == other.is_axiom
-        )
+        return self.premise == other.premise and self.is_axiom == other.is_axiom
 
     def __hash__(self) -> int:
         if self._hash is None:
@@ -195,9 +196,12 @@ class PremiseArg:
 @dataclass(frozen=True)
 class StrictArg:
     """Argument via strict rule. Modgil & Prakken 2018, Def 5 clause 2."""
+
     sub_args: tuple[Argument, ...]
     rule: Rule  # must have kind == "strict"
-    _hash: int | None = field(default=None, init=False, repr=False, compare=False, hash=False)
+    _hash: int | None = field(
+        default=None, init=False, repr=False, compare=False, hash=False
+    )
 
     def __eq__(self, other: object) -> bool:
         if self is other:
@@ -226,9 +230,12 @@ class StrictArg:
 @dataclass(frozen=True)
 class DefeasibleArg:
     """Argument via defeasible rule. Modgil & Prakken 2018, Def 5 clause 3."""
+
     sub_args: tuple[Argument, ...]
     rule: Rule  # must have kind == "defeasible"
-    _hash: int | None = field(default=None, init=False, repr=False, compare=False, hash=False)
+    _hash: int | None = field(
+        default=None, init=False, repr=False, compare=False, hash=False
+    )
 
     def __eq__(self, other: object) -> bool:
         if self is other:
@@ -255,6 +262,25 @@ class DefeasibleArg:
 
 
 Argument: TypeAlias = Union[PremiseArg, StrictArg, DefeasibleArg]
+
+
+class ArgumentBuildStatus(StrEnum):
+    """Completeness of one goal-directed argument construction."""
+
+    COMPLETE = "complete"
+    MAX_DEPTH_EXHAUSTED = "max_depth_exhausted"
+
+
+@dataclass(frozen=True)
+class ArgumentBuildResult:
+    """Arguments and completeness evidence from goal-directed construction."""
+
+    arguments: frozenset[Argument]
+    status: ArgumentBuildStatus
+    max_depth: int | None
+    cutoff_literals: frozenset[Literal]
+
+
 PreferenceOrderedT = TypeVar("PreferenceOrderedT", Literal, Rule)
 
 
@@ -267,16 +293,18 @@ class Attack:
     - Rebutting (Def 8b): A attacks defeasible conclusion of B'
     - Undercutting (Def 8c): A attacks defeasible rule applicability of B'
     """
+
     attacker: Argument
-    target: Argument       # B — the argument being attacked
-    target_sub: Argument   # B' — the specific sub-argument targeted
-    kind: str              # "undermining", "rebutting", or "undercutting"
+    target: Argument  # B — the argument being attacked
+    target_sub: Argument  # B' — the specific sub-argument targeted
+    kind: str  # "undermining", "rebutting", or "undercutting"
 
 
 @dataclass(frozen=True)
 class KnowledgeBase:
     """KB = (K_n, K_p). Modgil & Prakken 2018, Def 4 (p.9)."""
-    axioms: frozenset[Literal]    # K_n — not attackable
+
+    axioms: frozenset[Literal]  # K_n — not attackable
     premises: frozenset[Literal]  # K_p — attackable
 
 
@@ -303,15 +331,17 @@ class PreferenceConfig:
         comparison: Set comparison mode — "elitist" or "democratic" (Def 19, p.21).
         link: Preference principle — "last" or "weakest" (Defs 20-21, p.21).
     """
-    rule_order: frozenset[tuple[Rule, Rule]]      # (weaker, stronger) pairs
+
+    rule_order: frozenset[tuple[Rule, Rule]]  # (weaker, stronger) pairs
     premise_order: frozenset[tuple[Literal, Literal]]  # (weaker, stronger) pairs
     comparison: str  # "elitist" or "democratic"
-    link: str        # "last" or "weakest"
+    link: str  # "last" or "weakest"
 
 
 @dataclass(frozen=True)
 class ArgumentationSystem:
     """AS = (L, contrariness, R_s, R_d, n). Modgil & Prakken 2018, Def 2."""
+
     language: frozenset[Literal]
     contrariness: ContrarinessFn
     strict_rules: frozenset[Rule]
@@ -336,7 +366,7 @@ def _is_degenerate_rule(rule: Rule, contrariness: ContrarinessFn) -> bool:
     """
     antes = rule.antecedents
     for i, left in enumerate(antes):
-        for right in antes[i + 1:]:
+        for right in antes[i + 1 :]:
             if contrariness.is_contradictory(left, right):
                 return True
     return False
@@ -420,10 +450,7 @@ def transposition_closure(
             the supplied contrariness relation.
     """
     # Filter out degenerate seed rules with contradictory antecedent pairs.
-    closed: set[Rule] = {
-        r for r in rules
-        if not _is_degenerate_rule(r, contrariness)
-    }
+    closed: set[Rule] = {r for r in rules if not _is_degenerate_rule(r, contrariness)}
     changed = True
     while changed:
         changed = False
@@ -515,7 +542,7 @@ def is_c_consistent(
     """
     closed = tuple(sorted(strict_closure(literals, strict_rules), key=repr))
     for i, left in enumerate(closed):
-        for right in closed[i + 1:]:
+        for right in closed[i + 1 :]:
             if contrariness.is_conflicting(left, right):
                 return False
     return True
@@ -661,7 +688,9 @@ def _attack_target_literal(attack: Attack) -> Literal:
     raise ValueError(f"Unknown attack kind: {attack.kind}")
 
 
-def _is_preference_independent_attack(attack: Attack, system: ArgumentationSystem) -> bool:
+def _is_preference_independent_attack(
+    attack: Attack, system: ArgumentationSystem
+) -> bool:
     """True if the attack succeeds regardless of the preference ordering.
 
     Modgil & Prakken 2018, Def 9 (p.12): undercutting and attacks based on
@@ -699,6 +728,7 @@ def build_arguments(
     and arguments are deduplicated (frozen dataclasses are hashable).
     """
     import itertools
+
     _clear_argument_function_caches()
 
     # Step 1: Seed with premise arguments
@@ -804,8 +834,8 @@ def build_arguments_for(
     goal: Literal,
     *,
     include_attackers: bool = True,
-    max_depth: int = 10,
-) -> frozenset[Argument]:
+    max_depth: int | None = None,
+) -> ArgumentBuildResult:
     """Goal-directed argument construction for a specific conclusion.
 
     Backward chaining from goal through rules to premises.
@@ -823,7 +853,7 @@ def build_arguments_for(
     3. If include_attackers: build arguments for contraries of goal
        to enable attack computation on the result
     4. Only c-consistent arguments are kept
-    5. Depth-limited to prevent infinite recursion through rule cycles
+    5. Optionally depth-limited, with explicit incompleteness evidence
 
     The existing compute_attacks() and compute_defeats() work unchanged
     on the resulting argument set.
@@ -841,13 +871,17 @@ def build_arguments_for(
         include_attackers: If True, also build arguments for contraries
             of goal and of intermediate conclusions, enabling attack
             computation on the result. Default True.
-        max_depth: Maximum recursion depth to prevent infinite loops
-            through rule cycles. Default 10.
+        max_depth: Optional maximum recursion depth. ``None`` performs exact
+            unbounded construction; cycles are handled separately.
 
     Returns:
-        Frozenset of all c-consistent arguments relevant to the goal.
+        Arguments relevant to the goal plus construction completeness evidence.
     """
     import itertools
+
+    if max_depth is not None and max_depth < 0:
+        raise ValueError("max_depth must be non-negative")
+
     _clear_argument_function_caches()
 
     all_rules = list(system.strict_rules | system.defeasible_rules)
@@ -857,12 +891,12 @@ def build_arguments_for(
     # Track literals currently being resolved to detect cycles
     in_progress: set[Literal] = set()
     cycle_tainted: set[Literal] = set()
+    cutoff_literals: set[Literal] = set()
 
-    def _build_backward(
-        target: Literal, depth: int
-    ) -> frozenset[Argument]:
+    def _build_backward(target: Literal, depth: int) -> frozenset[Argument]:
         """Recursively build arguments for a target literal."""
-        if depth > max_depth:
+        if max_depth is not None and depth > max_depth:
+            cutoff_literals.add(target)
             return frozenset()
 
         if target in memo:
@@ -882,15 +916,11 @@ def build_arguments_for(
         # Base case: target is a premise or axiom
         if target in kb.axioms:
             p = PremiseArg(premise=target, is_axiom=True)
-            if is_c_consistent(
-                prem(p), system.strict_rules, system.contrariness
-            ):
+            if is_c_consistent(prem(p), system.strict_rules, system.contrariness):
                 args.add(p)
         if target in kb.premises:
             p = PremiseArg(premise=target, is_axiom=False)
-            if is_c_consistent(
-                prem(p), system.strict_rules, system.contrariness
-            ):
+            if is_c_consistent(prem(p), system.strict_rules, system.contrariness):
                 args.add(p)
 
         # Recursive case: find rules whose consequent matches target
@@ -947,46 +977,62 @@ def build_arguments_for(
     # Build arguments for the goal
     goal_args = _build_backward(goal, 0)
 
-    if not include_attackers:
-        return goal_args
+    arguments = goal_args
+    if include_attackers:
+        # Build arguments for contraries of every attack-relevant literal
+        # until the focused set reaches a fixed point. This keeps
+        # reinstatement chains of arbitrary depth rather than stopping
+        # after a hardcoded two passes.
+        all_relevant: set[Argument] = set(goal_args)
+        pending_literals: list[Literal] = []
+        seen_target_literals: set[Literal] = set()
 
-    # Build arguments for contraries of every attack-relevant literal
-    # until the focused set reaches a fixed point. This keeps
-    # reinstatement chains of arbitrary depth rather than stopping
-    # after a hardcoded two passes.
-    all_relevant: set[Argument] = set(goal_args)
-    pending_literals: list[Literal] = []
-    seen_target_literals: set[Literal] = set()
+        def _enqueue_attack_targets(
+            arguments: frozenset[Argument] | set[Argument],
+        ) -> None:
+            for arg in arguments:
+                for s in sub(arg):
+                    lit = conc(s)
+                    if lit not in seen_target_literals:
+                        seen_target_literals.add(lit)
+                        pending_literals.append(lit)
+                    tr = top_rule(s)
+                    if (
+                        tr is not None
+                        and tr.kind == "defeasible"
+                        and tr.name is not None
+                    ):
+                        name_lit = Literal(GroundAtom(tr.name), False)
+                        if name_lit not in seen_target_literals:
+                            seen_target_literals.add(name_lit)
+                            pending_literals.append(name_lit)
 
-    def _enqueue_attack_targets(arguments: frozenset[Argument] | set[Argument]) -> None:
-        for arg in arguments:
-            for s in sub(arg):
-                lit = conc(s)
-                if lit not in seen_target_literals:
-                    seen_target_literals.add(lit)
-                    pending_literals.append(lit)
-                tr = top_rule(s)
-                if tr is not None and tr.kind == "defeasible" and tr.name is not None:
-                    name_lit = Literal(GroundAtom(tr.name), False)
-                    if name_lit not in seen_target_literals:
-                        seen_target_literals.add(name_lit)
-                        pending_literals.append(name_lit)
+        _enqueue_attack_targets(goal_args)
 
-    _enqueue_attack_targets(goal_args)
+        while pending_literals:
+            lit = pending_literals.pop()
+            for contrary_lit in contraries_of(
+                lit, system.contrariness, system.language
+            ):
+                attacker_args = _build_backward(contrary_lit, 0)
+                new_args = attacker_args - all_relevant
+                if not new_args:
+                    continue
+                all_relevant.update(new_args)
+                _enqueue_attack_targets(new_args)
 
-    while pending_literals:
-        lit = pending_literals.pop()
-        for contrary_lit in contraries_of(
-            lit, system.contrariness, system.language
-        ):
-            attacker_args = _build_backward(contrary_lit, 0)
-            new_args = attacker_args - all_relevant
-            if not new_args:
-                continue
-            all_relevant.update(new_args)
-            _enqueue_attack_targets(new_args)
+        arguments = frozenset(all_relevant)
 
-    return frozenset(all_relevant)
+    return ArgumentBuildResult(
+        arguments=arguments,
+        status=(
+            ArgumentBuildStatus.MAX_DEPTH_EXHAUSTED
+            if cutoff_literals
+            else ArgumentBuildStatus.COMPLETE
+        ),
+        max_depth=max_depth,
+        cutoff_literals=frozenset(cutoff_literals),
+    )
 
 
 # ── Attack determination ─────────────────────────────────────────
@@ -1032,9 +1078,7 @@ def compute_attacks(
     # Pre-compute sub-arguments and conclusion index so we can reason from
     # potentially attackable target literals to candidate attackers, instead
     # of scanning every argument against every target/sub-target pair.
-    sub_cache: dict[Argument, frozenset[Argument]] = {
-        b: sub(b) for b in arguments
-    }
+    sub_cache: dict[Argument, frozenset[Argument]] = {b: sub(b) for b in arguments}
     conc_index: dict[Literal, set[Argument]] = {}
     for arg in arguments:
         conc_index.setdefault(conc(arg), set()).add(arg)
@@ -1074,9 +1118,8 @@ def compute_attacks(
     for target_lit in target_literals:
         candidates: set[Argument] = set()
         for conc_lit, args_with_conc in conc_index.items():
-            if (
-                cfn.is_contrary(conc_lit, target_lit)
-                or cfn.is_contradictory(conc_lit, target_lit)
+            if cfn.is_contrary(conc_lit, target_lit) or cfn.is_contradictory(
+                conc_lit, target_lit
             ):
                 candidates.update(args_with_conc)
         candidate_attackers[target_lit] = frozenset(candidates)
@@ -1200,9 +1243,7 @@ def _strictly_weaker(
         ldr_b = last_def_rules(b)
         if ldr_a or ldr_b:
             # At least one has last defeasible rules — compare rules
-            return _set_strictly_less(
-                ldr_a, ldr_b, pref.rule_order, pref.comparison
-            )
+            return _set_strictly_less(ldr_a, ldr_b, pref.rule_order, pref.comparison)
         else:
             # Both have empty LastDefRules — compare ordinary premises
             return _set_strictly_less(
@@ -1231,13 +1272,10 @@ def _strictly_weaker(
             )
         else:
             # General case — both conditions must hold
-            return (
-                _set_strictly_less(
-                    prem_p(a), prem_p(b), pref.premise_order, pref.comparison
-                )
-                and _set_strictly_less(
-                    def_rules(a), def_rules(b), pref.rule_order, pref.comparison
-                )
+            return _set_strictly_less(
+                prem_p(a), prem_p(b), pref.premise_order, pref.comparison
+            ) and _set_strictly_less(
+                def_rules(a), def_rules(b), pref.rule_order, pref.comparison
             )
     else:
         raise ValueError(f"Unknown link mode: {pref.link}")
@@ -1333,10 +1371,11 @@ def build_abstract_framework(
 
     argument_list = sorted(arguments, key=repr)
     argument_to_id = {
-        argument: f"{id_prefix}_{index}"
-        for index, argument in enumerate(argument_list)
+        argument: f"{id_prefix}_{index}" for index, argument in enumerate(argument_list)
     }
-    id_to_argument = {identifier: argument for argument, identifier in argument_to_id.items()}
+    id_to_argument = {
+        identifier: argument for argument, identifier in argument_to_id.items()
+    }
     framework = ArgumentationFramework(
         arguments=frozenset(argument_to_id.values()),
         attacks=frozenset(
@@ -1383,6 +1422,7 @@ class CSAF:
         arg_to_id: Mapping from Argument to string ID.
         id_to_arg: Mapping from string ID to Argument.
     """
+
     system: ArgumentationSystem
     kb: KnowledgeBase
     pref: PreferenceConfig

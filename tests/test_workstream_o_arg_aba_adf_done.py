@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from argumentation.structured.aba import aba
 from argumentation.frameworks import adf
-from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework, NotFlatABAError
+from argumentation.structured.aba.aba import (
+    ABAFramework,
+    ABAPlusFramework,
+    NotFlatABAError,
+)
 from argumentation.frameworks.adf import (
     AbstractDialecticalFramework,
     And,
@@ -33,7 +37,9 @@ def test_workstream_o_arg_aba_adf_done() -> None:
     stay = lit("stay")
     base = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}),
+        rules=frozenset(
+            {Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )

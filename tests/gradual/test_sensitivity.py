@@ -284,12 +284,14 @@ class TestAttackRemovalSensitivityProperties:
                     )
                 )
             except GradualConvergenceError as error:
-                outcomes.append((
-                    error.operation,
-                    error.result.iterations,
-                    error.result.max_delta,
-                    error.result.tolerance,
-                ))
+                outcomes.append(
+                    (
+                        error.operation,
+                        error.result.iterations,
+                        error.result.max_delta,
+                        error.result.tolerance,
+                    )
+                )
         first, second = outcomes
         assert first == second
 

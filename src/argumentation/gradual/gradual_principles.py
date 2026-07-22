@@ -51,7 +51,9 @@ PRINCIPLE_COMPLIANCE: dict[str, dict[str, ComplianceLabel]] = {
 }
 
 
-def principle_balance(strength_fn: StrengthFunction, graph: WeightedBipolarGraph) -> bool:
+def principle_balance(
+    strength_fn: StrengthFunction, graph: WeightedBipolarGraph
+) -> bool:
     """Check Baroni-Rago-Toni balance on the supplied graph.
 
     Baroni, Rago, and Toni 2019, IJAR 105, pp. 252-286, Section 4.1
@@ -86,9 +88,7 @@ def principle_directionality(
 
     strengths = strength_fn(graph)
     incident = {
-        argument
-        for edge in graph.attacks | graph.supports
-        for argument in edge
+        argument for edge in graph.attacks | graph.supports for argument in edge
     }
     return all(
         abs(strengths[argument] - graph.initial_weights[argument]) <= 1e-8

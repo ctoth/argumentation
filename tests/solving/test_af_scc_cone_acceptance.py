@@ -52,9 +52,7 @@ def multi_scc_frameworks(draw):
         for j in range(i + 1, block_count):
             defeats |= draw(
                 st.frozensets(
-                    st.tuples(
-                        st.sampled_from(blocks[i]), st.sampled_from(blocks[j])
-                    ),
+                    st.tuples(st.sampled_from(blocks[i]), st.sampled_from(blocks[j])),
                     max_size=3,
                 )
             )
@@ -96,9 +94,7 @@ CHAIN_AF = ArgumentationFramework(
 # SE(cone) = {{p}} — a naive cone DS-ST answer of NO would be unsound.
 VACUITY_AF = ArgumentationFramework(
     arguments=frozenset({"p", "q", "x", "y", "z"}),
-    defeats=frozenset(
-        {("p", "q"), ("x", "y"), ("y", "z"), ("z", "x")}
-    ),
+    defeats=frozenset({("p", "q"), ("x", "y"), ("y", "z"), ("z", "x")}),
 )
 
 
@@ -192,9 +188,16 @@ def test_cone_path_skips_frameworks_with_preference_filtered_attacks() -> None:
         framework, semantics="complete", task="credulous", query="c1", backend="auto"
     )
     assert LAST_CONE.fired is None
-    assert result.answer == solve_dung_acceptance(
-        framework, semantics="complete", task="credulous", query="c1", backend="native"
-    ).answer
+    assert (
+        result.answer
+        == solve_dung_acceptance(
+            framework,
+            semantics="complete",
+            task="credulous",
+            query="c1",
+            backend="native",
+        ).answer
+    )
 
 
 def test_cone_solver_returns_none_when_cone_spans_framework() -> None:
@@ -286,9 +289,7 @@ def test_kernel_sat_core_engine_matches_native_oracle() -> None:
         kernel = AfSatKernel(CHAIN_AF, engine="sat-core")
         kernel.add_complete_labelling()
         kernel.require_in(frozenset({argument}))
-        expected = (
-            "sat" if any(argument in ext for ext in extensions) else "unsat"
-        )
+        expected = "sat" if any(argument in ext for ext in extensions) else "unsat"
         assert kernel.check(f"probe_{argument}") == expected
 
 
@@ -342,7 +343,11 @@ def test_auto_preferred_skeptical_matches_native_on_multi_scc(case) -> None:
         framework, semantics="preferred", task="skeptical", query=query, backend="auto"
     )
     native = solve_dung_acceptance(
-        framework, semantics="preferred", task="skeptical", query=query, backend="native"
+        framework,
+        semantics="preferred",
+        task="skeptical",
+        query=query,
+        backend="native",
     )
     assert auto.answer == native.answer
 

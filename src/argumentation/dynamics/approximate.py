@@ -45,7 +45,9 @@ class SemiStableApproximation:
 def _all_subsets(arguments: frozenset[str]) -> list[frozenset[str]]:
     ordered = sorted(arguments)
     return [
-        frozenset(ordered[index] for index in range(len(ordered)) if mask & (1 << index))
+        frozenset(
+            ordered[index] for index in range(len(ordered)) if mask & (1 << index)
+        )
         for mask in range(1 << len(ordered))
     ]
 
@@ -109,14 +111,19 @@ def approximate_grounded(
         )
         iterations += 1
         current = next_current
-        if characteristic_fn(current, framework.arguments, framework.defeats) == current:
+        if (
+            characteristic_fn(current, framework.arguments, framework.defeats)
+            == current
+        ):
             return GroundedApproximation(
                 extension=current,
                 iterations=iterations,
                 exact=True,
             )
 
-    exact = characteristic_fn(current, framework.arguments, framework.defeats) == current
+    exact = (
+        characteristic_fn(current, framework.arguments, framework.defeats) == current
+    )
     return GroundedApproximation(extension=current, iterations=iterations, exact=exact)
 
 
@@ -152,7 +159,10 @@ def approximate_semi_stable(
                 continue
             if not admissible(candidate, framework.arguments, framework.defeats):
                 continue
-            if characteristic_fn(candidate, framework.arguments, framework.defeats) == candidate:
+            if (
+                characteristic_fn(candidate, framework.arguments, framework.defeats)
+                == candidate
+            ):
                 complete_candidates.append(candidate)
 
     return SemiStableApproximation(

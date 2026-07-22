@@ -7,7 +7,11 @@ from argumentation.frameworks.adf import (
     grounded_interpretation,
     interpretation_from_mapping,
 )
-from argumentation.core.dung import ArgumentationFramework, grounded_extension, stable_extensions
+from argumentation.core.dung import (
+    ArgumentationFramework,
+    grounded_extension,
+    stable_extensions,
+)
 
 
 def test_dung_to_adf_preserves_grounded_single_attack() -> None:

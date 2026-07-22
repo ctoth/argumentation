@@ -84,7 +84,9 @@ def _strict_bipartition_sum_merge(
 
     attacks: set[AttackPair] = set()
     for pair in product(universe, universe):
-        attack_votes = sum(1 for framework in expanded.values() if pair in framework.attacks)
+        attack_votes = sum(
+            1 for framework in expanded.values() if pair in framework.attacks
+        )
         non_attack_votes = sum(
             1 for framework in expanded.values() if pair in framework.non_attacks
         )

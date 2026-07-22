@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
 from argumentation.probabilistic.probabilistic_paper_td import (
     PaperTDLabel,
     PaperTDRow,
@@ -69,10 +72,11 @@ def test_paper_td_introduce_branches_absent_and_unattacked_present_argument() ->
         witnesses={},
         probability=pytest.approx(0.25),
     )
-    assert {
-        row.labels["b"]
-        for row in rows[1:]
-    } == {PaperTDLabel.IN, PaperTDLabel.OUT, PaperTDLabel.UNDECIDED}
+    assert {row.labels["b"] for row in rows[1:]} == {
+        PaperTDLabel.IN,
+        PaperTDLabel.OUT,
+        PaperTDLabel.UNDECIDED,
+    }
     assert all(row.probability == pytest.approx(0.75) for row in rows[1:])
 
 
@@ -96,9 +100,7 @@ def test_paper_td_introduce_records_out_witness_for_attacked_argument() -> None:
     )
 
     out_rows = [
-        row
-        for row in rows
-        if row.labels.get("b") is PaperTDLabel.OUT and row.witnesses
+        row for row in rows if row.labels.get("b") is PaperTDLabel.OUT and row.witnesses
     ]
     assert len(out_rows) == 1
     assert out_rows[0].active_defeats == frozenset({("a", "b")})
@@ -224,7 +226,9 @@ def test_paper_td_evaluator_lifts_witness_metadata_for_rejected_arguments() -> N
     assert result.argument_witnesses["b"].witnesses
 
 
-def test_probabilistic_acceptance_routes_paper_td_without_old_exact_dp_backend() -> None:
+def test_probabilistic_acceptance_routes_paper_td_without_old_exact_dp_backend() -> (
+    None
+):
     praf = ProbabilisticAF(
         framework=ArgumentationFramework(
             arguments=frozenset({"a", "b", "c"}),
@@ -246,7 +250,10 @@ def test_probabilistic_acceptance_routes_paper_td_without_old_exact_dp_backend()
     assert result.extension_probability == pytest.approx(0.7)
     assert result.strategy_metadata is not None
     assert result.strategy_metadata["backend"] == "popescu_wallner_iou_witness_td"
-    assert result.strategy_metadata["paper_conformance"] == "popescu_wallner_2024_algorithm_1"
+    assert (
+        result.strategy_metadata["paper_conformance"]
+        == "popescu_wallner_2024_algorithm_1"
+    )
 
 
 @pytest.mark.differential
@@ -287,4 +294,6 @@ def test_paper_td_evaluator_matches_enumeration_on_low_treewidth_queries() -> No
             queried_set=queried_set,
         )
 
-        assert result.extension_probability == pytest.approx(expected.extension_probability)
+        assert result.extension_probability == pytest.approx(
+            expected.extension_probability
+        )

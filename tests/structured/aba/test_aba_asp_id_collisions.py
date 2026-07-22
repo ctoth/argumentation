@@ -66,10 +66,12 @@ def test_collision_free_framework_encodes_without_raising() -> None:
     not_beta = Literal(GroundAtom("not_beta"))
     framework = ABAFramework(
         language=frozenset({alpha, beta, not_alpha, not_beta}),
-        rules=frozenset({
-            Rule((alpha,), not_beta, "strict"),
-            Rule((beta,), not_alpha, "strict"),
-        }),
+        rules=frozenset(
+            {
+                Rule((alpha,), not_beta, "strict"),
+                Rule((beta,), not_alpha, "strict"),
+            }
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: not_alpha, beta: not_beta},
     )

@@ -8,7 +8,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from argumentation.structured.aba import aba as aba_semantics
-from argumentation.structured.aba.aba import ABAFramework, ABAPlusFramework, AssumptionSet, derives
+from argumentation.structured.aba.aba import (
+    ABAFramework,
+    ABAPlusFramework,
+    AssumptionSet,
+    derives,
+)
 from argumentation.structured.aba.aba_preprocessing import (
     GROUNDED_REDUCT_ABA_SEMANTICS,
     _simplified_query_decision,
@@ -41,7 +46,9 @@ class ABAQueryResult:
     counterexample: AssumptionSet | None = None
 
 
-def encode_aba_theory(framework: ABAFramework, *, include_supports: bool = True) -> ABAEncoding:
+def encode_aba_theory(
+    framework: ABAFramework, *, include_supports: bool = True
+) -> ABAEncoding:
     """Encode a flat ABA framework into deterministic ASP facts."""
     assumption_by_id = {
         _literal_id(assumption): assumption
@@ -58,7 +65,9 @@ def encode_aba_theory(framework: ABAFramework, *, include_supports: bool = True)
     for assumption_id, assumption in assumption_by_id.items():
         facts.add(f"assumption({assumption_id}).")
         facts.add(f"assumption_literal({assumption_id},{_literal_id(assumption)}).")
-        facts.add(f"contrary({assumption_id},{_literal_id(framework.contrary[assumption])}).")
+        facts.add(
+            f"contrary({assumption_id},{_literal_id(framework.contrary[assumption])})."
+        )
 
     for index, rule in enumerate(sorted(framework.rules, key=repr)):
         rule_id = f"r_{index}"
@@ -70,14 +79,20 @@ def encode_aba_theory(framework: ABAFramework, *, include_supports: bool = True)
 
     if include_supports:
         support_index = 0
-        for conclusion, supports in sorted(_minimal_supports(framework).items(), key=lambda item: repr(item[0])):
-            for support in sorted(supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))):
+        for conclusion, supports in sorted(
+            _minimal_supports(framework).items(), key=lambda item: repr(item[0])
+        ):
+            for support in sorted(
+                supports, key=lambda item: (len(item), tuple(sorted(map(repr, item))))
+            ):
                 support_id = f"sup_{support_index}"
                 support_index += 1
                 facts.add(f"support_concludes({support_id},{_literal_id(conclusion)}).")
                 facts.add(f"support_count({support_id},{len(support)}).")
                 for assumption in sorted(support, key=repr):
-                    facts.add(f"support_member({support_id},{_literal_id(assumption)}).")
+                    facts.add(
+                        f"support_member({support_id},{_literal_id(assumption)})."
+                    )
 
     ordered_facts = tuple(sorted(facts))
     signature = hashlib.sha256("\n".join(ordered_facts).encode("utf-8")).hexdigest()
@@ -164,10 +179,18 @@ def solve_aba_with_backend(
             task=task,
             query=query,
             extensions=extensions,
-            metadata={"encoding": encoding.metadata["encoding"], "solver": "aba_support_reference"},
+            metadata={
+                "encoding": encoding.metadata["encoding"],
+                "solver": "aba_support_reference",
+            },
         )
 
-    if backend in {"asp", "clingo"} and semantics in {"complete", "stable", "preferred", "grounded"}:
+    if backend in {"asp", "clingo"} and semantics in {
+        "complete",
+        "stable",
+        "preferred",
+        "grounded",
+    }:
         return _solve_multishot(
             framework,
             encoding=encoding,
@@ -192,7 +215,9 @@ def solve_aba_with_backend(
     from argumentation.solver_adapters import clingo
 
     module_semantics = "complete" if semantics == "grounded" else semantics
-    module_semantics = "admissible" if module_semantics == "preferred" else module_semantics
+    module_semantics = (
+        "admissible" if module_semantics == "preferred" else module_semantics
+    )
     result = clingo.run_extension_enumeration_protocol(
         facts=encoding.facts,
         encoding_modules=(f"aba_{module_semantics}.lp",),
@@ -229,7 +254,11 @@ def solve_aba_with_backend(
             encoding=encoding,
             reason=result.reason,
         )
-    status = "backend_error" if isinstance(result, clingo.ClingoProcessError) else "protocol_error"
+    status = (
+        "backend_error"
+        if isinstance(result, clingo.ClingoProcessError)
+        else "protocol_error"
+    )
     return _failure_result(
         status=status,
         semantics=semantics,
@@ -284,11 +313,15 @@ def _solve_multishot(
             reason=str(exc),
         )
 
-    telemetry = aba_incremental.IncrementalTelemetry(clingo_control_args=solver.control_args)
+    telemetry = aba_incremental.IncrementalTelemetry(
+        clingo_control_args=solver.control_args
+    )
 
     # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
     if semantics == "preferred" and task == "skeptical" and query is not None:
-        answer, counterexample = solver.is_skeptically_accepted_preferred(query, telemetry=telemetry)
+        answer, counterexample = solver.is_skeptically_accepted_preferred(
+            query, telemetry=telemetry
+        )
         return ABAQueryResult(
             status="success",
             semantics=semantics,
@@ -314,7 +347,9 @@ def _solve_multishot(
             elif semantics == "preferred":
                 extension = solver.find_preferred_extension(telemetry=telemetry)
             else:  # pragma: no cover - dispatcher gates this
-                raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+                raise ValueError(
+                    f"unsupported ABA semantics for multishot: {semantics}"
+                )
         except aba_incremental.ClingoSolveTimeout as exc:
             return _failure_result(
                 status="timeout",
@@ -449,11 +484,15 @@ def _solve_simplified(
             reason=residual_result.metadata.get("reason", "residual ABA solve failed"),
             stdout=residual_result.metadata.get("stdout", ""),
             stderr=residual_result.metadata.get("stderr", ""),
-            metadata=dict(residual_result.metadata) | {"preprocessing": "grounded_reduct_aba"},
+            metadata=dict(residual_result.metadata)
+            | {"preprocessing": "grounded_reduct_aba"},
         )
     lifted = tuple(
         sorted(
-            (simplification.lift(extension) for extension in residual_result.extensions),
+            (
+                simplification.lift(extension)
+                for extension in residual_result.extensions
+            ),
             key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
         )
     )
@@ -542,10 +581,16 @@ def _solve_simplified_ds_pr(
     if decision in {"fixed_out", "outside_residual"}:
         return _result(False, _some_preferred())
 
-    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(query, telemetry=telemetry)
+    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(
+        query, telemetry=telemetry
+    )
     if answer:
         return _result(True, None)
-    counterexample = None if residual_counterexample is None else simplification.lift(residual_counterexample)
+    counterexample = (
+        None
+        if residual_counterexample is None
+        else simplification.lift(residual_counterexample)
+    )
     return _result(False, counterexample)
 
 
@@ -591,7 +636,14 @@ def _task_result(
             reason="credulous and skeptical ABA tasks require query",
         )
     if task == "credulous":
-        witness = next((extension for extension in extensions if derives(framework, extension, query)), None)
+        witness = next(
+            (
+                extension
+                for extension in extensions
+                if derives(framework, extension, query)
+            ),
+            None,
+        )
         return ABAQueryResult(
             status="success",
             semantics=semantics,
@@ -605,7 +657,11 @@ def _task_result(
         )
     if task == "skeptical":
         counterexample = next(
-            (extension for extension in extensions if not derives(framework, extension, query)),
+            (
+                extension
+                for extension in extensions
+                if not derives(framework, extension, query)
+            ),
             None,
         )
         return ABAQueryResult(
@@ -628,7 +684,9 @@ def _task_result(
     )
 
 
-def _reference_extensions(framework: ABAFramework, semantics: str) -> tuple[AssumptionSet, ...]:
+def _reference_extensions(
+    framework: ABAFramework, semantics: str
+) -> tuple[AssumptionSet, ...]:
     if semantics == "admissible":
         return tuple(
             candidate
@@ -653,7 +711,10 @@ def _decode_extensions(
     return tuple(
         sorted(
             (
-                frozenset(encoding.assumption_by_id[assumption_id] for assumption_id in extension)
+                frozenset(
+                    encoding.assumption_by_id[assumption_id]
+                    for assumption_id in extension
+                )
                 for extension in encoded_extensions
             ),
             key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
@@ -661,15 +722,32 @@ def _decode_extensions(
     )
 
 
-def _maximal_extensions(extensions: tuple[AssumptionSet, ...]) -> tuple[AssumptionSet, ...]:
-    return tuple(extension for extension in extensions if not any(extension < other for other in extensions))
+def _maximal_extensions(
+    extensions: tuple[AssumptionSet, ...],
+) -> tuple[AssumptionSet, ...]:
+    return tuple(
+        extension
+        for extension in extensions
+        if not any(extension < other for other in extensions)
+    )
 
 
-def _minimal_extensions(extensions: tuple[AssumptionSet, ...]) -> tuple[AssumptionSet, ...]:
+def _minimal_extensions(
+    extensions: tuple[AssumptionSet, ...],
+) -> tuple[AssumptionSet, ...]:
     if not extensions:
         return tuple()
-    minimal = [extension for extension in extensions if not any(other < extension for other in extensions)]
-    return tuple(sorted(minimal, key=lambda extension: (len(extension), tuple(sorted(map(repr, extension))))))[:1]
+    minimal = [
+        extension
+        for extension in extensions
+        if not any(other < extension for other in extensions)
+    ]
+    return tuple(
+        sorted(
+            minimal,
+            key=lambda extension: (len(extension), tuple(sorted(map(repr, extension)))),
+        )
+    )[:1]
 
 
 def _failure_result(

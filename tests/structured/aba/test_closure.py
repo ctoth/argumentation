@@ -60,4 +60,6 @@ def test_duplicate_antecedents_do_not_block_firing() -> None:
 def test_rule_order_does_not_change_result() -> None:
     forward = [Rule((a,), b, "strict"), Rule((b,), c, "strict")]
     reverse = [Rule((b,), c, "strict"), Rule((a,), b, "strict")]
-    assert horn_closure([a], forward) == horn_closure([a], reverse) == frozenset({a, b, c})
+    assert (
+        horn_closure([a], forward) == horn_closure([a], reverse) == frozenset({a, b, c})
+    )

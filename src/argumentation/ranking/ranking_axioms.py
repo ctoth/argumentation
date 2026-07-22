@@ -25,7 +25,10 @@ def strict_preference_transitive(result: RankingResult) -> bool:
 
     arguments = frozenset(result.scores)
     return all(
-        not (result.strictly_prefers(left, middle) and result.strictly_prefers(middle, right))
+        not (
+            result.strictly_prefers(left, middle)
+            and result.strictly_prefers(middle, right)
+        )
         or result.strictly_prefers(left, right)
         for left in arguments
         for middle in arguments
@@ -50,11 +53,15 @@ def abstraction(
     }
     renamed = ArgumentationFramework(
         arguments=frozenset(renaming.values()),
-        defeats=frozenset((renaming[left], renaming[right]) for left, right in framework.defeats),
+        defeats=frozenset(
+            (renaming[left], renaming[right]) for left, right in framework.defeats
+        ),
         attacks=(
             None
             if framework.attacks is None
-            else frozenset((renaming[left], renaming[right]) for left, right in framework.attacks)
+            else frozenset(
+                (renaming[left], renaming[right]) for left, right in framework.attacks
+            )
         ),
     )
     original_result = semantics(framework)
@@ -92,7 +99,9 @@ def independence(
         component_result = semantics(component_framework)
         for left in component:
             for right in component:
-                if not _same_pair_order(full_result, left, right, component_result, left, right):
+                if not _same_pair_order(
+                    full_result, left, right, component_result, left, right
+                ):
                     return False
     return True
 
@@ -123,7 +132,11 @@ def self_contradiction(
 ) -> bool:
     """Check Bonzon et al. 2016 p. 1 self-contradiction precedence."""
 
-    self_attacking = {argument for argument in framework.arguments if (argument, argument) in _attack_relation(framework)}
+    self_attacking = {
+        argument
+        for argument in framework.arguments
+        if (argument, argument) in _attack_relation(framework)
+    }
     clean = set(framework.arguments) - self_attacking
     return all(
         not result.strictly_prefers(self_attacker, other)
@@ -141,7 +154,9 @@ def defense_precedence(
     attackers = _attackers(framework)
     for defended in framework.arguments:
         defended_attackers = attackers[defended]
-        if not defended_attackers or not _every_attacker_is_attacked(defended_attackers, framework):
+        if not defended_attackers or not _every_attacker_is_attacked(
+            defended_attackers, framework
+        ):
             continue
         for undefended in framework.arguments:
             undefended_attackers = attackers[undefended]
@@ -236,10 +251,9 @@ def quality_precedence(
             if len(attackers[right]) != 1:
                 continue
             right_attacker = next(iter(attackers[right]))
-            if (
-                result.strictly_prefers(right_attacker, left_attacker)
-                and not result.strictly_prefers(left, right)
-            ):
+            if result.strictly_prefers(
+                right_attacker, left_attacker
+            ) and not result.strictly_prefers(left, right):
                 return False
     return True
 
@@ -282,7 +296,9 @@ def strict_addition_of_defense_branch(
     attackers = _attackers(framework)
     for left in framework.arguments:
         left_attackers = attackers[left]
-        if not left_attackers or not _any_attacker_is_attacked(left_attackers, framework):
+        if not left_attackers or not _any_attacker_is_attacked(
+            left_attackers, framework
+        ):
             continue
         for right in framework.arguments:
             right_attackers = attackers[right]
@@ -304,16 +320,17 @@ def _same_pair_order(
     right_a: str,
     right_b: str,
 ) -> bool:
-    return (
-        left_result.strictly_prefers(left_a, left_b)
-        == right_result.strictly_prefers(right_a, right_b)
-        and left_result.equivalent(left_a, left_b)
-        == right_result.equivalent(right_a, right_b)
-    )
+    return left_result.strictly_prefers(
+        left_a, left_b
+    ) == right_result.strictly_prefers(right_a, right_b) and left_result.equivalent(
+        left_a, left_b
+    ) == right_result.equivalent(right_a, right_b)
 
 
 def _weak_components(framework: ArgumentationFramework) -> list[frozenset[str]]:
-    neighbors: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    neighbors: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
     for attacker, target in _attack_relation(framework):
         neighbors[attacker].add(target)
         neighbors[target].add(attacker)
@@ -383,7 +400,8 @@ def _group_at_least_as_acceptable(
             (
                 candidate
                 for candidate in better
-                if candidate not in used and _at_least_as_acceptable(candidate, weaker, result)
+                if candidate not in used
+                and _at_least_as_acceptable(candidate, weaker, result)
             ),
             None,
         )
@@ -399,7 +417,9 @@ def _every_attacker_is_attacked(
     framework: ArgumentationFramework,
 ) -> bool:
     relation = _attack_relation(framework)
-    return all(any(target == attacker for _, target in relation) for attacker in attackers)
+    return all(
+        any(target == attacker for _, target in relation) for attacker in attackers
+    )
 
 
 def _any_attacker_is_attacked(
@@ -424,8 +444,12 @@ def _defense_profile(
             target_defenders[target].add(defender)
 
     defenders = set(defender_targets)
-    simple = bool(defenders) and all(len(targets) == 1 for targets in defender_targets.values())
-    distributed = simple and all(len(values) <= 1 for values in target_defenders.values())
+    simple = bool(defenders) and all(
+        len(targets) == 1 for targets in defender_targets.values()
+    )
+    distributed = simple and all(
+        len(values) <= 1 for values in target_defenders.values()
+    )
     return {
         "attacker_count": len(attackers),
         "defender_count": len(defenders),

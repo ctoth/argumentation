@@ -33,8 +33,7 @@ class WeightedBipolarGraph:
         if set(weights) != set(arguments):
             raise ValueError("initial_weights must cover exactly the arguments")
         out_of_range = sorted(
-            argument for argument, weight in weights.items()
-            if not 0.0 <= weight <= 1.0
+            argument for argument, weight in weights.items() if not 0.0 <= weight <= 1.0
         )
         if out_of_range:
             raise ValueError(f"initial weights must be in [0, 1]: {out_of_range!r}")
@@ -43,7 +42,9 @@ class WeightedBipolarGraph:
         supports = _normalize_relation("supports", self.supports, arguments)
         overlap = attacks & supports
         if overlap:
-            raise ValueError(f"attacks and supports must not overlap: {sorted(overlap)!r}")
+            raise ValueError(
+                f"attacks and supports must not overlap: {sorted(overlap)!r}"
+            )
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "initial_weights", weights)
@@ -138,8 +139,7 @@ def quadratic_energy_strengths_discrete(
     supporters = predecessors_index(graph.supports, nodes=graph.arguments)
     attackers = predecessors_index(graph.attacks, nodes=graph.arguments)
     strengths = {
-        argument: graph.initial_weights[argument]
-        for argument in graph.arguments
+        argument: graph.initial_weights[argument] for argument in graph.arguments
     }
 
     def update(current: dict[str, float]) -> dict[str, float]:
@@ -188,10 +188,7 @@ def quadratic_energy_strengths_continuous(
         raise ValueError("initial_step must be positive")
 
     arguments = tuple(sorted(graph.arguments))
-    strengths = {
-        argument: graph.initial_weights[argument]
-        for argument in arguments
-    }
+    strengths = {argument: graph.initial_weights[argument] for argument in arguments}
     step = initial_step
     max_delta = 0.0
     for iteration in range(1, max_iterations + 1):
@@ -210,11 +207,10 @@ def quadratic_energy_strengths_continuous(
         while True:
             full = _rk4_step(graph, strengths, step)
             half = _rk4_step(graph, _rk4_step(graph, strengths, step / 2.0), step / 2.0)
-            error = max(
-                abs(full[argument] - half[argument])
-                for argument in arguments
+            error = max(abs(full[argument] - half[argument]) for argument in arguments)
+            scale = tolerance + tolerance * max(
+                abs(half[argument]) for argument in arguments
             )
-            scale = tolerance + tolerance * max(abs(half[argument]) for argument in arguments)
             if error <= scale or step <= 1e-6:
                 strengths = {
                     argument: min(1.0, max(0.0, half[argument]))
@@ -273,19 +269,13 @@ def _rk4_step(
     }
     k3 = _quadratic_derivative(graph, k3_input)
     k4_input = {
-        argument: strengths[argument] + step * k3[argument]
-        for argument in arguments
+        argument: strengths[argument] + step * k3[argument] for argument in arguments
     }
     k4 = _quadratic_derivative(graph, k4_input)
     return {
         argument: strengths[argument]
         + step
-        * (
-            k1[argument]
-            + 2.0 * k2[argument]
-            + 2.0 * k3[argument]
-            + k4[argument]
-        )
+        * (k1[argument] + 2.0 * k2[argument] + 2.0 * k3[argument] + k4[argument])
         / 6.0
         for argument in arguments
     }
@@ -383,9 +373,9 @@ def shapley_attack_impacts(
     if target not in graph.arguments:
         raise ValueError(f"unknown target argument: {target!r}")
 
-    target_attacks = tuple(sorted(
-        attack for attack in graph.attacks if attack[1] == target
-    ))
+    target_attacks = tuple(
+        sorted(attack for attack in graph.attacks if attack[1] == target)
+    )
     n_attacks = len(target_attacks)
     impacts: dict[tuple[str, str], float] = {}
     for attack in target_attacks:
@@ -393,9 +383,7 @@ def shapley_attack_impacts(
         impact = 0.0
         for size in range(len(others) + 1):
             coefficient = (
-                factorial(size)
-                * factorial(n_attacks - size - 1)
-                / factorial(n_attacks)
+                factorial(size) * factorial(n_attacks - size - 1) / factorial(n_attacks)
             )
             for coalition in combinations(others, size):
                 removed = frozenset(coalition)
@@ -428,7 +416,7 @@ def shapley_attack_impacts(
         target=target,
         attack_impacts=dict(sorted(impacts.items())),
         exact=True,
-        coalition_count=2 ** n_attacks,
+        coalition_count=2**n_attacks,
     )
 
 
@@ -472,8 +460,7 @@ def _without_arguments(
     return WeightedBipolarGraph(
         arguments=remaining,
         initial_weights={
-            argument: graph.initial_weights[argument]
-            for argument in remaining
+            argument: graph.initial_weights[argument] for argument in remaining
         },
         attacks=frozenset(
             (source, target)

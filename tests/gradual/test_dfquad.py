@@ -10,7 +10,10 @@ from argumentation.gradual.dfquad import (
     dfquad_strengths,
 )
 from argumentation.gradual.gradual import WeightedBipolarGraph
-from argumentation.probabilistic.probabilistic import ProbabilisticAF, compute_probabilistic_acceptance
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
 
 
 def test_dfquad_aggregate_bounds_attack_and_support_effects() -> None:
@@ -51,7 +54,9 @@ def test_quad_strengths_are_support_sensitive() -> None:
 
 def test_dfquad_dispatch_requires_explicit_tau_for_quad_mode() -> None:
     praf = ProbabilisticAF(
-        framework=ArgumentationFramework(arguments=frozenset({"a"}), defeats=frozenset()),
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a"}), defeats=frozenset()
+        ),
         p_args={"a": 0.8},
         p_defeats={},
     )

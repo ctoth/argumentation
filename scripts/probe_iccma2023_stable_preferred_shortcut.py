@@ -210,7 +210,9 @@ def main() -> int:
     print("\n## 3. independent preferred check of the stable witness")
     print(str(v))
     if st_witness is not None:
-        assert v["subset_ok"] and v["closed_ok"], "witness not a closed assumption subset"
+        assert v["subset_ok"] and v["closed_ok"], (
+            "witness not a closed assumption subset"
+        )
 
     # -- Item 4: current preferred single-extension path telemetry (cap 15 s) --
     t1 = time.perf_counter()
@@ -261,7 +263,9 @@ def main() -> int:
     print(f"  independent preferred accepts ..... {c_preferred_ok}")
     print(f"  current SE-PR does skippable work .. {c_extra_work}")
     print(f"  ==> CANDIDATE {'SURVIVES' if survive else 'KILLED'}")
-    assert c_preferred_ok, "exact stable witness failed independent preferred verification"
+    assert c_preferred_ok, (
+        "exact stable witness failed independent preferred verification"
+    )
     assert survive, "stable-first SE-PR candidate failed a survival criterion"
     return 0
 

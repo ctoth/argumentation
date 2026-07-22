@@ -12,7 +12,10 @@ from argumentation.structured.aba import aba as native_aba
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
-from tools.aba_shape_benchmark import compute_aba_shape, route_candidates_from_shape_data
+from tools.aba_shape_benchmark import (
+    compute_aba_shape,
+    route_candidates_from_shape_data,
+)
 
 
 DECOMPOSED_PREFSAT_PAGE_IMAGES = (
@@ -104,7 +107,9 @@ def single_component_aba_for_no_reduction(draw) -> ABAFramework:
     size = draw(st.integers(min_value=2, max_value=6))
     assumptions = [lit(f"a{index}") for index in range(size)]
     contraries = [lit(f"x{index}") for index in range(size)]
-    contrary = {assumption: contraries[index] for index, assumption in enumerate(assumptions)}
+    contrary = {
+        assumption: contraries[index] for index, assumption in enumerate(assumptions)
+    }
     rules = [
         Rule((assumptions[index],), contraries[(index + 1) % size], "strict")
         for index in range(size)
@@ -146,7 +151,9 @@ def test_decomposition_reports_required_telemetry(framework: ABAFramework) -> No
     _assert_decomposition_telemetry(framework, result.telemetry)
 
 
-def test_reduced_product_never_calls_full_instance_prefsat(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reduced_product_never_calls_full_instance_prefsat(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from argumentation.structured.aba import aba_decomposition
 
     framework = _independent_product_framework(component_count=3)
@@ -214,7 +221,9 @@ def test_decomposition_never_calls_aba_to_dung(monkeypatch: pytest.MonkeyPatch) 
 
 @given(layered_independent_aba_for_decomposition())
 @settings(max_examples=25, deadline=None)
-def test_lifted_answer_validates_against_original_framework(framework: ABAFramework) -> None:
+def test_lifted_answer_validates_against_original_framework(
+    framework: ABAFramework,
+) -> None:
     from argumentation.structured.aba import aba_decomposition
 
     result = aba_decomposition.decomposed_prefsat_extension(framework)
@@ -264,12 +273,20 @@ def _assert_decomposition_telemetry(
     assert telemetry["decomp_no_reduction_reason"] in ALLOWED_NO_REDUCTION_REASONS
     assert telemetry["decomp_original_assumptions"] == len(framework.assumptions)
     assert telemetry["decomp_original_rules"] == len(framework.rules)
-    assert telemetry["decomp_residual_assumptions"] <= telemetry["decomp_original_assumptions"]
+    assert (
+        telemetry["decomp_residual_assumptions"]
+        <= telemetry["decomp_original_assumptions"]
+    )
     assert telemetry["decomp_residual_rules"] <= telemetry["decomp_original_rules"]
     if telemetry["decomp_no_reduction_reason"] == "reduced":
         assert telemetry["decomp_full_instance_prefsat_calls"] == 0
-        assert telemetry["decomp_prefsat_component_calls"] == telemetry["decomp_component_count"]
-        assert telemetry["decomp_max_component_assumptions"] < len(framework.assumptions)
+        assert (
+            telemetry["decomp_prefsat_component_calls"]
+            == telemetry["decomp_component_count"]
+        )
+        assert telemetry["decomp_max_component_assumptions"] < len(
+            framework.assumptions
+        )
     elif telemetry["decomp_no_reduction_reason"] == "empty_residual":
         assert telemetry["decomp_full_instance_prefsat_calls"] == 0
         assert telemetry["decomp_prefsat_component_calls"] == 0
@@ -279,7 +296,9 @@ def _assert_decomposition_telemetry(
     assert telemetry["decomp_validation_success"] == 1
 
 
-def _decomposed_route_signature(shape_data: dict[str, Any]) -> tuple[tuple[Any, ...], ...]:
+def _decomposed_route_signature(
+    shape_data: dict[str, Any],
+) -> tuple[tuple[Any, ...], ...]:
     candidates = route_candidates_from_shape_data(
         shape_data,
         "aba/single-extension/preferred",
@@ -326,7 +345,9 @@ def _independent_product_framework(component_count: int) -> ABAFramework:
 def _single_component_framework(size: int) -> ABAFramework:
     assumptions = [lit(f"s{index}") for index in range(size)]
     contraries = [lit(f"sx{index}") for index in range(size)]
-    contrary = {assumption: contraries[index] for index, assumption in enumerate(assumptions)}
+    contrary = {
+        assumption: contraries[index] for index, assumption in enumerate(assumptions)
+    }
     rules = [
         Rule((assumptions[index],), contraries[(index + 1) % size], "strict")
         for index in range(size)

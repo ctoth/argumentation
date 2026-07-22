@@ -63,10 +63,7 @@ def test_ground_defeasible_theory_normalizes_strong_negation() -> None:
 
     grounded = ground_defeasible_theory(theory)
 
-    assert {
-        rule.consequent
-        for rule in grounded.system.defeasible_rules
-    } == {
+    assert {rule.consequent for rule in grounded.system.defeasible_rules} == {
         Literal(GroundAtom("flies", ("tweety",)), negated=True),
     }
     assert all(
@@ -132,10 +129,7 @@ def test_grounding_inspection_to_aspic_uses_existing_gunray_result() -> None:
         superiority=theory.superiority,
     )
 
-    assert {
-        rule.consequent
-        for rule in grounded.system.defeasible_rules
-    } == {
+    assert {rule.consequent for rule in grounded.system.defeasible_rules} == {
         Literal(GroundAtom("flies", ("tweety",))),
         Literal(GroundAtom("flies", ("tweety",)), negated=True),
     }

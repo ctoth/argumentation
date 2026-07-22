@@ -37,7 +37,9 @@ def test_subjective_knowledge_base_adds_complements_for_rejected_props() -> None
         axioms=frozenset({lit("a")}),
         premises=frozenset({lit("b"), lit("d"), lit("f")}),
     )
-    propositions = frozenset({lit("a"), lit("b"), lit("c"), lit("d"), lit("e"), lit("f")})
+    propositions = frozenset(
+        {lit("a"), lit("b"), lit("c"), lit("d"), lit("e"), lit("f")}
+    )
     clean = frozenset({lit("a"), lit("b"), lit("c"), lit("e"), lit("f")})
 
     subjective = subjective_knowledge_base(kb, propositions=propositions, clean=clean)
@@ -60,22 +62,28 @@ def test_subjective_defeasible_rules_filter_body_head_and_rule_name() -> None:
     d2 = rule("d2", ("d",), "c")
     d3 = rule("d3", ("c",), "e")
     d4 = rule("d4", ("f",), "a")
-    clean = frozenset({
-        lit("a"),
-        lit("b"),
-        lit("c"),
-        lit("e"),
-        lit("f"),
-        lit("d1"),
-        lit("d3"),
-        lit("d4"),
-    })
+    clean = frozenset(
+        {
+            lit("a"),
+            lit("b"),
+            lit("c"),
+            lit("e"),
+            lit("f"),
+            lit("d1"),
+            lit("d3"),
+            lit("d4"),
+        }
+    )
 
-    assert subjective_defeasible_rules(frozenset({d1, d2, d3, d4}), clean=clean) == frozenset({
-        d1,
-        d3,
-        d4,
-    })
+    assert subjective_defeasible_rules(
+        frozenset({d1, d2, d3, d4}), clean=clean
+    ) == frozenset(
+        {
+            d1,
+            d3,
+            d4,
+        }
+    )
 
 
 def test_subjective_defeasible_rules_reject_unnamed_defeasible_rules() -> None:
@@ -87,23 +95,29 @@ def test_subjective_defeasible_rules_reject_unnamed_defeasible_rules() -> None:
     )
 
     with pytest.raises(ValueError, match="name"):
-        subjective_defeasible_rules(frozenset({unnamed}), clean=frozenset({lit("a"), lit("b")}))
+        subjective_defeasible_rules(
+            frozenset({unnamed}), clean=frozenset({lit("a"), lit("b")})
+        )
 
 
 def test_subjective_argumentation_theory_returns_filtered_projection() -> None:
     d1 = rule("d1", ("a",), "c")
     d2 = rule("d2", ("b",), "c")
     system = ArgumentationSystem(
-        language=frozenset({
-            lit("a"),
-            lit("b"),
-            lit("c"),
-            lit("d1"),
-            lit("d2"),
-            lit("b").contrary,
-            lit("d2").contrary,
-        }),
-        contrariness=ContrarinessFn(contradictories=frozenset({(lit("b"), lit("b").contrary)})),
+        language=frozenset(
+            {
+                lit("a"),
+                lit("b"),
+                lit("c"),
+                lit("d1"),
+                lit("d2"),
+                lit("b").contrary,
+                lit("d2").contrary,
+            }
+        ),
+        contrariness=ContrarinessFn(
+            contradictories=frozenset({(lit("b"), lit("b").contrary)})
+        ),
         strict_rules=frozenset(),
         defeasible_rules=frozenset({d1, d2}),
     )
@@ -123,11 +137,13 @@ def test_subjective_argumentation_theory_returns_filtered_projection() -> None:
         clean=frozenset({lit("a"), lit("c"), lit("d1")}),
     )
 
-    assert subjective.knowledge_base.premises == frozenset({
-        lit("a"),
-        lit("b").contrary,
-        lit("d2").contrary,
-    })
+    assert subjective.knowledge_base.premises == frozenset(
+        {
+            lit("a"),
+            lit("b").contrary,
+            lit("d2").contrary,
+        }
+    )
     assert subjective.system.defeasible_rules == frozenset({d1})
     assert subjective.projection.arguments
     assert subjective.projection.framework.arguments

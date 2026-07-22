@@ -28,7 +28,9 @@ def _resolve_command(binary: str) -> list[str] | None:
         return None
     executable = parts[0]
     executable_path = Path(executable)
-    resolved = str(executable_path) if executable_path.exists() else shutil.which(executable)
+    resolved = (
+        str(executable_path) if executable_path.exists() else shutil.which(executable)
+    )
     if resolved is None:
         return None
     return [resolved, *parts[1:]]

@@ -101,9 +101,7 @@ def test_cap150_timeout_manifest_filtering_matches_simple_oracle() -> None:
     selected = selected_timeout_rows(rows, years={2025}, subtrack="SE-PR")
 
     assert selected == [
-        row
-        for row in rows
-        if row["year"] == 2025 and row["subtrack"] == "SE-PR"
+        row for row in rows if row["year"] == 2025 and row["subtrack"] == "SE-PR"
     ]
 
 
@@ -213,7 +211,10 @@ def test_run_timeout_rows_passes_iccma_binary_to_selected_runner(monkeypatch) ->
     )
 
     assert results[0]["result"]["status"] == "solved"
-    assert calls[0]["iccma_binary"] == "uv run scratch/sources/aspforaba/aspforaba/aspforaba.py"
+    assert (
+        calls[0]["iccma_binary"]
+        == "uv run scratch/sources/aspforaba/aspforaba/aspforaba.py"
+    )
 
 
 def _logical_key(row: dict[str, object]) -> tuple[object, ...]:
@@ -231,7 +232,9 @@ def _iccma2025_instance_path(row: dict[str, object]) -> Path:
     return ICCMA_2025_INPUT_ROOT / relative
 
 
-def _assert_checked_manifest(rows: list[dict[str, object]], *, expected_len: int) -> None:
+def _assert_checked_manifest(
+    rows: list[dict[str, object]], *, expected_len: int
+) -> None:
     assert len(rows) == expected_len
     assert len({_logical_key(row) for row in rows}) == len(rows)
     for row in rows:

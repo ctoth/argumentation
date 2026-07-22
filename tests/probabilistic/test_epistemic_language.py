@@ -67,9 +67,9 @@ def test_hunter_example_4_epistemic_formula_evaluation() -> None:
     formula = parse_epistemic_formula("p(a & b) - p(c) - p(d) > 0")
 
     assert evaluate_epistemic_formula(formula, distribution) is True
-    assert write_epistemic_formula(parse_epistemic_formula(write_epistemic_formula(formula))) == (
-        write_epistemic_formula(formula)
-    )
+    assert write_epistemic_formula(
+        parse_epistemic_formula(write_epistemic_formula(formula))
+    ) == (write_epistemic_formula(formula))
 
 
 def test_hunter_definition_3_1_rejects_atom_thresholds_outside_unit_interval() -> None:
@@ -82,7 +82,9 @@ def test_hunter_definition_3_1_rejects_atom_thresholds_outside_unit_interval() -
 
 
 @given(
-    p_empty=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
+    p_empty=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    ),
     p_a=st.floats(min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False),
 )
 @settings(max_examples=100)

@@ -85,7 +85,9 @@ def test_fixed_argument_extension_enforcement_matches_wallner_example_strict() -
     assert frozenset({"a"}) in result.extensions
 
 
-def test_fixed_argument_extension_enforcement_matches_wallner_example_non_strict() -> None:
+def test_fixed_argument_extension_enforcement_matches_wallner_example_non_strict() -> (
+    None
+):
     framework = af(
         {"a", "b", "c", "d"},
         {("b", "a"), ("b", "c"), ("c", "a"), ("c", "d"), ("d", "b")},
@@ -176,7 +178,9 @@ def test_normal_expansion_iff_old_material_preserved_and_only_new_interactions_a
     assert is_normal_expansion(original, expanded) is expected
 
 
-def test_strong_and_weak_expansion_restrict_attack_direction_between_old_and_new() -> None:
+def test_strong_and_weak_expansion_restrict_attack_direction_between_old_and_new() -> (
+    None
+):
     original = af({"a"}, set())
 
     old_attacks_new = af({"a", "x"}, {("a", "x")})
@@ -200,7 +204,14 @@ def test_strong_and_weak_expansion_restrict_attack_direction_between_old_and_new
 def test_liberal_enforcement_uses_explicit_target_semantics() -> None:
     framework = af(
         {"a1", "a2", "a3", "a4", "a5"},
-        {("a1", "a2"), ("a3", "a2"), ("a3", "a4"), ("a4", "a3"), ("a4", "a5"), ("a5", "a5")},
+        {
+            ("a1", "a2"),
+            ("a3", "a2"),
+            ("a3", "a4"),
+            ("a4", "a3"),
+            ("a4", "a5"),
+            ("a5", "a5"),
+        },
     )
     target = frozenset({"a1", "a3"})
 

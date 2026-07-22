@@ -37,7 +37,9 @@ def parse_dependencies(plan_text: str) -> dict[int, set[int]]:
     return dict(dependencies)
 
 
-def topological_order(phases: dict[int, str], dependencies: dict[int, set[int]]) -> list[int]:
+def topological_order(
+    phases: dict[int, str], dependencies: dict[int, set[int]]
+) -> list[int]:
     dependencies.setdefault(0, set())
     missing_dependency_rows = sorted(set(phases) - set(dependencies))
     if missing_dependency_rows:
@@ -46,7 +48,9 @@ def topological_order(phases: dict[int, str], dependencies: dict[int, set[int]])
             + ", ".join(str(phase) for phase in missing_dependency_rows)
         )
 
-    unknown_deps = sorted({dep for deps in dependencies.values() for dep in deps if dep not in phases})
+    unknown_deps = sorted(
+        {dep for deps in dependencies.values() for dep in deps if dep not in phases}
+    )
     if unknown_deps:
         raise SystemExit(
             "Dependency rows mention unknown phases: "

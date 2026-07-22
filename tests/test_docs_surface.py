@@ -35,7 +35,10 @@ def test_readme_documents_new_package_surfaces() -> None:
         or "adapted grounded edge-tracking tree-decomposition backend" in readme
     )
     readme_without_emphasis = " ".join(readme.replace("*", "").casefold().split())
-    assert "not the full popescu & wallner i/o/u witness-table dp" in readme_without_emphasis
+    assert (
+        "not the full popescu & wallner i/o/u witness-table dp"
+        in readme_without_emphasis
+    )
 
 
 def test_architecture_documents_new_package_surfaces() -> None:

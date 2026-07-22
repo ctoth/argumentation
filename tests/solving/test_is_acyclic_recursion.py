@@ -20,7 +20,9 @@ from argumentation.core.finite import is_acyclic as finite_is_acyclic
 
 def _is_acyclic(framework: ArgumentationFramework) -> bool:
     """Adapt the shared graph helper to an ``ArgumentationFramework`` input."""
-    outgoing: dict[str, set[str]] = {argument: set() for argument in framework.arguments}
+    outgoing: dict[str, set[str]] = {
+        argument: set() for argument in framework.arguments
+    }
     for attacker, target in framework.defeats:
         outgoing.setdefault(attacker, set()).add(target)
     return finite_is_acyclic(outgoing)

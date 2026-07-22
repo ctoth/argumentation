@@ -29,7 +29,9 @@ def framework(
             for assumption, contrary in contraries.items()
         },
         rules=frozenset(
-            Rule(tuple(all_literals[item] for item in body), all_literals[head], "strict")
+            Rule(
+                tuple(all_literals[item] for item in body), all_literals[head], "strict"
+            )
             for head, body in rules
         ),
     )
@@ -44,7 +46,15 @@ def test_shape_contract_has_no_path_fields() -> None:
         )
     )
 
-    forbidden = {"path", "filename", "instance", "directory", "year", "track", "subtrack"}
+    forbidden = {
+        "path",
+        "filename",
+        "instance",
+        "directory",
+        "year",
+        "track",
+        "subtrack",
+    }
 
     assert not (set(asdict(shape)) & forbidden)
 
@@ -99,7 +109,9 @@ def test_tau_aba_proxy_uses_atoms_rules_heads_bodies_contraries() -> None:
     )
 
     assert no_rules.tau_aba_primal_width_proxy >= 1
-    assert with_rule_body.tau_aba_primal_width_proxy > no_rules.tau_aba_primal_width_proxy
+    assert (
+        with_rule_body.tau_aba_primal_width_proxy > no_rules.tau_aba_primal_width_proxy
+    )
 
 
 def test_normal_framework_marks_preferred_stable_coincidence_candidate() -> None:

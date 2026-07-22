@@ -12,11 +12,12 @@ References:
 from __future__ import annotations
 
 import pytest
-from hypothesis import HealthCheck, given, settings, assume
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 import argumentation.structured.aspic.aspic as aspic
 from argumentation.structured.aspic.aspic import (
+    ArgumentBuildStatus,
     Literal,
     GroundAtom,
     ContrarinessFn,
@@ -24,15 +25,12 @@ from argumentation.structured.aspic.aspic import (
     PremiseArg,
     StrictArg,
     DefeasibleArg,
-    Argument,
     KnowledgeBase,
     ArgumentationSystem,
     build_arguments,
     build_arguments_for,
     compute_attacks,
     conc,
-    prem,
-    sub,
     contraries_of,
 )
 
@@ -51,7 +49,10 @@ def _make_system(
         Literal(atom=GroundAtom(a), negated=n) for a in atoms for n in (False, True)
     )
     contradictory_pairs = frozenset(
-        (Literal(atom=GroundAtom(a), negated=False), Literal(atom=GroundAtom(a), negated=True))
+        (
+            Literal(atom=GroundAtom(a), negated=False),
+            Literal(atom=GroundAtom(a), negated=True),
+        )
         for a in atoms
     )
     cfn = ContrarinessFn(
@@ -107,7 +108,7 @@ class TestBasicBackwardChaining:
         system, _ = _make_system(["p"])
         kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
 
-        result = build_arguments_for(system, kb, p, include_attackers=False)
+        result = build_arguments_for(system, kb, p, include_attackers=False).arguments
         assert len(result) >= 1
         premise_args = {a for a in result if isinstance(a, PremiseArg)}
         assert any(a.premise == p for a in premise_args)
@@ -118,11 +119,10 @@ class TestBasicBackwardChaining:
         system, _ = _make_system(["p"])
         kb = KnowledgeBase(axioms=frozenset({p}), premises=frozenset())
 
-        result = build_arguments_for(system, kb, p, include_attackers=False)
+        result = build_arguments_for(system, kb, p, include_attackers=False).arguments
         assert len(result) >= 1
         assert any(
-            isinstance(a, PremiseArg) and a.is_axiom and a.premise == p
-            for a in result
+            isinstance(a, PremiseArg) and a.is_axiom and a.premise == p for a in result
         )
 
     def test_single_strict_rule(self):
@@ -133,7 +133,7 @@ class TestBasicBackwardChaining:
         system, _ = _make_system(["p", "q"], strict_rules=[rule])
         kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
 
-        result = build_arguments_for(system, kb, q, include_attackers=False)
+        result = build_arguments_for(system, kb, q, include_attackers=False).arguments
         assert len(result) >= 1
         strict_args = {a for a in result if isinstance(a, StrictArg)}
         assert any(a.rule == rule for a in strict_args)
@@ -142,13 +142,11 @@ class TestBasicBackwardChaining:
         """p => q with p as premise, goal=q should produce DefeasibleArg."""
         p = Literal(GroundAtom("p"))
         q = Literal(GroundAtom("q"))
-        rule = Rule(
-            antecedents=(p,), consequent=q, kind="defeasible", name="r1"
-        )
+        rule = Rule(antecedents=(p,), consequent=q, kind="defeasible", name="r1")
         system, _ = _make_system(["p", "q"], defeasible_rules=[rule])
         kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
 
-        result = build_arguments_for(system, kb, q, include_attackers=False)
+        result = build_arguments_for(system, kb, q, include_attackers=False).arguments
         assert len(result) >= 1
         def_args = {a for a in result if isinstance(a, DefeasibleArg)}
         assert any(a.rule == rule for a in def_args)
@@ -163,7 +161,7 @@ class TestBasicBackwardChaining:
         system, _ = _make_system(["p", "q", "r"], strict_rules=[r1, r2])
         kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
 
-        result = build_arguments_for(system, kb, r, include_attackers=False)
+        result = build_arguments_for(system, kb, r, include_attackers=False).arguments
         assert len(result) >= 1
         # Should have argument concluding r
         assert any(conc(a) == r for a in result)
@@ -175,7 +173,7 @@ class TestBasicBackwardChaining:
         system, _ = _make_system(["p", "q"])
         kb = KnowledgeBase(axioms=frozenset({p}), premises=frozenset())
 
-        result = build_arguments_for(system, kb, q, include_attackers=False)
+        result = build_arguments_for(system, kb, q, include_attackers=False).arguments
         assert len(result) == 0
 
 
@@ -188,11 +186,9 @@ class TestAttackerInclusion:
         p = Literal(GroundAtom("p"))
         neg_p = Literal(GroundAtom("p"), negated=True)
         system, _ = _make_system(["p"])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, neg_p})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, neg_p}))
 
-        result = build_arguments_for(system, kb, p, include_attackers=True)
+        result = build_arguments_for(system, kb, p, include_attackers=True).arguments
         conclusions = {conc(a) for a in result}
         assert p in conclusions
         assert neg_p in conclusions
@@ -202,11 +198,9 @@ class TestAttackerInclusion:
         p = Literal(GroundAtom("p"))
         neg_p = Literal(GroundAtom("p"), negated=True)
         system, _ = _make_system(["p"])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, neg_p})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, neg_p}))
 
-        result = build_arguments_for(system, kb, p, include_attackers=False)
+        result = build_arguments_for(system, kb, p, include_attackers=False).arguments
         conclusions = {conc(a) for a in result}
         assert p in conclusions
         assert neg_p not in conclusions
@@ -220,11 +214,9 @@ class TestAttackerInclusion:
             antecedents=(s,), consequent=neg_p, kind="defeasible", name="r_attack"
         )
         system, _ = _make_system(["p", "s"], defeasible_rules=[rule])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, s})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, s}))
 
-        result = build_arguments_for(system, kb, p, include_attackers=True)
+        result = build_arguments_for(system, kb, p, include_attackers=True).arguments
         conclusions = {conc(a) for a in result}
         assert neg_p in conclusions  # attacker found
 
@@ -272,7 +264,7 @@ class TestAttackerInclusion:
             premises=frozenset({p, q, Literal(GroundAtom("r")), s}),
         )
 
-        result = build_arguments_for(system, kb, p, include_attackers=True)
+        result = build_arguments_for(system, kb, p, include_attackers=True).arguments
         conclusions = {conc(a) for a in result}
 
         assert neg_p in conclusions
@@ -325,7 +317,7 @@ class TestAttackerInclusion:
 
         monkeypatch.setattr(aspic, "is_c_consistent", counting_is_c_consistent)
 
-        result = build_arguments_for(system, kb, goal, include_attackers=True)
+        result = build_arguments_for(system, kb, goal, include_attackers=True).arguments
 
         assert any(conc(arg) == attacker for arg in result)
         assert attacker_premise_checks == 1
@@ -335,9 +327,8 @@ class TestAttackerInclusion:
 
 
 class TestDepthLimiting:
-    def test_depth_limit_prevents_deep_chains(self):
-        """Deep chain beyond max_depth should be truncated."""
-        # Create chain: a0 -> a1 -> a2 -> ... -> a(N)
+    @staticmethod
+    def _deep_chain():
         N = 15
         atoms = [f"a{i}" for i in range(N + 1)]
         lits = [Literal(GroundAtom(a)) for a in atoms]
@@ -347,18 +338,107 @@ class TestDepthLimiting:
         ]
         system, _ = _make_system(atoms, strict_rules=rules)
         kb = KnowledgeBase(axioms=frozenset({lits[0]}), premises=frozenset())
+        return N, lits, system, kb
 
-        # With max_depth=5, should NOT reach a15
-        result_shallow = build_arguments_for(
+    def test_unbounded_deep_chain_matches_exhaustive_goal_subset(self):
+        N, lits, system, kb = self._deep_chain()
+
+        result = build_arguments_for(system, kb, lits[N], include_attackers=False)
+        exhaustive = build_arguments(system, kb)
+
+        assert result.status is ArgumentBuildStatus.COMPLETE
+        assert result.max_depth is None
+        assert result.cutoff_literals == frozenset()
+        assert result.arguments == frozenset(
+            argument for argument in exhaustive if conc(argument) == lits[N]
+        )
+
+    def test_depth_limit_reports_empty_exhaustion(self):
+        N, lits, system, kb = self._deep_chain()
+
+        result = build_arguments_for(
             system, kb, lits[N], include_attackers=False, max_depth=5
         )
-        assert len(result_shallow) == 0  # can't reach depth 15 with limit 5
 
-        # With max_depth=20, should reach
-        result_deep = build_arguments_for(
+        assert result.arguments == frozenset()
+        assert result.status is ArgumentBuildStatus.MAX_DEPTH_EXHAUSTED
+        assert result.max_depth == 5
+        assert result.cutoff_literals
+
+    def test_sufficient_explicit_depth_is_complete(self):
+        N, lits, system, kb = self._deep_chain()
+
+        result = build_arguments_for(
             system, kb, lits[N], include_attackers=False, max_depth=20
         )
-        assert len(result_deep) >= 1
+
+        assert result.arguments
+        assert result.status is ArgumentBuildStatus.COMPLETE
+        assert result.max_depth == 20
+        assert result.cutoff_literals == frozenset()
+
+    def test_depth_limit_preserves_partial_arguments(self):
+        seed = Literal(GroundAtom("seed"))
+        middle = Literal(GroundAtom("middle"))
+        goal = Literal(GroundAtom("goal"))
+        rules = [
+            Rule(antecedents=(seed,), consequent=middle, kind="strict"),
+            Rule(antecedents=(middle,), consequent=goal, kind="strict"),
+        ]
+        system, _ = _make_system(["seed", "middle", "goal"], strict_rules=rules)
+        kb = KnowledgeBase(axioms=frozenset({seed}), premises=frozenset({goal}))
+
+        result = build_arguments_for(
+            system, kb, goal, include_attackers=False, max_depth=1
+        )
+
+        assert any(isinstance(argument, PremiseArg) for argument in result.arguments)
+        assert result.status is ArgumentBuildStatus.MAX_DEPTH_EXHAUSTED
+        assert result.cutoff_literals == frozenset({seed})
+
+    def test_attacker_side_depth_limit_is_exhaustion(self):
+        goal = Literal(GroundAtom("goal"))
+        contrary = Literal(GroundAtom("goal"), negated=True)
+        attacker_seed = Literal(GroundAtom("attacker_seed"))
+        rule = Rule(
+            antecedents=(attacker_seed,),
+            consequent=contrary,
+            kind="defeasible",
+            name="attacker",
+        )
+        system, _ = _make_system(["goal", "attacker_seed"], defeasible_rules=[rule])
+        kb = KnowledgeBase(
+            axioms=frozenset({attacker_seed}), premises=frozenset({goal})
+        )
+
+        result = build_arguments_for(
+            system, kb, goal, include_attackers=True, max_depth=0
+        )
+
+        assert any(conc(argument) == goal for argument in result.arguments)
+        assert result.status is ArgumentBuildStatus.MAX_DEPTH_EXHAUSTED
+        assert result.cutoff_literals == frozenset({attacker_seed})
+
+    def test_cutoff_literals_are_deterministic(self):
+        N, lits, system, kb = self._deep_chain()
+
+        first = build_arguments_for(
+            system, kb, lits[N], include_attackers=False, max_depth=5
+        )
+        second = build_arguments_for(
+            system, kb, lits[N], include_attackers=False, max_depth=5
+        )
+
+        assert first.cutoff_literals == second.cutoff_literals
+        assert first.cutoff_literals == frozenset({lits[9]})
+
+    def test_negative_depth_limit_is_rejected(self):
+        p = Literal(GroundAtom("p"))
+        system, _ = _make_system(["p"])
+        kb = KnowledgeBase(axioms=frozenset({p}), premises=frozenset())
+
+        with pytest.raises(ValueError, match="max_depth must be non-negative"):
+            build_arguments_for(system, kb, p, include_attackers=False, max_depth=-1)
 
     def test_cyclic_rules_terminate(self):
         """Rules forming a cycle should not cause infinite recursion."""
@@ -369,9 +449,11 @@ class TestDepthLimiting:
         system, _ = _make_system(["p", "q"], strict_rules=[r1, r2])
         kb = KnowledgeBase(axioms=frozenset(), premises=frozenset())
 
-        # Should terminate without error, returning empty (no premises to seed)
         result = build_arguments_for(system, kb, p, include_attackers=False)
-        assert isinstance(result, frozenset)
+
+        assert result.arguments == frozenset()
+        assert result.status is ArgumentBuildStatus.COMPLETE
+        assert result.cutoff_literals == frozenset()
 
 
 # ── Test: correctness property (subset of exhaustive) ──────────────
@@ -392,7 +474,7 @@ class TestCorrectnessProperty:
         exhaustive = build_arguments(system, kb)
         goal_directed = build_arguments_for(
             system, kb, goal, include_attackers=False
-        )
+        ).arguments
         # Every goal-directed argument must also appear in exhaustive
         assert goal_directed <= exhaustive, (
             f"Goal-directed produced arguments not in exhaustive: "
@@ -422,9 +504,7 @@ class TestCorrectnessProperty:
         rule1 = Rule(antecedents=(p,), consequent=r, kind="strict")
         rule2 = Rule(antecedents=(q,), consequent=r, kind="strict")
         system, _ = _make_system(["p", "q", "r"], strict_rules=[rule1, rule2])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, q})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, q}))
 
         self._check_subset(system, kb, r)
 
@@ -433,18 +513,14 @@ class TestCorrectnessProperty:
         p = Literal(GroundAtom("p"))
         neg_p = Literal(GroundAtom("p"), negated=True)
         q = Literal(GroundAtom("q"))
-        rule = Rule(
-            antecedents=(q,), consequent=neg_p, kind="defeasible", name="r1"
-        )
+        rule = Rule(antecedents=(q,), consequent=neg_p, kind="defeasible", name="r1")
         system, _ = _make_system(["p", "q"], defeasible_rules=[rule])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, q})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, q}))
 
         exhaustive = build_arguments(system, kb)
         goal_directed = build_arguments_for(
             system, kb, p, include_attackers=True
-        )
+        ).arguments
         assert goal_directed <= exhaustive
 
     def test_attacks_work_on_goal_directed(self):
@@ -452,15 +528,11 @@ class TestCorrectnessProperty:
         p = Literal(GroundAtom("p"))
         neg_p = Literal(GroundAtom("p"), negated=True)
         q = Literal(GroundAtom("q"))
-        rule = Rule(
-            antecedents=(q,), consequent=neg_p, kind="defeasible", name="r1"
-        )
+        rule = Rule(antecedents=(q,), consequent=neg_p, kind="defeasible", name="r1")
         system, _ = _make_system(["p", "q"], defeasible_rules=[rule])
-        kb = KnowledgeBase(
-            axioms=frozenset(), premises=frozenset({p, q})
-        )
+        kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({p, q}))
 
-        goal_args = build_arguments_for(system, kb, p, include_attackers=True)
+        goal_args = build_arguments_for(system, kb, p, include_attackers=True).arguments
         attacks = compute_attacks(goal_args, system)
         # Should find at least one attack (neg_p attacks p)
         assert len(attacks) >= 1
@@ -473,9 +545,7 @@ class TestCorrectnessProperty:
 def small_aspic_system(draw):
     """Generate a small ASPIC+ system with KB for property testing."""
     pool = ["p", "q", "r", "s"]
-    atoms = draw(
-        st.lists(st.sampled_from(pool), min_size=2, max_size=4, unique=True)
-    )
+    atoms = draw(st.lists(st.sampled_from(pool), min_size=2, max_size=4, unique=True))
     literals = [Literal(GroundAtom(a), n) for a in atoms for n in (False, True)]
     language = frozenset(literals)
 
@@ -529,9 +599,7 @@ def small_aspic_system(draw):
         else:
             premises.append(lit)
 
-    kb = KnowledgeBase(
-        axioms=frozenset(axioms), premises=frozenset(premises)
-    )
+    kb = KnowledgeBase(axioms=frozenset(axioms), premises=frozenset(premises))
 
     # Pick a goal from the language
     goal = draw(st.sampled_from(literals))
@@ -556,7 +624,7 @@ def test_backward_subset_of_forward(data):
     exhaustive = build_arguments(system, kb)
     goal_directed = build_arguments_for(
         system, kb, goal, include_attackers=False
-    )
+    ).arguments
     assert goal_directed <= exhaustive, (
         f"Goal-directed produced arguments not in exhaustive.\n"
         f"Goal: {goal}\n"
@@ -580,7 +648,7 @@ def test_backward_with_attackers_subset_of_forward(data):
     exhaustive = build_arguments(system, kb)
     goal_directed = build_arguments_for(
         system, kb, goal, include_attackers=True
-    )
+    ).arguments
     assert goal_directed <= exhaustive, (
         f"Goal-directed+attackers produced arguments not in exhaustive.\n"
         f"Goal: {goal}\n"
@@ -605,7 +673,7 @@ def test_backward_finds_all_goal_conclusions(data):
     exhaustive = build_arguments(system, kb)
     goal_directed = build_arguments_for(
         system, kb, goal, include_attackers=False
-    )
+    ).arguments
     # All exhaustive arguments concluding goal should be in goal_directed
     exhaustive_for_goal = frozenset(a for a in exhaustive if conc(a) == goal)
     assert exhaustive_for_goal <= goal_directed, (

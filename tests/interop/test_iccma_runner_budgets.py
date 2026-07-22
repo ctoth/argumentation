@@ -78,7 +78,9 @@ def test_profile_duration_tracks_budget() -> None:
     assert profile_duration_seconds(0.5) == 1.0
 
 
-def test_empty_budgets_dispatch_is_byte_identical_to_flat_timeout(tmp_path, monkeypatch) -> None:
+def test_empty_budgets_dispatch_is_byte_identical_to_flat_timeout(
+    tmp_path, monkeypatch
+) -> None:
     """With no budgets the worker job and kill timeout must match the flat run exactly."""
     instance_path = tmp_path / "extracted" / "instances" / "case.apx"
     instance_path.parent.mkdir(parents=True)
@@ -106,7 +108,9 @@ def test_empty_budgets_dispatch_is_byte_identical_to_flat_timeout(tmp_path, monk
     assert flat_job["solver_timeout_seconds"] == 5.0
 
 
-def test_per_subtrack_budget_overrides_kill_and_solver_timeout(tmp_path, monkeypatch) -> None:
+def test_per_subtrack_budget_overrides_kill_and_solver_timeout(
+    tmp_path, monkeypatch
+) -> None:
     """A configured subtrack budget must flow to BOTH the subprocess kill and the solver budget."""
     instance_path = tmp_path / "extracted" / "instances" / "case.apx"
     instance_path.parent.mkdir(parents=True)
@@ -132,18 +136,24 @@ def test_per_subtrack_budget_overrides_kill_and_solver_timeout(tmp_path, monkeyp
     assert captured["job"]["solver_timeout_seconds"] == 5.0
 
     # A budgeted SE subtrack -> 600 on both.
-    config_budgeted = _config(tmp_path, timeout_seconds=5.0, task_budgets={"SE-ST": 600.0})
+    config_budgeted = _config(
+        tmp_path, timeout_seconds=5.0, task_budgets={"SE-ST": 600.0}
+    )
     run_or_skip(config_budgeted, instance, task)
     assert captured["timeout_seconds"] == 600.0
     assert captured["job"]["solver_timeout_seconds"] == 600.0
 
 
-def test_only_tracks_filters_redundant_track_before_solving(tmp_path, monkeypatch) -> None:
+def test_only_tracks_filters_redundant_track_before_solving(
+    tmp_path, monkeypatch
+) -> None:
     """--only-track drops the duplicate solve of the same instance under another track."""
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     (manifests / "iccma-2025-manifest.json").write_text(
-        json.dumps([{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]),
+        json.dumps(
+            [{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]
+        ),
         encoding="utf-8",
     )
     (manifests / "iccma-2025-task-matrix.json").write_text(
@@ -159,7 +169,11 @@ def test_only_tracks_filters_redundant_track_before_solving(tmp_path, monkeypatc
 
     def record_job(_config, instance, task):
         seen.append((task["track"], task["subtrack"]))
-        return {"instance": instance["relative_path"], "track": task["track"], "status": "solved"}
+        return {
+            "instance": instance["relative_path"],
+            "track": task["track"],
+            "status": "solved",
+        }
 
     monkeypatch.setattr("tools.iccma2025_run_native.run_or_skip", record_job)
     config = _config(tmp_path, only_tracks=frozenset({"main"}))
@@ -173,7 +187,9 @@ def test_empty_only_tracks_runs_every_track(tmp_path, monkeypatch) -> None:
     manifests = tmp_path / "manifests"
     manifests.mkdir()
     (manifests / "iccma-2025-manifest.json").write_text(
-        json.dumps([{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]),
+        json.dumps(
+            [{"kind": "apx", "relative_path": "keep.apx", "arguments_or_atoms": 1}]
+        ),
         encoding="utf-8",
     )
     (manifests / "iccma-2025-task-matrix.json").write_text(
@@ -189,7 +205,11 @@ def test_empty_only_tracks_runs_every_track(tmp_path, monkeypatch) -> None:
 
     def record_job(_config, instance, task):
         seen.append(task["track"])
-        return {"instance": instance["relative_path"], "track": task["track"], "status": "solved"}
+        return {
+            "instance": instance["relative_path"],
+            "track": task["track"],
+            "status": "solved",
+        }
 
     monkeypatch.setattr("tools.iccma2025_run_native.run_or_skip", record_job)
     config = _config(tmp_path)

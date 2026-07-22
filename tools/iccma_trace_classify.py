@@ -32,7 +32,9 @@ class TraceSummary:
         }
 
 
-def classify_trace(trace_path: Path, *, result_path: Path | None = None) -> TraceSummary:
+def classify_trace(
+    trace_path: Path, *, result_path: Path | None = None
+) -> TraceSummary:
     events = _read_json_lines(trace_path)
     terminal = _read_terminal_result(result_path)
 
@@ -63,8 +65,7 @@ def classify_trace(trace_path: Path, *, result_path: Path | None = None) -> Trac
         for utility_name, values in sorted(fingerprints.items())
     }
     event_counts_dict = {
-        utility_name: count
-        for utility_name, count in sorted(event_counts.items())
+        utility_name: count for utility_name, count in sorted(event_counts.items())
     }
     terminal_status = terminal.get("status") if terminal is not None else None
     terminal_answer = terminal.get("answer") if terminal is not None else None
@@ -98,10 +99,16 @@ def _classify(
     unique_attackers = unique_counts.get("preferred_skeptical_adm_ext_att", 0)
     unique_witnesses = unique_counts.get("preferred_skeptical_extend_attacker", 0)
 
-    if terminal_status == "solved" and terminal_answer == "false" and attacker_checks <= 1:
+    if (
+        terminal_status == "solved"
+        and terminal_answer == "false"
+        and attacker_checks <= 1
+    ):
         return "quick-counterexample"
     if terminal_status == "timeout" and attacker_checks > 100:
-        if unique_attackers == attacker_checks and unique_witnesses >= max(0, extend_checks - 1):
+        if unique_attackers == attacker_checks and unique_witnesses >= max(
+            0, extend_checks - 1
+        ):
             return "unique-attacker-churn"
         return "repeated-attacker-churn"
     if terminal_status == "solved":
@@ -113,7 +120,9 @@ def _classify(
 
 def _read_json_lines(path: Path) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
-    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         if not line.strip():
             continue
         value = json.loads(line)
@@ -136,7 +145,9 @@ def _read_terminal_result(path: Path | None) -> dict[str, Any] | None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Classify streamed ICCMA SAT trace JSONL.")
+    parser = argparse.ArgumentParser(
+        description="Classify streamed ICCMA SAT trace JSONL."
+    )
     parser.add_argument("trace", type=Path)
     parser.add_argument("--result", type=Path)
     args = parser.parse_args(argv)

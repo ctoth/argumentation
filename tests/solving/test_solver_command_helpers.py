@@ -55,7 +55,7 @@ def test_strip_outer_quotes_removes_matching_pair(value: str, expected: str) -> 
         '"',  # single quote char, len < 2
         "'",
         "'x\"",  # mismatched opening/closing quote chars
-        '"x\'',
+        "\"x'",
         'x"',  # quote only at end
         '"x',  # quote only at start
         "abc'",
@@ -225,7 +225,12 @@ def test_semantic_lines_strips_surrounding_whitespace() -> None:
 def test_adapters_share_identical_helper_objects() -> None:
     from argumentation.solver_adapters import _commands, iccma_aba, iccma_af
 
-    for name in ("_resolve_command", "_timeout_stream", "_problem_prefix", "_semantic_lines"):
+    for name in (
+        "_resolve_command",
+        "_timeout_stream",
+        "_problem_prefix",
+        "_semantic_lines",
+    ):
         canonical = getattr(_commands, name)
         assert getattr(iccma_af, name) is canonical
         assert getattr(iccma_aba, name) is canonical

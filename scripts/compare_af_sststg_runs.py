@@ -66,7 +66,9 @@ def witness_is_stable(framework, witness_text: str | None) -> bool | None:
     witness = frozenset(token.strip("'\"") for token in witness_text.split())
     if not witness <= framework.arguments:
         return False
-    conflicts = framework.attacks if framework.attacks is not None else framework.defeats
+    conflicts = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
     if any(a in witness and b in witness for a, b in conflicts):
         return False
     attacked = {target for source, target in framework.defeats if source in witness}
@@ -116,7 +118,9 @@ def main() -> None:
         for key in common_solved
         if baseline[key].get("answer") != candidate[key].get("answer")
     ]
-    print(f"commonly solved: {len(common_solved)}  answer mismatches: {len(mismatches)}")
+    print(
+        f"commonly solved: {len(common_solved)}  answer mismatches: {len(mismatches)}"
+    )
     for key in mismatches:
         print(
             f"  {key}: baseline={baseline[key].get('answer')} "

@@ -90,7 +90,9 @@ def test_cap_output_paths_uses_contest_tag(tmp_path: Path) -> None:
     paths = cap_output_paths(config)
 
     assert paths["csv"] == root / "runs" / "iccma-2025-post-router-test.csv"
-    assert paths["summary"] == root / "runs" / "iccma-2025-post-router-test-summary.json"
+    assert (
+        paths["summary"] == root / "runs" / "iccma-2025-post-router-test-summary.json"
+    )
 
 
 def test_summarize_fresh_timeouts_reports_missing_csv(tmp_path: Path) -> None:

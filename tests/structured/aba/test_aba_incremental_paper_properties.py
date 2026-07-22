@@ -6,7 +6,10 @@ from hypothesis import strategies as st
 
 from argumentation.structured.aba import aba as native_aba
 from argumentation.structured.aba.aba import ABAFramework, AssumptionSet, derives
-from argumentation.structured.aba.aba_asp import encode_aba_theory, solve_aba_with_backend
+from argumentation.structured.aba.aba_asp import (
+    encode_aba_theory,
+    solve_aba_with_backend,
+)
 from argumentation.structured.aba.aba_incremental import (
     AbaIncrementalSolver,
     LEHTONEN_INCREMENTAL_ASP_CITATION,
@@ -29,7 +32,9 @@ def test_lehtonen_p5_core_fact_surface_is_structural(framework: ABAFramework) ->
     """Lehtonen et al. p.5: ABA(F) is assumption/head/body/contrary facts."""
     encoding = encode_aba_theory(framework, include_supports=False)
     facts = set(encoding.facts)
-    id_by_literal = {literal: ident for ident, literal in encoding.literal_by_id.items()}
+    id_by_literal = {
+        literal: ident for ident, literal in encoding.literal_by_id.items()
+    }
 
     assert PAPER_PAGE_NOTE
     assert encoding.metadata["encoding"] == "flat_aba_core_facts"
@@ -37,7 +42,10 @@ def test_lehtonen_p5_core_fact_surface_is_structural(framework: ABAFramework) ->
 
     for assumption_id, assumption in encoding.assumption_by_id.items():
         assert f"assumption({assumption_id})." in facts
-        assert f"contrary({assumption_id},{id_by_literal[framework.contrary[assumption]]})." in facts
+        assert (
+            f"contrary({assumption_id},{id_by_literal[framework.contrary[assumption]]})."
+            in facts
+        )
 
     for index, rule in enumerate(sorted(framework.rules, key=repr)):
         rule_id = f"r_{index}"
@@ -55,7 +63,9 @@ def test_lehtonen_p6_refinement_blocks_candidate_and_subsets(
     pytest.importorskip("clingo")
     assumptions = tuple(sorted(framework.assumptions, key=repr))
     candidate = frozenset(
-        data.draw(st.lists(st.sampled_from(assumptions), unique=True), label="candidate")
+        data.draw(
+            st.lists(st.sampled_from(assumptions), unique=True), label="candidate"
+        )
     )
     out_set = frozenset(framework.assumptions - candidate)
 
@@ -105,7 +115,9 @@ def test_ds_pr_algorithm_one_metadata_and_answer_match_reference(
 ) -> None:
     """Lehtonen et al. pp.5-6: Algorithm 1 decides skeptical preferred."""
     pytest.importorskip("clingo")
-    query = data.draw(st.sampled_from(tuple(sorted(framework.language, key=repr))), label="query")
+    query = data.draw(
+        st.sampled_from(tuple(sorted(framework.language, key=repr))), label="query"
+    )
     preferred = native_aba.preferred_extensions(framework)
 
     result = solve_aba_with_backend(
@@ -120,7 +132,9 @@ def test_ds_pr_algorithm_one_metadata_and_answer_match_reference(
     assert result.status == "success"
     assert result.metadata["algorithm"] == "L21-TPLP-Alg1"
     assert result.metadata["paper"] == LEHTONEN_INCREMENTAL_ASP_CITATION
-    assert result.answer is all(derives(framework, extension, query) for extension in preferred)
+    assert result.answer is all(
+        derives(framework, extension, query) for extension in preferred
+    )
     if result.answer is False:
         assert result.counterexample is not None
         assert not derives(framework, result.counterexample, query)
@@ -130,5 +144,7 @@ def _all_subsets(items: frozenset) -> tuple[AssumptionSet, ...]:
     ordered = tuple(sorted(items, key=repr))
     subsets: list[AssumptionSet] = []
     for mask in range(1 << len(ordered)):
-        subsets.append(frozenset(item for index, item in enumerate(ordered) if mask & (1 << index)))
+        subsets.append(
+            frozenset(item for index, item in enumerate(ordered) if mask & (1 << index))
+        )
     return tuple(subsets)

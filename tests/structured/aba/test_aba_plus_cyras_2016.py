@@ -23,13 +23,17 @@ def test_cyras_2016_referendum_attack_reversal_selects_beta() -> None:
     stay = lit("stay")
     base = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}),
+        rules=frozenset(
+            {Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )
     framework = ABAPlusFramework(base, preference_order=frozenset({(alpha, beta)}))
 
-    assert not attacks_with_preferences(framework, frozenset({alpha}), frozenset({beta}))
+    assert not attacks_with_preferences(
+        framework, frozenset({alpha}), frozenset({beta})
+    )
     assert attacks_with_preferences(framework, frozenset({beta}), frozenset({alpha}))
     assert preferred_extensions(framework) == (frozenset({beta}),)
     assert stable_extensions(framework) == (frozenset({beta}),)

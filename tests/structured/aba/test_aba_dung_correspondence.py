@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from argumentation.structured.aba.aba import ABAFramework, aba_to_dung, grounded_extension, preferred_extensions
+from argumentation.structured.aba.aba import (
+    ABAFramework,
+    aba_to_dung,
+    grounded_extension,
+    preferred_extensions,
+)
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
 from argumentation.core.dung import grounded_extension as dung_grounded_extension
 from argumentation.core.dung import preferred_extensions as dung_preferred_extensions
@@ -15,7 +20,9 @@ def argument_label(support: frozenset[Literal], conclusion: Literal) -> str:
     return f"{{{support_text}}} |- {conclusion!r}"
 
 
-def project_assumptions(extension: frozenset[str], assumptions: frozenset[Literal]) -> frozenset[Literal]:
+def project_assumptions(
+    extension: frozenset[str], assumptions: frozenset[Literal]
+) -> frozenset[Literal]:
     return frozenset(
         assumption
         for assumption in assumptions
@@ -30,7 +37,9 @@ def test_flat_aba_to_dung_preserves_singleton_attack_semantics() -> None:
     stay = lit("stay")
     framework = ABAFramework(
         language=frozenset({alpha, beta, leave, stay}),
-        rules=frozenset({Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}),
+        rules=frozenset(
+            {Rule((alpha,), leave, "strict"), Rule((beta,), stay, "strict")}
+        ),
         assumptions=frozenset({alpha, beta}),
         contrary={alpha: stay, beta: leave},
     )
@@ -43,10 +52,7 @@ def test_flat_aba_to_dung_preserves_singleton_attack_semantics() -> None:
     assert tuple(
         project_assumptions(extension, framework.assumptions)
         for extension in dung_preferred_extensions(dung)
-    ) == tuple(
-        extension
-        for extension in preferred_extensions(framework)
-    )
+    ) == tuple(extension for extension in preferred_extensions(framework))
 
 
 def test_flat_aba_to_dung_preserves_joint_support_attacks() -> None:

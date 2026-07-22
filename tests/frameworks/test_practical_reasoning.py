@@ -70,7 +70,10 @@ def test_cq6_finds_alternative_action_realising_same_goal() -> None:
         initial_state="q0",
         agents=frozenset({"farmer"}),
         actions=frozenset({"row_seeds", "throw_seeds"}),
-        preconditions={"row_seeds": frozenset({"q0"}), "throw_seeds": frozenset({"q0"})},
+        preconditions={
+            "row_seeds": frozenset({"q0"}),
+            "throw_seeds": frozenset({"q0"}),
+        },
         transitions={("q0", "row_seeds"): "q1", ("q0", "throw_seeds"): "q2"},
         propositions=frozenset({"seeds_right"}),
         interpretation={
@@ -84,7 +87,9 @@ def test_cq6_finds_alternative_action_realising_same_goal() -> None:
             ("q0", "q2", "progress"): "+",
         },
     )
-    arg = PracticalArgument("farmer", "q0", "row_seeds", "q1", "seeds_right", "progress")
+    arg = PracticalArgument(
+        "farmer", "q0", "row_seeds", "q1", "seeds_right", "progress"
+    )
 
     objections = critical_question_objections(aats, arg, "CQ6")
 
@@ -111,7 +116,9 @@ def test_cq11_finds_precluded_action_that_promotes_different_value() -> None:
 
 
 def test_unsupported_critical_question_is_rejected() -> None:
-    arg = PracticalArgument("farmer", "q0", "row_seeds", "q1", "seeds_right", "progress")
+    arg = PracticalArgument(
+        "farmer", "q0", "row_seeds", "q1", "seeds_right", "progress"
+    )
 
     with pytest.raises(NotImplementedError, match="CQ4"):
         critical_question_objections(_toy_aats(), arg, "CQ4")
@@ -133,7 +140,11 @@ def test_generated_cq11_only_reports_different_promoted_values(
         preconditions={"proposed": frozenset({"q0"}), "alternative": frozenset({"q0"})},
         transitions={("q0", "proposed"): "q1", ("q0", "alternative"): "q2"},
         propositions=frozenset({"goal"}),
-        interpretation={"q0": frozenset(), "q1": frozenset({"goal"}), "q2": frozenset()},
+        interpretation={
+            "q0": frozenset(),
+            "q1": frozenset({"goal"}),
+            "q2": frozenset(),
+        },
         values=frozenset({"v0", "v1"}),
         valuation={
             ("q0", "q1", proposed_value): "+",

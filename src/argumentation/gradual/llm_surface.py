@@ -68,12 +68,16 @@ def build_qbaf_from_proposition_set(
         for (source, target), kind in edges.items()
         if kind == "support"
     )
-    unknown_kinds = sorted({kind for kind in edges.values() if kind not in {"attack", "support"}})
+    unknown_kinds = sorted(
+        {kind for kind in edges.values() if kind not in {"attack", "support"}}
+    )
     if unknown_kinds:
         raise ValueError(f"unsupported edge kinds: {unknown_kinds!r}")
     return WeightedBipolarGraph(
         arguments=arguments,
-        initial_weights={str(argument): float(weight) for argument, weight in propositions.items()},
+        initial_weights={
+            str(argument): float(weight) for argument, weight in propositions.items()
+        },
         attacks=attacks,
         supports=supports,
     )
@@ -129,7 +133,9 @@ def contest(
         raise GradualConvergenceError("contestation baseline", before_result)
     before = before_result.strengths[claim]
     augmented_weights = dict(graph.initial_weights)
-    augmented_weights.update({str(argument): float(weight) for argument, weight in evidence.items()})
+    augmented_weights.update(
+        {str(argument): float(weight) for argument, weight in evidence.items()}
+    )
     attacks = set(graph.attacks)
     supports = set(graph.supports)
     for (source, target), kind in edges.items():

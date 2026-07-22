@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from argumentation.core.dung import ArgumentationFramework, complete_extensions, grounded_extension
+from argumentation.core.dung import (
+    ArgumentationFramework,
+    complete_extensions,
+    grounded_extension,
+)
 from argumentation.core.labelling import (
     Label,
     Labelling,
@@ -48,7 +52,9 @@ def test_legally_out_predicate_caminada_2006_page_3() -> None:
     assert legally_out(labelling, framework, "C") is False
 
 
-def test_complete_labellings_match_complete_extensions_caminada_2006_pages_3_4() -> None:
+def test_complete_labellings_match_complete_extensions_caminada_2006_pages_3_4() -> (
+    None
+):
     """Caminada 2006, pp. 3-4: Lab2Ext bridges complete labellings/extensions."""
     framework = af({"A", "B"}, {("A", "B"), ("B", "A")})
 

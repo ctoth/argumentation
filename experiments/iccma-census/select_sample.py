@@ -107,7 +107,9 @@ def select(csv_path: Path) -> dict:
             }
         )
         for instance in picked:
-            entries.append({"family": family, "subtrack": subtrack, "instance": instance})
+            entries.append(
+                {"family": family, "subtrack": subtrack, "instance": instance}
+            )
 
     return {
         "source_csv": csv_path.name,
@@ -127,7 +129,9 @@ def main() -> int:
     args = parser.parse_args()
     manifest = select(args.csv)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.out.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(f"wrote {args.out} ({manifest['total_selected']} rows)")
     for stratum in manifest["strata"]:
         if stratum["selected"] < stratum["requested"]:

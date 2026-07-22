@@ -6,7 +6,7 @@ import pytest
 from hypothesis import given, settings
 
 from argumentation.structured.aba.aba import ABAFramework, NotFlatABAError
-from argumentation.structured.aspic.aspic import Literal, Rule
+from argumentation.structured.aspic.aspic import Literal
 from argumentation.interop.iccma import parse_aba, write_aba
 from tests.aba_hypothesis_generators import (
     cyclic_dependency_frameworks,
