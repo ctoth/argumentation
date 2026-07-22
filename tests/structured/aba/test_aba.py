@@ -50,7 +50,9 @@ def test_solve_aba_single_extension_native_returns_native_witness(
     framework: ABAFramework,
     semantics: str,
 ) -> None:
-    result = solve_aba_single_extension(framework, semantics=semantics, backend="native")
+    result = solve_aba_single_extension(
+        framework, semantics=semantics, backend="native"
+    )
 
     assert isinstance(result, SingleExtensionSolverSuccess)
     if result.extension is not None:
@@ -82,15 +84,13 @@ def test_solve_aba_acceptance_native_matches_extension_quantification(
     assert isinstance(result, AcceptanceSolverSuccess)
     if task == "credulous":
         assert result.answer is any(
-            native_aba.derives(framework, extension, query)
-            for extension in extensions
+            native_aba.derives(framework, extension, query) for extension in extensions
         )
         if result.witness is not None:
             assert native_aba.derives(framework, result.witness, query)
     else:
         assert result.answer is all(
-            native_aba.derives(framework, extension, query)
-            for extension in extensions
+            native_aba.derives(framework, extension, query) for extension in extensions
         )
         if result.counterexample is not None:
             assert not native_aba.derives(framework, result.counterexample, query)
@@ -117,7 +117,9 @@ def test_solve_aba_single_extension_auto_uses_stable_sat_without_native_enumerat
     def fail_native(*args, **kwargs):
         raise AssertionError("native ABA stable enumeration should not run")
 
-    monkeypatch.setattr("argumentation.solving.solver.aba_semantics.stable_extensions", fail_native)
+    monkeypatch.setattr(
+        "argumentation.solving.solver.aba_semantics.stable_extensions", fail_native
+    )
 
     result = solve_aba_single_extension(framework, semantics="stable")
 
@@ -133,7 +135,9 @@ def test_solve_aba_acceptance_auto_uses_stable_sat_without_native_enumeration(
     def fail_native(*args, **kwargs):
         raise AssertionError("native ABA stable enumeration should not run")
 
-    monkeypatch.setattr("argumentation.solving.solver.aba_semantics.stable_extensions", fail_native)
+    monkeypatch.setattr(
+        "argumentation.solving.solver.aba_semantics.stable_extensions", fail_native
+    )
 
     result = solve_aba_acceptance(
         framework,
@@ -303,7 +307,9 @@ def test_rules_by_consequent_groups_rules_deterministically() -> None:
         contrary={a1: y, a2: z},
     )
 
-    grouped = aba_sat._rules_by_consequent(framework, tuple(sorted(framework.language, key=repr)))
+    grouped = aba_sat._rules_by_consequent(
+        framework, tuple(sorted(framework.language, key=repr))
+    )
 
     assert grouped[x] == tuple(sorted((first, second), key=repr))
     assert grouped[y] == (third,)
@@ -323,7 +329,9 @@ def test_assumption_kernel_stable_witness_attacks_every_outsider() -> None:
     )
 
 
-def test_assumption_kernel_stable_returns_none_when_no_stable_extension_exists() -> None:
+def test_assumption_kernel_stable_returns_none_when_no_stable_extension_exists() -> (
+    None
+):
     a = literal("a")
     ca = literal("ca")
     framework = ABAFramework(
@@ -393,7 +401,10 @@ def test_preferred_support_sat_preserves_required_assumptions(
     )
 
     if witness is None:
-        assert not any(required <= extension for extension in native_aba.preferred_extensions(framework))
+        assert not any(
+            required <= extension
+            for extension in native_aba.preferred_extensions(framework)
+        )
     else:
         assert required <= witness
         assert witness in native_aba.preferred_extensions(framework)
@@ -526,11 +537,14 @@ def test_preferred_support_sat_fixed_out_requirement_is_always_unsatisfiable(
     )
     assert witness is None
     assert not any(
-        required <= extension for extension in native_aba.preferred_extensions(framework)
+        required <= extension
+        for extension in native_aba.preferred_extensions(framework)
     )
 
 
-@given(flat_aba_frameworks(), st.sampled_from(["require_derived", "require_not_derived"]))
+@given(
+    flat_aba_frameworks(), st.sampled_from(["require_derived", "require_not_derived"])
+)
 @settings(deadline=10000, max_examples=40)
 def test_preferred_support_sat_query_constraints_match_derivability(
     framework: ABAFramework,
@@ -548,9 +562,15 @@ def test_preferred_support_sat_query_constraints_match_derivability(
     if witness is None:
         native_witnesses = native_aba.preferred_extensions(framework)
         if constraint == "require_derived":
-            assert not any(native_aba.derives(framework, extension, query) for extension in native_witnesses)
+            assert not any(
+                native_aba.derives(framework, extension, query)
+                for extension in native_witnesses
+            )
         else:
-            assert not any(not native_aba.derives(framework, extension, query) for extension in native_witnesses)
+            assert not any(
+                not native_aba.derives(framework, extension, query)
+                for extension in native_witnesses
+            )
     elif constraint == "require_derived":
         assert native_aba.derives(framework, witness, query)
         assert witness in native_aba.preferred_extensions(framework)
@@ -568,11 +588,15 @@ def test_stable_shortcut_witness_is_preferred_member(framework: ABAFramework) ->
         assert witness in native_aba.preferred_extensions(framework)
 
 
-def test_preferred_witness_uses_stable_shortcut_before_preprocessing(monkeypatch) -> None:
+def test_preferred_witness_uses_stable_shortcut_before_preprocessing(
+    monkeypatch,
+) -> None:
     framework = _flat_aba(3, frozenset({(1, 2)}))
 
     def forbidden_simplification(*args, **kwargs):
-        raise AssertionError("preferred stable shortcut should run before ABA preprocessing")
+        raise AssertionError(
+            "preferred stable shortcut should run before ABA preprocessing"
+        )
 
     monkeypatch.setattr(aba_sat, "_aba_simplification", forbidden_simplification)
 
@@ -671,12 +695,8 @@ def test_solve_aba_acceptance_iccma_returns_verified_answer(monkeypatch) -> None
 def _flat_aba(size: int, attacks: frozenset[tuple[int, int]]) -> ABAFramework:
     assumptions = {literal(f"a{index}") for index in range(1, size + 1)}
     contraries = {literal(f"c{index}") for index in range(1, size + 1)}
-    assumption_by_index = {
-        index: literal(f"a{index}") for index in range(1, size + 1)
-    }
-    contrary_by_index = {
-        index: literal(f"c{index}") for index in range(1, size + 1)
-    }
+    assumption_by_index = {index: literal(f"a{index}") for index in range(1, size + 1)}
+    contrary_by_index = {index: literal(f"c{index}") for index in range(1, size + 1)}
     return ABAFramework(
         language=frozenset(assumptions | contraries),
         rules=frozenset(

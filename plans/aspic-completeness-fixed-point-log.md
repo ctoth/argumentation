@@ -206,3 +206,31 @@ Commit:
 
 Next slice:
 - Rewrite stale enumeration instrumentation to patch its true ABA SAT owner.
+
+## Iteration 6 - ABA solver-test formatting prerequisite
+
+Slice read:
+- `tests/structured/aba/test_aba.py`
+
+Surfaces:
+- Thirteen pre-existing Ruff formatting hunks around a two-line caller repair
+  - Disposition: rewrite mechanically in a separate commit.
+  - Owner after cleanup: the existing ABA solver test module.
+  - Action: restore the two uncommitted owner-target changes, format the whole
+    file, then reapply the two semantic lines in the next commit.
+  - Evidence: `uv run ruff format --diff` reports 13 hunks unrelated to the
+    monkeypatch target strings.
+
+Gate results:
+- Expected red: focused ABA solver tests report exactly the six
+  already-classified stale monkeypatch failures and 24 passes; formatting adds
+  no failure.
+- Pass: focused Ruff check.
+- Pass: focused Ruff format check.
+- Pass: the current source diff is mechanical formatting only.
+
+Commit:
+- `style(aba): format solver tests`.
+
+Next slice:
+- Reapply the two-line true-owner monkeypatch repair.
