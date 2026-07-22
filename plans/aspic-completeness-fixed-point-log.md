@@ -165,7 +165,44 @@ Gate results:
 - Pass: final source diff is the one planned annotation only.
 
 Commit:
-- Pending `fix(solving): type SAT finder kwargs`.
+- `5233a27 fix(solving): type SAT finder kwargs`.
 
 Next slice:
-- Repin Propstore to the resulting package HEAD.
+- Delete the obsolete Probe 7 red-contract scaffold exposed by the package full
+  test gate.
+
+## Iteration 5 - obsolete Probe 7 scaffold deletion
+
+Slice read:
+- `tests/structured/aba/test_aba_cadical2_eager_arc_contract.py`
+- `experiments/2026-07-11-iccma2023-probe-7-cadical221-eager-arc.md`
+
+Surfaces:
+- Test import of `scripts.probe_iccma2023_cadical221_eager_arc`
+  - Disposition: delete dead scaffold.
+  - Classification: dead/test/scaffold surface.
+  - Owner after cleanup: none; no diagnostic owner is valid for the frozen
+    Probe 7 contract.
+  - Action: delete the intentionally red preregistration test without adding a
+    diagnostic implementation, alias, skip, or replacement.
+  - Evidence: the recorded Probe 7 capability experiment proves pinned CaDiCaL
+    2.2.1 cannot provide the frozen restart-statistic and signed-value
+    semantics, so diagnostic implementation was deliberately abandoned.
+
+Gate results:
+- Pass: `uv run pytest --collect-only -q`, 3170 tests collected and no import
+  error.
+- Pass: no test or script path still references
+  `probe_iccma2023_cadical221_eager_arc`.
+- The first complete package test proceeded past collection and completed with
+  3156 passed, 4 skipped, 1 xfailed, and 9 failed. Six failures are stale test
+  monkeypatches of the earlier-deleted solver alias; one is a missing ignored
+  paper-image fixture; two are a missing ignored CaDiCaL binary. None is caused
+  by the Probe 7 deletion, and each is classified for a following slice or the
+  final clean-worktree gate setup.
+
+Commit:
+- `test(aba): delete obsolete Probe 7 contract`.
+
+Next slice:
+- Rewrite stale enumeration instrumentation to patch its true ABA SAT owner.
