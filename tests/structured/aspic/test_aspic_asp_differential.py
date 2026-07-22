@@ -13,7 +13,10 @@ from argumentation.structured.aspic.aspic import (
     PreferenceConfig,
     Rule,
 )
-from argumentation.structured.aspic.aspic_encoding import solve_aspic_with_backend
+from argumentation.structured.aspic.aspic_encoding import (
+    ASPICQueryStatus,
+    solve_aspic_with_backend,
+)
 
 
 def mutually_attacking_premises():
@@ -30,7 +33,9 @@ def mutually_attacking_premises():
     return system, kb, pref
 
 
-@pytest.mark.parametrize("semantics", ["grounded", "admissible", "complete", "stable", "preferred"])
+@pytest.mark.parametrize(
+    "semantics", ["grounded", "admissible", "complete", "stable", "preferred"]
+)
 def test_aspic_asp_matches_materialized_reference_on_mutual_attack(semantics) -> None:
     system, kb, pref = mutually_attacking_premises()
 
@@ -41,9 +46,11 @@ def test_aspic_asp_matches_materialized_reference_on_mutual_attack(semantics) ->
         backend="materialized_reference",
         semantics=semantics,
     )
-    result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics=semantics)
+    result = solve_aspic_with_backend(
+        system, kb, pref, backend="asp", semantics=semantics
+    )
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert set(result.extension_conclusions) == set(expected.extension_conclusions)
     assert result.metadata["projection"] == "source_assumption_pair"
 
@@ -76,9 +83,11 @@ def test_aspic_asp_supports_last_link_preferences() -> None:
         backend="materialized_reference",
         semantics="preferred",
     )
-    result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics="preferred")
+    result = solve_aspic_with_backend(
+        system, kb, pref, backend="asp", semantics="preferred"
+    )
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert set(result.extensions) == set(expected.extensions)
     assert result.metadata["projection"] == "aspic_abstract_framework"
 
@@ -87,9 +96,11 @@ def test_aspic_asp_rejects_weakest_link_preferences() -> None:
     system, kb, _pref = mutually_attacking_premises()
     pref = PreferenceConfig(frozenset(), frozenset(), "elitist", "weakest")
 
-    result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics="grounded")
+    result = solve_aspic_with_backend(
+        system, kb, pref, backend="asp", semantics="grounded"
+    )
 
-    assert result.status == "unavailable_backend"
+    assert result.status is ASPICQueryStatus.UNAVAILABLE_BACKEND
     assert result.metadata["reason"] == (
         "ASP backend covers last-link only; weakest-link grounded is NP-hard "
         "per Lehtonen 2024 Prop 17"
@@ -116,9 +127,14 @@ def acyclic_aspic_theories(draw):
     return system, kb, pref
 
 
-@given(acyclic_aspic_theories(), st.sampled_from(("grounded", "complete", "stable", "preferred")))
+@given(
+    acyclic_aspic_theories(),
+    st.sampled_from(("grounded", "complete", "stable", "preferred")),
+)
 @settings(deadline=10000, max_examples=25)
-def test_aspic_asp_matches_reference_on_generated_acyclic_theories(theory, semantics) -> None:
+def test_aspic_asp_matches_reference_on_generated_acyclic_theories(
+    theory, semantics
+) -> None:
     system, kb, pref = theory
     expected = solve_aspic_with_backend(
         system,
@@ -127,8 +143,10 @@ def test_aspic_asp_matches_reference_on_generated_acyclic_theories(theory, seman
         backend="materialized_reference",
         semantics=semantics,
     )
-    result = solve_aspic_with_backend(system, kb, pref, backend="asp", semantics=semantics)
+    result = solve_aspic_with_backend(
+        system, kb, pref, backend="asp", semantics=semantics
+    )
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert set(result.extension_conclusions) == set(expected.extension_conclusions)
     assert result.metadata["projection"] == "source_assumption_pair"

@@ -61,7 +61,51 @@ Gate results:
   `.arguments` or explicit result evidence; no compatibility surface exists.
 
 Commit:
-- Pending `feat(aspic): expose bounded construction status`.
+- `063910e feat(aspic): expose bounded construction status`.
 
 Next slice:
 - Package-owned solver status vocabulary.
+
+## Iteration 2 - `ASPICQueryResult.status`
+
+Slice read:
+- `src/argumentation/structured/aspic/aspic_encoding.py` status result and all
+  producers
+- `tests/structured/aspic/test_aspic_encodings.py` status assertions
+- `tests/structured/aspic/test_aspic_asp_differential.py` status assertions
+
+Surfaces:
+- `ASPICQueryResult.status: str`
+  - Disposition: rewrite
+  - Owner after cleanup: `ASPICQueryStatus` in `aspic_encoding.py`
+  - Action: type the field and every producer with the package enum.
+  - Evidence: the package already owns the exact four-value vocabulary.
+- String-valued test assertions
+  - Disposition: rewrite
+  - Owner after cleanup: `ASPICQueryStatus` identity assertions
+  - Action: import the package enum directly and cover all four members.
+  - Evidence: these tests are public result-boundary contracts.
+- ABA query status vocabulary
+  - Disposition: keep
+  - Owner after cleanup: ABA package surface
+  - Action: none; it is a distinct backend and outside this slice.
+
+Gate results:
+- Pass: focused ASPIC encoding/differential suite, 21 tests.
+- Pass: changed-owner Pyright, zero errors.
+- Pass: focused Ruff check and Ruff format check.
+- Pass: no source/test constructor retains literal `success`,
+  `unavailable_backend`, `backend_error`, or `protocol_error` status values.
+- Pass: all existing result assertions use `ASPICQueryStatus` identity and the
+  new process-failure regression proves `BACKEND_ERROR`.
+- EOL note: `tests/structured/aspic/test_aspic_encodings.py` is tracked and
+  checked out as CRLF (`git ls-files --eol` reports `i/crlf w/crlf`); preserve
+  that existing policy and run diff whitespace checks with `cr-at-eol` rather
+  than rewriting the whole file's line endings.
+
+Commit:
+- Pending `refactor(aspic): type query execution status`.
+
+Next slice:
+- Repair the pre-existing package-wide Pyright gate failure in a separate
+  atomic commit.

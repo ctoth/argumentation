@@ -18,9 +18,12 @@ from argumentation.structured.aspic.aspic import (
     build_abstract_framework,
     conc,
 )
-from argumentation.structured.aspic.aspic_encoding import encode_aspic_theory
-from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
-from argumentation.structured.aspic.aspic_encoding import solve_aspic_with_backend
+from argumentation.structured.aspic.aspic_encoding import (
+    ASPICQueryStatus,
+    encode_aspic_theory,
+    solve_aspic_grounded,
+    solve_aspic_with_backend,
+)
 from argumentation.core.dung import grounded_extension
 
 
@@ -118,7 +121,7 @@ def test_solve_aspic_grounded_returns_accepted_conclusions() -> None:
 
     result = solve_aspic_grounded(system, kb, pref)
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert result.semantics == "grounded"
     assert result.accepted_conclusions == frozenset({p, q})
     assert result.backend == "materialized_reference"
@@ -145,7 +148,9 @@ def test_solve_aspic_grounded_matches_materialized_pipeline() -> None:
 
     projection = build_abstract_framework(system, kb, pref)
     grounded_ids = grounded_extension(projection.framework)
-    expected = frozenset(conc(projection.id_to_argument[arg_id]) for arg_id in grounded_ids)
+    expected = frozenset(
+        conc(projection.id_to_argument[arg_id]) for arg_id in grounded_ids
+    )
 
     result = solve_aspic_grounded(system, kb, pref)
 
@@ -171,13 +176,15 @@ def test_optional_aspic_backend_absence_is_typed() -> None:
 
     result = solve_aspic_with_backend(system, kb, pref, backend="missing-test-backend")
 
-    assert result.status == "unavailable_backend"
+    assert result.status is ASPICQueryStatus.UNAVAILABLE_BACKEND
     assert result.backend == "missing-test-backend"
     assert result.accepted_argument_ids == frozenset()
     assert result.metadata["reason"] == "backend is not installed or registered"
 
 
-def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatch) -> None:
+def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(
+    monkeypatch,
+) -> None:
     system, kb, pref = simple_aspic_theory()
     expected = solve_aspic_with_backend(
         system,
@@ -186,7 +193,9 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
         backend="asp",
         semantics="grounded",
     )
-    accepted_ids = " ".join(f"accepted_arg({arg_id})" for arg_id in expected.extensions[0])
+    accepted_ids = " ".join(
+        f"accepted_arg({arg_id})" for arg_id in expected.extensions[0]
+    )
     accepted_lits = " ".join(
         f"accepted_lit({literal_id})"
         for literal_id, literal in expected.encoding.literal_by_id.items()
@@ -224,9 +233,11 @@ def test_clingo_backend_invokes_solver_and_parses_grounded_answer_set(monkeypatc
         timeout_seconds=5.0,
     )
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert result.backend == "clingo"
-    assert result.accepted_conclusions == frozenset({Literal(GroundAtom("p")), Literal(GroundAtom("q"))})
+    assert result.accepted_conclusions == frozenset(
+        {Literal(GroundAtom("p")), Literal(GroundAtom("q"))}
+    )
     assert result.accepted_argument_ids == expected.extensions[0]
     assert calls
 
@@ -253,10 +264,40 @@ def test_clingo_backend_missing_binary_is_typed(monkeypatch) -> None:
         binary="missing-clingo",
     )
 
-    assert result.status == "unavailable_backend"
+    assert result.status is ASPICQueryStatus.UNAVAILABLE_BACKEND
     assert result.backend == "clingo"
     assert result.metadata["reason"] == "binary not found on PATH"
     assert calls == []
+
+
+def test_clingo_backend_process_failure_is_backend_error(monkeypatch) -> None:
+    system, kb, pref = simple_aspic_theory()
+
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.shutil.which",
+        lambda binary: binary,
+    )
+    monkeypatch.setattr(
+        "argumentation.solver_adapters.clingo.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=2,
+            stdout="solver stdout",
+            stderr="solver stderr",
+        ),
+    )
+
+    result = solve_aspic_with_backend(
+        system,
+        kb,
+        pref,
+        backend="clingo",
+        semantics="grounded",
+        binary="fake-clingo",
+    )
+
+    assert result.status is ASPICQueryStatus.BACKEND_ERROR
+    assert result.metadata["stdout"] == "solver stdout"
+    assert result.metadata["stderr"] == "solver stderr"
 
 
 def test_clingo_backend_malformed_answer_set_is_protocol_error(monkeypatch) -> None:
@@ -284,9 +325,11 @@ def test_clingo_backend_malformed_answer_set_is_protocol_error(monkeypatch) -> N
         binary="fake-clingo",
     )
 
-    assert result.status == "protocol_error"
+    assert result.status is ASPICQueryStatus.PROTOCOL_ERROR
     assert result.metadata["reason"] == "accepted argument id is not in the encoding"
-    assert result.metadata["stdout"] == "Answer: 1\naccepted_arg(unknown)\nSATISFIABLE\n"
+    assert (
+        result.metadata["stdout"] == "Answer: 1\naccepted_arg(unknown)\nSATISFIABLE\n"
+    )
     assert result.metadata["stderr"] == "protocol stderr"
 
 
@@ -310,7 +353,7 @@ def test_clingo_backend_missing_binary_for_stable_is_typed(
         binary="fake-clingo",
     )
 
-    assert result.status == "unavailable_backend"
+    assert result.status is ASPICQueryStatus.UNAVAILABLE_BACKEND
     assert result.metadata["reason"] == "binary not found on PATH"
     assert calls == []
 
@@ -339,6 +382,7 @@ def simple_aspic_theories(draw):
     )
     return system, kb, pref
 
+
 @given(simple_aspic_theories())
 @settings(deadline=10000, max_examples=25)
 def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
@@ -353,8 +397,7 @@ def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
         semantics="grounded",
     )
     accepted_ids = " ".join(
-        f"accepted_arg({arg_id})"
-        for arg_id in expected.extensions[0]
+        f"accepted_arg({arg_id})" for arg_id in expected.extensions[0]
     )
     accepted_lits = " ".join(
         f"accepted_lit({literal_id})"
@@ -385,7 +428,7 @@ def test_clingo_grounded_success_matches_reference_on_generated_simple_theories(
             binary="fake-clingo",
         )
 
-    assert result.status == "success"
+    assert result.status is ASPICQueryStatus.SUCCESS
     assert result.accepted_conclusions == expected.accepted_conclusions
 
 
@@ -418,7 +461,9 @@ def test_ws_o_arg_aspic_encoding_sanitises_literal_ids_for_asp() -> None:
     assert all(ASP_CONSTANT_RE.fullmatch(identifier) for identifier in ids)
     assert encoding.literal_by_id
     assert set(encoding.literal_by_id) >= ids
-    assert not any("~" in fact or "(" in fact.split("(", 1)[1] for fact in encoding.facts)
+    assert not any(
+        "~" in fact or "(" in fact.split("(", 1)[1] for fact in encoding.facts
+    )
 
 
 def test_ws_o_arg_aspic_encoding_rejects_duplicate_defeasible_rule_names() -> None:
