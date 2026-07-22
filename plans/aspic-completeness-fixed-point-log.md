@@ -139,7 +139,33 @@ Gate results:
   policy.
 
 Commit:
-- Pending `style(solving): format solver module`.
+- `51786f7 style(solving): format solver module`.
 
 Next slice:
 - Reapply the one-line package Pyright gate repair.
+
+## Iteration 4 - package Pyright gate repair
+
+Slice read:
+- `src/argumentation/solving/solver.py::_solve_sat_acceptance`
+
+Surfaces:
+- Inferred heterogeneous `shared` kwargs dict
+  - Disposition: rewrite
+  - Owner after cleanup: the existing local kwargs mapping
+  - Action: annotate it as `dict[str, object]` so the already-supported
+    `engine: str` value is type-correct.
+  - Evidence: package-wide Pyright reports exactly one error at the engine
+    assignment; formatting and B2 source files are not causal.
+
+Gate results:
+- Pass: solver routing suite, 45 tests.
+- Pass: package-wide Pyright, zero errors.
+- Pass: focused Ruff check and Ruff format check.
+- Pass: final source diff is the one planned annotation only.
+
+Commit:
+- Pending `fix(solving): type SAT finder kwargs`.
+
+Next slice:
+- Repin Propstore to the resulting package HEAD.

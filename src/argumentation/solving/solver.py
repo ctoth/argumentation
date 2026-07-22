@@ -826,7 +826,7 @@ def _solve_sat_acceptance(
     (framework, *, require_in/require_out, trace_sink, metadata,
     check_budget_seconds) signature. ``engine`` is forwarded only when set, so
     finders without an engine parameter (semi-stable, stage) keep working."""
-    shared = dict(
+    shared: dict[str, object] = dict(
         trace_sink=trace_sink,
         metadata=metadata,
         check_budget_seconds=check_budget_seconds,
