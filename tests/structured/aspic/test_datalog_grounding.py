@@ -208,9 +208,7 @@ def test_named_defeater_undercuts_only_its_matching_rule_instance() -> None:
     """
     from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
 
-    grounded = ground_defeasible_theory(
-        _birds_fly_theory("~birds_fly(X)", {("a",)})
-    )
+    grounded = ground_defeasible_theory(_birds_fly_theory("~birds_fly(X)", {("a",)}))
 
     targets = [
         grounded.rule_origins[origin.target_rule].substitution
@@ -260,9 +258,9 @@ def test_identically_grounded_strict_rules_keep_every_source_id() -> None:
     animal = Literal(GroundAtom("animal", ("a",)))
 
     assert set(grounded.source_to_ground_rules) == {"s1", "s2"}
-    assert grounded.source_to_ground_rules["s1"] == grounded.source_to_ground_rules[
-        "s2"
-    ]
+    assert (
+        grounded.source_to_ground_rules["s1"] == grounded.source_to_ground_rules["s2"]
+    )
     assert {rule.consequent for rule in grounded.source_to_ground_rules["s1"]} == {
         animal
     }
@@ -296,9 +294,7 @@ def _flying_with_unrelated_fact(fact_predicate: str) -> frozenset[Literal]:
         Literal(GroundAtom("bird", ("a",))),
     }
     names = {
-        rule.name
-        for rule in grounded.system.defeasible_rules
-        if rule.name is not None
+        rule.name for rule in grounded.system.defeasible_rules if rule.name is not None
     }
     assert not names & {literal.atom.predicate for literal in authored}
     return solve_aspic_grounded(
