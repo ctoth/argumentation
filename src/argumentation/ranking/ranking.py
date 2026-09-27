@@ -334,26 +334,42 @@ def tuples_ranking(
     memo: dict[str, tuple[int, ...]] = {}
     visiting: set[str] = set()
 
-    def branch_lengths(argument: str) -> tuple[int, ...]:
-        if argument in memo:
-            return memo[argument]
-        if argument in visiting:
-            raise ValueError("Tuple* ranking is defined only for acyclic frameworks")
-        visiting.add(argument)
-        direct_attackers = attackers[argument]
-        if not direct_attackers:
-            lengths = (0,)
-        else:
-            lengths = tuple(
-                sorted(
-                    length + 1
-                    for attacker in direct_attackers
-                    for length in branch_lengths(attacker)
+    def branch_lengths(root: str) -> tuple[int, ...]:
+        # Explicit post-order stack: attack chains may be deeper than
+        # Python's recursion limit. ``visiting`` holds the current path, so
+        # reaching a member again is a cycle.
+        stack: list[tuple[str, bool]] = [(root, False)]
+        while stack:
+            argument, expanded = stack.pop()
+            if argument in memo:
+                continue
+            if expanded:
+                direct_attackers = attackers[argument]
+                memo[argument] = (
+                    (0,)
+                    if not direct_attackers
+                    else tuple(
+                        sorted(
+                            length + 1
+                            for attacker in direct_attackers
+                            for length in memo[attacker]
+                        )
+                    )
                 )
+                visiting.remove(argument)
+                continue
+            if argument in visiting:
+                raise ValueError(
+                    "Tuple* ranking is defined only for acyclic frameworks"
+                )
+            visiting.add(argument)
+            stack.append((argument, True))
+            stack.extend(
+                (attacker, False)
+                for attacker in attackers[argument]
+                if attacker not in memo
             )
-        visiting.remove(argument)
-        memo[argument] = lengths
-        return lengths
+        return memo[root]
 
     values: dict[str, TupleValuation] = {}
     for argument in framework.arguments:
