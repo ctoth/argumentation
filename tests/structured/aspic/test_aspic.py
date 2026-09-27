@@ -2930,3 +2930,55 @@ class TestRationalityPostulatesConcrete:
             f"Grounded extension contains both bachelor and ~bachelor — "
             f"direct consistency violated. Conclusions: {ext_conclusions}"
         )
+
+
+def test_mutual_contrary_edges_are_contradictories() -> None:
+    """Issue #28: phi in bar(psi) and psi in bar(phi) makes them contradictories.
+
+    Modgil & Prakken 2018, Def 1 (p.8): a contrary requires that the reverse
+    direction does NOT hold, so both directed contrary edges denote one
+    symmetric contradiction.
+    """
+    a = Literal(GroundAtom("a"))
+    b = Literal(GroundAtom("b"))
+    cfn = ContrarinessFn(frozenset(), frozenset({(a, b), (b, a)}))
+
+    assert cfn.is_contradictory(a, b)
+    assert cfn.is_contradictory(b, a)
+    assert not cfn.is_contrary(a, b)
+    assert not cfn.is_contrary(b, a)
+    assert cfn == ContrarinessFn(frozenset({(a, b), (b, a)}))
+
+
+def test_one_directed_contrary_edge_stays_a_contrary() -> None:
+    """Issue #28 control: a single directed edge is an asymmetric contrary."""
+    a = Literal(GroundAtom("a"))
+    b = Literal(GroundAtom("b"))
+    cfn = ContrarinessFn(frozenset(), frozenset({(a, b)}))
+
+    assert not cfn.is_contradictory(a, b)
+    assert cfn.is_contrary(a, b)
+    assert not cfn.is_contrary(b, a)
+
+
+def test_boolean_and_numeric_ground_terms_are_distinct_literals() -> None:
+    """Issue #36: ground terms are compared as typed constants.
+
+    Diller et al. 2025, Def 7, builds ground atoms from constants; ``True``
+    and ``1`` are different constants (they print as ``p(True)`` and
+    ``p(1)``), so Python's numeric ``True == 1`` must not merge the literals
+    of the language L (Modgil & Prakken 2018, Def 1).
+    """
+    boolean = Literal(GroundAtom("p", (True,)))
+    integer = Literal(GroundAtom("p", (1,)))
+    real = Literal(GroundAtom("p", (1.0,)))
+
+    assert boolean != integer
+    assert integer != real
+    assert len({boolean, integer, real}) == 3
+
+
+def test_equal_typed_ground_terms_are_the_same_literal() -> None:
+    """Issue #36 control: identical typed constants still compare equal."""
+    assert GroundAtom("p", (True, 1, 1.0, "x")) == GroundAtom("p", (True, 1, 1.0, "x"))
+    assert len({Literal(GroundAtom("p", (1,))), Literal(GroundAtom("p", (1,)))}) == 1
