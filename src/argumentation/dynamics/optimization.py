@@ -299,7 +299,18 @@ def _model_int(value: Any) -> int:
 
 
 def _z3_safe_name(argument: str) -> str:
-    return "".join(character if character.isalnum() else "_" for character in argument)
+    """Encode an argument name as an injective solver-safe symbol.
+
+    ASCII letters and digits are kept; every other character, including the
+    escape character ``_`` itself, becomes ``_<hex code point>_``. Because
+    ``_`` only ever opens an escape, distinct arguments get distinct symbols.
+    """
+    return "".join(
+        character
+        if character.isascii() and character.isalnum()
+        else f"_{ord(character):x}_"
+        for character in argument
+    )
 
 
 def _import_z3() -> Any | None:
