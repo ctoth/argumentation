@@ -125,13 +125,19 @@ def grounding_inspection_to_aspic(
         )
         for instance in strict_instances
     )
+    # Generated rule names n(r) are literals of L that undercuts target, so
+    # they must be fresh with respect to every authored predicate.
+    reserved_names = _authored_predicates(
+        fact_atoms,
+        (*strict_instances, *defeasible_instances, *defeater_instances),
+    )
     defeasible_rules = []
     for index, instance in enumerate(defeasible_instances):
         defeasible_rules.append(
             _rule_from_instance(
                 instance,
                 kind="defeasible",
-                name=f"gr{index}",
+                name=_fresh_rule_name(f"gr{index}", reserved_names),
                 origins=rule_origins,
                 ground_origins=ground_origins,
             )
@@ -141,6 +147,7 @@ def grounding_inspection_to_aspic(
             defeater_instances,
             defeasible_rules,
             rule_origins,
+            reserved_names,
         )
     )
 
@@ -224,6 +231,7 @@ def _undercut_rules_from_defeaters(
     defeater_instances: tuple["GroundRuleInstance", ...],
     target_rules: list[Rule],
     origins: dict[Rule, GroundRuleOrigin],
+    reserved_names: set[str],
 ) -> tuple[Rule, ...]:
     undercut_rules: list[Rule] = []
     for instance in defeater_instances:
@@ -241,7 +249,7 @@ def _undercut_rules_from_defeaters(
                 antecedents=antecedents,
                 consequent=Literal(GroundAtom(target_rule.name), negated=True),
                 kind="defeasible",
-                name=f"uc{len(undercut_rules)}",
+                name=_fresh_rule_name(f"uc{len(undercut_rules)}", reserved_names),
             )
             origins[rule] = GroundRuleOrigin(
                 source_rule_id=instance.rule_id,
@@ -253,6 +261,28 @@ def _undercut_rules_from_defeaters(
             )
             undercut_rules.append(rule)
     return tuple(undercut_rules)
+
+
+def _authored_predicates(
+    fact_atoms: Any,
+    instances: tuple["GroundRuleInstance", ...],
+) -> set[str]:
+    atoms = [*fact_atoms]
+    for instance in instances:
+        atoms.append(instance.head)
+        atoms.extend(instance.body)
+    return {_literal_from_ground_atom(atom).atom.predicate for atom in atoms}
+
+
+def _fresh_rule_name(preferred: str, reserved_names: set[str]) -> str:
+    """Return ``preferred`` or a suffixed variant not yet reserved, and reserve it."""
+    name = preferred
+    suffix = 0
+    while name in reserved_names:
+        suffix += 1
+        name = f"{preferred}_{suffix}"
+    reserved_names.add(name)
+    return name
 
 
 def _defeater_targets(

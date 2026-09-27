@@ -278,3 +278,44 @@ def test_distinctly_grounded_strict_rules_keep_every_source_id() -> None:
     assert grounded.source_to_ground_rules["s1"].isdisjoint(
         grounded.source_to_ground_rules["s2"]
     )
+
+
+def _flying_with_unrelated_fact(fact_predicate: str) -> frozenset[Literal]:
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(
+        DefeasibleTheory(
+            facts={"bird": {("a",)}, fact_predicate: {()}},
+            defeasible_rules=[
+                GunrayRule(id="birds_fly", head="flies(X)", body=["bird(X)"]),
+            ],
+        )
+    )
+    authored = {
+        Literal(GroundAtom(fact_predicate.removeprefix("~")), negated=True),
+        Literal(GroundAtom("bird", ("a",))),
+    }
+    names = {
+        rule.name
+        for rule in grounded.system.defeasible_rules
+        if rule.name is not None
+    }
+    assert not names & {literal.atom.predicate for literal in authored}
+    return solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+
+def test_generated_rule_names_avoid_authored_predicates() -> None:
+    """Issue #68: generated names n(r) must be fresh in the language.
+
+    An undercut targets ``n(r)`` (Diller et al. 2025, Def 3), so a generated
+    name equal to an authored predicate turns the unrelated fact ``~gr0``
+    into an undercutter of ``birds_fly``.
+    """
+    assert _flies("a") in _flying_with_unrelated_fact("~gr0")
+
+
+def test_generated_rule_names_with_unrelated_fact_control() -> None:
+    """Issue #68 control: a non-colliding unrelated fact changes nothing."""
+    assert _flies("a") in _flying_with_unrelated_fact("~unrelated")
