@@ -17,6 +17,7 @@ from argumentation.frameworks.af_merging import (
 from argumentation.frameworks.partial_af import (
     EnumerationExceeded,
     consensual_expand,
+    merge_framework_edit_distance,
 )
 
 
@@ -65,6 +66,31 @@ def test_consensual_expand_to_superset_universe_keeps_source_arguments():
 
     assert af.arguments <= expanded.arguments
     assert expanded.attacks == frozenset({("A", "B")})
+
+
+def test_edit_distance_to_own_expansion_uses_pre_preference_attacks():
+    """Coste-Marquis et al. 2007, Def. 15/18 (p.8-9): ``d(x, y) = 0`` iff
+    ``x = y``. An AF whose attack ``A -> B`` was filtered from its defeats must
+    read the same attack relation as its same-universe consensual expansion."""
+    af = ArgumentationFramework(
+        arguments=frozenset({"A", "B"}),
+        defeats=frozenset(),
+        attacks=frozenset({("A", "B")}),
+    )
+
+    expanded = consensual_expand(af, af.arguments)
+
+    assert merge_framework_edit_distance(af, expanded) == 0
+
+
+def test_edit_distance_counts_attack_versus_non_attack_pairs():
+    """Control: Def. 18 counts one pair labelled attack vs non-attack."""
+    left = _af({"A", "B"}, {("A", "B")})
+    right = _af({"A", "B"}, set())
+
+    assert merge_framework_edit_distance(left, right) == 1
+    expanded = consensual_expand(left, left.arguments)
+    assert merge_framework_edit_distance(left, expanded) == 0
 
 
 def test_consensual_expand_on_shared_universe_introduces_no_ignorance():

@@ -129,7 +129,7 @@ def _coerce_partial_framework(
         return framework
     if isinstance(framework, ArgumentationFramework):
         arguments = frozenset(framework.arguments)
-        attacks = frozenset(framework.defeats)
+        attacks = _attack_relation(framework)
         ordered_pairs = frozenset(product(arguments, arguments))
         return PartialArgumentationFramework(
             arguments=arguments,
