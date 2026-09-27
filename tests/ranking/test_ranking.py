@@ -220,6 +220,24 @@ def test_discussion_ranking_marks_a_bounded_cycle_as_truncated() -> None:
     assert result.iterations == 4
 
 
+def test_discussion_ranking_keeps_exact_counts_beyond_float_range() -> None:
+    """Amgoud & Ben-Naim 2013, Defs. 10-11: Dis_i(a) counts linear
+    discussions exactly and Dbs compares the sequences lexicographically.
+    On the complete 3-cycle (9 edges) counts grow as 3^(i-1), which passes
+    the float range near i = 650; exact integer counts must not overflow."""
+    arguments = frozenset("abc")
+    framework = ArgumentationFramework(
+        arguments=arguments,
+        defeats=frozenset((a, b) for a in arguments for b in arguments),
+    )
+
+    result = discussion_based_ranking(framework, max_depth=650)
+
+    assert result.ranking == (arguments,)
+    assert result.converged is False
+    assert result.scores["a"][649] == 3**649
+
+
 def test_counting_ranking_uses_normalized_alternating_path_counts() -> None:
     # Delobelle--Villata 2019 page-004.png, Definition 5. With two leaf
     # attackers, the matrix infinity norm is two and the attacked argument's
