@@ -4,7 +4,22 @@ import pytest
 
 from argumentation.structured.aba import aba_sat
 from argumentation.structured.aba.aba import ABAFramework
+from argumentation.core.optional_deps import OptionalDependencyUnavailable
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, Rule
+
+
+def _cadical221_available() -> bool:
+    try:
+        aba_sat._find_cadical221_binary()
+    except OptionalDependencyUnavailable:
+        return False
+    return True
+
+
+requires_cadical221 = pytest.mark.skipif(
+    not _cadical221_available(),
+    reason="vendored CaDiCaL 2.2.1 binary not built (scripts/build_cadical221.sh)",
+)
 
 
 def lit(name: str) -> Literal:
@@ -60,7 +75,10 @@ def test_default_engine_is_glucose4_for_small() -> None:
 # --- 3. engine override keeps the answer correct (parity vs oracle) ---
 
 
-@pytest.mark.parametrize("engine", ["glucose4", "cadical221-batch"])
+@pytest.mark.parametrize(
+    "engine",
+    ["glucose4", pytest.param("cadical221-batch", marks=requires_cadical221)],
+)
 def test_engine_override_matches_oracle(engine: str) -> None:
     framework = _cyclic_support_framework()
     solver = aba_sat._NativeSparseNarrowStableSolver(framework, engine=engine)
@@ -75,6 +93,7 @@ def test_engine_override_matches_oracle(engine: str) -> None:
 # --- 4. phase parity: the phase vector is engine-independent ---
 
 
+@requires_cadical221
 def test_phase_vector_identical_across_engines() -> None:
     framework = _cyclic_support_framework()
     g = aba_sat._NativeSparseNarrowStableSolver(framework, engine="glucose4")
