@@ -426,18 +426,21 @@ def _is_identifier(token: str) -> bool:
 
 
 def _compare(left: float, operator: ComparisonOperator, right: float) -> bool:
+    # Values within the tolerance count as equal for every operator, so each
+    # strict comparison is exactly the negation of its non-strict complement.
+    equal = abs(left - right) <= 1e-12
     if operator == "=":
-        return abs(left - right) <= 1e-12
+        return equal
     if operator == "!=":
-        return abs(left - right) > 1e-12
+        return not equal
     if operator == "<":
-        return left < right
+        return left < right and not equal
     if operator == "<=":
-        return left <= right + 1e-12
+        return left < right or equal
     if operator == ">":
-        return left > right
+        return left > right and not equal
     if operator == ">=":
-        return left + 1e-12 >= right
+        return left > right or equal
     raise ValueError(f"unsupported comparison operator: {operator}")
 
 

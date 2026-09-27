@@ -92,11 +92,34 @@ def test_parsers_accept_trailing_whitespace(suffix: str) -> None:
     whitespace does.
     """
     assert parse_term("a" + suffix) == ArgumentTerm("a")
-    assert parse_epistemic_formula(
-        "p(a) >= 0.5" + suffix
-    ) == parse_epistemic_formula("p(a) >= 0.5")
+    assert parse_epistemic_formula("p(a) >= 0.5" + suffix) == parse_epistemic_formula(
+        "p(a) >= 0.5"
+    )
     # Control: leading whitespace already parses.
     assert parse_term(suffix + "a") == ArgumentTerm("a")
+
+
+_COMPLEMENTS = (("<", ">="), (">", "<="), ("=", "!="))
+
+
+@pytest.mark.parametrize("offset", [5e-13, -5e-13, 0.0, 0.1, -0.1])
+def test_complementary_comparisons_never_both_hold(offset: float) -> None:
+    """Issue #14: p(a) < x and p(a) >= x are complementary.
+
+    Hunter, Polberg, and Thimm (Definition 3.2) satisfy p(alpha) # x iff
+    P(alpha) # x, so each strict comparison is the negation of the opposite
+    non-strict one, including for values within float noise of x.
+    """
+    distribution = ProbabilityFunction(
+        arguments=frozenset({"a"}),
+        probabilities={frozenset(): 0.5 + offset, frozenset({"a"}): 0.5 - offset},
+    )
+    for strict, complement in _COMPLEMENTS:
+        holds = evaluate_epistemic_formula(_threshold_atom(strict, 0.5), distribution)
+        complement_holds = evaluate_epistemic_formula(
+            _threshold_atom(complement, 0.5), distribution
+        )
+        assert holds is not complement_holds, (strict, complement, offset)
 
 
 def _threshold_atom(operator: str, threshold: float) -> AtomFormula:
