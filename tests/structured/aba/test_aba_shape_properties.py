@@ -14,9 +14,15 @@ from tests.aba_hypothesis_generators import (
 )
 from tools.aba_shape_benchmark import compute_aba_shape, shape_buckets
 
+# These properties check shape invariants, not speed. Some generated
+# frameworks legitimately take several hundred ms, so Hypothesis's 200 ms
+# wall-clock deadline only produced load-dependent DeadlineExceeded flakes
+# (issue #95). The global Hypothesis default is left unchanged.
+_SHAPE_PROPERTY_SETTINGS = settings(max_examples=40, deadline=None)
+
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_renaming_preserves_every_shape_field(framework: ABAFramework) -> None:
     renamed, _ = renamed_framework(framework)
 
@@ -24,7 +30,7 @@ def test_renaming_preserves_every_shape_field(framework: ABAFramework) -> None:
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_renaming_preserves_bucketed_shape_fields(framework: ABAFramework) -> None:
     renamed, _ = renamed_framework(framework)
     solver_class = "aba/single-extension/preferred"
@@ -36,7 +42,7 @@ def test_renaming_preserves_bucketed_shape_fields(framework: ABAFramework) -> No
 
 
 @given(flat_aba_specs())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_permuting_rules_preserves_shape(spec) -> None:
     forward = spec.to_framework()
     reversed_rules = ABAFramework(
@@ -50,7 +56,7 @@ def test_permuting_rules_preserves_shape(spec) -> None:
 
 
 @given(flat_aba_specs())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_permuting_contrary_declarations_preserves_shape(spec) -> None:
     framework = spec.to_framework()
     reversed_contrary = dict(reversed(tuple(spec.contrary.items())))
@@ -65,7 +71,7 @@ def test_permuting_contrary_declarations_preserves_shape(spec) -> None:
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_adding_unreachable_rule_preserves_grounded_and_acyclic_fields(
     framework: ABAFramework,
 ) -> None:
@@ -86,7 +92,7 @@ def test_adding_unreachable_rule_preserves_grounded_and_acyclic_fields(
 
 
 @given(flat_aba_frameworks(max_rules=6))
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_duplicate_semantic_rule_changes_density_not_boolean_shape(
     framework: ABAFramework,
 ) -> None:
@@ -110,7 +116,7 @@ def test_duplicate_semantic_rule_changes_density_not_boolean_shape(
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_removing_zero_body_facts_cannot_increase_closure_size(
     framework: ABAFramework,
 ) -> None:
@@ -127,7 +133,7 @@ def test_removing_zero_body_facts_cannot_increase_closure_size(
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_p_acyclicity_matches_independent_dependency_graph(
     framework: ABAFramework,
 ) -> None:
@@ -135,7 +141,7 @@ def test_p_acyclicity_matches_independent_dependency_graph(
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_scc_count_and_size_match_independent_graph(framework: ABAFramework) -> None:
     components = _independent_sccs(framework)
     shape = compute_aba_shape(framework)
@@ -147,7 +153,7 @@ def test_scc_count_and_size_match_independent_graph(framework: ABAFramework) -> 
 
 
 @given(flat_aba_specs())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_contrary_target_in_degree_is_invariant_under_order_and_renaming(spec) -> None:
     framework = spec.to_framework()
     permuted = ABAFramework(
@@ -168,7 +174,7 @@ def test_contrary_target_in_degree_is_invariant_under_order_and_renaming(spec) -
 
 
 @given(flat_aba_frameworks())
-@settings(max_examples=40)
+@_SHAPE_PROPERTY_SETTINGS
 def test_closure_growth_is_monotone_when_adding_assumptions(
     framework: ABAFramework,
 ) -> None:
