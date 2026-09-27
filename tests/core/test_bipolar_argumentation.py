@@ -58,13 +58,19 @@ class TestCayrolDerivedDefeats:
         assert ("A", "C") in derived
         assert ("A", "D") in derived
 
-    def test_cayrol_derived_defeats_chain_transitively(self) -> None:
+    def test_cayrol_derived_defeats_do_not_compose_support_defeat_support(
+        self,
+    ) -> None:
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): a supported defeat
+        is supports then one primitive defeat; an indirect defeat is one
+        primitive defeat then supports. A-sup-B-def-C-sup-D is neither, so
+        derived defeats are not fed back into the construction."""
         supports = frozenset({("A", "B"), ("C", "D")})
         defeats = frozenset({("B", "C")})
         derived = cayrol_derived_defeats(defeats, supports)
         assert ("A", "C") in derived
         assert ("B", "D") in derived
-        assert ("A", "D") in derived
+        assert ("A", "D") not in derived
 
     def test_direct_defeat_not_duplicated(self) -> None:
         supports = frozenset({("A", "B")})

@@ -14,7 +14,6 @@ from argumentation.core.bipolar import (
     d_admissible,
     d_preferred_extensions,
     defends,
-    derived_set_defeats,
     s_admissible,
     s_preferred_extensions,
     safe,
@@ -194,25 +193,27 @@ class TestCayrolProperties:
 
     @given(bipolar_frameworks())
     @_PROP_SETTINGS
-    def test_derived_set_defeats_is_idempotent(self, framework):
-        first = derived_set_defeats(framework)
-        second = derived_set_defeats(
-            BipolarArgumentationFramework(
-                arguments=framework.arguments,
-                defeats=first,
-                supports=framework.supports,
-            )
-        )
-        assert second == first
-
-    @given(bipolar_frameworks())
-    @_PROP_SETTINGS
     def test_stable_extensions_are_d_admissible(self, framework):
         for extension in stable_extensions(framework):
             assert d_admissible(extension, framework)
 
 
 # ── Support cycle and self-support property tests (audit-2026-03-28) ──
+
+
+def _support_reachable(
+    supports: frozenset[tuple[str, str]], source: str
+) -> frozenset[str]:
+    """Arguments reachable from ``source`` by one or more support edges."""
+    reached: set[str] = set()
+    frontier = [source]
+    while frontier:
+        current = frontier.pop()
+        for supporter, supported in supports:
+            if supporter == current and supported not in reached:
+                reached.add(supported)
+                frontier.append(supported)
+    return frozenset(reached)
 
 
 @st.composite
@@ -295,20 +296,28 @@ class TestBipolarCycleProperties:
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
-    def test_derived_defeats_idempotent_with_cycles(self, framework):
-        """Applying derived_set_defeats twice gives the same result — even with cycles."""
-        first = derived_set_defeats(framework)
-        second = derived_set_defeats(
-            BipolarArgumentationFramework(
-                arguments=framework.arguments,
-                defeats=first,
-                supports=framework.supports,
-            )
-        )
-        assert second == first, (
-            f"Not idempotent: first pass added {first - framework.defeats}, "
-            f"second pass added {second - first}"
-        )
+    def test_derived_defeats_are_exactly_definition_3_sequences(self, framework):
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): each derived defeat
+        is witnessed by supports then one primitive defeat (supported defeat)
+        or one primitive defeat then supports (indirect defeat), and every such
+        sequence not already a primitive defeat is derived."""
+        reach = {
+            argument: _support_reachable(framework.supports, argument)
+            for argument in framework.arguments
+        }
+        expected = {
+            (source, target)
+            for source in framework.arguments
+            for defeater, target in framework.defeats
+            if defeater in reach[source]
+        } | {
+            (source, target)
+            for source, defeated in framework.defeats
+            for target in reach[defeated]
+        }
+        expected -= framework.defeats
+        derived = cayrol_derived_defeats(framework.defeats, framework.supports)
+        assert derived == {pair for pair in expected if pair[0] != pair[1]}
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
