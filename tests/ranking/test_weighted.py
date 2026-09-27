@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from argumentation.core.dung import grounded_extension
@@ -32,6 +34,36 @@ def test_weighted_framework_requires_positive_attack_weights() -> None:
             attacks=frozenset({("a", "b")}),
             weights={},
         )
+
+
+def _single_attack_framework(weight: float) -> WeightedArgumentationFramework:
+    return WeightedArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        attacks=frozenset({("a", "b")}),
+        weights={("a", "b"): weight},
+    )
+
+
+@pytest.mark.parametrize("weight", [math.nan, math.inf])
+def test_weighted_framework_rejects_non_finite_attack_weights(weight: float) -> None:
+    """Dunne et al. 2011, p.5: ``w : A -> R_{>0}``; NaN and inf are not reals."""
+    with pytest.raises(ValueError, match="positive"):
+        _single_attack_framework(weight)
+
+
+def test_weighted_grounded_extensions_rejects_nan_budget() -> None:
+    """Dunne et al. 2011, p.5: the inconsistency budget is ``beta in R_{>=0}``."""
+    with pytest.raises(ValueError, match="budget"):
+        weighted_grounded_extensions(_single_attack_framework(1.0), budget=math.nan)
+
+
+def test_zero_budget_keeps_single_attack_undeleted() -> None:
+    """Valid control: ``sub(X, A, w, 0) = {{}}`` (Dunne et al. 2011, p.5)."""
+    results = weighted_grounded_extensions(_single_attack_framework(1.0), budget=0.0)
+
+    assert [(r.extension, r.deleted_attacks) for r in results] == [
+        (frozenset({"a"}), frozenset())
+    ]
 
 
 def test_zero_budget_recovers_unweighted_grounded_extension() -> None:

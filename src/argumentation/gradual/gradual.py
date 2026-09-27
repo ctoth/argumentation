@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from math import factorial
+from math import factorial, isfinite
 from typing import Mapping
 
 from argumentation.core.finite import normalize_binary_relation, predecessors_index
@@ -180,12 +180,12 @@ def quadratic_energy_strengths_continuous(
     numerical integration method. This implementation uses adaptive step
     halving/doubling around RK4 and reports the largest residual derivative.
     """
-    if tolerance <= 0.0:
-        raise ValueError("tolerance must be positive")
+    if not (isfinite(tolerance) and tolerance > 0.0):
+        raise ValueError("tolerance must be finite and positive")
     if max_iterations <= 0:
         raise ValueError("max_iterations must be positive")
-    if initial_step <= 0.0:
-        raise ValueError("initial_step must be positive")
+    if not (isfinite(initial_step) and initial_step > 0.0):
+        raise ValueError("initial_step must be finite and positive")
 
     arguments = tuple(sorted(graph.arguments))
     strengths = {argument: graph.initial_weights[argument] for argument in arguments}
@@ -221,9 +221,11 @@ def quadratic_energy_strengths_continuous(
                 break
             step /= 2.0
 
+    derivative = _quadratic_derivative(graph, strengths)
+    max_delta = max((abs(value) for value in derivative.values()), default=0.0)
     return GradualStrengthResult(
         strengths=dict(sorted(strengths.items())),
-        converged=False,
+        converged=max_delta <= tolerance,
         iterations=max_iterations,
         max_delta=max_delta,
         tolerance=tolerance,

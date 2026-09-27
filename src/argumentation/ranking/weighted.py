@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
-from math import inf
+from math import inf, isfinite
 from typing import Mapping
 
 from argumentation.core.dung import ArgumentationFramework, grounded_extension
@@ -46,10 +46,14 @@ class WeightedArgumentationFramework:
         if set(normalized_weights) != set(attacks):
             raise ValueError("weights must cover exactly the attack relation")
         non_positive = sorted(
-            attack for attack, weight in normalized_weights.items() if weight <= 0.0
+            attack
+            for attack, weight in normalized_weights.items()
+            if not (isfinite(weight) and weight > 0.0)
         )
         if non_positive:
-            raise ValueError(f"attack weights must be positive: {non_positive!r}")
+            raise ValueError(
+                f"attack weights must be finite and positive: {non_positive!r}"
+            )
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "attacks", attacks)
@@ -95,7 +99,7 @@ def weighted_grounded_extensions(
     ``A \\ R``. If several deleted-attack sets realize the same extension, the
     cheapest deterministic witness is retained.
     """
-    if budget < 0.0:
+    if not budget >= 0.0:
         raise ValueError("budget must be non-negative")
 
     best_by_extension: dict[frozenset[str], WeightedGroundedExtension] = {}
