@@ -14,6 +14,10 @@ produced_by:
 
 # Prudent Semantics for Argumentation Frameworks
 
+## Targeted implementation check, 2026-09-26
+
+Rechecked Definition 7 against [page image 002](pngs/page-002.png), using the paper-reader page-image workflow. This is a scoped check, not a full reread. The no-indirect-conflict condition excludes odd-length paths, including length one; a directly attacking pair or a self-attacking singleton must fail that condition. The implementation's `length > 1` filter, combined with no ordinary conflict-free check in `prudent_conflict_free`, violates this boundary ([issue #44](https://github.com/ctoth/argumentation/issues/44)).
+
 ## One-Sentence Summary
 Introduces prudent variants of Dung extension semantics that forbid pairs of arguments from co-occurring in an extension when one indirectly attacks the other, yielding more cautious inference for controversial arguments without increasing the known complexity class of the corresponding Dung inference problems. *(p.1, p.4)*
 

@@ -8,6 +8,8 @@ doi_url: "https://doi.org/10.1007/978-3-642-40381-1_11"
 
 # Ranking-Based Semantics for Argumentation Frameworks
 
+> Scoped audit reread (2026-09-27): verified page images 004, 006-010 for DP/CP/QP, discussion length, burden recurrence/order, and Proposition 2. Corrections below are page-specific; the remaining notes have not been revalidated.
+
 ## One-Sentence Summary
 Proposes an axiomatic framework of postulates for ranking-based (gradual) argumentation semantics that rank-order arguments from most acceptable to weakest, and constructs two concrete semantics (Discussion-based and Burden-based) satisfying those postulates.
 
@@ -64,23 +66,20 @@ Dbs transforms any $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$ into 
 Lexicographic comparison of won and lost linear discussions. *(p.10)*
 
 ### Linear Discussion (Definition 9)
-A linear discussion for $a$ in $\mathbf{A}$ is a sequence $a_0, \ldots, a_n$ of elements of $\mathcal{A}$ where $n$ is a positive integer such that $a_0 = a$ and $\forall i \in \{1, \ldots, n\}$, $a_i \mathcal{R} a_{i-1}$. The length of a linear discussion is $n$. A linear discussion is won if $n$ is odd (ends with defender), lost if $n$ is even (ends with attacker). *(p.9)*
+A linear discussion for $a$ is a sequence $(a_1,\ldots,a_n)$ with $a_1=a$ and $a_i\mathcal R a_{i-1}$ for $i=2,\ldots,n$. Its length is the number of arguments $n$, not the number of edges. Thus $(a)$ has length 1. Odd lengths are won discussions; even lengths are lost discussions. *(PDF p.9, page-008.png, Definition 9)*
 
 ### Burden Number (Definition 12)
-
 $$
-\text{Bur}_{\mathbf{A}i}(a) = \begin{cases} 1 & \text{if } i = 0 \\ 1 + \sum_{b \in \text{Arg}(a)} \text{Bur}_{\mathbf{A}(i-1)}(b) & \text{if } i > 0 \end{cases}
+\operatorname{Bur}_i(a)=
+\begin{cases}
+1 & i=0,\\
+1+\sum_{b\in\operatorname{Att}(a)} 1/\operatorname{Bur}_{i-1}(b) & i>0.
+\end{cases}
 $$
-
-By convention, if $\text{Att}(a) = \emptyset$ then $\sum_{b \in \text{Arg}(a)} \text{Bur}_{\mathbf{A}(i-1)}(b) = 0$.
-*(p.11)*
+The summands are reciprocals, not the attackers' burden numbers themselves. For the chain $a\to b\to c$, step 2 is $(1,2,1.5)$. *(PDF p.11, page-010.png, Definition 12 and Example 2)*
 
 ### Burden-Based Semantics (Definition 13)
-Bbs transforms any $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$ into ranking $\text{Bbs}(\mathbf{A})$ on $\mathcal{A}$ such that $\forall a, b \in \mathcal{A}$, $\langle a, b \rangle \in \text{Bbs}(\mathbf{A})$ iff one of:
-- $\forall i \in \{0, 1, \ldots\}$, $\text{Bur}_i(a) = \text{Bur}_i(b)$
-- $\exists i \in \{0, 1, \ldots\}$, $\text{Bur}_i(a) = \text{Bur}_i(b)$ and $\forall j \in \{0, 1, \ldots, i-1\}$, $\text{Bur}_j(a) = \text{Bur}_j(b)$
-
-Lexicographic comparison of burden numbers at each step. *(p.11)*
+Compare burden sequences lexicographically, with smaller burden preferred at the first differing index. Arguments tie when every index agrees. The strict alternative in Definition 13 uses $\operatorname{Bur}_i(a)<\operatorname{Bur}_i(b)$, not equality. *(PDF p.11, page-010.png)*
 
 ## Postulates
 
@@ -95,7 +94,7 @@ Ranking within a weakly connected component is independent of arguments in other
 For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a \in \mathcal{A}$, if $a \notin \text{Att}(\mathcal{A})$ then $\forall b \in \text{Att}(\mathcal{A})$, $a \succ b$. A non-attacked argument is strictly more acceptable than any attacked argument. *(p.4-5)*
 
 ### Postulate 4: Defense Precedence (DP)
-For every argumentation framework: if the defense of $a$ is in $\mathcal{A}$ (i.e., $\forall b, (b,a) \in \mathcal{R} \Rightarrow \exists c, (c,b) \in \mathcal{R}$), then $\forall b \in \mathcal{A}$ s.t. $\text{Def}_1(b) = \emptyset$ and $|\text{Def}_0(a)| = |\text{Def}_0(b)|$, it holds that $a \succ b$. An argument whose attackers are themselves attacked (defended) should be ranked higher than one whose attackers are not attacked, given the same number of direct attackers. *(p.5)*
+If $|\operatorname{Att}(a)|=|\operatorname{Att}(b)|$, $\operatorname{Def}(a)\ne\emptyset$, and $\operatorname{Def}(b)=\emptyset$, then $a\succ b$. A defender is an argument attacking at least one direct attacker; **not every attacker of $a$ must be attacked**. Example 3 has two attackers for each target and only one of $a$'s attackers is defended. *(PDF p.5, page-004.png, Postulate 4 and Example 3)*
 
 ### Postulate 5: Counter-Transitivity (CT)
 For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a, b \in \mathcal{A}$, if $\exists f: \text{Arg}(b) \to \text{Arg}(a)$ injective such that $\forall x \in \text{Arg}(b)$, $f(x) \succeq x$, then $a \succeq b$. If $a$'s attackers are at least as numerous and each mapped attacker is at least as acceptable, then $a$ is at least as acceptable as $b$. *(p.6)*
@@ -111,10 +110,10 @@ Essentially, $A$'s elements are strictly better than $B$'s from a global point o
 $\forall a, b \in \mathcal{A}$: if $\text{Sgc}(\text{Arg}(b), \text{Arg}(a))$, then $a \succ b$. *(p.6)*
 
 ### Postulate 7: Cardinality Precedence (CP)
-For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a, b \in \mathcal{A}$ such that $\forall c \in \text{Att}(\mathcal{A})$, then $\langle a, b \rangle \in \mathbf{S}(\mathcal{A})$ iff $|\text{Arg}(a)| \leq |\text{Arg}(b)|$. When all attackers are non-attacked, cardinality alone determines ranking. *(p.8)*
+If $|\operatorname{Att}(a)|<|\operatorname{Att}(b)|$, then $a\succ b$. There is no condition that the attackers be unattacked, and the zero-attacker case is included. *(PDF p.8, page-007.png, Postulate 7)*
 
 ### Postulate 8: Quality Precedence (QP)
-For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a, b \in \mathcal{A}$ such that $\exists c \in \text{Att}(\mathcal{A})$ with $|\text{Att}(a)| = |\text{Att}(b)|$ and the defense conditions differ, then quality of defense matters. *(p.8)*
+If some attacker $c$ of $b$ is strictly more acceptable than every attacker of $a$, then $a\succ b$. This is not limited to singleton attacker sets and does not require equal attacker counts. *(PDF p.8, page-007.png, Postulate 8)*
 
 ### Postulate 9: Distributed Defense Precedence (DDP)
 If the defense of $a$ is simple and distributed and the defense of $b$ is simple but not distributed, then $a \succ b$. Distributed defense (each attacker attacked by exactly one distinct defender) is preferable to concentrated defense. *(p.8)*
@@ -135,7 +134,7 @@ If the defense of $a$ is simple and distributed and the defense of $b$ is simple
 ## Implementation Details
 - **Data structures**: Argumentation framework as directed graph $(\mathcal{A}, \mathcal{R})$. For Dbs: enumerate all linear discussions (paths in the attack graph). For Bbs: iterative computation of burden numbers at each step. *(p.9-11)*
 - **Dbs computation**: For each argument, count linear discussions of each length. Discussions of odd length are "won" (count negatively), even length are "lost" (count positively). Rank arguments by lexicographic comparison of these counts starting from length 1. *(p.9-10)*
-- **Bbs computation**: Initialize all burden numbers to 1. At each step $i$, each argument's burden = $1 + \sum$ (burden of attackers at step $i-1$). Rank by lexicographic comparison of burden sequences. *(p.11)*
+- **Bbs computation**: Initialize all burden numbers to 1. At each step $i$, each argument's burden = $1 + \sum$ (reciprocal burden of attackers at step $i-1$). Rank by lexicographic comparison of burden sequences. *(p.11)*
 - **Convergence for Dbs**: In acyclic frameworks, linear discussions are finite and the semantics is well-defined. With cycles, $\text{Dis}_i(a)$ may never stop evolving. Authors conjecture a threshold $t$ (dependent on longest elementary cycle) beyond which counts stabilize. Computation can be truncated at step $t$; the greater $t$, the closer to the true ranking. *(p.10)*
 - **Convergence for Bbs**: Similarly, an equality-ensuring threshold probably exists, making exact computation possible despite the infinite sequence $\{0, 1, \ldots\}$. *(p.11)*
 - **Cycle handling**: Both Dbs and Bbs treat odd and even length cycles similarly. They "unroll" cycles --- the semantics do not distinguish between a loop ($a\mathcal{R}a$) and a cycle ($a\mathcal{R}b, b\mathcal{R}a$). *(p.12)*
@@ -166,7 +165,7 @@ If the defense of $a$ is simple and distributed and the defense of $b$ is simple
 
 ## Compatibility Results
 
-**Proposition 2**: If $\mathbf{S}$ satisfies SCT, then it satisfies CT. If $\mathbf{S}$ satisfies CT and SCT, then it satisfies VP and DP. *(p.6, 9)*
+**Proposition 2**: SCT implies VP; CT together with SCT implies DP. The proposition does not state that SCT implies CT. *(PDF p.9, page-008.png)*
 
 **Proposition 3**: No ranking-based semantics can satisfy both DP' (a strengthened version) and QP' (a strengthened quality precedence). *(p.9)*
 
