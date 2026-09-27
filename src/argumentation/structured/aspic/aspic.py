@@ -186,12 +186,28 @@ class Rule:
         name: n(r) for defeasible rules (Modgil & Prakken 2018, Def 2, p.8).
             Required for defeasible rules to enable undercutting attacks.
             None for strict rules.
+
+    Strict-rule antecedents are read as a set (a chosen convention; M&P
+    2018 Def 5 and Prakken 2010 Def 3.6 do not fix sequence vs set): a
+    repeated literal is dropped and the remaining literals are stored in
+    canonical order, so permuted strict rules with the same antecedent set
+    and consequent are one rule value. The sequence reading multiplied
+    arguments combinatorially (issue #102). Defeasible rules keep their
+    antecedent sequence and stay distinct by name.
     """
 
     antecedents: tuple[Literal, ...]
     consequent: Literal
     kind: str  # "strict" or "defeasible"
     name: str | None = None  # n(r) for defeasible rules
+
+    def __post_init__(self) -> None:
+        if self.kind == "strict":
+            object.__setattr__(
+                self,
+                "antecedents",
+                tuple(sorted(set(self.antecedents), key=repr)),
+            )
 
 
 @dataclass(frozen=True)
