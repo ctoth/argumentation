@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from argumentation.probabilistic.epistemic import (
     BeliefConstraint,
     EpistemicGraph,
@@ -73,6 +75,35 @@ def test_update_assignment_clamps_evidence_and_propagates_fragment() -> None:
     )
 
     assert update_assignment(graph, {"a": 0.8}) == {"a": 0.8, "b": 0.8, "c": 0.2}
+
+
+def test_update_assignment_respects_explicit_belief_constraints() -> None:
+    """Issue #16: updated beliefs must lie in P^beta(AF) or be refused.
+
+    Hunter and Thimm (2017), p.20: the admissible probability functions are
+    those consistent with every stated constraint; an update that leaves that
+    set is not a valid result.
+    """
+    pinned = EpistemicGraph(
+        arguments=frozenset({"a"}),
+        constraints=(BeliefConstraint("a", 1.0, 1.0),),
+    )
+    propagated = EpistemicGraph(
+        arguments=frozenset({"a", "b"}),
+        influences=frozenset({Influence("a", "b", InfluenceKind.NEGATIVE)}),
+        constraints=(BeliefConstraint("b", lower=0.5),),
+    )
+
+    updated = update_assignment(pinned, {})
+    assert updated == {"a": 1.0}
+    assert belief_assignment_satisfies(pinned, updated)
+    with pytest.raises(ValueError, match="constraints"):
+        update_assignment(pinned, {"a": 0.2})
+    # Propagation that would push b below its lower bound is reported.
+    with pytest.raises(ValueError, match="constraints"):
+        update_assignment(propagated, {"a": 0.9})
+    # Control: evidence compatible with the constraints propagates as before.
+    assert update_assignment(propagated, {"a": 0.3}) == {"a": 0.3, "b": 0.5}
 
 
 def test_negative_influence_projection_to_constellation_praf() -> None:

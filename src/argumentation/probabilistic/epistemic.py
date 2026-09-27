@@ -860,11 +860,24 @@ def update_assignment(
     graph: EpistemicGraph,
     evidence: Mapping[str, float],
 ) -> dict[str, float]:
-    """Update a belief assignment in the monotone influence fragment."""
+    """Update a belief assignment in the monotone influence fragment.
+
+    Arguments without evidence start at 0.5 clamped into their constraint
+    interval.  Raises ``ValueError`` when the propagated result violates the
+    graph constraints.
+    """
     unknown = sorted(set(evidence) - graph.arguments)
     if unknown:
         raise ValueError(f"evidence references unknown arguments: {unknown!r}")
-    assignment = {argument: 0.5 for argument in graph.arguments}
+    lower = {argument: 0.0 for argument in graph.arguments}
+    upper = {argument: 1.0 for argument in graph.arguments}
+    for constraint in graph.constraints:
+        lower[constraint.argument] = max(lower[constraint.argument], constraint.lower)
+        upper[constraint.argument] = min(upper[constraint.argument], constraint.upper)
+    assignment = {
+        argument: min(upper[argument], max(lower[argument], 0.5))
+        for argument in graph.arguments
+    }
     for argument, value in evidence.items():
         if not 0.0 <= value <= 1.0:
             raise ValueError("evidence values must lie in [0, 1]")
@@ -885,6 +898,8 @@ def update_assignment(
             elif influence.kind == InfluenceKind.NEGATIVE and target > 1.0 - source:
                 assignment[influence.target] = 1.0 - source
                 changed = True
+    if not belief_assignment_satisfies(graph, assignment):
+        raise ValueError("updated assignment cannot satisfy the graph constraints")
     return {
         argument: round(assignment[argument], 12)
         for argument in sorted(graph.arguments)
