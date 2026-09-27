@@ -906,8 +906,21 @@ def update_assignment(
             raise ValueError("evidence values must lie in [0, 1]")
         assignment[argument] = float(value)
 
+    # Every propagated value is some starting value v or 1 - v, so the sweep
+    # states are finite: a sweep that revisits an earlier state is a cycle
+    # (e.g. positive and negative influences demanding b >= 0.8 and b <= 0.2),
+    # and propagation has no fixed point.
+    ordered_arguments = sorted(graph.arguments)
+    seen_states: set[tuple[float, ...]] = set()
     changed = True
     while changed:
+        state = tuple(round(assignment[argument], 12) for argument in ordered_arguments)
+        if state in seen_states:
+            raise ValueError(
+                "influence propagation cycles without reaching a fixed point; "
+                "the influences demand contradictory beliefs"
+            )
+        seen_states.add(state)
         changed = False
         for influence in sorted(
             graph.influences,

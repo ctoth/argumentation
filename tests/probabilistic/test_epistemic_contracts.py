@@ -8,15 +8,23 @@ the Euclidean distance d_2 (Def 10, p.24-25).
 
 from __future__ import annotations
 
+import sys
+from collections.abc import Callable
+from types import FrameType
+
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 import argumentation.probabilistic.epistemic as epistemic
 from argumentation.probabilistic.epistemic import (
+    EpistemicGraph,
+    Influence,
+    InfluenceKind,
     LinearAtomicConstraint,
     LinearRelation,
     least_squares_update_labelling,
+    update_assignment,
 )
 
 
@@ -125,3 +133,59 @@ def test_least_squares_update_is_no_farther_than_any_feasible_grid_point(
         default=float("inf"),
     )
     assert _squared_distance(updated, current) <= best_grid + 1e-9
+
+
+def _run_with_line_budget(func: Callable[[], object], budget: int) -> object:
+    """Run ``func`` with a deterministic execution budget on update_assignment."""
+    steps = 0
+
+    def tracer(frame: FrameType, event: str, arg: object) -> object:
+        nonlocal steps
+        if frame.f_code is update_assignment.__code__ and event == "line":
+            steps += 1
+            if steps > budget:
+                raise AssertionError(f"update_assignment exceeded {budget} lines")
+        return tracer
+
+    sys.settrace(tracer)
+    try:
+        return func()
+    finally:
+        sys.settrace(None)
+
+
+def test_update_assignment_rejects_contradictory_influences() -> None:
+    """Issue #42: with P(a) = 0.8, a positive influence a -> b demands
+    P(b) >= 0.8 and a negative one demands P(b) <= 0.2 (Hunter & Thimm 2017
+    epistemic constraints); no assignment satisfies both, so the update must
+    report it instead of toggling b forever. Bounded by a line budget, not
+    wall-clock time."""
+    graph = EpistemicGraph(
+        frozenset({"a", "b"}),
+        frozenset(
+            {
+                Influence("a", "b", InfluenceKind.POSITIVE),
+                Influence("a", "b", InfluenceKind.NEGATIVE),
+            }
+        ),
+    )
+
+    with pytest.raises(ValueError, match="fixed point"):
+        _run_with_line_budget(lambda: update_assignment(graph, {"a": 0.8}), 2000)
+
+
+def test_update_assignment_mixed_influences_control() -> None:
+    """Issue #42 control: with P(a) = 0.5 both demands meet at P(b) = 0.5."""
+    graph = EpistemicGraph(
+        frozenset({"a", "b"}),
+        frozenset(
+            {
+                Influence("a", "b", InfluenceKind.POSITIVE),
+                Influence("a", "b", InfluenceKind.NEGATIVE),
+            }
+        ),
+    )
+
+    result = _run_with_line_budget(lambda: update_assignment(graph, {"a": 0.5}), 2000)
+
+    assert result == {"a": 0.5, "b": 0.5}
