@@ -221,9 +221,11 @@ def quadratic_energy_strengths_continuous(
                 break
             step /= 2.0
 
+    derivative = _quadratic_derivative(graph, strengths)
+    max_delta = max((abs(value) for value in derivative.values()), default=0.0)
     return GradualStrengthResult(
         strengths=dict(sorted(strengths.items())),
-        converged=False,
+        converged=max_delta <= tolerance,
         iterations=max_iterations,
         max_delta=max_delta,
         tolerance=tolerance,
