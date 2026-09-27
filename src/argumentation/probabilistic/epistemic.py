@@ -261,6 +261,13 @@ def parse_term(text: str) -> Term:
 
 def write_term(term: Term) -> str:
     if isinstance(term, ArgumentTerm):
+        # The term syntax has no escaping, so only names the parser reads back
+        # as a single atom are writable; anything else would change meaning.
+        if not _is_identifier(term.name):
+            raise ValueError(
+                f"argument name {term.name!r} cannot be written as a term atom; "
+                "names must match [A-Za-z_][A-Za-z0-9_]*"
+            )
         return term.name
     if isinstance(term, NotTerm):
         inner = write_term(term.term)

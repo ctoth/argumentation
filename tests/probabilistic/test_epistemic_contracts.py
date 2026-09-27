@@ -18,13 +18,23 @@ from hypothesis import strategies as st
 
 import argumentation.probabilistic.epistemic as epistemic
 from argumentation.probabilistic.epistemic import (
+    AndTerm,
+    ArgumentTerm,
     EpistemicGraph,
     Influence,
     InfluenceKind,
     LinearAtomicConstraint,
     LinearRelation,
+    NotTerm,
+    OperationalFormula,
+    OrTerm,
+    ProbabilityTerm,
+    Term,
     least_squares_update_labelling,
+    parse_term,
     update_assignment,
+    write_operational_formula,
+    write_term,
 )
 
 
@@ -189,3 +199,33 @@ def test_update_assignment_mixed_influences_control() -> None:
     result = _run_with_line_budget(lambda: update_assignment(graph, {"a": 0.5}), 2000)
 
     assert result == {"a": 0.5, "b": 0.5}
+
+
+@pytest.mark.parametrize("name", ["a & b", "a|b", "!a", "(a)", "1a", "", "a b"])
+def test_write_term_rejects_unrepresentable_argument_names(name: str) -> None:
+    """Issue #47: the term language builds compound terms with !, &, | over
+    argument atoms (Hunter & Thimm 2017, epistemic language); an atom whose
+    name contains that syntax cannot be written without changing meaning."""
+    with pytest.raises(ValueError, match="cannot be written"):
+        write_term(ArgumentTerm(name))
+
+
+def test_write_term_rejects_unrepresentable_nested_names() -> None:
+    """Issue #47: nested atoms are checked too, including inside p(...)."""
+    formula = OperationalFormula((ProbabilityTerm(NotTerm(ArgumentTerm("a & b"))),), ())
+
+    with pytest.raises(ValueError, match="cannot be written"):
+        write_operational_formula(formula)
+
+
+@pytest.mark.parametrize(
+    "term",
+    [
+        ArgumentTerm("a_1"),
+        AndTerm(ArgumentTerm("a"), NotTerm(ArgumentTerm("B2"))),
+        OrTerm(ArgumentTerm("x"), AndTerm(ArgumentTerm("y"), ArgumentTerm("_z"))),
+    ],
+)
+def test_write_term_round_trips_identifier_names(term: Term) -> None:
+    """Issue #47 control: identifier atoms round-trip through write/parse."""
+    assert parse_term(write_term(term)) == term
