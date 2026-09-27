@@ -425,3 +425,40 @@ def test_exact_dp_explicit_defeat_probability_control() -> None:
     )
 
     assert _exact_methods_agree(praf) == pytest.approx({"a": 1.0, "b": 0.5})
+
+
+@pytest.mark.parametrize(
+    ("p_attack", "expected_b"),
+    [(0.0, 1.0), (0.25, 0.75)],
+)
+def test_exact_dp_honors_explicit_attack_probability(
+    p_attack: float,
+    expected_b: float,
+) -> None:
+    """Issue #51: an explicit primitive attack probability takes precedence
+    over the direct-defeat probability in the induced-world distribution
+    (Li 2011 p.3-4), so both exact methods must use it."""
+    edge = ("a", "b")
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({edge})),
+        {"a": 1.0, "b": 1.0},
+        {edge: 1.0},
+        p_attacks={edge: p_attack},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 1.0, "b": expected_b})
+
+
+def test_exact_dp_rejects_defeats_outside_base_defeats() -> None:
+    """Issue #51: when base_defeats narrows the direct defeats, world
+    enumeration realizes only those defeats (Li 2011 Def 3, p.2), which the
+    DP does not model; the route guard must reject that representation."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1.0, "b": 1.0},
+        {},
+        base_defeats=frozenset(),
+    )
+
+    with pytest.raises(ValueError, match="exact_dp only supports"):
+        compute_probabilistic_acceptance(praf, strategy="exact_dp")

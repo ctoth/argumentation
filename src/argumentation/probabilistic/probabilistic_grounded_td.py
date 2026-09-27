@@ -44,6 +44,10 @@ def supports_exact_dp(
         and praf.framework.attacks != praf.framework.defeats
     ):
         return False
+    # World enumeration realizes only base_defeats as direct defeats; the DP
+    # treats every framework defeat as a primitive edge.
+    if praf.base_defeats is not None and praf.base_defeats != praf.framework.defeats:
+        return False
     return True
 
 
@@ -233,11 +237,16 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
             root_probability_mass=1.0,
         )
 
-    from argumentation.probabilistic.probabilistic import _expectation
+    from argumentation.probabilistic.probabilistic import (
+        _attack_opinion,
+        _expectation,
+    )
 
     p_arg: dict[str, float] = {a: _expectation(praf.p_args[a]) for a in af.arguments}
+    # Use the same effective edge opinion as world enumeration: an explicit
+    # primitive attack probability takes precedence over p_defeats.
     p_defeat: dict[tuple[str, str], float] = {
-        d: _expectation(praf.p_defeats.get(d)) for d in af.defeats
+        d: _expectation(_attack_opinion(praf, d)) for d in af.defeats
     }
 
     from argumentation.probabilistic.probabilistic_components import (
