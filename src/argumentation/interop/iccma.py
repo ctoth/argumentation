@@ -18,6 +18,7 @@ from argumentation.core.dung import ArgumentationFramework
 
 APX_ARG_RE = re.compile(r"arg\(([^)]+)\)\.")
 APX_ATT_RE = re.compile(r"att\(([^,]+),([^)]+)\)\.")
+CANONICAL_NUMERIC_ID_RE = re.compile(r"0|[1-9][0-9]*")
 
 
 def parse_af(text: str) -> ArgumentationFramework:
@@ -375,6 +376,10 @@ def write_numeric_aba(framework: ABAFramework) -> str:
 
 
 def _validate_attack_id(value: str, argument_count: int, line_number: int) -> None:
+    if CANONICAL_NUMERIC_ID_RE.fullmatch(value) is None:
+        raise ValueError(
+            f"attack line {line_number} must use canonical numeric ids: {value!r}"
+        )
     numeric = int(value)
     if numeric < 1 or numeric > argument_count:
         raise ValueError(
@@ -385,6 +390,15 @@ def _validate_attack_id(value: str, argument_count: int, line_number: int) -> No
 def _numeric_argument_ids(framework: ArgumentationFramework) -> list[int]:
     if not all(argument.isdigit() for argument in framework.arguments):
         raise ValueError("ICCMA AF arguments must be numeric ids")
+    noncanonical = sorted(
+        argument
+        for argument in framework.arguments
+        if CANONICAL_NUMERIC_ID_RE.fullmatch(argument) is None
+    )
+    if noncanonical:
+        raise ValueError(
+            f"ICCMA AF arguments must be canonical numeric ids: {noncanonical!r}"
+        )
     return sorted(int(argument) for argument in framework.arguments)
 
 
@@ -402,6 +416,10 @@ def _aba_numeric_literal(
 ) -> Literal:
     if not name.isdigit():
         raise ValueError(f"ABA line {line_number} must contain numeric atom ids")
+    if CANONICAL_NUMERIC_ID_RE.fullmatch(name) is None:
+        raise ValueError(
+            f"ABA line {line_number} must use canonical numeric atom ids: {name!r}"
+        )
     numeric = int(name)
     if numeric < 1 or numeric > atom_count:
         raise ValueError(
