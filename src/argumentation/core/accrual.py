@@ -105,8 +105,15 @@ def accrual_grounded_labelling(
     """
     if max_iterations <= 0:
         raise ValueError("max_iterations must be positive")
-    identifiers = frozenset(argument.identifier for argument in arguments)
-    by_identifier = {argument.identifier: argument for argument in arguments}
+    by_identifier: dict[str, AccrualArgument] = {}
+    for argument in arguments:
+        if argument.identifier in by_identifier:
+            raise ValueError(
+                "duplicate accrual argument identifier with different "
+                f"dependencies: {argument.identifier!r}"
+            )
+        by_identifier[argument.identifier] = argument
+    identifiers = frozenset(by_identifier)
     labelling = Labelling.from_statuses(
         arguments=identifiers,
         statuses={identifier: Label.UNDEC for identifier in identifiers},
