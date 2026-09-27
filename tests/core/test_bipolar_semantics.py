@@ -90,10 +90,12 @@ class TestCayrolDefinitions:
         assert safe(frozenset({"G", "H", "E"}), framework)
 
     def test_preferred_hierarchy_distinguishes_d_s_c(self):
+        # {A, H} set-defeats and set-supports B: d-admissible but not safe
+        # (so not s-admissible) and not closed for supports (not c-admissible).
         framework = baf(
-            {"A", "B", "C", "H"},
-            {("H", "B"), ("A", "C")},
-            {("A", "B"), ("C", "A")},
+            {"A", "B", "H"},
+            {("H", "B")},
+            {("A", "B")},
         )
         assert frozenset({"A", "H"}) in d_preferred_extensions(framework)
         assert frozenset({"A", "H"}) not in s_preferred_extensions(framework)
@@ -285,17 +287,6 @@ class TestBipolarCycleProperties:
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
-    def test_derived_defeats_no_self_defeats(self, framework):
-        """Derived defeats never include self-defeats (A, A).
-
-        Self-defeats are filtered by cayrol_derived_defeats (source != target).
-        """
-        derived = cayrol_derived_defeats(framework.defeats, framework.supports)
-        for src, tgt in derived:
-            assert src != tgt, f"Self-defeat ({src}, {src}) in derived defeats"
-
-    @given(bipolar_frameworks_with_cycles())
-    @_PROP_SETTINGS
     def test_derived_defeats_are_exactly_definition_3_sequences(self, framework):
         """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): each derived defeat
         is witnessed by supports then one primitive defeat (supported defeat)
@@ -317,20 +308,20 @@ class TestBipolarCycleProperties:
         }
         expected -= framework.defeats
         derived = cayrol_derived_defeats(framework.defeats, framework.supports)
-        assert derived == {pair for pair in expected if pair[0] != pair[1]}
+        assert derived == expected
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
     def test_derived_defeats_bounded_by_argument_pairs(self, framework):
         """Total defeats (original + derived) bounded by |args|^2.
 
-        The defeat closure cannot exceed the total number of possible
-        directed pairs (excluding self-edges).
+        Def. 3 sequences need not have distinct endpoints, so supported
+        self-defeats count among the possible directed pairs.
         """
         derived = cayrol_derived_defeats(framework.defeats, framework.supports)
         total = framework.defeats | derived
         n = len(framework.arguments)
-        max_possible = n * (n - 1)  # directed pairs, no self-edges
+        max_possible = n * n
         assert len(total) <= max_possible
 
     @given(bipolar_frameworks_with_cycles())

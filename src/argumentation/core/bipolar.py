@@ -126,9 +126,7 @@ def cayrol_derived_defeats(
         for supported in support_reach.get(target, frozenset()):
             derived.add((defeater, supported))
 
-    return frozenset(
-        (source, target) for source, target in derived - defeats if source != target
-    )
+    return frozenset(derived - defeats)
 
 
 def derived_set_defeats(

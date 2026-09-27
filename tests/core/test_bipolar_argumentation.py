@@ -84,6 +84,22 @@ class TestCayrolDerivedDefeats:
         derived = cayrol_derived_defeats(defeats, supports)
         assert ("B", "C") in derived
 
+    def test_supported_self_defeat_is_derived(self) -> None:
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): A-sup-B-def-A is a
+        supported defeat of A by A, and B-def-A-sup-B an indirect defeat of B
+        by B; the sequence's endpoints need not differ."""
+        supports = frozenset({("A", "B")})
+        defeats = frozenset({("B", "A")})
+        derived = cayrol_derived_defeats(defeats, supports)
+        assert derived == frozenset({("A", "A"), ("B", "B")})
+
+    def test_supported_defeat_of_other_argument_control(self) -> None:
+        """Control: A-sup-B-def-C derives only the defeat of C."""
+        supports = frozenset({("A", "B")})
+        defeats = frozenset({("B", "C")})
+        derived = cayrol_derived_defeats(defeats, supports)
+        assert derived == frozenset({("A", "C")})
+
 
 class TestBipolarFrameworkValidation:
     def test_defeats_must_reference_declared_arguments(self) -> None:
