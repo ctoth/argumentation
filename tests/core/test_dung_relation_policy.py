@@ -191,6 +191,54 @@ def test_structured_admissible_uses_attacks_for_conflict_and_defeats_for_defense
     }
 
 
+def _maximal(candidates: set[frozenset[str]]) -> set[frozenset[str]]:
+    return {
+        candidate
+        for candidate in candidates
+        if not any(candidate < other for other in candidates)
+    }
+
+
+# Dung 1995, Def. 8 (preferred = maximal admissible); Modgil and Prakken
+# 2018, Def. 14, p.14 (attack-based conflict-freeness):
+# papers/Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-013.png
+def test_structured_preferred_is_maximal_admissible() -> None:
+    """Issue #6: preferred extensions are maximal admissible sets.
+
+    With attack-based conflict-freeness and defeat-based defence, {a} and
+    {b} are both admissible and maximal, even though no complete extension
+    exists to maximize.
+    """
+    framework = _structured_distinguishing_framework()
+
+    assert set(dung.preferred_extensions(framework)) == {
+        frozenset({"a"}),
+        frozenset({"b"}),
+    }
+
+
+@given(_single_relation_frameworks())
+@settings(max_examples=40, deadline=None)
+def test_plain_dung_preferred_is_maximal_admissible(
+    framework: ArgumentationFramework,
+) -> None:
+    """Issue #6 control: Dung 1995 Def. 8 via the maximal-complete route."""
+    assert set(dung.preferred_extensions(framework)) == _maximal(
+        _admissible_extensions(framework)
+    )
+
+
+@given(_structured_frameworks_with_blocked_attack())
+@settings(max_examples=60, deadline=None)
+def test_structured_preferred_matches_maximal_admissible_property(
+    framework: ArgumentationFramework,
+) -> None:
+    """Issue #6: Dung 1995 Def. 8 under Modgil-Prakken 2018 Def. 14."""
+    assert set(dung.preferred_extensions(framework)) == _maximal(
+        _admissible_extensions(framework)
+    )
+
+
 @pytest.mark.parametrize(
     ("solve", "semantic_name"),
     [
