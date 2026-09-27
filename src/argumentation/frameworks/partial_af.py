@@ -211,8 +211,17 @@ def consensual_expand(
     framework: ArgumentationFramework,
     universe: frozenset[str],
 ) -> PartialArgumentationFramework:
-    """Expand an AF to a shared universe using ignorance outside source scope."""
+    """Expand an AF to a shared universe using ignorance outside source scope.
+
+    Coste-Marquis et al. 2007, Def. 11 takes the universe as the union of the
+    profile's argument sets, so it must contain the source arguments.
+    """
     source_arguments = frozenset(framework.arguments)
+    missing = source_arguments - universe
+    if missing:
+        raise ValueError(
+            f"universe must contain every source argument; missing {sorted(missing)!r}"
+        )
     attack_relation = _attack_relation(framework)
     attacks: set[AttackPair] = set()
     ignorance: set[AttackPair] = set()
