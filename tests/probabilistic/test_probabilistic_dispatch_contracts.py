@@ -53,3 +53,45 @@ def test_queried_set_with_explicit_extension_query_is_answered() -> None:
     assert result.query_kind == "extension_probability"
     assert result.queried_set == ("a",)
     assert result.extension_probability == 1.0
+
+
+@pytest.mark.parametrize(
+    "selectors",
+    [
+        {"query_kind": "extension_probability", "queried_set": {"a"}},
+        {"query_kind": "argument_acceptance", "inference_mode": "credulous"},
+        {"inference_mode": "skeptical"},
+        {"queried_set": {"a"}},
+    ],
+)
+def test_dfquad_rejects_explicit_probability_query_selectors(
+    selectors: dict[str, object],
+) -> None:
+    """Issue #30: DF-QuAD (Rago et al. 2016) computes gradual strengths, not
+    Li 2011 extension/acceptance probabilities (Eq 2, p.4); an explicitly
+    requested probability query must not be answered with strengths."""
+    praf = _single_argument_praf(1.0)
+
+    with pytest.raises(ValueError, match="DF-QuAD"):
+        compute_probabilistic_acceptance(
+            praf,
+            strategy="dfquad_quad",
+            tau={"a": 0.5},
+            **selectors,
+        )
+
+
+@pytest.mark.parametrize("selectors", [{}, {"query_kind": "gradual_strength"}])
+def test_dfquad_answers_gradual_strength_query(selectors: dict[str, object]) -> None:
+    """Issue #30 control: the implicit or explicit gradual-strength query is answered."""
+    praf = _single_argument_praf(1.0)
+
+    result = compute_probabilistic_acceptance(
+        praf,
+        strategy="dfquad_quad",
+        tau={"a": 0.5},
+        **selectors,
+    )
+
+    assert result.query_kind == "gradual_strength"
+    assert result.acceptance_probs == {"a": 0.5}

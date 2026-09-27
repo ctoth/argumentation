@@ -425,6 +425,15 @@ def _validate_query_contract(
 ) -> tuple[str, str | None, tuple[str, ...] | None]:
     """Validate explicit query selectors for PrAF acceptance queries."""
     if strategy in {"dfquad", "dfquad_quad", "dfquad_baf"}:
+        if query_kind is not _UNSET and str(query_kind) != "gradual_strength":
+            raise ValueError(
+                "DF-QuAD strategies only answer query_kind='gradual_strength', "
+                f"got {query_kind!r}"
+            )
+        if inference_mode is not _UNSET and inference_mode is not None:
+            raise ValueError("DF-QuAD strategies do not use inference_mode")
+        if queried_set is not None:
+            raise ValueError("DF-QuAD strategies do not use queried_set")
         return "gradual_strength", None, None
 
     if query_kind is _UNSET:
