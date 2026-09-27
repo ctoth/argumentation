@@ -84,7 +84,9 @@ def test_boolean_attack_matches_support_enumeration(
 ) -> None:
     """Issue #54: the one-closure predicate equals the exhaustive witness search."""
     ordered = sorted(framework.assumptions, key=repr)
-    attacker = frozenset(data.draw(st.sets(st.sampled_from(ordered))) if ordered else ())
+    attacker = frozenset(
+        data.draw(st.sets(st.sampled_from(ordered))) if ordered else ()
+    )
     target = frozenset(data.draw(st.sets(st.sampled_from(ordered))) if ordered else ())
 
     assert aba.attacks(framework, attacker, target) == bool(
