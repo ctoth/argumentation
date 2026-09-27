@@ -52,8 +52,10 @@ def _z_for_confidence(confidence: float) -> float:
         return _Z_SCORES[confidence]
     if not 0.0 < confidence < 1.0:
         raise ValueError(f"mc_confidence must be in (0,1), got {confidence}")
-    p = 1.0 - (1.0 - confidence) / 2.0
-    return _inverse_standard_normal_cdf(p)
+    # Evaluate the lower tail alpha/2 directly: forming 1 - alpha/2 rounds to
+    # 1.0 for confidences within float spacing of one and loses the tail.
+    lower_tail = (1.0 - confidence) / 2.0
+    return -_inverse_standard_normal_cdf(lower_tail)
 
 
 def _inverse_standard_normal_cdf(p: float) -> float:

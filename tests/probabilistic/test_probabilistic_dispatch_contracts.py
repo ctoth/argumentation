@@ -9,12 +9,15 @@ probability is the product over present/absent arguments and defeats
 
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.gradual.gradual import GradualConvergenceError
 from argumentation.probabilistic.probabilistic import (
     ProbabilisticAF,
+    _z_for_confidence,
     compute_probabilistic_acceptance,
 )
 
@@ -168,3 +171,42 @@ def test_explicit_deterministic_strategy_accepts_certain_inputs(
 
     assert result.strategy_used == "deterministic"
     assert result.acceptance_probs == {"a": expected}
+
+
+def test_z_for_confidence_handles_largest_representable_confidence() -> None:
+    """Issue #33: the Agresti-Coull stopping rule (Li 2011, Eq 5, p.7) needs
+    z = z_{1-alpha/2}; confidence 1 - 2**-53 lies in (0, 1) and must yield a
+    finite quantile beyond the 0.999 one instead of log(0)."""
+    confidence = 1.0 - 2.0**-53
+    assert 0.0 < confidence < 1.0
+
+    z = _z_for_confidence(confidence)
+
+    assert math.isfinite(z)
+    assert z > _z_for_confidence(0.999)
+
+
+def test_mc_accepts_largest_representable_confidence() -> None:
+    """Issue #33: MC dispatch with that confidence completes (Li 2011 Alg 1, p.5)."""
+    result = compute_probabilistic_acceptance(
+        _single_argument_praf(0.5),
+        strategy="mc",
+        mc_confidence=1.0 - 2.0**-53,
+        mc_epsilon=0.2,
+        rng_seed=1,
+    )
+
+    assert result.acceptance_probs is not None
+    assert 0.0 < result.acceptance_probs["a"] < 1.0
+
+
+@pytest.mark.parametrize(
+    ("confidence", "expected"),
+    [(0.5, 0.6744897502), (0.975, 2.2414027276), (0.999, 3.2905267315)],
+)
+def test_z_for_confidence_matches_normal_quantiles(
+    confidence: float,
+    expected: float,
+) -> None:
+    """Issue #33 control: ordinary confidences keep their two-tailed quantiles."""
+    assert _z_for_confidence(confidence) == pytest.approx(expected, rel=1e-8)
