@@ -65,9 +65,17 @@ def from_json(payload: Mapping[str, Any]) -> AcceptanceCondition:
     raise ValueError(f"unknown acceptance-condition JSON op: {op!r}")
 
 
+_RESERVED_FORMULA_TOKENS = frozenset({"true", "false", "not", "and", "or"})
+
+
 def write_iccma_formula(condition: AcceptanceCondition) -> str:
     condition = _canonical(condition)
     if isinstance(condition, Atom):
+        if condition.parent in _RESERVED_FORMULA_TOKENS:
+            raise ValueError(
+                f"ICCMA formula cannot represent atom {condition.parent!r}: "
+                "it is a reserved formula keyword"
+            )
         return condition.parent
     if isinstance(condition, _Not):
         return f"not({write_iccma_formula(condition.child)})"

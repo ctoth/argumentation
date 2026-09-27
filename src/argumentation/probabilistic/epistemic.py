@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from itertools import product
+import math
 import re
 from typing import Literal, Mapping, Sequence
 
@@ -135,6 +136,13 @@ class ProbabilityFunction:
             raise ValueError(
                 "probability function must assign all possible worlds exactly once"
             )
+        nonfinite = sorted(
+            world
+            for world, probability in normalized.items()
+            if not math.isfinite(probability)
+        )
+        if nonfinite:
+            raise ValueError(f"world probabilities must be finite: {nonfinite!r}")
         negative = sorted(
             world for world, probability in normalized.items() if probability < 0.0
         )
@@ -240,7 +248,7 @@ def induced_probability_labelling(
 
 
 _TOKEN_RE = re.compile(
-    r"\s*(<=|>=|!=|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\.[0-9]+)?|[()!&|+\-=<>])"
+    r"\s*(<=|>=|!=|[A-Za-z_][A-Za-z0-9_]*|[0-9]+(?:\.[0-9]+)?(?:[eE][+\-]?[0-9]+)?|[()!&|+\-=<>])"
 )
 
 
@@ -403,7 +411,8 @@ class _TokenParser:
 def _tokenize(text: str) -> list[str]:
     tokens: list[str] = []
     position = 0
-    while position < len(text):
+    end = len(text.rstrip())
+    while position < end:
         match = _TOKEN_RE.match(text, position)
         if match is None:
             raise ValueError(f"invalid token near {text[position:]!r}")
@@ -417,18 +426,21 @@ def _is_identifier(token: str) -> bool:
 
 
 def _compare(left: float, operator: ComparisonOperator, right: float) -> bool:
+    # Values within the tolerance count as equal for every operator, so each
+    # strict comparison is exactly the negation of its non-strict complement.
+    equal = abs(left - right) <= 1e-12
     if operator == "=":
-        return abs(left - right) <= 1e-12
+        return equal
     if operator == "!=":
-        return abs(left - right) > 1e-12
+        return not equal
     if operator == "<":
-        return left < right
+        return left < right and not equal
     if operator == "<=":
-        return left <= right + 1e-12
+        return left < right or equal
     if operator == ">":
-        return left > right
+        return left > right and not equal
     if operator == ">=":
-        return left + 1e-12 >= right
+        return left > right or equal
     raise ValueError(f"unsupported comparison operator: {operator}")
 
 
@@ -539,8 +551,10 @@ class LinearAtomicConstraint:
 
 def coherence_attack_constraint(attacker: str, target: str) -> LinearAtomicConstraint:
     """Return Potyka's attack coherence constraint P(target) <= 1 - P(attacker)."""
+    coefficients = {attacker: 1.0}
+    coefficients[target] = coefficients.get(target, 0.0) + 1.0
     return LinearAtomicConstraint(
-        {attacker: 1.0, target: 1.0},
+        coefficients,
         LinearRelation.LE,
         1.0,
     )
@@ -808,9 +822,8 @@ def belief_assignment_satisfies(
 ) -> bool:
     """Return whether ``assignment`` satisfies graph constraints."""
     values = _validate_assignment(graph, assignment)
-    constraints = _constraint_by_argument(graph)
-    for argument, constraint in constraints.items():
-        value = values[argument]
+    for constraint in graph.constraints:
+        value = values[constraint.argument]
         if value < constraint.lower or value > constraint.upper:
             return False
 
@@ -847,11 +860,24 @@ def update_assignment(
     graph: EpistemicGraph,
     evidence: Mapping[str, float],
 ) -> dict[str, float]:
-    """Update a belief assignment in the monotone influence fragment."""
+    """Update a belief assignment in the monotone influence fragment.
+
+    Arguments without evidence start at 0.5 clamped into their constraint
+    interval.  Raises ``ValueError`` when the propagated result violates the
+    graph constraints.
+    """
     unknown = sorted(set(evidence) - graph.arguments)
     if unknown:
         raise ValueError(f"evidence references unknown arguments: {unknown!r}")
-    assignment = {argument: 0.5 for argument in graph.arguments}
+    lower = {argument: 0.0 for argument in graph.arguments}
+    upper = {argument: 1.0 for argument in graph.arguments}
+    for constraint in graph.constraints:
+        lower[constraint.argument] = max(lower[constraint.argument], constraint.lower)
+        upper[constraint.argument] = min(upper[constraint.argument], constraint.upper)
+    assignment = {
+        argument: min(upper[argument], max(lower[argument], 0.5))
+        for argument in graph.arguments
+    }
     for argument, value in evidence.items():
         if not 0.0 <= value <= 1.0:
             raise ValueError("evidence values must lie in [0, 1]")
@@ -872,6 +898,8 @@ def update_assignment(
             elif influence.kind == InfluenceKind.NEGATIVE and target > 1.0 - source:
                 assignment[influence.target] = 1.0 - source
                 changed = True
+    if not belief_assignment_satisfies(graph, assignment):
+        raise ValueError("updated assignment cannot satisfy the graph constraints")
     return {
         argument: round(assignment[argument], 12)
         for argument in sorted(graph.arguments)
