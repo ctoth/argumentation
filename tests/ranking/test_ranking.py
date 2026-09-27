@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
@@ -418,6 +420,40 @@ def test_tuples_ranking_rejects_cyclic_frameworks() -> None:
 
     with pytest.raises(ValueError, match="acyclic"):
         tuples_ranking(framework)
+
+
+def _attack_chain(length: int) -> ArgumentationFramework:
+    arguments = [f"n{index}" for index in range(length)]
+    return ArgumentationFramework(
+        arguments=frozenset(arguments),
+        defeats=frozenset(
+            (arguments[index], arguments[index + 1]) for index in range(length - 1)
+        ),
+    )
+
+
+def test_tuples_ranking_handles_chain_longer_than_recursion_limit() -> None:
+    """Bonzon et al. 2016, Def. 17: Tuple* is defined for every acyclic AF.
+    A single chain has one branch per argument, so depth must not be bounded
+    by Python's call stack."""
+    length = sys.getrecursionlimit() + 20
+    result = tuples_ranking(_attack_chain(length))
+
+    assert len(result.values) == length
+    last = result.values[f"n{length - 1}"]
+    branch = length - 1
+    assert (last.defense_lengths, last.attack_lengths) == (
+        ((branch,), ()) if branch % 2 == 0 else ((), (branch,))
+    )
+
+
+def test_tuples_ranking_short_chain_control() -> None:
+    """Control: n0 -> n1 -> n2 gives n1 attack branch (1,), n2 defense (2,)."""
+    result = tuples_ranking(_attack_chain(3))
+
+    assert result.values["n0"].infinite_defense_zeros is True
+    assert result.values["n1"].attack_lengths == (1,)
+    assert result.values["n2"].defense_lengths == (2,)
 
 
 @given(_small_acyclic_frameworks())

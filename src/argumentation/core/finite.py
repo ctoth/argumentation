@@ -183,19 +183,27 @@ def maximal_sets(candidates: Iterable[frozenset[T]]) -> list[frozenset[T]]:
     return maximal_by(candidates, lambda candidate: candidate)
 
 
+def _materialize_adjacency(
+    graph: Mapping[T, Iterable[T]],
+    key: Callable[[T], Any] | None,
+) -> tuple[set[T], dict[T, tuple[T, ...]]]:
+    """Read each successor iterable exactly once (they may be one-shot)."""
+    declared = {
+        node: _ordered_items(successors, key) for node, successors in graph.items()
+    }
+    nodes = set(declared)
+    for successors in declared.values():
+        nodes.update(successors)
+    return nodes, {node: declared.get(node, ()) for node in nodes}
+
+
 def strongly_connected_components(
     graph: Mapping[T, Iterable[T]],
     *,
     key: Callable[[T], Any] | None = None,
 ) -> list[frozenset[T]]:
     """Return strongly connected components of a finite directed graph."""
-    nodes = set(graph)
-    for successors in graph.values():
-        nodes.update(successors)
-
-    successors_by_node = {
-        node: _ordered_items(graph.get(node, ()), key) for node in nodes
-    }
+    nodes, successors_by_node = _materialize_adjacency(graph, key)
     predecessors_by_node: dict[T, set[T]] = {node: set() for node in nodes}
     for source, successors in successors_by_node.items():
         for target in successors:
@@ -264,13 +272,7 @@ def is_acyclic(
     reached again is a cycle. Roots and successors are iterated in sorted order
     so the result does not depend on the graph's insertion order.
     """
-    nodes = set(graph)
-    for successors in graph.values():
-        nodes.update(successors)
-
-    successors_by_node = {
-        node: _ordered_items(graph.get(node, ()), key) for node in nodes
-    }
+    nodes, successors_by_node = _materialize_adjacency(graph, key)
 
     visiting: set[T] = set()
     visited: set[T] = set()

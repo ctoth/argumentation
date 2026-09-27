@@ -161,6 +161,47 @@ def test_theorem_6_6_classifier_fails_outside_preconditions() -> None:
         classify_line_of_argument(vaf, line)
 
 
+def _two_argument_red_vaf() -> ValueBasedArgumentationFramework:
+    return ValueBasedArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        attacks=frozenset({("a", "b")}),
+        values=frozenset({"red", "blue"}),
+        valuation={"a": "red", "b": "red"},
+    )
+
+
+@pytest.mark.parametrize(
+    "chain",
+    [
+        ArgumentChain(arguments=("ghost",), value="red"),
+        ArgumentChain(arguments=("a",), value="blue"),
+        ArgumentChain(arguments=("b", "a"), value="red"),
+    ],
+    ids=["undeclared-argument", "wrong-value", "broken-internal-link"],
+)
+def test_theorem_6_6_classifier_rejects_malformed_chains(
+    chain: ArgumentChain,
+) -> None:
+    # Bench-Capon 2003 p. 438, Definition 6.3: a chain is a sequence of the
+    # VAF's same-valued arguments, each later one attacked only by its
+    # predecessor. A line built from anything else is not a Def. 6.5 line.
+    vaf = _two_argument_red_vaf()
+    line = ArgumentLine(chains=(chain,), target=chain.arguments[-1])
+
+    with pytest.raises(ValueError):
+        classify_line_of_argument(vaf, line)
+
+
+def test_theorem_6_6_classifier_accepts_well_formed_chain() -> None:
+    # Control: a -> b is a valid red chain; b sits at even position 2.
+    vaf = _two_argument_red_vaf()
+    line = ArgumentLine(
+        chains=(ArgumentChain(arguments=("a", "b"), value="red"),), target="b"
+    )
+
+    assert classify_line_of_argument(vaf, line) is VAFArgumentStatus.INDEFENSIBLE
+
+
 def _two_value_cycle(
     length_a: int, length_b: int, preferred: str
 ) -> tuple[
@@ -205,6 +246,39 @@ def test_corollary_6_7_two_value_cycle_matches_preferred_extension() -> None:
     assert vaf.preferred_extensions_for_audience(audience) == [
         frozenset({"a1", "b1", "b3"})
     ]
+
+
+def _red_blue_cycle_with_unused_value() -> tuple[
+    ValueBasedArgumentationFramework, tuple[ArgumentChain, ArgumentChain]
+]:
+    vaf = ValueBasedArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        attacks=frozenset({("a", "b"), ("b", "a")}),
+        values=frozenset({"red", "blue", "unused"}),
+        valuation={"a": "red", "b": "blue"},
+    )
+    chains = (make_argument_chain(vaf, ("a",)), make_argument_chain(vaf, ("b",)))
+    return vaf, chains
+
+
+def test_corollary_6_7_uses_highest_ranked_cycle_value_not_audience_head() -> None:
+    # Bench-Capon 2003 pp. 440-441, Corollary 6.7: "the preferred value" is the
+    # audience's preference between the cycle's two values; a higher-ranked
+    # value outside the cycle does not change it (red > blue here).
+    vaf, chains = _red_blue_cycle_with_unused_value()
+    audience = ("unused", "red", "blue")
+
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"a"})
+    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"a"})]
+
+
+def test_corollary_6_7_with_cycle_value_at_audience_head() -> None:
+    # Control: the preferred cycle value already heads the audience.
+    vaf, chains = _red_blue_cycle_with_unused_value()
+    audience = ("blue", "unused", "red")
+
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"b"})
+    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"b"})]
 
 
 @given(
