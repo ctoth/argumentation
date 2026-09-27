@@ -411,7 +411,8 @@ class _TokenParser:
 def _tokenize(text: str) -> list[str]:
     tokens: list[str] = []
     position = 0
-    while position < len(text):
+    end = len(text.rstrip())
+    while position < end:
         match = _TOKEN_RE.match(text, position)
         if match is None:
             raise ValueError(f"invalid token near {text[position:]!r}")

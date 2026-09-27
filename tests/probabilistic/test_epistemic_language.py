@@ -83,6 +83,22 @@ def test_hunter_definition_3_1_rejects_atom_thresholds_outside_unit_interval() -
         )
 
 
+@pytest.mark.parametrize("suffix", [" ", "\n", " \t\r\n"])
+def test_parsers_accept_trailing_whitespace(suffix: str) -> None:
+    """Issue #13: whitespace separates tokens wherever it appears.
+
+    The Hunter, Polberg, and Thimm term and formula grammar (Definition 3.1)
+    is whitespace-insensitive; trailing whitespace must parse like leading
+    whitespace does.
+    """
+    assert parse_term("a" + suffix) == ArgumentTerm("a")
+    assert parse_epistemic_formula(
+        "p(a) >= 0.5" + suffix
+    ) == parse_epistemic_formula("p(a) >= 0.5")
+    # Control: leading whitespace already parses.
+    assert parse_term(suffix + "a") == ArgumentTerm("a")
+
+
 def _threshold_atom(operator: str, threshold: float) -> AtomFormula:
     return AtomFormula(
         EpistemicAtom(
