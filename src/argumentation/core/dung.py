@@ -538,7 +538,8 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
     """Return odd-length attack paths for prudent semantics.
 
     Coste-Marquis, Devred, and Marquis 2005, pp. 1-2 define the prudent
-    indirect-conflict check over odd-length attack paths.
+    indirect-conflict check over odd-length attack paths; length one is odd,
+    so direct attacks and self-attacks are included.
     """
     indirect: set[tuple[str, str]] = set()
     successors: dict[str, set[str]] = {
@@ -556,7 +557,7 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
             if (current, parity) in seen:
                 continue
             seen.add((current, parity))
-            if length > 1 and parity == 1:
+            if parity == 1:
                 indirect.add((origin, current))
             for target in successors.get(current, set()):
                 stack.append((origin, target, length + 1))

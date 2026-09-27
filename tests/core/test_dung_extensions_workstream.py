@@ -97,6 +97,28 @@ def test_prudent_conflict_free_excludes_odd_indirect_attack_coste_marquis_2005_p
     assert prudent_conflict_free(framework, frozenset({"a", "d"})) is False
 
 
+def test_prudent_conflict_free_rejects_direct_and_self_attacks_coste_marquis_2005_page_2() -> (
+    None
+):
+    """Coste-Marquis et al. 2005, p. 2, Def. 7: an indirect attack is an
+    odd-length attack path, and length one is odd, so a direct attack and a
+    self-attack are both conflicts."""
+    direct = af({"a", "b"}, {("a", "b")})
+    self_attack = af({"a"}, {("a", "a")})
+
+    assert ("a", "b") in indirect_attacks(direct)
+    assert prudent_conflict_free(direct, frozenset({"a", "b"})) is False
+    assert ("a", "a") in indirect_attacks(self_attack)
+    assert prudent_conflict_free(self_attack, frozenset({"a"})) is False
+
+
+def test_prudent_conflict_free_accepts_unattacked_pair_control() -> None:
+    """Control: members with no attack path between them are conflict-free."""
+    framework = af({"a", "b", "c"}, {("a", "b")})
+
+    assert prudent_conflict_free(framework, frozenset({"a", "c"})) is True
+
+
 def test_prudent_example_af1_coste_marquis_2005_pages_1_3() -> None:
     """Coste-Marquis et al. 2005, pp. 1-3: AF1 has prudent extension {i,n}."""
     framework = af(
