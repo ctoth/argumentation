@@ -18,6 +18,7 @@ from typing import Mapping, TypeAlias
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.finite import sorted_extensions, subsets_by_size
+from argumentation.core.frozen import freeze_mapping
 from argumentation.structured.aba._closure import horn_closure
 from argumentation.structured.aspic.aspic import Literal, Rule
 
@@ -70,7 +71,7 @@ class ABAFramework:
         object.__setattr__(self, "language", language)
         object.__setattr__(self, "rules", rules)
         object.__setattr__(self, "assumptions", assumptions)
-        object.__setattr__(self, "contrary", contrary)
+        object.__setattr__(self, "contrary", freeze_mapping(contrary))
 
 
 @dataclass(frozen=True)

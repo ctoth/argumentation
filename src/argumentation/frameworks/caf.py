@@ -27,6 +27,7 @@ from argumentation.core.dung import (
     range_of,
 )
 from argumentation.core.finite import maximal_by, maximal_sets
+from argumentation.core.frozen import freeze_mapping
 
 
 CAFView = Literal["inherited", "claim_level"]
@@ -50,7 +51,9 @@ class ClaimAugmentedAF:
         object.__setattr__(
             self,
             "claims",
-            {argument: str(claim) for argument, claim in self.claims.items()},
+            freeze_mapping(
+                {argument: str(claim) for argument, claim in self.claims.items()}
+            ),
         )
 
 

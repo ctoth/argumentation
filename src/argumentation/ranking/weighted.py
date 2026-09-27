@@ -8,6 +8,7 @@ from math import inf, isfinite
 from typing import Mapping
 
 from argumentation.core.dung import ArgumentationFramework, grounded_extension
+from argumentation.core.frozen import freeze_mapping
 
 
 @dataclass(frozen=True)
@@ -57,7 +58,7 @@ class WeightedArgumentationFramework:
 
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "attacks", attacks)
-        object.__setattr__(self, "weights", normalized_weights)
+        object.__setattr__(self, "weights", freeze_mapping(normalized_weights))
 
     def as_dung_framework(
         self,
