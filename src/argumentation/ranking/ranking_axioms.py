@@ -387,26 +387,55 @@ def _group_at_least_as_acceptable(
     if not worse_group:
         return bool(better_group) if strict else True
 
+    # Amgoud & Ben-Naim 2013 p. 6 ask whether SOME injective f with
+    # f(x) >= x exists, so search matchings instead of committing greedily.
     better = tuple(sorted(better_group))
     worse = tuple(sorted(worse_group))
-    used: set[str] = set()
-    saw_strict = len(better_group) > len(worse_group)
-
-    for weaker in worse:
-        match = next(
-            (
-                candidate
-                for candidate in better
-                if candidate not in used
-                and _at_least_as_acceptable(candidate, weaker, result)
-            ),
-            None,
+    allowed = {
+        weaker: tuple(
+            candidate
+            for candidate in better
+            if _at_least_as_acceptable(candidate, weaker, result)
         )
-        if match is None:
-            return False
-        used.add(match)
-        saw_strict = saw_strict or result.strictly_prefers(match, weaker)
-    return saw_strict if strict else True
+        for weaker in worse
+    }
+    if not _has_injective_matching(worse, allowed):
+        return False
+    if not strict or len(better_group) > len(worse_group):
+        return True
+    return any(
+        _has_injective_matching(
+            tuple(other for other in worse if other != weaker),
+            allowed,
+            excluded=frozenset({candidate}),
+        )
+        for weaker in worse
+        for candidate in allowed[weaker]
+        if result.strictly_prefers(candidate, weaker)
+    )
+
+
+def _has_injective_matching(
+    items: tuple[str, ...],
+    allowed: dict[str, tuple[str, ...]],
+    *,
+    excluded: frozenset[str] = frozenset(),
+) -> bool:
+    """Return whether every item gets a distinct allowed candidate."""
+
+    owner: dict[str, str] = {}
+
+    def augment(item: str, seen: set[str]) -> bool:
+        for candidate in allowed[item]:
+            if candidate in excluded or candidate in seen:
+                continue
+            seen.add(candidate)
+            if candidate not in owner or augment(owner[candidate], seen):
+                owner[candidate] = item
+                return True
+        return False
+
+    return all(augment(item, set()) for item in items)
 
 
 def _any_attacker_is_attacked(
