@@ -8,7 +8,7 @@ doi_url: "https://doi.org/10.1007/978-3-642-40381-1_11"
 
 # Ranking-Based Semantics for Argumentation Frameworks
 
-> Scoped audit reread (2026-09-27): verified page images 004, 006-010 for DP/CP/QP, discussion length, burden recurrence/order, and Proposition 2. Corrections below are page-specific; the remaining notes have not been revalidated.
+> Scoped audit reread (2026-09-27): verified page images 004-010 for CT/SCT/DP/CP/QP/DDP, discussion length, burden recurrence/order, and Proposition 2. Corrections below are page-specific; the remaining notes have not been revalidated.
 
 ## One-Sentence Summary
 Proposes an axiomatic framework of postulates for ranking-based (gradual) argumentation semantics that rank-order arguments from most acceptable to weakest, and constructs two concrete semantics (Discussion-based and Burden-based) satisfying those postulates.
@@ -97,7 +97,7 @@ For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R}
 If $|\operatorname{Att}(a)|=|\operatorname{Att}(b)|$, $\operatorname{Def}(a)\ne\emptyset$, and $\operatorname{Def}(b)=\emptyset$, then $a\succ b$. A defender is an argument attacking at least one direct attacker; **not every attacker of $a$ must be attacked**. Example 3 has two attackers for each target and only one of $a$'s attackers is defended. *(PDF p.5, page-004.png, Postulate 4 and Example 3)*
 
 ### Postulate 5: Counter-Transitivity (CT)
-For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a, b \in \mathcal{A}$, if $\exists f: \text{Arg}(b) \to \text{Arg}(a)$ injective such that $\forall x \in \text{Arg}(b)$, $f(x) \succeq x$, then $a \succeq b$. If $a$'s attackers are at least as numerous and each mapped attacker is at least as acceptable, then $a$ is at least as acceptable as $b$. *(p.6)*
+If there is an injective map $f:\operatorname{Att}(a)\to\operatorname{Att}(b)$ with $f(x)\succeq x$ for every attacker $x$ of $a$, then $a\succeq b$. Thus the more numerous/acceptable attacker group belongs to $b$, not $a$. *(PDF p.6, page-005.png, Definition 6 and Postulate 5)*
 
 ### Definition 7: Strict Group Comparisons (SGC)
 For all $a, b \in \mathcal{A}$: $\langle \mathcal{A}, \mathcal{D} \rangle \models \text{Sgc}(z)$ if there exists an injective function $f$ from $B$ to $A$ that meets two conditions:
@@ -116,7 +116,7 @@ If $|\operatorname{Att}(a)|<|\operatorname{Att}(b)|$, then $a\succ b$. There is 
 If some attacker $c$ of $b$ is strictly more acceptable than every attacker of $a$, then $a\succ b$. This is not limited to singleton attacker sets and does not require equal attacker counts. *(PDF p.8, page-007.png, Postulate 8)*
 
 ### Postulate 9: Distributed Defense Precedence (DDP)
-If the defense of $a$ is simple and distributed and the defense of $b$ is simple but not distributed, then $a \succ b$. Distributed defense (each attacker attacked by exactly one distinct defender) is preferable to concentrated defense. *(p.8)*
+For arguments with equal attacker counts and equal defender counts, if the defense of $a$ is simple and distributed and the defense of $b$ is simple but not distributed, then $a \succ b$. Distributed means each attacker has at most one defender; it does not require every attacker to have one. *(PDF p.8, page-007.png, Definition 8 and Postulate 9)*
 
 ### Simple and Distributed Defense (Definition 8)
 - The defense of $a$ is **simple** if every defender of $a$ attacks exactly one attacker of $a$
@@ -135,7 +135,7 @@ If the defense of $a$ is simple and distributed and the defense of $b$ is simple
 - **Data structures**: Argumentation framework as directed graph $(\mathcal{A}, \mathcal{R})$. For Dbs: enumerate all linear discussions (paths in the attack graph). For Bbs: iterative computation of burden numbers at each step. *(p.9-11)*
 - **Dbs computation**: For each argument, count linear discussions of each length. Discussions of odd length are "won" (count negatively), even length are "lost" (count positively). Rank arguments by lexicographic comparison of these counts starting from length 1. *(p.9-10)*
 - **Bbs computation**: Initialize all burden numbers to 1. At each step $i$, each argument's burden = $1 + \sum$ (reciprocal burden of attackers at step $i-1$). Rank by lexicographic comparison of burden sequences. *(p.11)*
-- **Convergence for Dbs**: In acyclic frameworks, linear discussions are finite and the semantics is well-defined. With cycles, $\text{Dis}_i(a)$ may never stop evolving. Authors conjecture a threshold $t$ (dependent on longest elementary cycle) beyond which counts stabilize. Computation can be truncated at step $t$; the greater $t$, the closer to the true ranking. *(p.10)*
+- **Convergence for Dbs**: In acyclic frameworks, linear discussions have bounded length. With cycles, counts may keep changing. The conjectured threshold ensures that agreement of two arguments through the threshold entails agreement thereafter; it does not assert that their counts stabilize. Truncation is an approximation. *(PDF p.10, page-009.png)*
 - **Convergence for Bbs**: Similarly, an equality-ensuring threshold probably exists, making exact computation possible despite the infinite sequence $\{0, 1, \ldots\}$. *(p.11)*
 - **Cycle handling**: Both Dbs and Bbs treat odd and even length cycles similarly. They "unroll" cycles --- the semantics do not distinguish between a loop ($a\mathcal{R}a$) and a cycle ($a\mathcal{R}b, b\mathcal{R}a$). *(p.12)*
 
@@ -167,7 +167,7 @@ If the defense of $a$ is simple and distributed and the defense of $b$ is simple
 
 **Proposition 2**: SCT implies VP; CT together with SCT implies DP. The proposition does not state that SCT implies CT. *(PDF p.9, page-008.png)*
 
-**Proposition 3**: No ranking-based semantics can satisfy both DP' (a strengthened version) and QP' (a strengthened quality precedence). *(p.9)*
+**Proposition 3**: No ranking-based semantics can satisfy both cardinality precedence (CP) and quality precedence (QP). *(PDF p.9, page-008.png)*
 
 **Proposition 4**: The postulates Ab, In, CT, SCT, CP, and DDP are compatible. *(p.9)*
 
