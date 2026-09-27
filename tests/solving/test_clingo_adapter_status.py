@@ -9,7 +9,8 @@ start a solver, except the skip-guarded real-clingo control.
 from __future__ import annotations
 
 from collections.abc import Callable
-from subprocess import CompletedProcess
+from pathlib import Path
+from subprocess import CompletedProcess, TimeoutExpired
 from typing import Any
 
 import pytest
@@ -166,3 +167,45 @@ def test_real_clingo_enumeration_control() -> None:
 
     assert isinstance(result, clingo.ClingoExtensionEnumerationSuccess)
     assert result.extensions == (frozenset({"a"}),)
+
+
+@pytest.fixture
+def timing_out_clingo(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
+    """Raise TimeoutExpired once, recording the temp program path."""
+    monkeypatch.setattr(clingo, "_resolve_command", lambda _binary: ["clingo"])
+    programs: list[Path] = []
+
+    def run(command: list[str], **kwargs: Any) -> CompletedProcess[str]:
+        programs.append(Path(command[1]))
+        assert len(programs) == 1, "adapter must make exactly one process call"
+        raise TimeoutExpired(command, kwargs["timeout"], output=b"Answer: 1\n")
+
+    monkeypatch.setattr(clingo.subprocess, "run", run)
+    return programs
+
+
+@pytest.mark.parametrize(
+    "protocol",
+    [
+        lambda: clingo.run_extension_enumeration_protocol(
+            facts=(),
+            encoding_modules=(),
+            known_argument_ids=frozenset(),
+            binary="clingo",
+            timeout_seconds=1,
+        ),
+        lambda: clingo.run_aspic_grounded_protocol(
+            facts=(), known_literal_ids=frozenset(), binary="clingo", timeout_seconds=1
+        ),
+    ],
+    ids=["enumeration", "grounded"],
+)
+def test_timeout_is_a_structured_process_error(
+    timing_out_clingo: list[Path], protocol: Callable[[], object]
+) -> None:
+    result = protocol()
+
+    assert isinstance(result, clingo.ClingoProcessError)
+    assert result.returncode == -1
+    assert result.stdout == "Answer: 1\n"
+    assert not timing_out_clingo[0].exists()

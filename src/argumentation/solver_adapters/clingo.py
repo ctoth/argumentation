@@ -17,6 +17,7 @@ from argumentation.core.solver_results import (
     SolverProtocolError,
     SolverUnavailable,
 )
+from argumentation.solver_adapters._commands import _timeout_stream
 
 
 # Clasp exit codes are result bits: 10 SAT, 20 search exhausted, 30 both;
@@ -119,6 +120,8 @@ def run_extension_enumeration_protocol(
             timeout=timeout_seconds,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        return _timeout_error(binary, problem, exc)
     finally:
         path.unlink(missing_ok=True)
 
@@ -180,6 +183,8 @@ def run_aspic_grounded_protocol(
             timeout=timeout_seconds,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        return _timeout_error(binary, "ASPIC-GR", exc)
     finally:
         path.unlink(missing_ok=True)
 
@@ -212,6 +217,19 @@ def run_aspic_grounded_protocol(
         accepted_argument_ids=accepted_argument_ids,
         accepted_literal_ids=accepted_literal_ids,
         stdout=completed.stdout,
+    )
+
+
+def _timeout_error(
+    binary: str, problem: str, exc: subprocess.TimeoutExpired
+) -> SolverProcessError:
+    """Report a timed-out run like the ICCMA adapters: code -1, partial streams."""
+    return ClingoProcessError(
+        backend=binary,
+        problem=problem,
+        returncode=-1,
+        stderr=_timeout_stream(exc.stderr),
+        stdout=_timeout_stream(exc.stdout),
     )
 
 
