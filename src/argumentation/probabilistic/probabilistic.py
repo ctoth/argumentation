@@ -656,7 +656,9 @@ def _enumerate_worlds(
                 sampled_attacks.add(edge)
             else:
                 p_attacks_config *= 1.0 - p_edge
-        if p_attacks_config < 1e-15:
+        # Only impossible worlds are skipped: exact inference applies no
+        # absolute pruning threshold to positive-probability worlds.
+        if p_attacks_config == 0.0:
             continue
 
         for support_mask in range(1 << n_prob_supports):
@@ -670,7 +672,7 @@ def _enumerate_worlds(
                     p_supports_config *= 1.0 - p_edge
 
             total_prob = p_attacks_config * p_supports_config
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
 
             yield (
@@ -1259,13 +1261,13 @@ def _compute_exact_enumeration(
             else:
                 p_args_present *= 1.0 - p_a
 
-        if p_args_present < 1e-15:
+        if p_args_present == 0.0:
             continue
 
         # Find valid defeats (both endpoints present)
         for p_world, sub_af in _enumerate_worlds(praf, sampled_args):
             total_prob = p_args_present * p_world
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
             evaluation = _evaluate_world_query(
                 sub_af,
@@ -1420,12 +1422,12 @@ def summarize_defeat_relations(
             else:
                 p_args_present *= 1.0 - p_a
 
-        if p_args_present < 1e-15:
+        if p_args_present == 0.0:
             continue
 
         for p_world, sub_af in _enumerate_worlds(praf, sampled_args):
             total_prob = p_args_present * p_world
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
             for defeat in sub_af.defeats:
                 acceptance[defeat] = acceptance.get(defeat, 0.0) + total_prob

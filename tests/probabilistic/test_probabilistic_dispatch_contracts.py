@@ -19,6 +19,7 @@ from argumentation.probabilistic.probabilistic import (
     ProbabilisticAF,
     _z_for_confidence,
     compute_probabilistic_acceptance,
+    summarize_defeat_relations,
 )
 
 
@@ -210,3 +211,43 @@ def test_z_for_confidence_matches_normal_quantiles(
 ) -> None:
     """Issue #33 control: ordinary confidences keep their two-tailed quantiles."""
     assert _z_for_confidence(confidence) == pytest.approx(expected, rel=1e-8)
+
+
+def test_exact_enum_keeps_tiny_positive_probability_worlds() -> None:
+    """Issue #34: exact acceptance sums P(AF) over every inducible world
+    (Li 2011 Eq 2, p.4); the world {a} has probability 1e-16 and must count."""
+    praf = _single_argument_praf(1e-16)
+
+    acceptance = compute_probabilistic_acceptance(praf, strategy="exact_enum")
+    extension = compute_probabilistic_acceptance(
+        praf,
+        strategy="exact_enum",
+        query_kind="extension_probability",
+        queried_set={"a"},
+    )
+
+    assert acceptance.acceptance_probs == {"a": 1e-16}
+    assert extension.extension_probability == 1e-16
+
+
+def test_defeat_marginal_keeps_tiny_positive_probability_worlds() -> None:
+    """Issue #34: the exact defeat marginal is P(a)P(b)P_D((a,b)) (Li 2011, p.3-4)."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1e-8, "b": 1e-8},
+        {("a", "b"): 1.0},
+    )
+
+    assert summarize_defeat_relations(praf) == {
+        ("a", "b"): pytest.approx(1e-16, rel=1e-12)
+    }
+
+
+def test_exact_enum_ordinary_world_probabilities_control() -> None:
+    """Issue #34 control: ordinary probabilities are unchanged."""
+    result = compute_probabilistic_acceptance(
+        _single_argument_praf(0.25),
+        strategy="exact_enum",
+    )
+
+    assert result.acceptance_probs == {"a": 0.25}
