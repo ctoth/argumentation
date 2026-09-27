@@ -405,7 +405,9 @@ def _exact_enumeration_world_exponent(praf: ProbabilisticAF) -> int:
     probability. Per Li et al. (2011, p.3-4) this is O(2^(|A|+|D|)).
     """
     probabilistic_attacks = sum(
-        1 for edge in _primitive_attacks(praf) if _attack_opinion(praf, edge) is not None
+        1
+        for edge in _primitive_attacks(praf)
+        if _attack_opinion(praf, edge) is not None
     )
     probabilistic_supports = sum(
         1 for edge in praf.supports if _support_opinion(praf, edge) is not None
@@ -863,10 +865,7 @@ def _compute_probabilistic_acceptance(
     # Small world space: exact enumeration. Li (2012, p.8) measured exact
     # beating MC below ~13 arguments with deterministic defeats; exact cost is
     # O(2^(|A|+|D|)) (p.3-4), so uncertain relations count against the budget.
-    if (
-        _exact_enumeration_world_exponent(praf)
-        <= _EXACT_ENUMERATION_MAX_WORLD_EXPONENT
-    ):
+    if _exact_enumeration_world_exponent(praf) <= _EXACT_ENUMERATION_MAX_WORLD_EXPONENT:
         return _compute_exact_enumeration(
             praf,
             semantics,
