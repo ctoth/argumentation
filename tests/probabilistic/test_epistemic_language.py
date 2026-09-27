@@ -5,6 +5,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from argumentation.probabilistic.epistemic import (
+    ArgumentTerm,
+    AtomFormula,
     EpistemicAtom,
     OperationalFormula,
     ProbabilityFunction,
@@ -79,6 +81,45 @@ def test_hunter_definition_3_1_rejects_atom_thresholds_outside_unit_interval() -
             ">",
             1.1,
         )
+
+
+def _threshold_atom(operator: str, threshold: float) -> AtomFormula:
+    return AtomFormula(
+        EpistemicAtom(
+            OperationalFormula((ProbabilityTerm(ArgumentTerm("a")),), ()),
+            operator,  # type: ignore[arg-type]
+            threshold,
+        )
+    )
+
+
+def test_formula_writer_round_trips_scientific_notation_threshold() -> None:
+    """Issue #12: every threshold in [0, 1] survives write/parse.
+
+    Hunter, Polberg, and Thimm's epistemic atoms p(alpha) # x allow any
+    x in [0, 1] (Definition 3.1); the writer must not emit text for such an
+    x that the parser rejects.
+    """
+    tiny = _threshold_atom(">", 1e-7)
+    ordinary = _threshold_atom(">", 0.25)
+
+    assert parse_epistemic_formula(write_epistemic_formula(tiny)) == tiny
+    # Control: a plain decimal threshold already round-trips.
+    assert parse_epistemic_formula(write_epistemic_formula(ordinary)) == ordinary
+
+
+@given(
+    threshold=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    )
+)
+@settings(max_examples=200)
+def test_formula_writer_round_trips_every_unit_interval_threshold(
+    threshold: float,
+) -> None:
+    formula = _threshold_atom("<=", threshold)
+
+    assert parse_epistemic_formula(write_epistemic_formula(formula)) == formula
 
 
 @given(
