@@ -22,6 +22,7 @@ from argumentation.core.dung import (
     SemanticsName,
     extensions_for,
 )
+from argumentation.core.frozen import freeze_mapping
 from argumentation.probabilistic.probabilistic_components import connected_components
 
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
@@ -211,10 +212,12 @@ class ProbabilisticAF:
         object.__setattr__(
             self,
             "p_args",
-            {
-                str(arg): _validate_probability(probability, f"p_args[{arg!r}]")
-                for arg, probability in self.p_args.items()
-            },
+            freeze_mapping(
+                {
+                    str(arg): _validate_probability(probability, f"p_args[{arg!r}]")
+                    for arg, probability in self.p_args.items()
+                }
+            ),
         )
         p_arg_keys = set(self.p_args)
         if p_arg_keys != set(framework_args):
@@ -233,24 +236,28 @@ class ProbabilisticAF:
         object.__setattr__(
             self,
             "p_defeats",
-            {
-                (str(src), str(tgt)): _validate_probability(
-                    probability, f"p_defeats[{(src, tgt)!r}]"
-                )
-                for (src, tgt), probability in self.p_defeats.items()
-            },
+            freeze_mapping(
+                {
+                    (str(src), str(tgt)): _validate_probability(
+                        probability, f"p_defeats[{(src, tgt)!r}]"
+                    )
+                    for (src, tgt), probability in self.p_defeats.items()
+                }
+            ),
         )
         _validate_probability_keys("p_defeats", self.p_defeats, _direct_defeats(self))
         if self.p_attacks is not None:
             object.__setattr__(
                 self,
                 "p_attacks",
-                {
-                    (str(src), str(tgt)): _validate_probability(
-                        probability, f"p_attacks[{(src, tgt)!r}]"
-                    )
-                    for (src, tgt), probability in self.p_attacks.items()
-                },
+                freeze_mapping(
+                    {
+                        (str(src), str(tgt)): _validate_probability(
+                            probability, f"p_attacks[{(src, tgt)!r}]"
+                        )
+                        for (src, tgt), probability in self.p_attacks.items()
+                    }
+                ),
             )
             _validate_probability_keys(
                 "p_attacks",
@@ -261,12 +268,14 @@ class ProbabilisticAF:
             object.__setattr__(
                 self,
                 "p_supports",
-                {
-                    (str(src), str(tgt)): _validate_probability(
-                        probability, f"p_supports[{(src, tgt)!r}]"
-                    )
-                    for (src, tgt), probability in self.p_supports.items()
-                },
+                freeze_mapping(
+                    {
+                        (str(src), str(tgt)): _validate_probability(
+                            probability, f"p_supports[{(src, tgt)!r}]"
+                        )
+                        for (src, tgt), probability in self.p_supports.items()
+                    }
+                ),
             )
             _validate_probability_keys("p_supports", self.p_supports, self.supports)
 

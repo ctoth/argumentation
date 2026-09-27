@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
-from types import MappingProxyType
 from typing import Mapping
 
 from argumentation.core.dung import (
@@ -15,6 +14,7 @@ from argumentation.core.dung import (
     characteristic_fn,
 )
 from argumentation.core.finite import is_acyclic, iter_subsets_bitmask
+from argumentation.core.frozen import freeze_mapping
 
 
 class Label(Enum):
@@ -52,7 +52,7 @@ class Labelling:
             argument: _normalize_label(status)
             for argument, status in self.statuses.items()
         }
-        object.__setattr__(self, "statuses", MappingProxyType(normalized))
+        object.__setattr__(self, "statuses", freeze_mapping(normalized))
 
     @classmethod
     def from_statuses(

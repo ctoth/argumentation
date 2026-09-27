@@ -25,6 +25,7 @@ import re
 from typing import Literal, Mapping, Sequence
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.frozen import freeze_mapping
 from argumentation.core.optional_deps import load_z3
 from argumentation.probabilistic.probabilistic import ProbabilisticAF
 
@@ -152,7 +153,7 @@ class ProbabilityFunction:
         if abs(total - 1.0) > 1e-9:
             raise ValueError("world probabilities must sum to 1")
         object.__setattr__(self, "arguments", arguments)
-        object.__setattr__(self, "probabilities", normalized)
+        object.__setattr__(self, "probabilities", freeze_mapping(normalized))
 
 
 def possible_worlds(arguments: frozenset[str]) -> tuple[frozenset[str], ...]:
@@ -532,7 +533,7 @@ class LinearAtomicConstraint:
             for argument, coefficient in self.coefficients.items()
             if coefficient != 0.0
         }
-        object.__setattr__(self, "coefficients", normalized)
+        object.__setattr__(self, "coefficients", freeze_mapping(normalized))
         object.__setattr__(self, "constant", float(self.constant))
 
     def satisfied_by(self, labelling: Mapping[str, float]) -> bool:
