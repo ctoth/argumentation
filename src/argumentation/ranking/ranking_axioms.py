@@ -216,28 +216,19 @@ def cardinality_precedence(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check the fewer-unattacked-attackers postulate where applicable.
+    """Check Bonzon et al. 2016 p. 2 cardinality precedence (CP).
 
-    Amgoud and Ben-Naim 2013 p. 8 and Bonzon et al. 2016 p. 1: when direct
-    attackers are all unattacked, fewer attackers strictly improves rank.
+    |R1-(a)| < |R1-(b)| implies a > b, for all arguments, including ones
+    with no attackers and regardless of whether the attackers are attacked.
     """
 
     attackers = _attackers(framework)
-    unattacked = {argument for argument, values in attackers.items() if not values}
-    for left in framework.arguments:
-        left_attackers = attackers[left]
-        if not left_attackers or not left_attackers <= unattacked:
-            continue
-        for right in framework.arguments:
-            right_attackers = attackers[right]
-            if (
-                len(left_attackers) < len(right_attackers)
-                and right_attackers
-                and right_attackers <= unattacked
-                and not result.strictly_prefers(left, right)
-            ):
-                return False
-    return True
+    return all(
+        result.strictly_prefers(left, right)
+        for left in framework.arguments
+        for right in framework.arguments
+        if len(attackers[left]) < len(attackers[right])
+    )
 
 
 def quality_precedence(

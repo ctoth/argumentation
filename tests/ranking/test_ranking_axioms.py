@@ -155,3 +155,16 @@ def test_self_contradiction_rejects_tie_with_self_attacker() -> None:
     )
 
     assert self_contradiction(framework, _all_tied(framework)) is False
+
+
+def test_cardinality_precedence_rejects_ties_on_a_chain() -> None:
+    """Bonzon et al. 2016, p. 2, CP: |R1-(a)| < |R1-(b)| implies a > b, with
+    no requirement that attackers be unattacked and including zero attackers.
+    In a -> b -> c, a has fewer attackers than b and c, so ties violate CP."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b"), ("b", "c")}),
+    )
+
+    assert cardinality_precedence(framework, _all_tied(framework)) is False
+    assert cardinality_precedence(framework, categoriser_ranking(framework))
