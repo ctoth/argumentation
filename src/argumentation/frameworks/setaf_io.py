@@ -12,8 +12,10 @@ import re
 from argumentation.frameworks.setaf import SETAF
 
 
+_ASPARTIX_CONSTANT = r"(?:[A-Za-z_][A-Za-z0-9_]*|0|[1-9][0-9]*)"
+_ASPARTIX_CONSTANT_RE = re.compile(_ASPARTIX_CONSTANT)
 _ASPARTIX_FACT_RE = re.compile(
-    r"^(?P<predicate>arg|att|mem)\((?P<body>[A-Za-z_][A-Za-z0-9_]*(?:,[A-Za-z_][A-Za-z0-9_]*)?)\)\.$"
+    rf"^(?P<predicate>arg|att|mem)\((?P<body>{_ASPARTIX_CONSTANT}(?:,{_ASPARTIX_CONSTANT})?)\)\.$"
 )
 
 
@@ -64,6 +66,16 @@ def parse_aspartix_setaf(text: str) -> SETAF:
 
 def write_aspartix_setaf(framework: SETAF) -> str:
     """Write deterministic ASPARTIX SETAF ``arg/att/mem`` facts."""
+    unrepresentable = sorted(
+        argument
+        for argument in framework.arguments
+        if _ASPARTIX_CONSTANT_RE.fullmatch(argument) is None
+    )
+    if unrepresentable:
+        raise ValueError(
+            "ASPARTIX SETAF arguments must be ASP constant names: "
+            f"{unrepresentable!r}"
+        )
     lines: list[str] = []
     for argument in sorted(framework.arguments):
         lines.append(f"arg({argument}).")

@@ -5,7 +5,8 @@ from hypothesis import strategies as st
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.interop.iccma import parse_af, write_af
+from argumentation.interop.iccma import parse_aba, parse_af, write_af
+from argumentation.structured.aspic.aspic import GroundAtom, Literal
 
 
 def test_parse_af_reads_iccma_2023_numeric_format() -> None:
@@ -103,6 +104,49 @@ def test_write_af_rejects_non_iccma_argument_ids() -> None:
 
     with pytest.raises(ValueError, match="numeric"):
         write_af(framework)
+
+
+@pytest.mark.parametrize("noncanonical", ["01", "١"])
+def test_write_af_rejects_noncanonical_numeric_ids(noncanonical: str) -> None:
+    """Issue #24: ``p af n`` names arguments by the decimal ids 1..n and the
+    reader constructs exactly those spellings, so an argument spelled "01"
+    (or with a non-ASCII digit) cannot round-trip and must be rejected."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({noncanonical, "2"}),
+        defeats=frozenset({(noncanonical, "2")}),
+    )
+
+    with pytest.raises(ValueError, match="canonical"):
+        write_af(framework)
+
+
+def test_write_af_accepts_canonical_neighbour_of_noncanonical_id() -> None:
+    framework = ArgumentationFramework(
+        arguments=frozenset({"1", "2"}),
+        defeats=frozenset({("1", "2")}),
+    )
+
+    assert parse_af(write_af(framework)) == framework
+
+
+def test_parse_af_rejects_noncanonical_attack_ids() -> None:
+    with pytest.raises(ValueError, match="canonical"):
+        parse_af("p af 2\n01 2\n")
+
+
+def test_parse_numeric_aba_rejects_noncanonical_atom_ids() -> None:
+    """Issue #24: the numeric ABA reader validated int("01") and then looked
+    up the raw "01", raising KeyError instead of a format error."""
+    with pytest.raises(ValueError, match="canonical"):
+        parse_aba("p aba 2\na 01\nc 1 2\n")
+
+
+def test_parse_numeric_aba_accepts_canonical_atom_ids_control() -> None:
+    framework = parse_aba("p aba 2\na 1\nc 1 2\n")
+
+    assert framework.contrary == {
+        Literal(GroundAtom("1")): Literal(GroundAtom("2")),
+    }
 
 
 def test_write_af_rejects_non_contiguous_numeric_ids() -> None:

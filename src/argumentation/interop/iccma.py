@@ -18,6 +18,7 @@ from argumentation.core.dung import ArgumentationFramework
 
 APX_ARG_RE = re.compile(r"arg\(([^)]+)\)\.")
 APX_ATT_RE = re.compile(r"att\(([^,]+),([^)]+)\)\.")
+CANONICAL_NUMERIC_ID_RE = re.compile(r"0|[1-9][0-9]*")
 
 
 def parse_af(text: str) -> ArgumentationFramework:
@@ -78,12 +79,12 @@ def parse_apx(text: str) -> ArgumentationFramework:
         if not line or line.startswith(("%", "#")):
             continue
         arg_match = APX_ARG_RE.fullmatch(line)
-        if arg_match:
-            arguments.add(arg_match.group(1))
+        if arg_match and arg_match.group(1).strip():
+            arguments.add(arg_match.group(1).strip())
             continue
         att_match = APX_ATT_RE.fullmatch(line)
-        if att_match:
-            attacker, target = att_match.groups()
+        if att_match and all(term.strip() for term in att_match.groups()):
+            attacker, target = (term.strip() for term in att_match.groups())
             arguments.add(attacker)
             arguments.add(target)
             attacks.add((attacker, target))
@@ -322,6 +323,19 @@ def _parse_numeric_aba(text: str) -> ABAFramework:
 
 def write_aba(framework: ABAFramework) -> str:
     """Write a deterministic compact ICCMA-style ``p aba`` flat-ABA format."""
+    mentioned = (
+        set(framework.assumptions)
+        | set(framework.contrary.values())
+        | {rule.consequent for rule in framework.rules}
+        | {antecedent for rule in framework.rules for antecedent in rule.antecedents}
+    )
+    unrepresentable = sorted(framework.language - mentioned, key=repr)
+    if unrepresentable:
+        raise ValueError(
+            "compact ABA ICCMA format cannot represent language literals that "
+            f"occur in no assumption, contrary, or rule: {unrepresentable!r}; "
+            "use write_numeric_aba to preserve the full language"
+        )
     lines = ["p aba"]
     for assumption in sorted(framework.assumptions, key=repr):
         lines.append(f"a {_aba_name(assumption)}")
@@ -362,6 +376,10 @@ def write_numeric_aba(framework: ABAFramework) -> str:
 
 
 def _validate_attack_id(value: str, argument_count: int, line_number: int) -> None:
+    if CANONICAL_NUMERIC_ID_RE.fullmatch(value) is None:
+        raise ValueError(
+            f"attack line {line_number} must use canonical numeric ids: {value!r}"
+        )
     numeric = int(value)
     if numeric < 1 or numeric > argument_count:
         raise ValueError(
@@ -372,6 +390,15 @@ def _validate_attack_id(value: str, argument_count: int, line_number: int) -> No
 def _numeric_argument_ids(framework: ArgumentationFramework) -> list[int]:
     if not all(argument.isdigit() for argument in framework.arguments):
         raise ValueError("ICCMA AF arguments must be numeric ids")
+    noncanonical = sorted(
+        argument
+        for argument in framework.arguments
+        if CANONICAL_NUMERIC_ID_RE.fullmatch(argument) is None
+    )
+    if noncanonical:
+        raise ValueError(
+            f"ICCMA AF arguments must be canonical numeric ids: {noncanonical!r}"
+        )
     return sorted(int(argument) for argument in framework.arguments)
 
 
@@ -389,6 +416,10 @@ def _aba_numeric_literal(
 ) -> Literal:
     if not name.isdigit():
         raise ValueError(f"ABA line {line_number} must contain numeric atom ids")
+    if CANONICAL_NUMERIC_ID_RE.fullmatch(name) is None:
+        raise ValueError(
+            f"ABA line {line_number} must use canonical numeric atom ids: {name!r}"
+        )
     numeric = int(name)
     if numeric < 1 or numeric > atom_count:
         raise ValueError(
