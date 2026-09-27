@@ -57,7 +57,11 @@ def equational_fixpoint(
                 1.0, max(0.0, base * attack_value + (1.0 - base) * support_value)
             )
         max_delta = max(
-            abs(updated[argument] - strengths[argument]) for argument in graph.arguments
+            (
+                abs(updated[argument] - strengths[argument])
+                for argument in graph.arguments
+            ),
+            default=0.0,
         )
         strengths = updated
         if max_delta <= tolerance:
