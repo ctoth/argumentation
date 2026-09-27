@@ -129,3 +129,42 @@ def test_dfquad_convergent_self_attack_strength_is_returned() -> None:
 
     assert result.acceptance_probs is not None
     assert result.acceptance_probs["a"] == pytest.approx(1.0 / 3.0)
+
+
+def test_explicit_deterministic_strategy_rejects_uncertain_argument() -> None:
+    """Issue #32: Li 2011 (p.2) equates a PrAF with its Dung AF only when
+    P_A = 1 and P_D = 1; with P_A(a) = 0.5 the unique-world evaluation does
+    not apply and a must not be silently deleted."""
+    with pytest.raises(ValueError, match="deterministic"):
+        compute_probabilistic_acceptance(
+            _single_argument_praf(0.5),
+            strategy="deterministic",
+        )
+
+
+def test_explicit_deterministic_strategy_rejects_uncertain_defeat() -> None:
+    """Issue #32: an uncertain defeat (P_D < 1, Li 2011 Def 2, p.2) is not a
+    deterministic structure either."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1.0, "b": 1.0},
+        {("a", "b"): 0.5},
+    )
+
+    with pytest.raises(ValueError, match="deterministic"):
+        compute_probabilistic_acceptance(praf, strategy="deterministic")
+
+
+@pytest.mark.parametrize(("p_a", "expected"), [(1.0, 1.0), (0.0, 0.0)])
+def test_explicit_deterministic_strategy_accepts_certain_inputs(
+    p_a: float,
+    expected: float,
+) -> None:
+    """Issue #32 control: P_A in {0, 1} is deterministic (Li 2011, p.2)."""
+    result = compute_probabilistic_acceptance(
+        _single_argument_praf(p_a),
+        strategy="deterministic",
+    )
+
+    assert result.strategy_used == "deterministic"
+    assert result.acceptance_probs == {"a": expected}

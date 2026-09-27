@@ -719,6 +719,12 @@ def _compute_probabilistic_acceptance(
     )
 
     if normalized_strategy == "deterministic":
+        if not _all_structure_deterministic(praf):
+            raise ValueError(
+                "strategy='deterministic' requires every argument, attack, and "
+                "support probability to be 0 or 1; use 'exact_enum' or 'mc' "
+                "for uncertain frameworks"
+            )
         result = _deterministic_fallback(
             praf,
             semantics,
