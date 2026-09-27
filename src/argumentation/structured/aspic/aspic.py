@@ -39,6 +39,22 @@ class GroundAtom:
     predicate: str
     arguments: tuple[Scalar, ...] = ()
 
+    def _identity(self) -> tuple[str, tuple[tuple[type, Scalar], ...]]:
+        # Terms are typed constants: Python's True == 1 == 1.0 must not merge
+        # distinct ground atoms.
+        return (
+            self.predicate,
+            tuple((type(argument), argument) for argument in self.arguments),
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, GroundAtom):
+            return NotImplemented
+        return self._identity() == other._identity()
+
+    def __hash__(self) -> int:
+        return hash(self._identity())
+
     def __repr__(self) -> str:
         if not self.arguments:
             return self.predicate
@@ -104,6 +120,21 @@ class ContrarinessFn:
 
     contradictories: frozenset[tuple[Literal, Literal]]
     contraries: frozenset[tuple[Literal, Literal]] = frozenset()
+
+    def __post_init__(self) -> None:
+        # Def 1: mutual contrary edges are one contradiction, not two contraries.
+        mutual = frozenset(
+            (left, right)
+            for left, right in self.contraries
+            if (right, left) in self.contraries
+        )
+        if mutual:
+            object.__setattr__(
+                self,
+                "contradictories",
+                frozenset(self.contradictories) | mutual,
+            )
+            object.__setattr__(self, "contraries", self.contraries - mutual)
 
     def is_contradictory(self, a: Literal, b: Literal) -> bool:
         """True if a and b are contradictories (symmetric conflict).
