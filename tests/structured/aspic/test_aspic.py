@@ -290,6 +290,44 @@ class TestLanguageConcrete:
 # ── Phase 2: Rule strategies ─────────────────────────────────────
 
 
+def _distinct_antecedents(
+    draw, literals: list[Literal], count: int
+) -> tuple[Literal, ...]:
+    """Draw ``count`` distinct antecedents in canonical order.
+
+    Repeated antecedents (``~q, ~q -> p``) and their positional
+    transpositions multiply arguments combinatorially: issue #102 found a
+    4-premise theory with 18,850 arguments and ~306M attacks. Distinct,
+    sorted antecedents keep generated theories small.
+    """
+    chosen = draw(
+        st.lists(st.sampled_from(literals), min_size=count, max_size=count, unique=True)
+    )
+    return tuple(sorted(chosen, key=repr))
+
+
+# Property tests discard theories with more arguments than this, so a saved
+# Hypothesis example cannot replay a combinatorial blow-up (issue #102).
+MAX_GENERATED_ARGUMENTS = 2000
+
+
+def _assume_bounded_arguments(
+    language: frozenset[Literal],
+    strict: frozenset[Rule],
+    defeasible: frozenset[Rule],
+    kb: KnowledgeBase,
+) -> None:
+    """Reject theories whose argument set exceeds MAX_GENERATED_ARGUMENTS.
+
+    Built with an empty contrariness function: no argument is filtered as
+    c-inconsistent, so this count bounds the real argument set from above.
+    """
+    unfiltered = ArgumentationSystem(
+        language, ContrarinessFn(frozenset()), frozenset(strict), frozenset(defeasible)
+    )
+    assume(len(build_arguments(unfiltered, kb)) <= MAX_GENERATED_ARGUMENTS)
+
+
 @st.composite
 def strict_rules(draw, language, contrariness, max_rules=4):
     """Generate strict rules over L with transposition closure.
@@ -308,7 +346,7 @@ def strict_rules(draw, language, contrariness, max_rules=4):
     seed_rules: list[Rule] = []
     for _ in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
+        antecedents = _distinct_antecedents(draw, L_list, n_ante)
         consequent = draw(st.sampled_from(L_list))
         # Filter: consequent must not appear in antecedents
         if consequent in antecedents:
@@ -337,7 +375,7 @@ def strict_seed_rules(draw, language, contrariness, max_rules=4):
     seed_rules: list[Rule] = []
     for _ in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
+        antecedents = _distinct_antecedents(draw, L_list, n_ante)
         consequent = draw(st.sampled_from(L_list))
         if consequent in antecedents:
             continue
@@ -432,7 +470,7 @@ def defeasible_rules(draw, language, max_rules=4):
     rules: list[Rule] = []
     for i in range(n_rules):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
-        antecedents = tuple(draw(st.sampled_from(L_list)) for _ in range(n_ante))
+        antecedents = _distinct_antecedents(draw, L_list, n_ante)
         consequent = draw(st.sampled_from(L_list))
         # Filter: consequent must not appear in antecedents
         if consequent in antecedents:
@@ -932,7 +970,9 @@ def knowledge_base(draw, language, strict_rules, defeasible_rules):
     # Ensure K_n and K_p are disjoint
     K_n = K_n - K_p
 
-    return KnowledgeBase(axioms=K_n, premises=K_p)
+    kb = KnowledgeBase(axioms=K_n, premises=K_p)
+    _assume_bounded_arguments(language, strict_rules, defeasible_rules, kb)
+    return kb
 
 
 @st.composite
@@ -975,7 +1015,9 @@ def well_defined_knowledge_base(
     # This keeps the rationality-postulate generators on genuinely well-defined
     # c-SAF inputs even when Hypothesis shrinks toward edge cases.
     assume(is_c_consistent(K_n | K_p, strict_rules, contrariness))
-    return KnowledgeBase(axioms=K_n, premises=K_p)
+    kb = KnowledgeBase(axioms=K_n, premises=K_p)
+    _assume_bounded_arguments(language, strict_rules, defeasible_rules, kb)
+    return kb
 
 
 # ── Phase 3: Argument construction property tests ─────────────────
