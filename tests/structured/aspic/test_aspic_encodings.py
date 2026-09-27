@@ -633,7 +633,11 @@ def _assert_asp_semantics_match_reference(
 ) -> None:
     pytest.importorskip("clingo")
     reference = solve_aspic_with_backend(
-        system, kb, NO_PREFERENCES, backend="materialized_reference", semantics=semantics
+        system,
+        kb,
+        NO_PREFERENCES,
+        backend="materialized_reference",
+        semantics=semantics,
     )
     asp = solve_aspic_with_backend(
         system, kb, NO_PREFERENCES, backend="asp", semantics=semantics
