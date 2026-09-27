@@ -71,3 +71,45 @@ def test_optimization_plain_argument_names_control() -> None:
 
     assert result.status == "optimal"
     assert result.selected_candidate == "a"
+
+
+def test_objective_named_tie_break_is_rejected_before_solving(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #41: tie_break is the internal candidate-rank objective reported
+    in objective_values, so a user objective with that name would be
+    overwritten; the policy rejects it before any Optimize.check."""
+    import z3
+
+    def no_solver(*args: object, **kwargs: object) -> object:
+        raise AssertionError("optimizer must not run for a rejected policy")
+
+    monkeypatch.setattr(z3.Optimize, "check", no_solver)
+
+    with pytest.raises(ValueError, match="tie_break"):
+        OptimizationPolicy(
+            candidates=frozenset({"a", "b"}),
+            objectives=(OptimizationObjective("tie_break", "maximize"),),
+        )
+
+
+def test_user_objective_value_is_reported_alongside_tie_break_rank() -> None:
+    """Issue #41 control: a differently named objective keeps its own value
+    (100 for the selected argument a, Bjorner & Phan 2014 lexicographic OMT)."""
+    framework = ArgumentationFramework(frozenset({"a", "b"}), frozenset())
+    policy = OptimizationPolicy(
+        candidates=framework.arguments,
+        objectives=(OptimizationObjective("rank_score", "maximize"),),
+    )
+
+    result = optimize_framework(
+        framework,
+        policy,
+        [
+            OptimizationFeature("a", "rank_score", 100),
+            OptimizationFeature("b", "rank_score", 1),
+        ],
+    )
+
+    assert result.selected_candidate == "a"
+    assert result.objective_values == {"rank_score": 100, "tie_break": 0}

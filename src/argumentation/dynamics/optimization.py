@@ -18,6 +18,7 @@ from argumentation.core.dung import ArgumentationFramework
 OptimizationDirection = Literal["maximize", "minimize"]
 OptimizationSemantics = Literal["conflict_free", "admissible"]
 OptimizationStatus = Literal["optimal", "unsat", "unknown", "unavailable"]
+_TIE_BREAK_OBJECTIVE = "tie_break"
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,11 @@ class OptimizationPolicy:
         if self.semantics not in {"conflict_free", "admissible"}:
             raise ValueError(f"unknown optimization semantics: {self.semantics}")
         object.__setattr__(self, "objectives", tuple(self.objectives))
+        if any(objective.name == _TIE_BREAK_OBJECTIVE for objective in self.objectives):
+            raise ValueError(
+                f"objective name {_TIE_BREAK_OBJECTIVE!r} is reserved for the "
+                "internal candidate-rank tie break reported in objective_values"
+            )
         object.__setattr__(self, "candidates", frozenset(self.candidates))
         object.__setattr__(self, "required", frozenset(self.required))
         object.__setattr__(self, "forbidden", frozenset(self.forbidden))
@@ -156,7 +162,7 @@ def optimize_framework(
         )
         for objective in policy.objectives
     }
-    objective_values["tie_break"] = _model_int(
+    objective_values[_TIE_BREAK_OBJECTIVE] = _model_int(
         model.eval(tie_break, model_completion=True)
     )
     return OptimizationResult(
