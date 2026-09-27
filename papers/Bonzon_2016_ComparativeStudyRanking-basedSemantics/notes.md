@@ -130,8 +130,8 @@ Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is
 
 ## Testable Properties
 - Void Precedence: A non-attacked argument must be strictly higher than any attacked argument. *(p.1)*
-- Self-Contradiction: A self-attacking argument is ranked no higher than any non-self-attacking argument. *(p.1)*
-- Cardinality Precedence: If a has strictly fewer direct attackers than b (all non-attacked), a ranks strictly higher. *(p.1)*
+- Self-Contradiction: A self-attacking argument is ranked strictly lower than any non-self-attacking argument: (SC) $(a,a) \notin R$ and $(b,b) \in R \Rightarrow a \succ^\sigma b$. *(PDF p.2, pngs/page-001.png)*
+- Cardinality Precedence: If a has strictly fewer direct attackers than b, a ranks strictly higher: (CP) $|R_1^-(a)| < |R_1^-(b)| \Rightarrow a \succ^\sigma b$, with no condition on whether the attackers are attacked. *(PDF p.2, pngs/page-001.png)*
 - Quality Precedence: For arguments attacked by one direct attacker each, the one with the weaker attacker ranks higher. *(p.1)*
 - Counter-Transitivity (CT): If a is at least as acceptable as b, then an argument attacked only by b should be at least as acceptable as one attacked only by a. *(p.2)*
 - Strict Counter-Transitivity (SCT): If a is strictly more acceptable than b, then an argument attacked only by b is strictly more acceptable than one attacked only by a. *(p.2)*
