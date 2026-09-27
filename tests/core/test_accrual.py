@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from argumentation.core.accrual import (
     AccrualArgument,
     accrual_envelope,
@@ -80,3 +82,38 @@ def test_accrual_grounded_labelling_reaches_fixed_point() -> None:
     assert labelling.statuses["b"] is Label.IN
     assert labelling.statuses["u"] is Label.IN
     assert labelling.statuses["c"] is Label.OUT
+
+
+def test_grounded_labelling_rejects_conflicting_duplicate_identifiers() -> None:
+    """Issue #37: one identifier cannot name two different arguments.
+
+    Prakken 2019 (pp.2-3, 5-6) labels each argument of ``AF = (A, D)`` once;
+    the characteristic function decides an argument from its own undercutters
+    and immediate subarguments. Two different dependency sets under one label
+    have no well-defined status, so the input is rejected rather than labelled
+    by whichever object iteration order visits last.
+    """
+    arguments = frozenset(
+        {
+            AccrualArgument("a", "p"),
+            AccrualArgument("a", "p", undercutters=frozenset({"a"})),
+        }
+    )
+
+    with pytest.raises(ValueError, match="duplicate accrual argument identifier"):
+        accrual_grounded_labelling(arguments)
+
+
+def test_grounded_labelling_accepts_distinct_identifiers_with_same_shape() -> None:
+    """Issue #37 control: the same two dependency shapes under distinct ids."""
+    arguments = frozenset(
+        {
+            AccrualArgument("a", "p"),
+            AccrualArgument("b", "p", undercutters=frozenset({"b"})),
+        }
+    )
+
+    labelling = accrual_grounded_labelling(arguments)
+
+    assert labelling.statuses["a"] is Label.IN
+    assert labelling.statuses["b"] is Label.UNDEC
