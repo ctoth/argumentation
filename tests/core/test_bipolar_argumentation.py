@@ -58,13 +58,19 @@ class TestCayrolDerivedDefeats:
         assert ("A", "C") in derived
         assert ("A", "D") in derived
 
-    def test_cayrol_derived_defeats_chain_transitively(self) -> None:
+    def test_cayrol_derived_defeats_do_not_compose_support_defeat_support(
+        self,
+    ) -> None:
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): a supported defeat
+        is supports then one primitive defeat; an indirect defeat is one
+        primitive defeat then supports. A-sup-B-def-C-sup-D is neither, so
+        derived defeats are not fed back into the construction."""
         supports = frozenset({("A", "B"), ("C", "D")})
         defeats = frozenset({("B", "C")})
         derived = cayrol_derived_defeats(defeats, supports)
         assert ("A", "C") in derived
         assert ("B", "D") in derived
-        assert ("A", "D") in derived
+        assert ("A", "D") not in derived
 
     def test_direct_defeat_not_duplicated(self) -> None:
         supports = frozenset({("A", "B")})
@@ -77,6 +83,22 @@ class TestCayrolDerivedDefeats:
         defeats = frozenset({("A", "C")})
         derived = cayrol_derived_defeats(defeats, supports)
         assert ("B", "C") in derived
+
+    def test_supported_self_defeat_is_derived(self) -> None:
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): A-sup-B-def-A is a
+        supported defeat of A by A, and B-def-A-sup-B an indirect defeat of B
+        by B; the sequence's endpoints need not differ."""
+        supports = frozenset({("A", "B")})
+        defeats = frozenset({("B", "A")})
+        derived = cayrol_derived_defeats(defeats, supports)
+        assert derived == frozenset({("A", "A"), ("B", "B")})
+
+    def test_supported_defeat_of_other_argument_control(self) -> None:
+        """Control: A-sup-B-def-C derives only the defeat of C."""
+        supports = frozenset({("A", "B")})
+        defeats = frozenset({("B", "C")})
+        derived = cayrol_derived_defeats(defeats, supports)
+        assert derived == frozenset({("A", "C")})
 
 
 class TestBipolarFrameworkValidation:
