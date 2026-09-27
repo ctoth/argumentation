@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking.ranking import categoriser_ranking
+from argumentation.ranking.ranking import RankingResult, categoriser_ranking
 from argumentation.ranking.ranking_axioms import (
     abstraction,
     cardinality_precedence,
@@ -103,6 +103,76 @@ def test_counter_transitivity_variants_follow_attacker_group_quality() -> None:
     assert counter_transitivity(framework, result)
     assert strict_counter_transitivity(framework, result)
     assert quality_precedence(framework, result)
+
+
+def _tiered_fixture(
+    framework: ArgumentationFramework, tiers: tuple[str, ...]
+) -> RankingResult:
+    ranking = tuple(frozenset(tier) for tier in tiers)
+    scores = {
+        argument: float(len(ranking) - index)
+        for index, tier in enumerate(ranking)
+        for argument in tier
+    }
+    return RankingResult(scores, ranking, True, 1, "fixture")
+
+
+def _renamed(
+    framework: ArgumentationFramework, tiers: tuple[str, ...], mapping: dict[str, str]
+) -> tuple[ArgumentationFramework, tuple[str, ...]]:
+    def rename(argument: str) -> str:
+        return mapping.get(argument, argument)
+
+    renamed_framework = ArgumentationFramework(
+        arguments=frozenset(rename(argument) for argument in framework.arguments),
+        defeats=frozenset(
+            (rename(source), rename(target)) for source, target in framework.defeats
+        ),
+    )
+    renamed_tiers = tuple(
+        "".join(rename(argument) for argument in tier) for tier in tiers
+    )
+    return renamed_framework, renamed_tiers
+
+
+def test_counter_transitivity_is_invariant_under_renaming() -> None:
+    """Amgoud & Ben-Naim 2013, p. 6, CT: if b's attackers dominate a's (some
+    injective ``f`` from Arg(a) into Arg(b) with ``f(x) >= x``), then
+    ``a >= b``; only the existence of such an ``f`` matters, not which
+    candidate a greedy scan tries first. The attacker groups of
+    L ({a, z}) and R ({d, b}) have identical tier profiles, so an injective
+    matching exists both ways, L and R must tie, and the ranking below (which
+    puts L above R) violates CT under every naming of the arguments."""
+    framework = ArgumentationFramework(
+        arguments=frozenset("abdzLR"),
+        defeats=frozenset(
+            {("a", "b"), ("a", "z"), ("a", "L"), ("z", "L"), ("d", "R"), ("b", "R")}
+        ),
+    )
+    tiers = ("ad", "bz", "L", "R")
+
+    assert counter_transitivity(framework, _tiered_fixture(framework, tiers)) is False
+    renamed_framework, renamed_tiers = _renamed(framework, tiers, {"a": "y", "z": "c"})
+    assert (
+        counter_transitivity(
+            renamed_framework, _tiered_fixture(renamed_framework, renamed_tiers)
+        )
+        is False
+    )
+
+
+def test_counter_transitivity_holds_when_tied_groups_are_tied_control() -> None:
+    """Control: the same framework ranked with L and R tied satisfies CT."""
+    framework = ArgumentationFramework(
+        arguments=frozenset("abdzLR"),
+        defeats=frozenset(
+            {("a", "b"), ("a", "z"), ("a", "L"), ("z", "L"), ("d", "R"), ("b", "R")}
+        ),
+    )
+
+    assert counter_transitivity(
+        framework, _tiered_fixture(framework, ("ad", "bz", "LR"))
+    )
 
 
 def test_distributed_defense_precedence_prefers_spread_defense() -> None:

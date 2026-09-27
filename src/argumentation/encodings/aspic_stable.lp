@@ -10,7 +10,12 @@ derived(H) :- s_head(R,H), s_body_count(R,N),
 derived(H) :- d_head(R,H), accepted_arg(R), d_body_count(R,N),
     N = #count { B : d_body(R,B), derived(B) }.
 
-attacked(X) :- element(X), contrary(C,X), derived(C).
+% Lehtonen et al. 2020, Def 10: an element is attacked through itself
+% (premise or rule name) or, for a defeasible rule, through its head.
+target(X,X) :- element(X).
+target(R,H) :- d_head(R,H).
+
+attacked(X) :- target(X,T), contrary(C,T), derived(C).
 
 :- accepted_arg(X), attacked(X).
 :- element(X), not accepted_arg(X), not attacked(X).

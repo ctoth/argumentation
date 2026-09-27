@@ -12,6 +12,7 @@ from itertools import permutations
 from typing import Mapping, Sequence
 
 from argumentation.core.dung import ArgumentationFramework, preferred_extensions
+from argumentation.core.frozen import freeze_mapping
 
 
 Audience = tuple[str, ...]
@@ -80,7 +81,7 @@ class ValueBasedArgumentationFramework:
         object.__setattr__(self, "arguments", arguments)
         object.__setattr__(self, "attacks", attacks)
         object.__setattr__(self, "values", values)
-        object.__setattr__(self, "valuation", valuation)
+        object.__setattr__(self, "valuation", freeze_mapping(valuation))
         object.__setattr__(self, "audience", active_audience)
         object.__setattr__(self, "audiences", normalized_audiences)
 

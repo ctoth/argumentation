@@ -13,6 +13,7 @@ from argumentation.core.dung import (
     grounded_extension,
     stable_extensions,
 )
+from argumentation.core.frozen import freeze_mapping
 
 
 class ExtensionConstraint(Protocol):
@@ -113,10 +114,14 @@ class ExtensionRevisionState:
             }
             faithful_ranking.update(dict.fromkeys(extension_set, 0))
             min_rank = min(faithful_ranking.values(), default=0)
-            ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] = {
-                candidate: rank - min_rank
-                for candidate, rank in faithful_ranking.items()
-            }
+            ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] = (
+                freeze_mapping(
+                    {
+                        candidate: rank - min_rank
+                        for candidate, rank in faithful_ranking.items()
+                    }
+                )
+            )
         else:
             base_ranking = self.ranking
 

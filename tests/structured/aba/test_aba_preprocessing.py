@@ -618,3 +618,51 @@ def test_single_extension_random() -> None:
             assert sw in stable_ref
         else:
             assert sw is None
+
+
+@pytest.mark.parametrize("simplify", [False, True], ids=["regular", "preprocessed"])
+def test_skeptical_preferred_forwards_clingo_solve_timeout(
+    monkeypatch: pytest.MonkeyPatch, simplify: bool
+) -> None:
+    """Operational contract: the configured per-solve budget must reach the
+    incremental solver whether or not grounded preprocessing fixed arguments
+    (the preprocessed DS-PR route used to construct it without a budget).
+    The solver is replaced by a probe, so no clingo solve runs."""
+    from argumentation.structured.aba import aba_incremental
+
+    a, b, c, ca, cb, cc = (
+        Literal(GroundAtom(name)) for name in ("a", "b", "c", "ca", "cb", "cc")
+    )
+    framework = ABAFramework(
+        language=frozenset({a, b, c, ca, cb, cc}),
+        rules=frozenset({Rule((b,), cc, "strict"), Rule((c,), cb, "strict")}),
+        assumptions=frozenset({a, b, c}),
+        contrary={a: ca, b: cb, c: cc},
+    )
+    budgets: list[float | None] = []
+
+    class Probe:
+        control_args: tuple[str, ...] = ()
+
+        def __init__(self, *_args: object, **kwargs: object) -> None:
+            budgets.append(kwargs.get("solve_timeout_seconds"))  # type: ignore[arg-type]
+            assert len(budgets) == 1, "exactly one solver construction"
+
+        def is_skeptically_accepted_preferred(
+            self, *_args: object, **_kwargs: object
+        ) -> tuple[bool, frozenset[Literal]]:
+            return False, frozenset({c})
+
+    monkeypatch.setattr(aba_incremental, "AbaIncrementalSolver", Probe)
+
+    solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="skeptical",
+        query=b,
+        simplify=simplify,
+        clingo_solve_timeout_seconds=1.0,
+    )
+
+    assert budgets == [1.0]
