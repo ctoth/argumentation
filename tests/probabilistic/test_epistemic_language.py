@@ -5,6 +5,8 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from argumentation.probabilistic.epistemic import (
+    ArgumentTerm,
+    AtomFormula,
     EpistemicAtom,
     OperationalFormula,
     ProbabilityFunction,
@@ -79,6 +81,84 @@ def test_hunter_definition_3_1_rejects_atom_thresholds_outside_unit_interval() -
             ">",
             1.1,
         )
+
+
+@pytest.mark.parametrize("suffix", [" ", "\n", " \t\r\n"])
+def test_parsers_accept_trailing_whitespace(suffix: str) -> None:
+    """Issue #13: whitespace separates tokens wherever it appears.
+
+    The Hunter, Polberg, and Thimm term and formula grammar (Definition 3.1)
+    is whitespace-insensitive; trailing whitespace must parse like leading
+    whitespace does.
+    """
+    assert parse_term("a" + suffix) == ArgumentTerm("a")
+    assert parse_epistemic_formula("p(a) >= 0.5" + suffix) == parse_epistemic_formula(
+        "p(a) >= 0.5"
+    )
+    # Control: leading whitespace already parses.
+    assert parse_term(suffix + "a") == ArgumentTerm("a")
+
+
+_COMPLEMENTS = (("<", ">="), (">", "<="), ("=", "!="))
+
+
+@pytest.mark.parametrize("offset", [5e-13, -5e-13, 0.0, 0.1, -0.1])
+def test_complementary_comparisons_never_both_hold(offset: float) -> None:
+    """Issue #14: p(a) < x and p(a) >= x are complementary.
+
+    Hunter, Polberg, and Thimm (Definition 3.2) satisfy p(alpha) # x iff
+    P(alpha) # x, so each strict comparison is the negation of the opposite
+    non-strict one, including for values within float noise of x.
+    """
+    distribution = ProbabilityFunction(
+        arguments=frozenset({"a"}),
+        probabilities={frozenset(): 0.5 + offset, frozenset({"a"}): 0.5 - offset},
+    )
+    for strict, complement in _COMPLEMENTS:
+        holds = evaluate_epistemic_formula(_threshold_atom(strict, 0.5), distribution)
+        complement_holds = evaluate_epistemic_formula(
+            _threshold_atom(complement, 0.5), distribution
+        )
+        assert holds is not complement_holds, (strict, complement, offset)
+
+
+def _threshold_atom(operator: str, threshold: float) -> AtomFormula:
+    return AtomFormula(
+        EpistemicAtom(
+            OperationalFormula((ProbabilityTerm(ArgumentTerm("a")),), ()),
+            operator,  # type: ignore[arg-type]
+            threshold,
+        )
+    )
+
+
+def test_formula_writer_round_trips_scientific_notation_threshold() -> None:
+    """Issue #12: every threshold in [0, 1] survives write/parse.
+
+    Hunter, Polberg, and Thimm's epistemic atoms p(alpha) # x allow any
+    x in [0, 1] (Definition 3.1); the writer must not emit text for such an
+    x that the parser rejects.
+    """
+    tiny = _threshold_atom(">", 1e-7)
+    ordinary = _threshold_atom(">", 0.25)
+
+    assert parse_epistemic_formula(write_epistemic_formula(tiny)) == tiny
+    # Control: a plain decimal threshold already round-trips.
+    assert parse_epistemic_formula(write_epistemic_formula(ordinary)) == ordinary
+
+
+@given(
+    threshold=st.floats(
+        min_value=0.0, max_value=1.0, allow_nan=False, allow_infinity=False
+    )
+)
+@settings(max_examples=200)
+def test_formula_writer_round_trips_every_unit_interval_threshold(
+    threshold: float,
+) -> None:
+    formula = _threshold_atom("<=", threshold)
+
+    assert parse_epistemic_formula(write_epistemic_formula(formula)) == formula
 
 
 @given(

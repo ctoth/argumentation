@@ -54,6 +54,26 @@ def test_probability_function_rejects_missing_worlds_or_non_normalized_mass() ->
         )
 
 
+@pytest.mark.parametrize("bad_mass", [float("nan"), float("inf"), float("-inf")])
+def test_probability_function_rejects_nonfinite_world_mass(bad_mass: float) -> None:
+    """Issue #11: world masses must be real numbers in [0, 1].
+
+    Hunter and Thimm (2017), p.7: a probability function maps 2^Arg to [0, 1]
+    with total mass 1, so NaN or infinite masses are not probabilities.
+    """
+    with pytest.raises(ValueError, match="finite"):
+        ProbabilityFunction(
+            arguments=frozenset({"a"}),
+            probabilities={frozenset(): bad_mass, frozenset({"a"}): bad_mass},
+        )
+    # Control: a finite neighbouring distribution is accepted.
+    control = ProbabilityFunction(
+        arguments=frozenset({"a"}),
+        probabilities={frozenset(): 0.5, frozenset({"a"}): 0.5},
+    )
+    assert induced_probability_labelling(control) == pytest.approx({"a": 0.5})
+
+
 @st.composite
 def normalized_distributions(draw: st.DrawFn) -> ProbabilityFunction:
     arguments = frozenset(draw(st.sets(st.sampled_from(SMALL_ARGUMENTS), max_size=3)))
