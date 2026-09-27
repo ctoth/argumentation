@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from gunray import DefeasibleTheory, Rule as GunrayRule
 
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, build_arguments
@@ -222,6 +223,79 @@ def test_named_defeater_undercuts_only_its_matching_rule_instance() -> None:
     assert targets == [(("X", "a"),)]
     assert _flies("b") in accepted
     assert _flies("a") not in accepted
+
+
+def _pair_theory(*, head: str, body: list[str]) -> DefeasibleTheory:
+    """Rule ``r`` over facts pair(a, b) and pair(b, a); the defeater
+    ``~r(a, b)`` fires on exc(a, b)."""
+    return DefeasibleTheory(
+        facts={"pair": {("a", "b"), ("b", "a")}, "exc": {("a", "b")}},
+        defeasible_rules=[GunrayRule(id="r", head=head, body=body)],
+        defeaters=[GunrayRule(id="except", head="~r(P, Q)", body=["exc(P, Q)"])],
+    )
+
+
+def _undercut_target_substitutions(grounded) -> list[tuple[tuple[str, str], ...]]:
+    return [
+        grounded.rule_origins[origin.target_rule].substitution
+        for origin in grounded.rule_origins.values()
+        if origin.role == "undercut" and origin.target_rule is not None
+    ]
+
+
+def test_named_defeater_binds_variables_in_first_appearance_order() -> None:
+    """Issue #66 (maintainer decision): ``~r(t1, ..., tn)`` binds r's
+    variables in first-appearance order, head then body left to right. For
+    ``rel(Y, A) :- pair(Y, A)`` that is (Y, A), not the alphabetical (A, Y),
+    so ``~r(a, b)`` names the instance Y = a, A = b."""
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(
+        _pair_theory(head="rel(Y, A)", body=["pair(Y, A)"])
+    )
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
+    assert Literal(GroundAtom("rel", ("a", "b"))) not in accepted
+    assert Literal(GroundAtom("rel", ("b", "a"))) in accepted
+
+
+def test_named_defeater_orders_body_variables_left_to_right() -> None:
+    """Issue #66: a variable first seen in the body follows the head's
+    variables, in body order: ``ok(Y) :- pair(Y, A)`` orders (Y, A)."""
+    grounded = ground_defeasible_theory(_pair_theory(head="ok(Y)", body=["pair(Y, A)"]))
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
+
+
+def test_named_defeater_alphabetical_and_first_appearance_agree_control() -> None:
+    """Issue #66 control: for ``rel(A, Y)`` both orders are (A, Y), so
+    ``~r(a, b)`` names A = a, Y = b."""
+    grounded = ground_defeasible_theory(
+        _pair_theory(head="rel(A, Y)", body=["pair(A, Y)"])
+    )
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "a"), ("Y", "b"))]
+
+
+def test_inspection_projection_needs_variable_order_for_named_arguments() -> None:
+    """Issue #66: a bare Gunray inspection carries no rule text, so the
+    first-appearance order is unknown; a named defeater with arguments is
+    rejected instead of guessed, and succeeds once the order is supplied."""
+    import gunray
+
+    theory = _pair_theory(head="rel(Y, A)", body=["pair(Y, A)"])
+    inspection = gunray.inspect_grounding(theory)
+
+    with pytest.raises(ValueError, match="variable order"):
+        grounding_inspection_to_aspic(inspection)
+
+    grounded = grounding_inspection_to_aspic(
+        inspection, rule_variable_orders={"r": ("Y", "A")}
+    )
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
 
 
 def test_named_defeater_without_exception_undercuts_nothing() -> None:
