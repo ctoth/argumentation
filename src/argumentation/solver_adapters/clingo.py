@@ -19,6 +19,9 @@ from argumentation.core.solver_results import (
 )
 
 
+# Clasp exit codes are result bits: 10 SAT, 20 search exhausted, 30 both;
+# ``python -m clingo`` exits 0. Other codes (interrupt, memory, error) fail.
+_COMPLETED_RETURNCODES = frozenset({0, 10, 20, 30})
 _ACCEPTED_ARG_RE = re.compile(r"^accepted_arg\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
 _ACCEPTED_LIT_RE = re.compile(r"^accepted_lit\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
 _CLINGO_CONTROL_TOKENS = {
@@ -119,7 +122,7 @@ def run_extension_enumeration_protocol(
     finally:
         path.unlink(missing_ok=True)
 
-    if completed.returncode != 0:
+    if completed.returncode not in _COMPLETED_RETURNCODES:
         return ClingoProcessError(
             backend=binary,
             problem=problem,
@@ -179,7 +182,7 @@ def run_aspic_grounded_protocol(
     finally:
         path.unlink(missing_ok=True)
 
-    if completed.returncode != 0:
+    if completed.returncode not in _COMPLETED_RETURNCODES:
         return ClingoProcessError(
             backend=binary,
             problem="ASPIC-GR",
