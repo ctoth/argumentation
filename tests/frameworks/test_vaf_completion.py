@@ -207,6 +207,39 @@ def test_corollary_6_7_two_value_cycle_matches_preferred_extension() -> None:
     ]
 
 
+def _red_blue_cycle_with_unused_value() -> tuple[
+    ValueBasedArgumentationFramework, tuple[ArgumentChain, ArgumentChain]
+]:
+    vaf = ValueBasedArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        attacks=frozenset({("a", "b"), ("b", "a")}),
+        values=frozenset({"red", "blue", "unused"}),
+        valuation={"a": "red", "b": "blue"},
+    )
+    chains = (make_argument_chain(vaf, ("a",)), make_argument_chain(vaf, ("b",)))
+    return vaf, chains
+
+
+def test_corollary_6_7_uses_highest_ranked_cycle_value_not_audience_head() -> None:
+    # Bench-Capon 2003 pp. 440-441, Corollary 6.7: "the preferred value" is the
+    # audience's preference between the cycle's two values; a higher-ranked
+    # value outside the cycle does not change it (red > blue here).
+    vaf, chains = _red_blue_cycle_with_unused_value()
+    audience = ("unused", "red", "blue")
+
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"a"})
+    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"a"})]
+
+
+def test_corollary_6_7_with_cycle_value_at_audience_head() -> None:
+    # Control: the preferred cycle value already heads the audience.
+    vaf, chains = _red_blue_cycle_with_unused_value()
+    audience = ("blue", "unused", "red")
+
+    assert two_value_cycle_extension(vaf, chains, audience) == frozenset({"b"})
+    assert vaf.preferred_extensions_for_audience(audience) == [frozenset({"b"})]
+
+
 @given(
     length_a=st.integers(min_value=1, max_value=4),
     length_b=st.integers(min_value=1, max_value=4),
