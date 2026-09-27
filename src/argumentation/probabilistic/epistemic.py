@@ -822,9 +822,8 @@ def belief_assignment_satisfies(
 ) -> bool:
     """Return whether ``assignment`` satisfies graph constraints."""
     values = _validate_assignment(graph, assignment)
-    constraints = _constraint_by_argument(graph)
-    for argument, constraint in constraints.items():
-        value = values[argument]
+    for constraint in graph.constraints:
+        value = values[constraint.argument]
         if value < constraint.lower or value > constraint.upper:
             return False
 

@@ -38,6 +38,29 @@ def test_enumerates_discrete_satisfying_assignments() -> None:
     )
 
 
+def test_contradictory_belief_constraints_have_no_satisfying_assignment() -> None:
+    """Issue #15: an inconsistent constraint set is satisfied by nothing.
+
+    Hunter and Thimm (2017) define the constrained set P^beta(AF) as those
+    functions meeting every constraint (p.20) and treat an empty set as
+    inconsistency to be measured (p.23), not as an invalid query.
+    """
+    contradictory = EpistemicGraph(
+        arguments=frozenset({"a"}),
+        constraints=(BeliefConstraint("a", 0.0, 0.2), BeliefConstraint("a", 0.8, 1.0)),
+    )
+    overlapping = EpistemicGraph(
+        arguments=frozenset({"a"}),
+        constraints=(BeliefConstraint("a", 0.0, 0.6), BeliefConstraint("a", 0.4, 1.0)),
+    )
+
+    assert enumerate_satisfying_assignments(contradictory) == ()
+    assert belief_assignment_satisfies(contradictory, {"a": 0.1}) is False
+    assert belief_assignment_satisfies(contradictory, {"a": 0.9}) is False
+    # Control: overlapping intervals are satisfied by their intersection.
+    assert enumerate_satisfying_assignments(overlapping) == ({"a": 0.5},)
+
+
 def test_update_assignment_clamps_evidence_and_propagates_fragment() -> None:
     graph = EpistemicGraph(
         arguments=frozenset({"a", "b", "c"}),
