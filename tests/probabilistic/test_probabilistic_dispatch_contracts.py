@@ -251,3 +251,63 @@ def test_exact_enum_ordinary_world_probabilities_control() -> None:
     )
 
     assert result.acceptance_probs == {"a": 0.25}
+
+
+def _isolated_plus_self_attacker(p_b: float) -> ProbabilisticAF:
+    return ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("b", "b")})),
+        {"a": 1.0, "b": p_b},
+        {},
+    )
+
+
+@pytest.mark.parametrize("inference_mode", ["credulous", "skeptical"])
+@pytest.mark.parametrize("p_b", [1.0, 0.5])
+def test_mc_stable_accounts_for_extension_nonexistence_elsewhere(
+    p_b: float,
+    inference_mode: str,
+) -> None:
+    """Issue #3: a stable extension must attack every outside argument (Dung
+    1995, Def 13, p.328), so a present self-attacker b leaves the whole AF
+    without stable extensions and a is not accepted; stable semantics can fail
+    to exist, which breaks per-component composition (Baroni et al. 2005,
+    p.167-168). Exact P(a) = P(b absent) = 1 - p_b (Li 2011 Eq 2, p.4)."""
+    praf = _isolated_plus_self_attacker(p_b)
+
+    result = compute_probabilistic_acceptance(
+        praf,
+        semantics="stable",
+        strategy="mc",
+        query_kind="argument_acceptance",
+        inference_mode=inference_mode,
+        rng_seed=1,
+        mc_epsilon=0.02,
+    )
+
+    assert result.acceptance_probs is not None
+    assert result.confidence_interval_half is not None
+    expected = 1.0 - p_b
+    assert abs(result.acceptance_probs["a"] - expected) <= max(
+        result.confidence_interval_half, 1e-12
+    )
+    if p_b == 1.0:
+        assert result.acceptance_probs == {"a": 0.0, "b": 0.0}
+
+
+@pytest.mark.parametrize("inference_mode", ["credulous", "skeptical"])
+def test_mc_grounded_component_decomposition_control(inference_mode: str) -> None:
+    """Issue #3 control: grounded extensions always exist (Dung 1995, p.329),
+    so the isolated argument a is accepted in every world."""
+    result = compute_probabilistic_acceptance(
+        _isolated_plus_self_attacker(0.5),
+        semantics="grounded",
+        strategy="mc",
+        query_kind="argument_acceptance",
+        inference_mode=inference_mode,
+        rng_seed=1,
+        mc_epsilon=0.02,
+    )
+
+    assert result.acceptance_probs is not None
+    assert result.acceptance_probs["a"] == 1.0
+    assert result.acceptance_probs["b"] == 0.0

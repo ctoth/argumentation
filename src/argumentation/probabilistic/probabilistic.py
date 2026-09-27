@@ -1075,8 +1075,17 @@ def _compute_mc(
             queried_set=queried_set,
         )
 
-    # Decompose into connected components per Hunter & Thimm (2017, Prop 18)
-    components = connected_components(praf)
+    # Decompose into connected components per Hunter & Thimm (2017, Prop 18).
+    # Global extensions are the cross-product of component extensions
+    # (Baroni et al. 2005, p.181-183), so per-component acceptance is global
+    # acceptance only when every component is guaranteed an extension. Stable
+    # extensions may not exist (Baroni et al. 2005, p.167-168): a component
+    # without one empties the global extension set, so stable is sampled whole.
+    components: list[set[str]] = (
+        [set(praf.framework.arguments)]
+        if semantics == "stable"
+        else connected_components(praf)
+    )
 
     # Compute acceptance per component independently
     all_acceptance: dict[str, float] = {}
