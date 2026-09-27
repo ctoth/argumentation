@@ -452,6 +452,7 @@ def _solve_simplified(
             query=query,
             clingo_control_args=clingo_control_args,
             collect_clingo_statistics=collect_clingo_statistics,
+            clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
 
     residual_task = "single-extension" if task == "single-extension" else "enum"
@@ -517,6 +518,7 @@ def _solve_simplified_ds_pr(
     query: Literal,
     clingo_control_args: tuple[str, ...],
     collect_clingo_statistics: bool,
+    clingo_solve_timeout_seconds: float | None,
 ) -> ABAQueryResult:
     """DS-PR on a non-trivial preprocessed framework: lift rules + Algorithm 1 on the residual.
 
@@ -558,6 +560,7 @@ def _solve_simplified_ds_pr(
             residual,
             control_args=clingo_control_args,
             collect_statistics=collect_clingo_statistics,
+            solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
     except RuntimeError as exc:
         return _failure_result(
