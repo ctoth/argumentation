@@ -15,6 +15,7 @@ from itertools import product
 from typing import Mapping, TypeAlias
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.core.frozen import freeze_mapping
 
 
 class ThreeValued(StrEnum):
@@ -188,7 +189,9 @@ class AbstractDialecticalFramework:
                 )
         object.__setattr__(self, "statements", statements)
         object.__setattr__(self, "links", links)
-        object.__setattr__(self, "acceptance_conditions", canonical_conditions)
+        object.__setattr__(
+            self, "acceptance_conditions", freeze_mapping(canonical_conditions)
+        )
 
     def parents(self, statement: str) -> frozenset[str]:
         return frozenset(parent for parent, child in self.links if child == statement)
