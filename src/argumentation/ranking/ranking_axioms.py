@@ -153,20 +153,22 @@ def defense_precedence(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check Amgoud and Ben-Naim 2013 p. 5 defense precedence."""
+    """Check Amgoud and Ben-Naim 2013 p. 5 defense precedence (DP).
+
+    Bonzon et al. 2016 p. 2: |R1-(a)| = |R1-(b)|, R2+(a) nonempty and
+    R2+(b) empty imply a > b. A single defender suffices; not every attacker
+    of ``a`` needs to be attacked (Amgoud and Ben-Naim 2013, Example 3).
+    """
 
     attackers = _attackers(framework)
     for defended in framework.arguments:
         defended_attackers = attackers[defended]
-        if not defended_attackers or not _every_attacker_is_attacked(
-            defended_attackers, framework
-        ):
+        if not _any_attacker_is_attacked(defended_attackers, framework):
             continue
         for undefended in framework.arguments:
             undefended_attackers = attackers[undefended]
             if (
                 len(defended_attackers) == len(undefended_attackers)
-                and undefended_attackers
                 and not _any_attacker_is_attacked(undefended_attackers, framework)
                 and not result.strictly_prefers(defended, undefended)
             ):
@@ -405,16 +407,6 @@ def _group_at_least_as_acceptable(
         used.add(match)
         saw_strict = saw_strict or result.strictly_prefers(match, weaker)
     return saw_strict if strict else True
-
-
-def _every_attacker_is_attacked(
-    attackers: frozenset[str],
-    framework: ArgumentationFramework,
-) -> bool:
-    relation = _attack_relation(framework)
-    return all(
-        any(target == attacker for _, target in relation) for attacker in attackers
-    )
 
 
 def _any_attacker_is_attacked(

@@ -168,3 +168,27 @@ def test_cardinality_precedence_rejects_ties_on_a_chain() -> None:
 
     assert cardinality_precedence(framework, _all_tied(framework)) is False
     assert cardinality_precedence(framework, categoriser_ranking(framework))
+
+
+def _amgoud_example_3() -> ArgumentationFramework:
+    return ArgumentationFramework(
+        arguments=frozenset("abcdegh"),
+        defeats=frozenset({("h", "c"), ("c", "a"), ("d", "a"), ("e", "b"), ("g", "b")}),
+    )
+
+
+def test_defense_precedence_needs_only_a_nonempty_defender_set() -> None:
+    """Amgoud & Ben-Naim 2013, Example 3, and Bonzon et al. 2016, p. 2, DP:
+    equal attacker counts, R2+(a) nonempty and R2+(b) empty imply a > b.
+    a is attacked by c (defended by h) and d (undefended); b by e and g;
+    tying a and b violates DP although not every attacker of a is attacked."""
+    framework = _amgoud_example_3()
+
+    assert defense_precedence(framework, _all_tied(framework)) is False
+
+
+def test_defense_precedence_accepts_categoriser_on_example_3_control() -> None:
+    """Control: the categoriser ranks a strictly above b on Example 3."""
+    framework = _amgoud_example_3()
+
+    assert defense_precedence(framework, categoriser_ranking(framework))
