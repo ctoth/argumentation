@@ -39,6 +39,22 @@ class GroundAtom:
     predicate: str
     arguments: tuple[Scalar, ...] = ()
 
+    def _identity(self) -> tuple[str, tuple[tuple[type, Scalar], ...]]:
+        # Terms are typed constants: Python's True == 1 == 1.0 must not merge
+        # distinct ground atoms.
+        return (
+            self.predicate,
+            tuple((type(argument), argument) for argument in self.arguments),
+        )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, GroundAtom):
+            return NotImplemented
+        return self._identity() == other._identity()
+
+    def __hash__(self) -> int:
+        return hash(self._identity())
+
     def __repr__(self) -> str:
         if not self.arguments:
             return self.predicate
