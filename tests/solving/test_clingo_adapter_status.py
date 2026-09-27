@@ -3,7 +3,7 @@
 Clingo/clasp exit codes are result bits (https://github.com/potassco/clasp#exit-codes):
 10 = SAT, 20 = search exhausted (UNSAT when alone), 30 = SAT and exhausted;
 ``python -m clingo`` exits 0. These tests replace ``subprocess.run`` and never
-start a solver.
+start a solver, except the skip-guarded real-clingo control.
 """
 
 from __future__ import annotations
@@ -111,3 +111,58 @@ def test_error_and_interrupt_exit_codes_remain_process_errors(
 
     assert isinstance(result, clingo.ClingoProcessError)
     assert result.returncode == returncode
+
+
+_INCOMPLETE_OUTPUTS = {
+    "unknown": "UNKNOWN\n",
+    "empty": "",
+    "answers-then-unknown": "Answer: 1\naccepted_arg(a)\nUNKNOWN\n",
+    "truncated-answer": "Answer: 1\naccepted_arg(a)\n",
+}
+
+
+@pytest.mark.parametrize(
+    "stdout", _INCOMPLETE_OUTPUTS.values(), ids=_INCOMPLETE_OUTPUTS
+)
+def test_enumeration_without_completed_status_is_a_protocol_error(
+    fake_clingo: Callable[[int, str], None], stdout: str
+) -> None:
+    fake_clingo(0, stdout)
+
+    assert isinstance(_enumerate(), clingo.ClingoProtocolError)
+
+
+@pytest.mark.parametrize(
+    "stdout", _INCOMPLETE_OUTPUTS.values(), ids=_INCOMPLETE_OUTPUTS
+)
+def test_grounded_without_completed_status_is_a_protocol_error(
+    fake_clingo: Callable[[int, str], None], stdout: str
+) -> None:
+    fake_clingo(0, stdout)
+
+    assert isinstance(_grounded(), clingo.ClingoProtocolError)
+
+
+def test_native_enumeration_without_exhaustion_bit_is_a_protocol_error(
+    fake_clingo: Callable[[int, str], None],
+) -> None:
+    # Code 10 without the exhaustion bit: models were found but the search
+    # did not finish, so the enumeration may be missing extensions.
+    fake_clingo(10, "Answer: 1\naccepted_arg(a)\nSATISFIABLE\n")
+
+    assert isinstance(_enumerate(), clingo.ClingoProtocolError)
+
+
+@pytest.mark.skipif(
+    clingo._resolve_command("clingo") is None, reason="clingo is not installed"
+)
+def test_real_clingo_enumeration_control() -> None:
+    result = clingo.run_extension_enumeration_protocol(
+        facts=("accepted_arg(a).",),
+        encoding_modules=(),
+        known_argument_ids=frozenset({"a"}),
+        binary="clingo",
+    )
+
+    assert isinstance(result, clingo.ClingoExtensionEnumerationSuccess)
+    assert result.extensions == (frozenset({"a"}),)
