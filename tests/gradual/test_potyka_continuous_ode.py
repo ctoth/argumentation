@@ -1,13 +1,62 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
+import argumentation.gradual.gradual as gradual_module
 from argumentation.gradual.gradual import (
     WeightedBipolarGraph,
     _quadratic_derivative,
     quadratic_energy_strengths,
     quadratic_energy_strengths_continuous,
 )
+
+
+@pytest.fixture
+def bounded_rk4(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail instead of hanging if the adaptive loop never exits."""
+    original = gradual_module._rk4_step
+    calls = 0
+
+    def bounded(*args: object) -> dict[str, float]:
+        nonlocal calls
+        calls += 1
+        assert calls <= 30, "adaptive RK4 loop exceeded 30 calls"
+        return original(*args)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(gradual_module, "_rk4_step", bounded)
+
+
+@pytest.mark.usefixtures("bounded_rk4")
+@pytest.mark.parametrize(
+    ("initial_step", "tolerance"),
+    [(math.nan, 1e-9), (math.inf, 1e-9), (0.25, math.nan)],
+)
+def test_continuous_rejects_non_finite_controls(
+    initial_step: float, tolerance: float
+) -> None:
+    """Potyka 2018, KR, p. 150: RK4 integrates with a real step size; NaN or
+    infinite controls cannot drive the step-halving loop to termination."""
+
+    with pytest.raises(ValueError):
+        quadratic_energy_strengths_continuous(
+            _single_attack_graph(),
+            initial_step=initial_step,
+            tolerance=tolerance,
+            max_iterations=1,
+        )
+
+
+@pytest.mark.usefixtures("bounded_rk4")
+def test_continuous_accepts_finite_controls() -> None:
+    """Control: a finite positive step with one iteration returns a result."""
+
+    result = quadratic_energy_strengths_continuous(
+        _single_attack_graph(), initial_step=0.5, max_iterations=1
+    )
+
+    assert result.iterations == 1
 
 
 def _single_attack_graph() -> WeightedBipolarGraph:
