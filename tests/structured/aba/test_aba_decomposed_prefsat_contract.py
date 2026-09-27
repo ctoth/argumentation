@@ -126,7 +126,14 @@ def test_decomposed_prefsat_page_image_contract() -> None:
     assert len(DECOMPOSED_PREFSAT_PAGE_IMAGES) == 13
     for path in DECOMPOSED_PREFSAT_PAGE_IMAGES:
         assert path.endswith(".png")
-        assert Path(path).exists(), path
+    # Page images live under gitignored papers/**/pngs/, so a fresh checkout
+    # (CI, new worktree) has none of them. Check existence only where the
+    # images have been rendered locally.
+    present = [path for path in DECOMPOSED_PREFSAT_PAGE_IMAGES if Path(path).exists()]
+    if not present:
+        pytest.skip("paper page images are gitignored and not rendered here")
+    missing = [path for path in DECOMPOSED_PREFSAT_PAGE_IMAGES if path not in present]
+    assert not missing, missing
 
 
 @given(layered_independent_aba_for_decomposition())
