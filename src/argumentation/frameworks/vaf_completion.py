@@ -306,6 +306,9 @@ def _extend_line(
 def _validate_line_links(
     vaf: ValueBasedArgumentationFramework, line: ArgumentLine
 ) -> None:
+    for chain in line.chains:
+        if make_argument_chain(vaf, chain.arguments).value != chain.value:
+            raise ValueError("chain value must match its arguments' valuation")
     for previous, current in zip(line.chains, line.chains[1:]):
         link = (current.arguments[-1], previous.arguments[0])
         if link not in vaf.attacks:

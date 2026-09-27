@@ -161,6 +161,47 @@ def test_theorem_6_6_classifier_fails_outside_preconditions() -> None:
         classify_line_of_argument(vaf, line)
 
 
+def _two_argument_red_vaf() -> ValueBasedArgumentationFramework:
+    return ValueBasedArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        attacks=frozenset({("a", "b")}),
+        values=frozenset({"red", "blue"}),
+        valuation={"a": "red", "b": "red"},
+    )
+
+
+@pytest.mark.parametrize(
+    "chain",
+    [
+        ArgumentChain(arguments=("ghost",), value="red"),
+        ArgumentChain(arguments=("a",), value="blue"),
+        ArgumentChain(arguments=("b", "a"), value="red"),
+    ],
+    ids=["undeclared-argument", "wrong-value", "broken-internal-link"],
+)
+def test_theorem_6_6_classifier_rejects_malformed_chains(
+    chain: ArgumentChain,
+) -> None:
+    # Bench-Capon 2003 p. 438, Definition 6.3: a chain is a sequence of the
+    # VAF's same-valued arguments, each later one attacked only by its
+    # predecessor. A line built from anything else is not a Def. 6.5 line.
+    vaf = _two_argument_red_vaf()
+    line = ArgumentLine(chains=(chain,), target=chain.arguments[-1])
+
+    with pytest.raises(ValueError):
+        classify_line_of_argument(vaf, line)
+
+
+def test_theorem_6_6_classifier_accepts_well_formed_chain() -> None:
+    # Control: a -> b is a valid red chain; b sits at even position 2.
+    vaf = _two_argument_red_vaf()
+    line = ArgumentLine(
+        chains=(ArgumentChain(arguments=("a", "b"), value="red"),), target="b"
+    )
+
+    assert classify_line_of_argument(vaf, line) is VAFArgumentStatus.INDEFENSIBLE
+
+
 def _two_value_cycle(
     length_a: int, length_b: int, preferred: str
 ) -> tuple[
