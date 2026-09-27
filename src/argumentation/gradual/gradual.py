@@ -9,6 +9,7 @@ from typing import Mapping
 
 from argumentation.core.finite import normalize_binary_relation, predecessors_index
 from argumentation.core.fixpoint import iterate_fixpoint
+from argumentation.core.frozen import freeze_mapping
 
 
 @dataclass(frozen=True)
@@ -47,7 +48,7 @@ class WeightedBipolarGraph:
             )
 
         object.__setattr__(self, "arguments", arguments)
-        object.__setattr__(self, "initial_weights", weights)
+        object.__setattr__(self, "initial_weights", freeze_mapping(weights))
         object.__setattr__(self, "attacks", attacks)
         object.__setattr__(self, "supports", supports)
 

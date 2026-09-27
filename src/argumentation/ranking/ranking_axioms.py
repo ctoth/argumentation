@@ -130,7 +130,11 @@ def self_contradiction(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check Bonzon et al. 2016 p. 1 self-contradiction precedence."""
+    """Check Bonzon et al. 2016 p. 2 self-contradiction (SC).
+
+    Every non-self-attacking argument ranks strictly above every
+    self-attacking one: (a, a) not in R and (b, b) in R imply a > b.
+    """
 
     self_attacking = {
         argument
@@ -139,7 +143,7 @@ def self_contradiction(
     }
     clean = set(framework.arguments) - self_attacking
     return all(
-        not result.strictly_prefers(self_attacker, other)
+        result.strictly_prefers(other, self_attacker)
         for self_attacker in self_attacking
         for other in clean
     )
@@ -149,20 +153,22 @@ def defense_precedence(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check Amgoud and Ben-Naim 2013 p. 5 defense precedence."""
+    """Check Amgoud and Ben-Naim 2013 p. 5 defense precedence (DP).
+
+    Bonzon et al. 2016 p. 2: |R1-(a)| = |R1-(b)|, R2+(a) nonempty and
+    R2+(b) empty imply a > b. A single defender suffices; not every attacker
+    of ``a`` needs to be attacked (Amgoud and Ben-Naim 2013, Example 3).
+    """
 
     attackers = _attackers(framework)
     for defended in framework.arguments:
         defended_attackers = attackers[defended]
-        if not defended_attackers or not _every_attacker_is_attacked(
-            defended_attackers, framework
-        ):
+        if not _any_attacker_is_attacked(defended_attackers, framework):
             continue
         for undefended in framework.arguments:
             undefended_attackers = attackers[undefended]
             if (
                 len(defended_attackers) == len(undefended_attackers)
-                and undefended_attackers
                 and not _any_attacker_is_attacked(undefended_attackers, framework)
                 and not result.strictly_prefers(defended, undefended)
             ):
@@ -212,28 +218,19 @@ def cardinality_precedence(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check the fewer-unattacked-attackers postulate where applicable.
+    """Check Bonzon et al. 2016 p. 2 cardinality precedence (CP).
 
-    Amgoud and Ben-Naim 2013 p. 8 and Bonzon et al. 2016 p. 1: when direct
-    attackers are all unattacked, fewer attackers strictly improves rank.
+    |R1-(a)| < |R1-(b)| implies a > b, for all arguments, including ones
+    with no attackers and regardless of whether the attackers are attacked.
     """
 
     attackers = _attackers(framework)
-    unattacked = {argument for argument, values in attackers.items() if not values}
-    for left in framework.arguments:
-        left_attackers = attackers[left]
-        if not left_attackers or not left_attackers <= unattacked:
-            continue
-        for right in framework.arguments:
-            right_attackers = attackers[right]
-            if (
-                len(left_attackers) < len(right_attackers)
-                and right_attackers
-                and right_attackers <= unattacked
-                and not result.strictly_prefers(left, right)
-            ):
-                return False
-    return True
+    return all(
+        result.strictly_prefers(left, right)
+        for left in framework.arguments
+        for right in framework.arguments
+        if len(attackers[left]) < len(attackers[right])
+    )
 
 
 def quality_precedence(
@@ -439,16 +436,6 @@ def _has_injective_matching(
         return False
 
     return all(augment(item, set()) for item in items)
-
-
-def _every_attacker_is_attacked(
-    attackers: frozenset[str],
-    framework: ArgumentationFramework,
-) -> bool:
-    relation = _attack_relation(framework)
-    return all(
-        any(target == attacker for _, target in relation) for attacker in attackers
-    )
 
 
 def _any_attacker_is_attacked(

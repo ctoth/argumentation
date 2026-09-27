@@ -244,10 +244,12 @@ def discussion_based_ranking(
     converged = True
     for argument in framework.arguments:
         frontier = {argument: 1}
-        sequence: list[float] = []
+        # Exact integer counts: converting to float overflows on cycles and
+        # loses the precision the lexicographic comparison relies on.
+        sequence: list[int] = []
         for length in range(1, depth + 1):
             count = sum(frontier.values())
-            sequence.append(float(-count if length % 2 == 1 else count))
+            sequence.append(-count if length % 2 == 1 else count)
             next_frontier: dict[str, int] = {}
             for target, multiplicity in frontier.items():
                 for attacker in attackers[target]:

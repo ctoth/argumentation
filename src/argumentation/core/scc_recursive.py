@@ -56,6 +56,7 @@ from argumentation.core.dung import (
     _strongly_connected_components,
     _subframework,
     admissible,
+    attacks_resolved_by_defeats,
     characteristic_fn,
     complete_extensions,
     preferred_extensions,
@@ -288,6 +289,17 @@ def scc_extensions(
     LAST_SOLVE.reset()
     LAST_SOLVE.semantics = semantics
     LAST_SOLVE.decompose_requested = decompose
+
+    if not attacks_resolved_by_defeats(framework):
+        # SCCs are taken over defeats, so an attack that is a defeat in neither
+        # direction can link SCCs the recursion treats as independent, and the
+        # base preferred (maximal complete) differs from Def 14 preferred
+        # (maximal admissible) there (Modgil & Prakken 2018, Def 14; issue #90).
+        LAST_SOLVE.flat_fast_path = True
+        LAST_SOLVE.notes.append(
+            "attack that is a defeat in neither direction -> flat Def 14 solve"
+        )
+        return _flat_enumerate(semantics, framework)
 
     if not decompose:
         LAST_SOLVE.flat_fast_path = True

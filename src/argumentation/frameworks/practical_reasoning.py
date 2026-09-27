@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Mapping
 
+from argumentation.core.frozen import freeze_mapping
 
 ValueEffect = Literal["+", "-", "="]
 SupportedCriticalQuestion = Literal["CQ5", "CQ6", "CQ11"]
@@ -59,6 +60,16 @@ class ActionBasedAlternatingTransitionSystem:
     valuation: Mapping[tuple[str, str, str], ValueEffect]
 
     def __post_init__(self) -> None:
+        # Snapshot first so validation and later use see the same mappings.
+        for field_name in (
+            "preconditions",
+            "transitions",
+            "interpretation",
+            "valuation",
+        ):
+            object.__setattr__(
+                self, field_name, freeze_mapping(getattr(self, field_name))
+            )
         if not self.states:
             raise ValueError("states must be non-empty")
         if self.initial_state not in self.states:

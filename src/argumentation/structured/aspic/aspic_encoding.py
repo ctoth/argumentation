@@ -9,6 +9,7 @@ from enum import StrEnum
 
 from argumentation.structured.aspic.aspic import (
     ArgumentationSystem,
+    GroundAtom,
     KnowledgeBase,
     Literal,
     PreferenceConfig,
@@ -140,6 +141,10 @@ def solve_aspic_grounded(
     This is the tested direct package query surface. Its current backend is the
     materialized ASPIC-to-Dung reference path; optional ASP/clingo backends can
     attach to the same encoding/result contract in later slices.
+
+    Raises ``ValueError`` when the projected framework has no complete
+    extension, which happens only outside Modgil & Prakken 2018's well-defined
+    domain (Def 14; e.g. strict rules not closed under transposition).
     """
     from argumentation.core.dung import grounded_extension
 
@@ -419,7 +424,7 @@ def _materialized_extensions(framework, semantics: str) -> tuple[frozenset[str],
     from argumentation.core import dung
 
     if semantics == "grounded":
-        return (dung.grounded_extension(framework),)
+        return dung.grounded_extensions(framework)
     if semantics == "admissible":
         return tuple(
             candidate
@@ -456,10 +461,15 @@ def _source_aspic_facts(
     supports = _source_literal_supports(
         system, kb, strict_rule_ids, defeasible_rule_ids
     )
+    # Body facts form a set, so the count is over distinct antecedents.
     for rule in system.strict_rules:
-        facts.add(f"s_body_count({strict_rule_ids[rule]},{len(rule.antecedents)}).")
+        facts.add(
+            f"s_body_count({strict_rule_ids[rule]},{len(set(rule.antecedents))})."
+        )
     for rule in system.defeasible_rules:
-        facts.add(f"d_body_count({defeasible_rule_ids[rule]},{len(rule.antecedents)}).")
+        facts.add(
+            f"d_body_count({defeasible_rule_ids[rule]},{len(set(rule.antecedents))})."
+        )
     support_index = 0
     for literal, literal_supports in sorted(
         supports.items(), key=lambda item: repr(item[0])
@@ -852,9 +862,23 @@ def _defeasible_rule_ids(rules: frozenset[Rule]) -> dict[Rule, str]:
             f"duplicate defeasible rule name: {name!r} "
             f"attached to {len(duplicate_rules)} rules"
         )
+    # A named rule is identified by the ASP id of its name literal n(r), which
+    # is also what an undercutter's contrary fact targets.
     named: dict[Rule, str] = {}
     for index, rule in enumerate(sorted(rules, key=repr)):
-        named[rule] = rule.name or f"d_{index}"
+        named[rule] = (
+            f"d_{index}"
+            if rule.name is None
+            else _literal_id(Literal(GroundAtom(rule.name)))
+        )
+    rules_by_id: dict[str, Rule] = {}
+    for rule, rule_id in sorted(named.items(), key=lambda item: repr(item[0])):
+        existing = rules_by_id.setdefault(rule_id, rule)
+        if existing != rule:
+            raise ValueError(
+                f"defeasible rule id collision: {rule_id!r} is used by "
+                f"{existing.name!r} and {rule.name!r}"
+            )
     return named
 
 

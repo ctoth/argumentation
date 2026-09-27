@@ -11,6 +11,7 @@ from typing import Any
 
 from argumentation.core.dung import (
     ArgumentationFramework,
+    attacks_resolved_by_defeats,
     grounded_extension,
     range_of,
 )
@@ -920,6 +921,11 @@ class PreferredSkepticalTaskSolver:
                 "preferred_skeptical_shortcut_self_attacking_query", False
             )
             return False
+        if not attacks_resolved_by_defeats(self.framework):
+            # The remaining shortcuts assume every preferred extension contains
+            # the defeat-based grounded set, which fails when an attack is a
+            # defeat in neither direction (Modgil & Prakken 2018, Def 14).
+            return None
         attackers = self._attackers_of(query)
         if not attackers:
             self._emit_shortcut("preferred_skeptical_shortcut_unattacked_query", True)
