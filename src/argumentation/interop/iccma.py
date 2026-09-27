@@ -78,12 +78,12 @@ def parse_apx(text: str) -> ArgumentationFramework:
         if not line or line.startswith(("%", "#")):
             continue
         arg_match = APX_ARG_RE.fullmatch(line)
-        if arg_match:
-            arguments.add(arg_match.group(1))
+        if arg_match and arg_match.group(1).strip():
+            arguments.add(arg_match.group(1).strip())
             continue
         att_match = APX_ATT_RE.fullmatch(line)
-        if att_match:
-            attacker, target = att_match.groups()
+        if att_match and all(term.strip() for term in att_match.groups()):
+            attacker, target = (term.strip() for term in att_match.groups())
             arguments.add(attacker)
             arguments.add(target)
             attacks.add((attacker, target))

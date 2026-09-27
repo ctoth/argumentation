@@ -132,6 +132,37 @@ def test_parse_apx_reads_aspartix_argumentation_framework() -> None:
     assert framework.defeats == frozenset({("a1", "a2"), ("a2", "a1")})
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "arg(a).\narg(b).\natt(a, b).\n",
+        "arg( a ).\narg(b ).\natt( a ,b ).\n",
+    ],
+)
+def test_parse_apx_ignores_whitespace_around_fact_terms(text: str) -> None:
+    """Issue #23: APX facts are ASP facts (Egly 2010, notes.md: the AF is the
+    database {arg(a)} and binary attack facts), and ASP allows whitespace
+    between the terms of an atom, so ``att(a, b).`` names the argument b,
+    not a new argument " b"."""
+    framework = parse_apx(text)
+
+    assert framework.arguments == frozenset({"a", "b"})
+    assert framework.defeats == frozenset({("a", "b")})
+
+
+def test_parse_apx_reads_compact_attack_fact_control() -> None:
+    framework = parse_apx("arg(a).\narg(b).\natt(a,b).\n")
+
+    assert framework.arguments == frozenset({"a", "b"})
+    assert framework.defeats == frozenset({("a", "b")})
+
+
+@pytest.mark.parametrize("line", ["arg( ).", "att( ,b).", "att(a, )."])
+def test_parse_apx_rejects_blank_fact_terms(line: str) -> None:
+    with pytest.raises(ValueError, match="invalid APX line 1"):
+        parse_apx(line + "\n")
+
+
 def test_parse_tgf_reads_trivial_graph_format_framework() -> None:
     framework = parse_tgf(
         """
