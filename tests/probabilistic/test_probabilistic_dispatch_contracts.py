@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 from argumentation.core.dung import ArgumentationFramework
+from argumentation.gradual.gradual import GradualConvergenceError
 from argumentation.probabilistic.probabilistic import (
     ProbabilisticAF,
     compute_probabilistic_acceptance,
@@ -95,3 +96,36 @@ def test_dfquad_answers_gradual_strength_query(selectors: dict[str, object]) -> 
 
     assert result.query_kind == "gradual_strength"
     assert result.acceptance_probs == {"a": 0.5}
+
+
+def _self_attack_praf() -> ProbabilisticAF:
+    return ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a"}), frozenset({("a", "a")})),
+        {"a": 1.0},
+        {},
+    )
+
+
+def test_dfquad_nonconvergent_strengths_raise() -> None:
+    """Issue #31: DF-QuAD strengths are the fixed point of the Rago et al.
+    (2016) update; a unit-weight self-attack oscillates 0 <-> 1, so there is
+    no converged final strength to report."""
+    with pytest.raises(GradualConvergenceError):
+        compute_probabilistic_acceptance(
+            _self_attack_praf(),
+            strategy="dfquad_quad",
+            tau={"a": 1.0},
+        )
+
+
+def test_dfquad_convergent_self_attack_strength_is_returned() -> None:
+    """Issue #31 control: with base score 0.5 the self-attack has the fixed
+    point s = 0.5 * (1 - s), i.e. s = 1/3, which the adapter returns."""
+    result = compute_probabilistic_acceptance(
+        _self_attack_praf(),
+        strategy="dfquad_quad",
+        tau={"a": 0.5},
+    )
+
+    assert result.acceptance_probs is not None
+    assert result.acceptance_probs["a"] == pytest.approx(1.0 / 3.0)

@@ -1452,7 +1452,10 @@ def _compute_dfquad(
     sampling and τ as an independent parameter.
     """
     from argumentation.gradual.dfquad import dfquad_bipolar_strengths, dfquad_strengths
-    from argumentation.gradual.gradual import WeightedBipolarGraph
+    from argumentation.gradual.gradual import (
+        GradualConvergenceError,
+        WeightedBipolarGraph,
+    )
 
     if semantics != "grounded":
         raise ValueError(
@@ -1495,6 +1498,8 @@ def _compute_dfquad(
         raise ValueError(
             "strategy='dfquad' is ambiguous; use 'dfquad_quad' or 'dfquad_baf'"
         )
+    if not result.converged:
+        raise GradualConvergenceError(f"{strategy} strengths", result)
 
     return PrAFResult(
         acceptance_probs=result.strengths,
