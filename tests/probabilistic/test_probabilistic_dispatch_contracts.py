@@ -392,3 +392,36 @@ def test_world_exponent_ignores_deterministic_relations() -> None:
     )
 
     assert probabilistic._exact_enumeration_world_exponent(praf) == 3
+
+
+def _exact_methods_agree(praf: ProbabilisticAF) -> dict[str, float]:
+    enumerated = compute_probabilistic_acceptance(praf, strategy="exact_enum")
+    dynamic = compute_probabilistic_acceptance(praf, strategy="exact_dp")
+    assert enumerated.acceptance_probs is not None
+    assert dynamic.acceptance_probs is not None
+    assert dynamic.acceptance_probs == pytest.approx(enumerated.acceptance_probs)
+    return dynamic.acceptance_probs
+
+
+def test_exact_dp_treats_missing_defeat_probability_as_certain() -> None:
+    """Issue #50: a defeat without a P_D entry is present in every induced
+    world, as in exact enumeration; both exact methods compute Li 2011
+    Eq 2 (p.4), so with P(a) = 0.5, b is grounded-accepted iff a is absent."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 0.5, "b": 1.0},
+        {},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 0.5, "b": 0.5})
+
+
+def test_exact_dp_explicit_defeat_probability_control() -> None:
+    """Issue #50 control: an explicit P_D((a,b)) = 0.5 (Li 2011 Def 2, p.2)."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1.0, "b": 1.0},
+        {("a", "b"): 0.5},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 1.0, "b": 0.5})

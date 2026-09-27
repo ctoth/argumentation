@@ -237,7 +237,7 @@ def _compute_grounded_dp_with_diagnostics(praf: ProbabilisticAF) -> ExactDPDiagn
 
     p_arg: dict[str, float] = {a: _expectation(praf.p_args[a]) for a in af.arguments}
     p_defeat: dict[tuple[str, str], float] = {
-        d: _expectation(praf.p_defeats[d]) for d in af.defeats
+        d: _expectation(praf.p_defeats.get(d)) for d in af.defeats
     }
 
     from argumentation.probabilistic.probabilistic_components import (
