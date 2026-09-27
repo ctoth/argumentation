@@ -205,3 +205,60 @@ def test_distributed_defense_precedence_prefers_spread_defense() -> None:
     )
 
     assert distributed_defense_precedence(framework, categoriser_ranking(framework))
+
+
+def _all_tied(framework: ArgumentationFramework) -> RankingResult:
+    return RankingResult(
+        {argument: 0.0 for argument in framework.arguments},
+        (framework.arguments,),
+        True,
+        0,
+        "all-tied",
+    )
+
+
+def test_self_contradiction_rejects_tie_with_self_attacker() -> None:
+    """Bonzon et al. 2016, p. 2, SC: (a, a) not in R and (b, b) in R imply
+    a > b, strictly; a tie with the self-attacker violates it."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}), defeats=frozenset({("b", "b")})
+    )
+
+    assert self_contradiction(framework, _all_tied(framework)) is False
+
+
+def test_cardinality_precedence_rejects_ties_on_a_chain() -> None:
+    """Bonzon et al. 2016, p. 2, CP: |R1-(a)| < |R1-(b)| implies a > b, with
+    no requirement that attackers be unattacked and including zero attackers.
+    In a -> b -> c, a has fewer attackers than b and c, so ties violate CP."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b"), ("b", "c")}),
+    )
+
+    assert cardinality_precedence(framework, _all_tied(framework)) is False
+    assert cardinality_precedence(framework, categoriser_ranking(framework))
+
+
+def _amgoud_example_3() -> ArgumentationFramework:
+    return ArgumentationFramework(
+        arguments=frozenset("abcdegh"),
+        defeats=frozenset({("h", "c"), ("c", "a"), ("d", "a"), ("e", "b"), ("g", "b")}),
+    )
+
+
+def test_defense_precedence_needs_only_a_nonempty_defender_set() -> None:
+    """Amgoud & Ben-Naim 2013, Example 3, and Bonzon et al. 2016, p. 2, DP:
+    equal attacker counts, R2+(a) nonempty and R2+(b) empty imply a > b.
+    a is attacked by c (defended by h) and d (undefended); b by e and g;
+    tying a and b violates DP although not every attacker of a is attacked."""
+    framework = _amgoud_example_3()
+
+    assert defense_precedence(framework, _all_tied(framework)) is False
+
+
+def test_defense_precedence_accepts_categoriser_on_example_3_control() -> None:
+    """Control: the categoriser ranks a strictly above b on Example 3."""
+    framework = _amgoud_example_3()
+
+    assert defense_precedence(framework, categoriser_ranking(framework))
