@@ -174,9 +174,9 @@ def two_value_cycle_extension(
     ordering = vaf._validate_audience(audience)
     _validate_cycle_links(vaf, cycle_chains)
 
-    preferred_value = ordering[0]
-    if preferred_value not in values:
-        raise ValueError("audience preferred value must be one of the cycle values")
+    preferred_value = next((value for value in ordering if value in values), None)
+    if preferred_value is None:
+        raise ValueError("cycle values must be values of the VAF")
 
     accepted: set[str] = set()
     for index, chain in enumerate(cycle_chains):
@@ -306,6 +306,9 @@ def _extend_line(
 def _validate_line_links(
     vaf: ValueBasedArgumentationFramework, line: ArgumentLine
 ) -> None:
+    for chain in line.chains:
+        if make_argument_chain(vaf, chain.arguments).value != chain.value:
+            raise ValueError("chain value must match its arguments' valuation")
     for previous, current in zip(line.chains, line.chains[1:]):
         link = (current.arguments[-1], previous.arguments[0])
         if link not in vaf.attacks:

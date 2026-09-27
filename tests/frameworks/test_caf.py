@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -272,6 +273,58 @@ def test_bijective_claims_have_inherited_claim_level_concurrence() -> None:
         caf,
         semantics="stable",
     )
+
+
+def _explicit_attack_without_defeat_caf() -> ClaimAugmentedAF:
+    return ClaimAugmentedAF(
+        framework=ArgumentationFramework(
+            arguments=frozenset({"a", "b"}),
+            defeats=frozenset(),
+            attacks=frozenset({("a", "b")}),
+        ),
+        claims={"a": "A", "b": "B"},
+    )
+
+
+@pytest.mark.parametrize("semantics", ["naive", "stable"])
+def test_unique_claims_with_explicit_attacks_concur(semantics: str) -> None:
+    """KR 2020 Lemma 3: with unique claims, claim-level semantics coincide
+    with the Dung semantics, which check conflict-freeness on the explicit
+    attack relation (Modgil & Prakken 2018 Def. 14)."""
+    caf = _explicit_attack_without_defeat_caf()
+
+    assert set(claim_level_extensions(caf, semantics=semantics)) == set(
+        inherited_extensions(caf, semantics=semantics)
+    )
+
+
+@pytest.mark.parametrize("semantics", ["preferred", "semi-stable", "stable-admissible"])
+def test_claim_level_admissible_views_respect_explicit_attacks(semantics: str) -> None:
+    """Modgil & Prakken 2018 Def. 14: conflict-freeness uses attacks, so the
+    attacking pair ``a -> b`` is never accepted together."""
+    caf = _explicit_attack_without_defeat_caf()
+
+    for claim_set in claim_level_extensions(caf, semantics=semantics):
+        assert claim_set != frozenset({"A", "B"})
+
+
+def test_claim_level_stage_rejects_distinct_attack_and_defeat_relations() -> None:
+    """Stage is undefined for distinct relations, as in the inherited view."""
+    caf = _explicit_attack_without_defeat_caf()
+
+    with pytest.raises(ValueError, match="distinct attack and defeat"):
+        claim_level_extensions(caf, semantics="stage")
+
+
+def test_unique_claims_without_explicit_attacks_naive_control() -> None:
+    """Control: with no attack or defeat, both views accept both claims."""
+    caf = ClaimAugmentedAF(
+        framework=af({"a", "b"}, set()),
+        claims={"a": "A", "b": "B"},
+    )
+
+    assert claim_level_extensions(caf, semantics="naive") == (frozenset({"A", "B"}),)
+    assert inherited_extensions(caf, semantics="naive") == (frozenset({"A", "B"}),)
 
 
 def test_claim_level_stage_discards_range_dominated_claim_sets() -> None:
