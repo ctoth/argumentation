@@ -430,6 +430,8 @@ def _validate_query_contract(
     if query_kind is _UNSET:
         if inference_mode is not _UNSET and inference_mode is not None:
             raise ValueError("inference_mode requires an explicit query_kind")
+        if queried_set is not None:
+            raise ValueError("queried_set requires an explicit query_kind")
         return "argument_acceptance", "credulous", None
 
     query_kind_str = str(query_kind)
