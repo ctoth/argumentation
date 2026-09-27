@@ -34,6 +34,39 @@ def test_aba_iccma_round_trip_preserves_flat_framework() -> None:
     assert parse_aba(write_aba(framework)) == framework
 
 
+def test_write_aba_rejects_language_literals_it_cannot_represent() -> None:
+    """Issue #21: the compact format has no vocabulary declaration line.
+
+    Bondarenko 1997 (notes.md, p.69) makes the language L a component of the
+    deductive system independent of the rules, so a literal may belong to L
+    without occurring in any assumption, contrary, or rule.  The compact
+    reader rebuilds L only from those lines, so the writer must refuse
+    rather than silently drop the literal.
+    """
+    framework = ABAFramework(
+        language=frozenset({lit("unused")}),
+        rules=frozenset(),
+        assumptions=frozenset(),
+        contrary={},
+    )
+
+    with pytest.raises(ValueError, match="unused"):
+        write_aba(framework)
+
+
+def test_write_aba_round_trips_when_every_literal_occurs() -> None:
+    """Control: the same literal round-trips once a rule mentions it."""
+    unused = lit("unused")
+    framework = ABAFramework(
+        language=frozenset({unused}),
+        rules=frozenset({Rule((), unused, "strict")}),
+        assumptions=frozenset(),
+        contrary={},
+    )
+
+    assert parse_aba(write_aba(framework)) == framework
+
+
 def test_parse_official_iccma_2025_numeric_aba_example() -> None:
     framework = parse_aba(
         """

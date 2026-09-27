@@ -322,6 +322,19 @@ def _parse_numeric_aba(text: str) -> ABAFramework:
 
 def write_aba(framework: ABAFramework) -> str:
     """Write a deterministic compact ICCMA-style ``p aba`` flat-ABA format."""
+    mentioned = (
+        set(framework.assumptions)
+        | set(framework.contrary.values())
+        | {rule.consequent for rule in framework.rules}
+        | {antecedent for rule in framework.rules for antecedent in rule.antecedents}
+    )
+    unrepresentable = sorted(framework.language - mentioned, key=repr)
+    if unrepresentable:
+        raise ValueError(
+            "compact ABA ICCMA format cannot represent language literals that "
+            f"occur in no assumption, contrary, or rule: {unrepresentable!r}; "
+            "use write_numeric_aba to preserve the full language"
+        )
     lines = ["p aba"]
     for assumption in sorted(framework.assumptions, key=repr):
         lines.append(f"a {_aba_name(assumption)}")
