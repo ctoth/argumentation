@@ -174,15 +174,67 @@ def admissible(
 
 
 def grounded_extension(framework: ArgumentationFramework) -> frozenset[str]:
-    """Compute the unique grounded extension.
+    """Compute the unique grounded extension: the least complete extension.
 
-    This is pure Dung grounded semantics: the least fixed point of the
-    characteristic function over ``defeats`` only. Attack metadata is
-    ignored here.
+    The characteristic function uses ``defeats``. Its least fixed point G is
+    contained in every complete extension, since each is a fixed point of it.
+    On a single-relation framework G is the Dung grounded extension. When
+    ``attacks`` differ from ``defeats``, conflict-freeness is measured on
+    attacks (Modgil & Prakken 2018, Def 14): G is then the least complete
+    extension if it is conflict-free on attacks, and otherwise no complete
+    extension exists, so a ``ValueError`` is raised instead of returning a
+    conflicting set. :func:`grounded_extensions` returns ``()`` instead.
 
     References:
         Dung 1995, Definition 20 + Theorem 25 (least fixed point).
+        Modgil & Prakken 2018, Definition 14.
     """
+    extensions = grounded_extensions(framework)
+    if not extensions:
+        raise ValueError(
+            "framework has no complete extension: the least fixed point of the "
+            "defeat-based characteristic function is not conflict-free on "
+            "attacks (Modgil & Prakken 2018, Def 14), and every complete "
+            "extension would contain it"
+        )
+    return extensions[0]
+
+
+def grounded_extensions(
+    framework: ArgumentationFramework,
+) -> tuple[frozenset[str], ...]:
+    """Return ``(grounded,)``, or ``()`` when no complete extension exists.
+
+    The tuple form matches :func:`extensions_for`: like complete and stable,
+    grounded has no extension on a mixed framework whose defeat-based least
+    fixed point conflicts on attacks (Modgil & Prakken 2018, Def 14).
+    """
+    least_fixed_point = _defeat_least_fixed_point(framework)
+    if framework.attacks is not None and not conflict_free(
+        least_fixed_point, framework.attacks
+    ):
+        return ()
+    return (least_fixed_point,)
+
+
+def attacks_resolved_by_defeats(framework: ArgumentationFramework) -> bool:
+    """Whether every attack is a defeat in at least one direction.
+
+    Holds for every single-relation framework. On such mixed frameworks the
+    defeat-based least fixed point is conflict-free on attacks and contained
+    in every Def 14 admissible-maximal set, so grounded-based shortcuts and
+    reducts stay sound; without it they can be unsound (issue #90).
+    """
+    if framework.attacks is None:
+        return True
+    return all(
+        edge in framework.defeats or (edge[1], edge[0]) in framework.defeats
+        for edge in framework.attacks
+    )
+
+
+def _defeat_least_fixed_point(framework: ArgumentationFramework) -> frozenset[str]:
+    """Least fixed point of the characteristic function over ``defeats``."""
     attackers_index = predecessors_index(framework.defeats)
     targets_index = successors_index(framework.defeats)
     live_attackers = {
@@ -269,20 +321,83 @@ def preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[st
     """
     if framework.attacks is None or framework.attacks == framework.defeats:
         return maximal_sets(complete_extensions(framework))
-    attackers_index = predecessors_index(framework.defeats)
-    return maximal_sets(
-        [
-            candidate
-            for candidate in _all_subsets(framework.arguments)
+    extensions, _nodes = _mixed_preferred_search(framework)
+    return extensions
+
+
+def _mixed_preferred_search(
+    framework: ArgumentationFramework,
+) -> tuple[list[frozenset[str]], int]:
+    """Maximal Def 14 admissible sets of a mixed framework, and the node count.
+
+    Depth-first search over arguments in sorted order, trying ``in`` before
+    ``out``. A branch is cut when (1) an ``in`` argument has a defeater that
+    no remaining candidate can defeat, so no completion is admissible;
+    (2) every set the branch can still reach is contained in an admissible
+    set already found, so it cannot yield a new maximal one; or (3) an
+    ``out`` argument conflicts with nothing reachable and is already defended
+    by the ``in`` arguments, so adding it to any completion stays admissible
+    and no completion is maximal. Conflict-freeness uses attacks, defense uses
+    defeats (Modgil & Prakken 2018, Def 14). The node count is exposed for the
+    operational contract tests.
+    """
+    attacks = framework.attacks if framework.attacks is not None else framework.defeats
+    order = sorted(framework.arguments)
+    conflicts: dict[str, set[str]] = {argument: set() for argument in order}
+    for source, target in attacks:
+        conflicts[source].add(target)
+        conflicts[target].add(source)
+    defeaters = predecessors_index(framework.defeats)
+    found: list[frozenset[str]] = []
+    nodes = 0
+    # Explicit stack instead of recursion: depth equals the argument count.
+    stack: list[tuple[int, frozenset[str], frozenset[str]]] = [
+        (0, frozenset(), frozenset())
+    ]
+    while stack:
+        index, chosen, excluded = stack.pop()
+        nodes += 1
+        reachable = chosen | frozenset(
+            argument
+            for argument in order[index:]
+            if argument not in conflicts[argument] and not conflicts[argument] & chosen
+        )
+        if any(reachable <= extension for extension in found):
+            continue
+        if not all(
+            any(
+                candidate in defeaters.get(defeater, frozenset())
+                for candidate in reachable
+            )
+            for argument in chosen
+            for defeater in defeaters.get(argument, frozenset())
+        ):
+            continue
+        if any(
+            argument not in conflicts[argument]
+            and not conflicts[argument] & reachable
+            and all(
+                defeaters.get(defeater, frozenset()) & chosen
+                for defeater in defeaters.get(argument, frozenset())
+            )
+            for argument in excluded
+        ):
+            continue
+        if index == len(order):
             if admissible(
-                candidate,
+                chosen,
                 framework.arguments,
                 framework.defeats,
                 attacks=framework.attacks,
-                attackers_index=attackers_index,
-            )
-        ]
-    )
+                attackers_index=defeaters,
+            ):
+                found.append(chosen)
+            continue
+        argument = order[index]
+        stack.append((index + 1, chosen, excluded | {argument}))
+        if argument not in conflicts[argument] and not conflicts[argument] & chosen:
+            stack.append((index + 1, chosen | {argument}, excluded))
+    return maximal_sets(found), nodes
 
 
 def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -689,10 +804,11 @@ def extensions_for(
     """Return extensions for the supported Dung semantics.
 
     Single-extension semantics (grounded, ideal) are returned as a 1-tuple so
-    every semantics yields a uniform ``tuple[frozenset[str], ...]``.
+    every semantics yields a uniform ``tuple[frozenset[str], ...]``. Grounded
+    is ``()`` when the framework has no complete extension (Def 14).
     """
     if semantics == "grounded":
-        return (grounded_extension(framework),)
+        return grounded_extensions(framework)
     if semantics == "complete":
         return tuple(complete_extensions(framework))
     if semantics == "preferred":

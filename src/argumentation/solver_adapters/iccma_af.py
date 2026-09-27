@@ -13,7 +13,7 @@ from argumentation.core.dung import (
     admissible,
     characteristic_fn,
     conflict_free,
-    grounded_extension,
+    grounded_extensions,
     range_of,
 )
 from argumentation.interop.iccma import write_af
@@ -380,7 +380,7 @@ def _validate_witness_certificate(
             raise ICCMAOutputParseError("complete witness is not a complete extension")
         return
     if semantics == "grounded":
-        if witness != grounded_extension(framework):
+        if (witness,) != grounded_extensions(framework):
             raise ICCMAOutputParseError(
                 "grounded witness is not the grounded extension"
             )

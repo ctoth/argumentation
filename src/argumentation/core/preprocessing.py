@@ -60,6 +60,7 @@ from __future__ import annotations
 
 from argumentation.core.dung import (
     ArgumentationFramework,
+    attacks_resolved_by_defeats,
     grounded_extension,
 )
 from argumentation.core.finite import predecessors_index, successors_index
@@ -130,7 +131,13 @@ def simplify_af(
     removal is). When ``semantics`` is ``None`` the grounded reduct is applied --
     callers are responsible for only calling this for supported semantics.
     """
-    apply_grounded = semantics is None or semantics in GROUNDED_REDUCT_SEMANTICS
+    # On a mixed framework with an attack that is a defeat in neither direction,
+    # the defeat-based grounded set need not be conflict-free on attacks or
+    # contained in every extension (Modgil & Prakken 2018, Def 14; issue #90),
+    # so the grounded reduct is only applied when every attack is resolved.
+    apply_grounded = (
+        semantics is None or semantics in GROUNDED_REDUCT_SEMANTICS
+    ) and attacks_resolved_by_defeats(framework)
 
     fixed_in: frozenset[str] = frozenset()
     fixed_out: frozenset[str] = frozenset()

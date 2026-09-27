@@ -11,7 +11,7 @@ from __future__ import annotations
 from argumentation.core.dung import (
     ArgumentationFramework,
     admissible,
-    grounded_extension,
+    grounded_extensions,
     ideal_extension,
     semi_stable_extensions,
     stage_extensions,
@@ -34,7 +34,7 @@ def sat_extensions(
     if semantics == "admissible":
         return _sorted_extensions(_admissible_sets(framework))
     if semantics == "grounded":
-        return (grounded_extension(framework),)
+        return grounded_extensions(framework)
     # complete / preferred / stable -> SCC-recursive layer (Wave B2): grounded-reduct
     # preprocessing composed with Baroni-Giacomin-Guida SCC decomposition. Transparent.
     if semantics in ("complete", "preferred", "stable"):
