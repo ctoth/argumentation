@@ -22,9 +22,8 @@ from argumentation.gradual.sensitivity import attack_removal_sensitivity, score_
 
 def test_score_conflict_pivotal_argument_is_one() -> None:
     # a defeats b.  grounded = {a}.
-    # remove a -> args {b}, grounded {b}; symdiff {a,b} = 2.
-    # remove b -> args {a}, grounded {a}; symdiff {} = 0.
-    # total = 2 -> min(1, 2/2) = 1.0.
+    # remove a -> other args {b}; b flips out -> in; 1 of 1 = 1.0.
+    # remove b -> other args {a}; a stays in; 0 of 1 = 0.0.
     framework = ArgumentationFramework(
         arguments=frozenset({"a", "b"}),
         defeats=frozenset({("a", "b")}),
@@ -32,15 +31,29 @@ def test_score_conflict_pivotal_argument_is_one() -> None:
     assert score_conflict(framework, "a", "b") == pytest.approx(1.0)
 
 
-def test_score_conflict_isolated_arguments_only_drop_themselves() -> None:
-    # three arguments, no defeats. grounded = {a,b,c}.
-    # removing a leaves {b,c}; symdiff = {a} = 1. likewise for b.
-    # total = 3 -> min(1, 1/3) = 1/3.
+@pytest.mark.parametrize("arguments", [{"a", "b"}, {"a", "b", "c"}])
+def test_score_conflict_isolated_arguments_have_no_collateral_swing(
+    arguments: set[str],
+) -> None:
+    """Delobelle & Villata 2019, Def. 7 (p.4): ``Imp(X, y)`` compares ``y``
+    in ``F`` and ``F (-)_y X``, so only arguments outside the removed set are
+    evaluated. Removing an isolated argument changes no other verdict."""
     framework = ArgumentationFramework(
-        arguments=frozenset({"a", "b", "c"}),
+        arguments=frozenset(arguments),
         defeats=frozenset(),
     )
-    assert score_conflict(framework, "a", "b") == pytest.approx(1.0 / 3.0)
+    assert score_conflict(framework, "a", "b") == 0.0
+
+
+def test_score_conflict_counts_only_other_arguments_that_flip() -> None:
+    # a defeats b; c isolated.  grounded = {a, c}.
+    # remove a -> other args {b, c}; only b flips; 1 of 2 = 0.5.
+    # remove c -> other args {a, b}; nothing flips; 0.0.
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b")}),
+    )
+    assert score_conflict(framework, "a", "c") == pytest.approx(0.5)
 
 
 def test_score_conflict_empty_framework_is_zero() -> None:
