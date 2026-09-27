@@ -459,3 +459,52 @@ def test_partial_ranking_map_is_faithful(
     assert set(diller_2015_revise_by_formula(state, TAUTOLOGY).extensions) == set(
         extensions
     )
+
+
+def test_callable_ranking_revised_state_is_faithful() -> None:
+    """Issue #18: the revised state must rank its own extensions minimal.
+
+    Diller et al. 2015 define ``sigma * phi`` as the minimal models of phi
+    under a faithful assignment, and a faithful ranking makes the current
+    extensions strictly minimal (Definition 3). Revising the revised state by
+    a tautology must therefore keep the revised extensions.
+    """
+    state = ExtensionRevisionState.from_extensions(frozenset({"a"}), (frozenset(),))
+
+    first = diller_2015_revise_by_formula(state, A)
+    second = diller_2015_revise_by_formula(first.state, TAUTOLOGY)
+
+    assert first.extensions == (frozenset({"a"}),)
+    _assert_faithful(first.state, (frozenset(), frozenset({"a"})))
+    assert second.extensions == first.extensions
+
+
+def test_mapping_ranking_revised_state_is_faithful() -> None:
+    """Issue #18 control: the same revision starting from a ranking map."""
+    state = ExtensionRevisionState.from_extensions(
+        frozenset({"a"}),
+        (frozenset(),),
+        ranking={frozenset(): 0, frozenset({"a"}): 1},
+    )
+
+    first = diller_2015_revise_by_formula(state, A)
+    second = diller_2015_revise_by_formula(first.state, TAUTOLOGY)
+
+    assert first.extensions == (frozenset({"a"}),)
+    assert second.extensions == first.extensions
+
+
+@given(st.sets(st.sampled_from(sorted(ARGUMENTS)), max_size=3), st_formula)
+@settings(deadline=None)
+def test_callable_ranking_revision_then_tautology_is_stable(
+    extension: set[str],
+    formula: Formula,
+) -> None:
+    """Issue #18: revision followed by a tautology keeps the revised result."""
+    state = ExtensionRevisionState.from_extensions(ARGUMENTS, (frozenset(extension),))
+
+    first = diller_2015_revise_by_formula(state, formula)
+    second = diller_2015_revise_by_formula(first.state, TAUTOLOGY)
+
+    _assert_faithful(first.state, ExtensionRevisionState.all_extensions(ARGUMENTS))
+    assert set(second.extensions) == set(first.extensions)

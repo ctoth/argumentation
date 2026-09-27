@@ -118,7 +118,17 @@ class ExtensionRevisionState:
                 for candidate, rank in faithful_ranking.items()
             }
         else:
-            ranking = self.ranking
+            base_ranking = self.ranking
+
+            # Lazily wrap the callable into a faithful ranking without
+            # enumerating 2^A at construction time.
+            def faithful_callable(candidate: frozenset[str]) -> int:
+                base_rank = int(base_ranking(candidate))
+                if candidate in extension_set:
+                    return 0
+                return 1 + max(0, base_rank)
+
+            ranking = faithful_callable
         object.__setattr__(self, "extensions", normalized)
         object.__setattr__(self, "ranking", ranking)
 
