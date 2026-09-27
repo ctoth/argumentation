@@ -457,10 +457,15 @@ def _source_aspic_facts(
     supports = _source_literal_supports(
         system, kb, strict_rule_ids, defeasible_rule_ids
     )
+    # Body facts form a set, so the count is over distinct antecedents.
     for rule in system.strict_rules:
-        facts.add(f"s_body_count({strict_rule_ids[rule]},{len(rule.antecedents)}).")
+        facts.add(
+            f"s_body_count({strict_rule_ids[rule]},{len(set(rule.antecedents))})."
+        )
     for rule in system.defeasible_rules:
-        facts.add(f"d_body_count({defeasible_rule_ids[rule]},{len(rule.antecedents)}).")
+        facts.add(
+            f"d_body_count({defeasible_rule_ids[rule]},{len(set(rule.antecedents))})."
+        )
     support_index = 0
     for literal, literal_supports in sorted(
         supports.items(), key=lambda item: repr(item[0])

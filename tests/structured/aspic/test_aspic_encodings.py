@@ -579,3 +579,48 @@ def test_aspic_encoding_keeps_asp_safe_rule_names() -> None:
     assert "d_head(r1,p)." in encoding.facts
     _assert_asp_facts_parse(encoding.facts)
     _assert_asp_backend_matches_reference(system, kb)
+
+
+def _repeated_antecedent_theory(
+    antecedents: tuple[Literal, ...],
+) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    p = Literal(GroundAtom("p"))
+    q = Literal(GroundAtom("q"))
+    r = Literal(GroundAtom("r"))
+    system = ArgumentationSystem(
+        language=frozenset({p, q, r}),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset({Rule(antecedents, q, "strict")}),
+        defeasible_rules=frozenset({Rule(antecedents, r, "defeasible", "dr")}),
+    )
+    return system, KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
+
+
+def test_source_asp_facts_count_distinct_rule_antecedents() -> None:
+    """Issue #64: a body count must match the set of emitted body facts.
+
+    The rule body is the set of antecedents that must be derived
+    (Lehtonen et al. 2020, AT(T) body facts), so ``p, p -> q`` fires on
+    ``p`` exactly as the materialized reference does.
+    """
+    from argumentation.structured.aspic.aspic_encoding import _source_aspic_facts
+
+    p = Literal(GroundAtom("p"))
+    system, kb = _repeated_antecedent_theory((p, p))
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    facts, _element_ids = _source_aspic_facts(system, kb, NO_PREFERENCES, encoding)
+
+    assert "s_body_count(s_0,1)." in facts
+    assert "d_body_count(dr,1)." in facts
+    assert _assert_asp_backend_matches_reference(system, kb) >= {
+        Literal(GroundAtom("q")),
+        Literal(GroundAtom("r")),
+    }
+
+
+def test_source_asp_facts_count_single_rule_antecedent() -> None:
+    """Issue #64 control: an ordinary one-antecedent body."""
+    system, kb = _repeated_antecedent_theory((Literal(GroundAtom("p")),))
+
+    _assert_asp_backend_matches_reference(system, kb)
