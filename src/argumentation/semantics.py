@@ -17,7 +17,7 @@ from argumentation.core.dung import (
     ArgumentationFramework,
     cf2_extensions,
     complete_extensions,
-    grounded_extension,
+    grounded_extensions,
     ideal_extension,
     preferred_extensions,
     prudent_grounded_extension,
@@ -70,7 +70,7 @@ def _dung_extensions(
     semantics: str,
 ) -> tuple[frozenset[str], ...]:
     if semantics == "grounded":
-        return (grounded_extension(framework),)
+        return grounded_extensions(framework)
     if semantics == "ideal":
         return (ideal_extension(framework),)
     if semantics == "complete":

@@ -141,6 +141,10 @@ def solve_aspic_grounded(
     This is the tested direct package query surface. Its current backend is the
     materialized ASPIC-to-Dung reference path; optional ASP/clingo backends can
     attach to the same encoding/result contract in later slices.
+
+    Raises ``ValueError`` when the projected framework has no complete
+    extension, which happens only outside Modgil & Prakken 2018's well-defined
+    domain (Def 14; e.g. strict rules not closed under transposition).
     """
     from argumentation.core.dung import grounded_extension
 
@@ -420,7 +424,7 @@ def _materialized_extensions(framework, semantics: str) -> tuple[frozenset[str],
     from argumentation.core import dung
 
     if semantics == "grounded":
-        return (dung.grounded_extension(framework),)
+        return dung.grounded_extensions(framework)
     if semantics == "admissible":
         return tuple(
             candidate

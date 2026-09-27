@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from gunray import DefeasibleTheory, Rule as GunrayRule
 
 from argumentation.structured.aspic.aspic import GroundAtom, Literal, build_arguments
@@ -181,3 +182,210 @@ def test_defeater_projection_records_structured_undercut_origin() -> None:
     assert undercut_origin.substitution == (("X", "tweety"),)
     assert undercut_origin.role == "undercut"
     assert undercut_origin.target_rule == target_rule
+
+
+def _flies(constant: str) -> Literal:
+    return Literal(GroundAtom("flies", (constant,)))
+
+
+def _birds_fly_theory(defeater_head: str, exception_facts) -> DefeasibleTheory:
+    return DefeasibleTheory(
+        facts={"bird": {("a",), ("b",)}, "exception": exception_facts},
+        defeasible_rules=[
+            GunrayRule(id="birds_fly", head="flies(X)", body=["bird(X)"]),
+        ],
+        defeaters=[
+            GunrayRule(id="except", head=defeater_head, body=["exception(X)"]),
+        ],
+    )
+
+
+def test_named_defeater_undercuts_only_its_matching_rule_instance() -> None:
+    """Issue #66: ``~birds_fly(a)`` undercuts only the ``X = a`` instance.
+
+    Diller et al. 2025 ground each rule instance ``r theta`` separately, and
+    an undercut targets the name ``n(r)`` of one defeasible rule (Def 3), so
+    a named defeater for ``birds_fly(a)`` must not undercut ``birds_fly(b)``.
+    """
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(_birds_fly_theory("~birds_fly(X)", {("a",)}))
+
+    targets = [
+        grounded.rule_origins[origin.target_rule].substitution
+        for origin in grounded.rule_origins.values()
+        if origin.role == "undercut" and origin.target_rule is not None
+    ]
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert targets == [(("X", "a"),)]
+    assert _flies("b") in accepted
+    assert _flies("a") not in accepted
+
+
+def _pair_theory(*, head: str, body: list[str]) -> DefeasibleTheory:
+    """Rule ``r`` over facts pair(a, b) and pair(b, a); the defeater
+    ``~r(a, b)`` fires on exc(a, b)."""
+    return DefeasibleTheory(
+        facts={"pair": {("a", "b"), ("b", "a")}, "exc": {("a", "b")}},
+        defeasible_rules=[GunrayRule(id="r", head=head, body=body)],
+        defeaters=[GunrayRule(id="except", head="~r(P, Q)", body=["exc(P, Q)"])],
+    )
+
+
+def _undercut_target_substitutions(grounded) -> list[tuple[tuple[str, str], ...]]:
+    return [
+        grounded.rule_origins[origin.target_rule].substitution
+        for origin in grounded.rule_origins.values()
+        if origin.role == "undercut" and origin.target_rule is not None
+    ]
+
+
+def test_named_defeater_binds_variables_in_first_appearance_order() -> None:
+    """Issue #66 (maintainer decision): ``~r(t1, ..., tn)`` binds r's
+    variables in first-appearance order, head then body left to right. For
+    ``rel(Y, A) :- pair(Y, A)`` that is (Y, A), not the alphabetical (A, Y),
+    so ``~r(a, b)`` names the instance Y = a, A = b."""
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(
+        _pair_theory(head="rel(Y, A)", body=["pair(Y, A)"])
+    )
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
+    assert Literal(GroundAtom("rel", ("a", "b"))) not in accepted
+    assert Literal(GroundAtom("rel", ("b", "a"))) in accepted
+
+
+def test_named_defeater_orders_body_variables_left_to_right() -> None:
+    """Issue #66: a variable first seen in the body follows the head's
+    variables, in body order: ``ok(Y) :- pair(Y, A)`` orders (Y, A)."""
+    grounded = ground_defeasible_theory(_pair_theory(head="ok(Y)", body=["pair(Y, A)"]))
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
+
+
+def test_named_defeater_alphabetical_and_first_appearance_agree_control() -> None:
+    """Issue #66 control: for ``rel(A, Y)`` both orders are (A, Y), so
+    ``~r(a, b)`` names A = a, Y = b."""
+    grounded = ground_defeasible_theory(
+        _pair_theory(head="rel(A, Y)", body=["pair(A, Y)"])
+    )
+
+    assert _undercut_target_substitutions(grounded) == [(("A", "a"), ("Y", "b"))]
+
+
+def test_inspection_projection_needs_variable_order_for_named_arguments() -> None:
+    """Issue #66: a bare Gunray inspection carries no rule text, so the
+    first-appearance order is unknown; a named defeater with arguments is
+    rejected instead of guessed, and succeeds once the order is supplied."""
+    import gunray
+
+    theory = _pair_theory(head="rel(Y, A)", body=["pair(Y, A)"])
+    inspection = gunray.inspect_grounding(theory)
+
+    with pytest.raises(ValueError, match="variable order"):
+        grounding_inspection_to_aspic(inspection)
+
+    grounded = grounding_inspection_to_aspic(
+        inspection, rule_variable_orders={"r": ("Y", "A")}
+    )
+    assert _undercut_target_substitutions(grounded) == [(("A", "b"), ("Y", "a"))]
+
+
+def test_named_defeater_without_exception_undercuts_nothing() -> None:
+    """Issue #66 control: with no exception fact both birds fly."""
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(_birds_fly_theory("~birds_fly(X)", set()))
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert {_flies("a"), _flies("b")} <= accepted
+
+
+def _animal_theory(heads: tuple[str, str]) -> DefeasibleTheory:
+    return DefeasibleTheory(
+        facts={"bird": {("a",)}},
+        strict_rules=[
+            GunrayRule(id=rule_id, head=head, body=["bird(X)"])
+            for rule_id, head in zip(("s1", "s2"), heads, strict=True)
+        ],
+    )
+
+
+def test_identically_grounded_strict_rules_keep_every_source_id() -> None:
+    """Issue #67: two authored rules grounding to one ASPIC+ rule keep both ids.
+
+    Diller et al. 2025 (Def 9) ground each authored rule separately, so the
+    source-to-ground relation is many-to-one and must not drop ``s1``.
+    """
+    grounded = ground_defeasible_theory(
+        _animal_theory(("animal(X)", "animal(X)")), simplify=False
+    )
+    animal = Literal(GroundAtom("animal", ("a",)))
+
+    assert set(grounded.source_to_ground_rules) == {"s1", "s2"}
+    assert (
+        grounded.source_to_ground_rules["s1"] == grounded.source_to_ground_rules["s2"]
+    )
+    assert {rule.consequent for rule in grounded.source_to_ground_rules["s1"]} == {
+        animal
+    }
+
+
+def test_distinctly_grounded_strict_rules_keep_every_source_id() -> None:
+    """Issue #67 control: distinct heads give distinct ground rules."""
+    grounded = ground_defeasible_theory(
+        _animal_theory(("animal(X)", "creature(X)")), simplify=False
+    )
+
+    assert set(grounded.source_to_ground_rules) == {"s1", "s2"}
+    assert grounded.source_to_ground_rules["s1"].isdisjoint(
+        grounded.source_to_ground_rules["s2"]
+    )
+
+
+def _flying_with_unrelated_fact(fact_predicate: str) -> frozenset[Literal]:
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(
+        DefeasibleTheory(
+            facts={"bird": {("a",)}, fact_predicate: {()}},
+            defeasible_rules=[
+                GunrayRule(id="birds_fly", head="flies(X)", body=["bird(X)"]),
+            ],
+        )
+    )
+    authored = {
+        Literal(GroundAtom(fact_predicate.removeprefix("~")), negated=True),
+        Literal(GroundAtom("bird", ("a",))),
+    }
+    names = {
+        rule.name for rule in grounded.system.defeasible_rules if rule.name is not None
+    }
+    assert not names & {literal.atom.predicate for literal in authored}
+    return solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+
+def test_generated_rule_names_avoid_authored_predicates() -> None:
+    """Issue #68: generated names n(r) must be fresh in the language.
+
+    An undercut targets ``n(r)`` (Diller et al. 2025, Def 3), so a generated
+    name equal to an authored predicate turns the unrelated fact ``~gr0``
+    into an undercutter of ``birds_fly``.
+    """
+    assert _flies("a") in _flying_with_unrelated_fact("~gr0")
+
+
+def test_generated_rule_names_with_unrelated_fact_control() -> None:
+    """Issue #68 control: a non-colliding unrelated fact changes nothing."""
+    assert _flies("a") in _flying_with_unrelated_fact("~unrelated")

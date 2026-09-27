@@ -163,13 +163,19 @@ class TestAttackBasedConflictFree:
         exts = stable_extensions(framework)
         assert frozenset({"A", "B"}) not in exts
 
-    def test_grounded_extension_ignores_attack_metadata(self) -> None:
+    def test_grounded_extension_rejects_attack_conflicting_least_fixed_point(
+        self,
+    ) -> None:
+        # Issue #90: grounded is the least complete extension under Modgil &
+        # Prakken 2018 Def 14; {A, B} is not conflict-free on attacks, so no
+        # complete extension exists.
         framework = ArgumentationFramework(
             arguments=frozenset({"A", "B"}),
             defeats=frozenset(),
             attacks=frozenset({("A", "B")}),
         )
-        assert grounded_extension(framework) == frozenset({"A", "B"})
+        with pytest.raises(ValueError, match="no complete extension"):
+            grounded_extension(framework)
 
 
 class TestBipolarExtensions:

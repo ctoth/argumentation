@@ -77,7 +77,51 @@ def ground_defeasible_theory(
         comparison=comparison,
         link=link,
         simplify=simplify,
+        rule_variable_orders=rule_variable_orders(theory),
     )
+
+
+def rule_variable_orders(theory: "DefeasibleTheory") -> Mapping[str, tuple[str, ...]]:
+    """Map each rule id to its variables in first-appearance order.
+
+    Variables are ordered by where they first occur: the head's terms left to
+    right, then each body literal left to right (default negation included).
+    ``rel(Y, A) :- pair(Y, A)`` therefore orders ``(Y, A)``, not the
+    alphabetical ``(A, Y)``. This is the order in which a named defeater
+    ``~r(t1, ..., tn)`` binds ``r``'s variables.
+    """
+    from gunray.parser import parse_atom_text
+
+    orders: dict[str, tuple[str, ...]] = {}
+    for rule in (
+        *theory.strict_rules,
+        *theory.defeasible_rules,
+        *theory.defeaters,
+        *theory.presumptions,
+    ):
+        variables: dict[str, None] = {}
+        for text in (rule.head, *rule.body):
+            atom_text = text.strip()
+            if atom_text.startswith("not "):
+                atom_text = atom_text[4:].strip()
+            for term in parse_atom_text(atom_text).terms:
+                for name in _term_variables_in_order(term):
+                    variables.setdefault(name, None)
+        orders[rule.id] = tuple(variables)
+    return orders
+
+
+def _term_variables_in_order(term: Any) -> tuple[str, ...]:
+    from gunray.types import AddExpression, SubtractExpression, Variable
+
+    if isinstance(term, Variable):
+        return (term.name,)
+    if isinstance(term, (AddExpression, SubtractExpression)):
+        return (
+            *_term_variables_in_order(term.left),
+            *_term_variables_in_order(term.right),
+        )
+    return ()
 
 
 def grounding_inspection_to_aspic(
@@ -88,11 +132,19 @@ def grounding_inspection_to_aspic(
     comparison: str = "elitist",
     link: str = "last",
     simplify: bool = True,
+    rule_variable_orders: Mapping[str, tuple[str, ...]] | None = None,
 ) -> GroundedDatalogTheory:
     """Project a Gunray ``GroundingInspection`` into ASPIC+ objects.
 
     This is the direct integration point for callers that already ran Gunray
     and kept the inspection report, such as propstore's ``GroundedRulesBundle``.
+
+    A named defeater ``~r(t1, ..., tn)`` undercuts the instance of rule ``r``
+    whose variables, in first-appearance order (head, then body left to
+    right), take the values ``t1..tn``. The inspection carries no rule text,
+    so callers with such defeaters pass ``rule_variable_orders`` (see
+    :func:`rule_variable_orders`); without it a named defeater with arguments
+    raises ``ValueError`` rather than guessing an order.
     """
 
     simplification = inspection.simplification
@@ -112,14 +164,24 @@ def grounding_inspection_to_aspic(
 
     axioms = frozenset(_literal_from_ground_atom(atom) for atom in fact_atoms)
     rule_origins: dict[Rule, GroundRuleOrigin] = {}
+    # Distinct authored rules can ground to one ASPIC+ rule; keep every
+    # (rule, origin) pair so no source id is dropped.
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]] = []
     strict_rules = tuple(
         _rule_from_instance(
             instance,
             kind="strict",
             name=None,
             origins=rule_origins,
+            ground_origins=ground_origins,
         )
         for instance in strict_instances
+    )
+    # Generated rule names n(r) are literals of L that undercuts target, so
+    # they must be fresh with respect to every authored predicate.
+    reserved_names = _authored_predicates(
+        fact_atoms,
+        (*strict_instances, *defeasible_instances, *defeater_instances),
     )
     defeasible_rules = []
     for index, instance in enumerate(defeasible_instances):
@@ -127,8 +189,9 @@ def grounding_inspection_to_aspic(
             _rule_from_instance(
                 instance,
                 kind="defeasible",
-                name=f"gr{index}",
+                name=_fresh_rule_name(f"gr{index}", reserved_names),
                 origins=rule_origins,
+                ground_origins=ground_origins,
             )
         )
     defeasible_rules.extend(
@@ -136,10 +199,12 @@ def grounding_inspection_to_aspic(
             defeater_instances,
             defeasible_rules,
             rule_origins,
+            reserved_names,
+            rule_variable_orders,
         )
     )
 
-    source_to_ground = _source_to_ground_rules(rule_origins)
+    source_to_ground = _source_to_ground_rules(ground_origins)
     pref = PreferenceConfig(
         rule_order=_project_rule_order(superiority, source_to_ground),
         premise_order=frozenset(),
@@ -195,6 +260,7 @@ def _rule_from_instance(
     kind: str,
     name: str | None,
     origins: dict[Rule, GroundRuleOrigin],
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]],
 ) -> Rule:
     if getattr(instance, "default_negated_body", ()):
         raise ValueError("ASPIC+ grounding does not accept default-negated rule bodies")
@@ -204,11 +270,13 @@ def _rule_from_instance(
         kind=kind,
         name=name,
     )
-    origins[rule] = GroundRuleOrigin(
+    origin = GroundRuleOrigin(
         source_rule_id=instance.rule_id,
         substitution=tuple((name, value) for name, value in instance.substitution),
         role="ground",
     )
+    origins.setdefault(rule, origin)
+    ground_origins.append((rule, origin))
     return rule
 
 
@@ -216,6 +284,8 @@ def _undercut_rules_from_defeaters(
     defeater_instances: tuple["GroundRuleInstance", ...],
     target_rules: list[Rule],
     origins: dict[Rule, GroundRuleOrigin],
+    reserved_names: set[str],
+    variable_orders: Mapping[str, tuple[str, ...]] | None,
 ) -> tuple[Rule, ...]:
     undercut_rules: list[Rule] = []
     for instance in defeater_instances:
@@ -225,7 +295,9 @@ def _undercut_rules_from_defeaters(
             )
         defeater_head = _literal_from_ground_atom(instance.head)
         antecedents = tuple(_literal_from_ground_atom(atom) for atom in instance.body)
-        defeater_targets = _defeater_targets(defeater_head, target_rules, origins)
+        defeater_targets = _defeater_targets(
+            defeater_head, target_rules, origins, variable_orders
+        )
         for target_rule in defeater_targets:
             if target_rule.name is None:
                 continue
@@ -233,7 +305,7 @@ def _undercut_rules_from_defeaters(
                 antecedents=antecedents,
                 consequent=Literal(GroundAtom(target_rule.name), negated=True),
                 kind="defeasible",
-                name=f"uc{len(undercut_rules)}",
+                name=_fresh_rule_name(f"uc{len(undercut_rules)}", reserved_names),
             )
             origins[rule] = GroundRuleOrigin(
                 source_rule_id=instance.rule_id,
@@ -247,20 +319,60 @@ def _undercut_rules_from_defeaters(
     return tuple(undercut_rules)
 
 
+def _authored_predicates(
+    fact_atoms: Any,
+    instances: tuple["GroundRuleInstance", ...],
+) -> set[str]:
+    atoms = [*fact_atoms]
+    for instance in instances:
+        atoms.append(instance.head)
+        atoms.extend(instance.body)
+    return {_literal_from_ground_atom(atom).atom.predicate for atom in atoms}
+
+
+def _fresh_rule_name(preferred: str, reserved_names: set[str]) -> str:
+    """Return ``preferred`` or a suffixed variant not yet reserved, and reserve it."""
+    name = preferred
+    suffix = 0
+    while name in reserved_names:
+        suffix += 1
+        name = f"{preferred}_{suffix}"
+    reserved_names.add(name)
+    return name
+
+
 def _defeater_targets(
     defeater_head: Literal,
     rules: list[Rule],
     origins: Mapping[Rule, GroundRuleOrigin],
+    variable_orders: Mapping[str, tuple[str, ...]] | None,
 ) -> tuple[Rule, ...]:
     if defeater_head.negated:
-        source_id_targets = tuple(
+        # ``~r(t1, ..., tn)`` names the instance of rule ``r`` whose variables,
+        # in first-appearance order (head, then body left to right), take the
+        # values ``t1..tn`` (Diller et al. 2025: each ground instance r theta
+        # is a separate rule). A nullary ``~r`` names every instance of ``r``.
+        source_id = defeater_head.atom.predicate
+        named_rules = [
             rule
             for rule in rules
-            if rule.name is not None
-            and origins[rule].source_rule_id == defeater_head.atom.predicate
-        )
-        if source_id_targets:
-            return source_id_targets
+            if rule.name is not None and origins[rule].source_rule_id == source_id
+        ]
+        arguments = defeater_head.atom.arguments
+        if named_rules and arguments:
+            if variable_orders is None or source_id not in variable_orders:
+                raise ValueError(
+                    f"named defeater {defeater_head!r} needs the variable order of "
+                    f"rule {source_id!r}; pass rule_variable_orders"
+                )
+            order = variable_orders[source_id]
+            named_rules = [
+                rule
+                for rule in named_rules
+                if _values_in_order(origins[rule].substitution, order) == arguments
+            ]
+        if named_rules:
+            return tuple(named_rules)
     return tuple(
         rule
         for rule in rules
@@ -268,13 +380,21 @@ def _defeater_targets(
     )
 
 
+def _values_in_order(
+    substitution: tuple[tuple[str, Scalar], ...],
+    order: tuple[str, ...],
+) -> tuple[Scalar, ...] | None:
+    bindings = dict(substitution)
+    if set(bindings) != set(order):
+        return None
+    return tuple(bindings[name] for name in order)
+
+
 def _source_to_ground_rules(
-    origins: Mapping[Rule, GroundRuleOrigin],
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]],
 ) -> Mapping[str, frozenset[Rule]]:
     grouped: dict[str, set[Rule]] = {}
-    for rule, origin in origins.items():
-        if origin.role != "ground":
-            continue
+    for rule, origin in ground_origins:
         grouped.setdefault(origin.source_rule_id, set()).add(rule)
     return {source_id: frozenset(rules) for source_id, rules in grouped.items()}
 

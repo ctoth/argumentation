@@ -33,9 +33,10 @@ from argumentation.frameworks.adf import AbstractDialecticalFramework
 from argumentation.structured.aspic.aspic import Literal
 from argumentation.core.dung import (
     ArgumentationFramework,
+    attacks_resolved_by_defeats,
     cf2_extensions,
     complete_extensions,
-    grounded_extension,
+    grounded_extensions,
     ideal_extension,
     preferred_extensions,
     semi_stable_extensions,
@@ -391,7 +392,13 @@ def solve_dung_single_extension(
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
         trace_sink, metadata, check_budget_seconds = _sat_options(sat)
-        find_single = _SAT_SINGLE_EXTENSION_FINDERS.get(semantics)
+        # The dedicated SAT kernels assume every attack is a defeat in some
+        # direction; otherwise use the Def 14 enumeration below (issue #90).
+        find_single = (
+            _SAT_SINGLE_EXTENSION_FINDERS.get(semantics)
+            if attacks_resolved_by_defeats(framework)
+            else None
+        )
         if find_single is not None:
             # Only complete/preferred finders accept an engine and are routed to
             # sat-core (SE-CO / SE-PR); stable/semi-stable/stage/ideal keep smt.
@@ -453,7 +460,10 @@ def solve_dung_acceptance(
         if sat is not None and sat.require_external:
             return _external_sat_unavailable()
         trace_sink, metadata, check_budget_seconds = _sat_options(sat)
-        if requested_backend == "auto":
+        # The cone and dedicated SAT kernels assume every attack is a defeat in
+        # some direction; otherwise use the Def 14 enumeration (issue #90).
+        dedicated_kernels_apply = attacks_resolved_by_defeats(framework)
+        if requested_backend == "auto" and dedicated_kernels_apply:
             # Query-directed SCC-cone path (sound per the derivations in
             # experiments/2026-07-10-af-scc-acceptance.md); None means the
             # cone does not apply or is inconclusive -> flat path below.
@@ -473,7 +483,11 @@ def solve_dung_acceptance(
                 return _optional_dependency_unavailable(exc)
             if cone_result is not None:
                 return cone_result
-        solve_dedicated = _dedicated_sat_acceptance_solver(semantics, task)
+        solve_dedicated = (
+            _dedicated_sat_acceptance_solver(semantics, task)
+            if dedicated_kernels_apply
+            else None
+        )
         if solve_dedicated is not None:
             try:
                 return solve_dedicated(
@@ -1157,7 +1171,7 @@ def _dung_extensions(
     semantics: str,
 ) -> list[frozenset[str]]:
     if semantics == "grounded":
-        return [grounded_extension(framework)]
+        return list(grounded_extensions(framework))
     # complete / preferred / stable: route through the SCC-recursive layer
     # (Wave B2), which composes the Wave A grounded-reduct preprocessing with
     # Baroni-Giacomin-Guida SCC decomposition. Transparent: identical results,

@@ -150,14 +150,27 @@ class TestGroundedConcrete:
         )
         assert result == frozenset({"A", "C"})
 
-    def test_grounded_ignores_attack_metadata(self):
-        """Grounded semantics always uses defeats, even when attacks are present."""
+    def test_grounded_rejects_attack_conflicting_least_fixed_point(self):
+        """Issue #90: grounded is the least complete extension (Modgil &
+        Prakken 2018 Def 14); the defeat-based fixed point {A, B} conflicts on
+        attacks, so there is no complete and hence no grounded extension."""
         fw = ArgumentationFramework(
             arguments=frozenset({"A", "B"}),
             defeats=frozenset(),
             attacks=frozenset({("A", "B")}),
         )
-        assert grounded_extension(fw) == frozenset({"A", "B"})
+        with pytest.raises(ValueError, match="no complete extension"):
+            grounded_extension(fw)
+
+    def test_grounded_uses_defeats_when_least_fixed_point_is_conflict_free(self):
+        """Issue #90 control: attack A -> B failed, B -> A succeeded as a
+        defeat; grounded is {B}, the least complete extension."""
+        fw = ArgumentationFramework(
+            arguments=frozenset({"A", "B"}),
+            defeats=frozenset({("B", "A")}),
+            attacks=frozenset({("A", "B"), ("B", "A")}),
+        )
+        assert grounded_extension(fw) == frozenset({"B"})
 
 
 class TestFrameworkValidation:
