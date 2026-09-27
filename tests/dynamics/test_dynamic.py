@@ -240,3 +240,81 @@ def test_incremental_state_reports_honest_recompute_for_unsupported_update_kind(
     assert result.fallback_reason == "unsupported_update_kind"
     assert result.updated_framework.arguments == frozenset({"a", "b"})
     assert dynamic.current_extension == frozenset({"a", "b"})
+
+
+def _preference_filtered_af() -> ArgumentationFramework:
+    """a attacks b, but a preference blocks the defeat (Modgil & Prakken 2018)."""
+    return ArgumentationFramework(
+        arguments=frozenset({"a", "b"}),
+        defeats=frozenset(),
+        attacks=frozenset({("a", "b")}),
+    )
+
+
+def test_noop_updates_preserve_pre_preference_attacks() -> None:
+    """Issue #5: a set-wise no-op change must leave the framework unchanged.
+
+    Cayrol et al. 2014, Definition 7, defines each change operation on
+    ``(A, R)`` purely by the added or removed argument/interaction, so
+    adding an argument already in ``A`` or removing an interaction not in
+    ``R`` yields the same AF. The pre-preference attack relation is part of
+    that AF: Modgil & Prakken 2018, Definition 14, checks conflict-freeness
+    against attacks, so dropping it changes the naive extensions.
+    """
+    framework = _preference_filtered_af()
+    for update in (
+        DynamicUpdate("add_arg", "a"),
+        DynamicUpdate("del_arg", "missing"),
+        DynamicUpdate("del_att", "b", "a"),
+    ):
+        dynamic = DynamicArgumentationFramework(framework)
+        dynamic.apply(update)
+
+        assert dynamic.framework == framework, update
+    oracle = DynamicRecomputeOracle(framework).apply(DynamicUpdate("add_arg", "a"))
+    assert oracle.framework == framework
+
+
+def test_argument_updates_keep_unaffected_attacks() -> None:
+    """Issue #5: removing argument Z drops only Z's interactions (Cayrol 2014, Def 7)."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("c", "a")}),
+        attacks=frozenset({("a", "b"), ("c", "a")}),
+    )
+    dynamic = DynamicArgumentationFramework(framework)
+
+    dynamic.add_argument("d")
+    assert dynamic.framework.attacks == framework.attacks
+
+    dynamic.remove_argument("c")
+    assert dynamic.framework == ArgumentationFramework(
+        arguments=frozenset({"a", "b", "d"}),
+        defeats=frozenset(),
+        attacks=frozenset({("a", "b")}),
+    )
+
+
+def test_attack_updates_change_both_relations_of_mixed_framework() -> None:
+    """Issue #5 control: an added interaction is a successful attack.
+
+    A defeat is an attack that survives preference filtering (Modgil &
+    Prakken 2018, Definition 9), so adding an interaction adds it to both
+    relations and removing it removes it from both.
+    """
+    dynamic = DynamicArgumentationFramework(_preference_filtered_af())
+
+    dynamic.add_attack("b", "a")
+    assert dynamic.framework.defeats == frozenset({("b", "a")})
+    assert dynamic.framework.attacks == frozenset({("a", "b"), ("b", "a")})
+
+    dynamic.remove_attack("a", "b")
+    assert dynamic.framework.defeats == frozenset({("b", "a")})
+    assert dynamic.framework.attacks == frozenset({("b", "a")})
+
+    plain = DynamicArgumentationFramework(
+        ArgumentationFramework(arguments=frozenset({"a", "b"}), defeats=frozenset())
+    )
+    plain.add_attack("a", "b")
+    assert plain.framework.attacks is None
+    assert plain.framework.defeats == frozenset({("a", "b")})

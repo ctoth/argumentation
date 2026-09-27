@@ -26,6 +26,7 @@ from argumentation.probabilistic.probabilistic_components import connected_compo
 
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
 _DETERMINISTIC_EPSILON = 1e-12
+_EXACT_ENUMERATION_MAX_WORLD_EXPONENT = 13
 _UNSET = object()
 _ALLOWED_STRATEGIES = frozenset(
     {
@@ -52,8 +53,10 @@ def _z_for_confidence(confidence: float) -> float:
         return _Z_SCORES[confidence]
     if not 0.0 < confidence < 1.0:
         raise ValueError(f"mc_confidence must be in (0,1), got {confidence}")
-    p = 1.0 - (1.0 - confidence) / 2.0
-    return _inverse_standard_normal_cdf(p)
+    # Evaluate the lower tail alpha/2 directly: forming 1 - alpha/2 rounds to
+    # 1.0 for confidences within float spacing of one and loses the tail.
+    lower_tail = (1.0 - confidence) / 2.0
+    return -_inverse_standard_normal_cdf(lower_tail)
 
 
 def _inverse_standard_normal_cdf(p: float) -> float:
@@ -394,6 +397,26 @@ def _requires_relation_rich_worlds(praf: ProbabilisticAF) -> bool:
     return _supports_structure(praf) or _uses_attack_only_conflicts(praf)
 
 
+def _exact_enumeration_world_exponent(praf: ProbabilisticAF) -> int:
+    """Log2 upper bound of the world space exact enumeration walks.
+
+    `_compute_exact_enumeration` iterates every argument subset and, within
+    it, every configuration of the attacks and supports that carry a
+    probability. Per Li et al. (2011, p.3-4) this is O(2^(|A|+|D|)).
+    """
+    probabilistic_attacks = sum(
+        1
+        for edge in _primitive_attacks(praf)
+        if _attack_opinion(praf, edge) is not None
+    )
+    probabilistic_supports = sum(
+        1 for edge in praf.supports if _support_opinion(praf, edge) is not None
+    )
+    return (
+        len(praf.framework.arguments) + probabilistic_attacks + probabilistic_supports
+    )
+
+
 def _all_structure_deterministic(praf: ProbabilisticAF) -> bool:
     if not all(_is_deterministic_opinion(p) for p in praf.p_args.values()):
         return False
@@ -425,11 +448,22 @@ def _validate_query_contract(
 ) -> tuple[str, str | None, tuple[str, ...] | None]:
     """Validate explicit query selectors for PrAF acceptance queries."""
     if strategy in {"dfquad", "dfquad_quad", "dfquad_baf"}:
+        if query_kind is not _UNSET and str(query_kind) != "gradual_strength":
+            raise ValueError(
+                "DF-QuAD strategies only answer query_kind='gradual_strength', "
+                f"got {query_kind!r}"
+            )
+        if inference_mode is not _UNSET and inference_mode is not None:
+            raise ValueError("DF-QuAD strategies do not use inference_mode")
+        if queried_set is not None:
+            raise ValueError("DF-QuAD strategies do not use queried_set")
         return "gradual_strength", None, None
 
     if query_kind is _UNSET:
         if inference_mode is not _UNSET and inference_mode is not None:
             raise ValueError("inference_mode requires an explicit query_kind")
+        if queried_set is not None:
+            raise ValueError("queried_set requires an explicit query_kind")
         return "argument_acceptance", "credulous", None
 
     query_kind_str = str(query_kind)
@@ -643,7 +677,9 @@ def _enumerate_worlds(
                 sampled_attacks.add(edge)
             else:
                 p_attacks_config *= 1.0 - p_edge
-        if p_attacks_config < 1e-15:
+        # Only impossible worlds are skipped: exact inference applies no
+        # absolute pruning threshold to positive-probability worlds.
+        if p_attacks_config == 0.0:
             continue
 
         for support_mask in range(1 << n_prob_supports):
@@ -657,7 +693,7 @@ def _enumerate_worlds(
                     p_supports_config *= 1.0 - p_edge
 
             total_prob = p_attacks_config * p_supports_config
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
 
             yield (
@@ -708,6 +744,12 @@ def _compute_probabilistic_acceptance(
     )
 
     if normalized_strategy == "deterministic":
+        if not _all_structure_deterministic(praf):
+            raise ValueError(
+                "strategy='deterministic' requires every argument, attack, and "
+                "support probability to be 0 or 1; use 'exact_enum' or 'mc' "
+                "for uncertain frameworks"
+            )
         result = _deterministic_fallback(
             praf,
             semantics,
@@ -820,9 +862,10 @@ def _compute_probabilistic_acceptance(
             queried_set=normalized_queried_set,
         )
 
-    # Small AF: exact enumeration (Li 2012, p.8: exact beats MC below ~13 args)
-    n_args = len(praf.framework.arguments)
-    if n_args <= 13:
+    # Small world space: exact enumeration. Li (2012, p.8) measured exact
+    # beating MC below ~13 arguments with deterministic defeats; exact cost is
+    # O(2^(|A|+|D|)) (p.3-4), so uncertain relations count against the budget.
+    if _exact_enumeration_world_exponent(praf) <= _EXACT_ENUMERATION_MAX_WORLD_EXPONENT:
         return _compute_exact_enumeration(
             praf,
             semantics,
@@ -1054,8 +1097,17 @@ def _compute_mc(
             queried_set=queried_set,
         )
 
-    # Decompose into connected components per Hunter & Thimm (2017, Prop 18)
-    components = connected_components(praf)
+    # Decompose into connected components per Hunter & Thimm (2017, Prop 18).
+    # Global extensions are the cross-product of component extensions
+    # (Baroni et al. 2005, p.181-183), so per-component acceptance is global
+    # acceptance only when every component is guaranteed an extension. Stable
+    # extensions may not exist (Baroni et al. 2005, p.167-168): a component
+    # without one empties the global extension set, so stable is sampled whole.
+    components: list[set[str]] = (
+        [set(praf.framework.arguments)]
+        if semantics == "stable"
+        else connected_components(praf)
+    )
 
     # Compute acceptance per component independently
     all_acceptance: dict[str, float] = {}
@@ -1240,13 +1292,13 @@ def _compute_exact_enumeration(
             else:
                 p_args_present *= 1.0 - p_a
 
-        if p_args_present < 1e-15:
+        if p_args_present == 0.0:
             continue
 
         # Find valid defeats (both endpoints present)
         for p_world, sub_af in _enumerate_worlds(praf, sampled_args):
             total_prob = p_args_present * p_world
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
             evaluation = _evaluate_world_query(
                 sub_af,
@@ -1401,12 +1453,12 @@ def summarize_defeat_relations(
             else:
                 p_args_present *= 1.0 - p_a
 
-        if p_args_present < 1e-15:
+        if p_args_present == 0.0:
             continue
 
         for p_world, sub_af in _enumerate_worlds(praf, sampled_args):
             total_prob = p_args_present * p_world
-            if total_prob < 1e-15:
+            if total_prob == 0.0:
                 continue
             for defeat in sub_af.defeats:
                 acceptance[defeat] = acceptance.get(defeat, 0.0) + total_prob
@@ -1441,7 +1493,10 @@ def _compute_dfquad(
     sampling and τ as an independent parameter.
     """
     from argumentation.gradual.dfquad import dfquad_bipolar_strengths, dfquad_strengths
-    from argumentation.gradual.gradual import WeightedBipolarGraph
+    from argumentation.gradual.gradual import (
+        GradualConvergenceError,
+        WeightedBipolarGraph,
+    )
 
     if semantics != "grounded":
         raise ValueError(
@@ -1484,6 +1539,8 @@ def _compute_dfquad(
         raise ValueError(
             "strategy='dfquad' is ambiguous; use 'dfquad_quad' or 'dfquad_baf'"
         )
+    if not result.converged:
+        raise GradualConvergenceError(f"{strategy} strengths", result)
 
     return PrAFResult(
         acceptance_probs=result.strengths,
