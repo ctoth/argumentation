@@ -998,21 +998,23 @@ def _sample_subgraph(
     """
     args_to_sample = arg_subset if arg_subset is not None else praf.framework.arguments
 
+    # Draws are consumed in sorted order so a fixed seed yields the same
+    # stream regardless of set iteration order (PYTHONHASHSEED).
     # Step 1: Sample arguments
     sampled_args: set[str] = set()
-    for a in args_to_sample:
+    for a in sorted(args_to_sample):
         p_a = _expectation(praf.p_args[a])
         if rng.random() < p_a:
             sampled_args.add(a)
 
     sampled_attacks: set[tuple[str, str]] = set()
-    for edge in _primitive_attacks(praf):
+    for edge in sorted(_primitive_attacks(praf)):
         if edge[0] in sampled_args and edge[1] in sampled_args:
             if _sample_edge(rng, _attack_opinion(praf, edge)):
                 sampled_attacks.add(edge)
 
     sampled_supports: set[tuple[str, str]] = set()
-    for edge in praf.supports:
+    for edge in sorted(praf.supports):
         if edge[0] in sampled_args and edge[1] in sampled_args:
             if _sample_edge(rng, _support_opinion(praf, edge)):
                 sampled_supports.add(edge)

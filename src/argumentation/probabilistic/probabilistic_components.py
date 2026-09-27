@@ -28,7 +28,9 @@ def connected_components(praf: "ProbabilisticAF") -> list[set[str]]:
     visited: set[str] = set()
     components: list[set[str]] = []
 
-    for start in praf.framework.arguments:
+    # Sorted start nodes give a hash-seed-independent component order, which
+    # seeded Monte Carlo relies on for a reproducible sampling stream.
+    for start in sorted(praf.framework.arguments):
         if start in visited:
             continue
         component: set[str] = set()

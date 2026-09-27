@@ -9,7 +9,11 @@ probability is the product over present/absent arguments and defeats
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import subprocess
+import sys
 
 import pytest
 
@@ -462,3 +466,61 @@ def test_exact_dp_rejects_defeats_outside_base_defeats() -> None:
 
     with pytest.raises(ValueError, match="exact_dp only supports"):
         compute_probabilistic_acceptance(praf, strategy="exact_dp")
+
+
+_SEEDED_MC_PROGRAM = """
+import json
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
+framework = ArgumentationFramework(
+    frozenset({"a", "b", "c", "d", "e"}),
+    frozenset({("a", "b"), ("b", "c"), ("d", "e")}),
+)
+praf = ProbabilisticAF(
+    framework,
+    {"a": 0.2, "b": 0.8, "c": 0.5, "d": 0.4, "e": 0.7},
+    {("a", "b"): 0.9, ("b", "c"): 0.6, ("d", "e"): 0.3},
+)
+result = compute_probabilistic_acceptance(
+    praf, strategy="mc", rng_seed=42, mc_epsilon=0.1
+)
+print(json.dumps([result.acceptance_probs, result.samples], sort_keys=True))
+"""
+
+
+def _run_seeded_mc(hash_seed: str) -> object:
+    completed = subprocess.run(
+        [sys.executable, "-c", _SEEDED_MC_PROGRAM],
+        env={**os.environ, "PYTHONHASHSEED": hash_seed},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=120,
+    )
+    return json.loads(completed.stdout)
+
+
+def test_seeded_mc_is_independent_of_hash_randomization() -> None:
+    """Issue #53: Li 2011 Algorithm 1 (p.5) samples each argument and defeat
+    from one seeded stream; the documented fixed-seed reproducibility needs
+    that stream consumed in an order independent of PYTHONHASHSEED."""
+    results = [_run_seeded_mc(hash_seed) for hash_seed in ("1", "2", "3")]
+
+    assert results[0] == results[1] == results[2]
+
+
+def test_seeded_mc_repeats_within_one_interpreter() -> None:
+    """Issue #53 control: the same seed repeats in one interpreter."""
+    praf = _dense_praf(4, 0.5)
+
+    first = compute_probabilistic_acceptance(
+        praf, strategy="mc", rng_seed=7, mc_epsilon=0.1
+    )
+    second = compute_probabilistic_acceptance(
+        praf, strategy="mc", rng_seed=7, mc_epsilon=0.1
+    )
+
+    assert first == second
