@@ -76,22 +76,41 @@ class DynamicAcceptanceAnswer:
 
 @dataclass
 class DynamicArgumentationFramework:
+    """Mutable AF under Cayrol et al. 2014 Definition 7 change operations.
+
+    A pre-preference ``attacks`` relation is carried through every update.
+    An added interaction is a successful attack, so it enters both relations;
+    a removed interaction leaves both (Modgil & Prakken 2018, Definition 9).
+    """
+
     framework: ArgumentationFramework
 
     def add_argument(self, argument: str) -> None:
         self.framework = ArgumentationFramework(
             arguments=self.framework.arguments | {argument},
             defeats=self.framework.defeats,
+            attacks=self.framework.attacks,
         )
 
     def remove_argument(self, argument: str) -> None:
         remaining = self.framework.arguments - {argument}
+
+        def restrict(
+            relation: frozenset[tuple[str, str]],
+        ) -> frozenset[tuple[str, str]]:
+            return frozenset(
+                (attacker, target)
+                for attacker, target in relation
+                if attacker in remaining and target in remaining
+            )
+
         self.framework = ArgumentationFramework(
             arguments=remaining,
-            defeats=frozenset(
-                (attacker, target)
-                for attacker, target in self.framework.defeats
-                if attacker in remaining and target in remaining
+            defeats=restrict(self.framework.defeats),
+            attacks=(
+                None
+                if self.framework.attacks is None
+                else restrict(self.framework.attacks)
             ),
         )
 
@@ -100,12 +119,22 @@ class DynamicArgumentationFramework:
         self.framework = ArgumentationFramework(
             arguments=self.framework.arguments,
             defeats=self.framework.defeats | {(attacker, target)},
+            attacks=(
+                None
+                if self.framework.attacks is None
+                else self.framework.attacks | {(attacker, target)}
+            ),
         )
 
     def remove_attack(self, attacker: str, target: str) -> None:
         self.framework = ArgumentationFramework(
             arguments=self.framework.arguments,
             defeats=self.framework.defeats - {(attacker, target)},
+            attacks=(
+                None
+                if self.framework.attacks is None
+                else self.framework.attacks - {(attacker, target)}
+            ),
         )
 
     def query_credulous(
