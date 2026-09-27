@@ -258,13 +258,31 @@ def complete_extensions(
 def preferred_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
     """Compute all preferred extensions.
 
-    A preferred extension is a maximal (w.r.t. set inclusion) admissible set,
-    equivalently a maximal complete extension.
+    A preferred extension is a maximal (w.r.t. set inclusion) admissible set.
+    For a single-relation framework this equals a maximal complete extension
+    (Dung 1995, Theorem 25). With distinct attack and defeat relations,
+    admissibility checks conflict-freeness against attacks (Modgil & Prakken
+    2018, Definition 14), complete extensions may not exist, and maximal
+    admissible sets are enumerated directly.
 
     Reference: Dung 1995, Definition 8.
     """
-    completes = complete_extensions(framework)
-    return maximal_sets(completes)
+    if framework.attacks is None or framework.attacks == framework.defeats:
+        return maximal_sets(complete_extensions(framework))
+    attackers_index = predecessors_index(framework.defeats)
+    return maximal_sets(
+        [
+            candidate
+            for candidate in _all_subsets(framework.arguments)
+            if admissible(
+                candidate,
+                framework.arguments,
+                framework.defeats,
+                attacks=framework.attacks,
+                attackers_index=attackers_index,
+            )
+        ]
+    )
 
 
 def stable_extensions(framework: ArgumentationFramework) -> list[frozenset[str]]:
@@ -520,7 +538,8 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
     """Return odd-length attack paths for prudent semantics.
 
     Coste-Marquis, Devred, and Marquis 2005, pp. 1-2 define the prudent
-    indirect-conflict check over odd-length attack paths.
+    indirect-conflict check over odd-length attack paths; length one is odd,
+    so direct attacks and self-attacks are included.
     """
     indirect: set[tuple[str, str]] = set()
     successors: dict[str, set[str]] = {
@@ -538,7 +557,7 @@ def indirect_attacks(framework: ArgumentationFramework) -> frozenset[tuple[str, 
             if (current, parity) in seen:
                 continue
             seen.add((current, parity))
-            if length > 1 and parity == 1:
+            if parity == 1:
                 indirect.add((origin, current))
             for target in successors.get(current, set()):
                 stack.append((origin, target, length + 1))
