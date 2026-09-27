@@ -509,3 +509,73 @@ def simple_aspic_theory():
         link="last",
     )
     return system, kb, pref
+
+
+NO_PREFERENCES = PreferenceConfig(
+    rule_order=frozenset(),
+    premise_order=frozenset(),
+    comparison="elitist",
+    link="last",
+)
+
+
+def _assert_asp_facts_parse(facts: tuple[str, ...]) -> None:
+    clingo = pytest.importorskip("clingo")
+    clingo.Control().add("base", [], "\n".join(facts))
+
+
+def _assert_asp_backend_matches_reference(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+) -> frozenset[Literal]:
+    pytest.importorskip("clingo")
+    reference = solve_aspic_with_backend(
+        system, kb, NO_PREFERENCES, backend="materialized_reference"
+    )
+    asp = solve_aspic_with_backend(system, kb, NO_PREFERENCES, backend="asp")
+
+    assert asp.status is ASPICQueryStatus.SUCCESS, asp.metadata
+    assert asp.accepted_conclusions == reference.accepted_conclusions
+    return asp.accepted_conclusions
+
+
+def _undercut_theory(rule_name: str) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    p = Literal(GroundAtom("p"))
+    name = Literal(GroundAtom(rule_name))
+    undercutter = Literal(GroundAtom("u"))
+    system = ArgumentationSystem(
+        language=frozenset({p, name, undercutter}),
+        contrariness=ContrarinessFn(frozenset(), frozenset({(undercutter, name)})),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({Rule((), p, "defeasible", rule_name)}),
+    )
+    return system, KnowledgeBase(axioms=frozenset({undercutter}), premises=frozenset())
+
+
+def test_aspic_encoding_emits_valid_asp_for_arbitrary_rule_names() -> None:
+    """Issue #52: rule names are encoded as ASP constants, not raw text.
+
+    Lehtonen et al. 2020 encode each defeasible rule through its name
+    ``n(r)``, a literal of L, so undercutting targets the same identifier
+    as the rule. A legal name such as ``Rule 1`` must still produce parseable
+    facts and the undercut must still land.
+    """
+    system, kb = _undercut_theory("Rule 1")
+
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    _assert_asp_facts_parse(encoding.facts)
+    assert Literal(GroundAtom("p")) not in _assert_asp_backend_matches_reference(
+        system, kb
+    )
+
+
+def test_aspic_encoding_keeps_asp_safe_rule_names() -> None:
+    """Issue #52 control: an already ASP-safe name is emitted unchanged."""
+    system, kb = _undercut_theory("r1")
+
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    assert "d_head(r1,p)." in encoding.facts
+    _assert_asp_facts_parse(encoding.facts)
+    _assert_asp_backend_matches_reference(system, kb)
