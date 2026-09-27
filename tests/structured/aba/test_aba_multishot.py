@@ -861,3 +861,59 @@ def test_solve_aba_grounded_fact_contrary_via_backend(
     assert _show(result) == _show([reference])
     for ext in result:
         assert native_aba.conflict_free(framework, ext), ext
+
+
+@pytest.mark.parametrize("simplify", [False, True])
+def test_skeptical_preferred_rejects_underivable_literal_without_assumptions(
+    simplify: bool,
+) -> None:
+    """Issue #72: DS-PR is false for a literal no preferred set derives.
+
+    Bondarenko et al. 1997 (p.76): a sentence is skeptically accepted when it
+    is derivable from every preferred set. With no assumptions and no rules
+    the sole preferred set is empty and derives nothing, so ``q`` must be
+    rejected with the empty set as counterexample. Lehtonen et al. 2021,
+    Algorithm 1, answers by assuming ``supported(q)`` false; when that atom
+    was never grounded the assumption must not be read as UNSAT.
+    """
+    pytest.importorskip("clingo")
+    q = lit("q")
+    framework = ABAFramework(frozenset({q}), frozenset(), frozenset(), {})
+    assert set(native_aba.preferred_extensions(framework)) == {frozenset()}
+    assert not derives(framework, frozenset(), q)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="skeptical",
+        query=q,
+        simplify=simplify,
+    )
+
+    assert result.metadata["solver_calls"] <= 2
+    assert result.answer is False
+    assert result.counterexample == frozenset()
+
+
+@pytest.mark.parametrize("simplify", [False, True])
+def test_skeptical_preferred_accepts_fact_without_assumptions(
+    simplify: bool,
+) -> None:
+    """Issue #72 control: a fact is derivable from the empty preferred set."""
+    pytest.importorskip("clingo")
+    q = lit("q")
+    framework = ABAFramework(
+        frozenset({q}), frozenset({Rule((), q, "strict")}), frozenset(), {}
+    )
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="skeptical",
+        query=q,
+        simplify=simplify,
+    )
+
+    assert result.answer is True

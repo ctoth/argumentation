@@ -576,6 +576,11 @@ class AbaIncrementalSolver:
             # Any preferred set is a counterexample; produce one.
             return False, self.find_preferred_extension(telemetry=telemetry)
         ctl = self._new_control(telemetry=telemetry)
+        if ctl.symbolic_atoms[query_symbol] is None:
+            # supported(query) was never grounded, so no assumption set derives
+            # it. Assuming an ungrounded atom false is reported UNSAT by clingo
+            # (potassco/clingo#671), which would read as skeptical acceptance.
+            return False, self.find_preferred_extension(telemetry=telemetry)
         permanently_unsat = {"flag": False}
 
         def add_refinement(out_set: frozenset[Literal]) -> bool:
