@@ -92,7 +92,11 @@ class ExtensionRevisionState:
                 raise ValueError(
                     "ranking keys must be subsets of the argument universe"
                 )
-            non_extension_floor = (
+            # Faithful ranking (Diller et al. 2015, Definition 3): every
+            # declared extension, mapped or not, ranks 0 and strictly below
+            # every non-extension.
+            non_extension_floor = max(
+                1,
                 min(
                     (
                         normalized_ranking.get(extension, 0)
@@ -100,14 +104,14 @@ class ExtensionRevisionState:
                     ),
                     default=0,
                 )
-                + 1
+                + 1,
             )
             faithful_ranking = {
-                candidate: 0
-                if candidate in extension_set
-                else max(non_extension_floor, rank)
+                candidate: max(non_extension_floor, rank)
                 for candidate, rank in normalized_ranking.items()
+                if candidate not in extension_set
             }
+            faithful_ranking.update(dict.fromkeys(extension_set, 0))
             min_rank = min(faithful_ranking.values(), default=0)
             ranking: Mapping[frozenset[str], int] | Callable[[frozenset[str]], int] = {
                 candidate: rank - min_rank

@@ -389,3 +389,73 @@ def test_cayrol_2014_grounded_addition_is_never_restrictive_or_questioning(
     kind = cayrol_2014_classify_grounded_argument_addition(framework, added, attacks)
 
     assert kind not in {AFChangeKind.RESTRICTIVE, AFChangeKind.QUESTIONING}
+
+
+TAUTOLOGY = Or((A, negate(A)))
+
+
+def _assert_faithful(
+    state: ExtensionRevisionState,
+    candidates: tuple[frozenset[str], ...],
+) -> None:
+    """Diller et al. 2015 Def 3 / Baumann & Brewka 2015 p.5 faithful ranking.
+
+    Extensions of the state are pairwise equally ranked and strictly below
+    every non-extension.
+    """
+    extension_ranks = {state.rank(extension) for extension in state.extensions}
+    assert len(extension_ranks) <= 1
+    for candidate in candidates:
+        if candidate not in state.extensions:
+            assert all(rank < state.rank(candidate) for rank in extension_ranks)
+
+
+def test_partial_ranking_map_keeps_declared_extensions_minimal() -> None:
+    """Issue #17: an unmapped declared extension must stay strictly minimal.
+
+    Faithful assignment (Diller et al. 2015, Definition 3; Baumann & Brewka
+    2015, p.5): if E is an extension and E' is not, then E < E'.
+    """
+    a = frozenset({"a"})
+    empty = frozenset()
+    state = ExtensionRevisionState(frozenset({"a"}), (a,), {empty: 1})
+
+    assert state.rank(a) < state.rank(empty)
+    assert diller_2015_revise_by_formula(state, TAUTOLOGY).extensions == (a,)
+
+
+def test_complete_ranking_map_keeps_declared_extensions_minimal() -> None:
+    """Issue #17 control: a ranking map that already covers every extension."""
+    a = frozenset({"a"})
+    empty = frozenset()
+    state = ExtensionRevisionState(frozenset({"a"}), (a,), {a: 0, empty: 1})
+
+    assert state.rank(a) < state.rank(empty)
+    assert diller_2015_revise_by_formula(state, TAUTOLOGY).extensions == (a,)
+
+
+@given(
+    st.lists(
+        st.sampled_from(ExtensionRevisionState.all_extensions(ARGUMENTS)),
+        min_size=1,
+        max_size=3,
+        unique=True,
+    ),
+    st.dictionaries(
+        st.sampled_from(ExtensionRevisionState.all_extensions(ARGUMENTS)),
+        st.integers(min_value=0, max_value=4),
+        max_size=8,
+    ),
+)
+@settings(deadline=None)
+def test_partial_ranking_map_is_faithful(
+    extensions: list[frozenset[str]],
+    ranking: dict[frozenset[str], int],
+) -> None:
+    """Issue #17: any partial ranking map is normalized to a faithful ranking."""
+    state = ExtensionRevisionState(ARGUMENTS, tuple(extensions), ranking)
+
+    _assert_faithful(state, ExtensionRevisionState.all_extensions(ARGUMENTS))
+    assert set(diller_2015_revise_by_formula(state, TAUTOLOGY).extensions) == set(
+        extensions
+    )
