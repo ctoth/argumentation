@@ -539,8 +539,10 @@ class LinearAtomicConstraint:
 
 def coherence_attack_constraint(attacker: str, target: str) -> LinearAtomicConstraint:
     """Return Potyka's attack coherence constraint P(target) <= 1 - P(attacker)."""
+    coefficients = {attacker: 1.0}
+    coefficients[target] = coefficients.get(target, 0.0) + 1.0
     return LinearAtomicConstraint(
-        {attacker: 1.0, target: 1.0},
+        coefficients,
         LinearRelation.LE,
         1.0,
     )
