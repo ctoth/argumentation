@@ -253,11 +253,23 @@ def _defeater_targets(
     origins: Mapping[Rule, GroundRuleOrigin],
 ) -> tuple[Rule, ...]:
     if defeater_head.negated:
+        # ``~r(t1, ..., tn)`` names the instance of rule ``r`` whose
+        # substitution values, in Gunray's variable order, are ``t1..tn``
+        # (Diller et al. 2025: each ground instance r theta is a separate
+        # rule). A nullary ``~r`` names every instance of ``r``.
         source_id_targets = tuple(
             rule
             for rule in rules
             if rule.name is not None
             and origins[rule].source_rule_id == defeater_head.atom.predicate
+            and (
+                not defeater_head.atom.arguments
+                or GroundAtom(
+                    defeater_head.atom.predicate,
+                    tuple(value for _name, value in origins[rule].substitution),
+                )
+                == defeater_head.atom
+            )
         )
         if source_id_targets:
             return source_id_targets

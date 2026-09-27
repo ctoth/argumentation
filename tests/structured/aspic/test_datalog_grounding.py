@@ -181,3 +181,58 @@ def test_defeater_projection_records_structured_undercut_origin() -> None:
     assert undercut_origin.substitution == (("X", "tweety"),)
     assert undercut_origin.role == "undercut"
     assert undercut_origin.target_rule == target_rule
+
+
+def _flies(constant: str) -> Literal:
+    return Literal(GroundAtom("flies", (constant,)))
+
+
+def _birds_fly_theory(defeater_head: str, exception_facts) -> DefeasibleTheory:
+    return DefeasibleTheory(
+        facts={"bird": {("a",), ("b",)}, "exception": exception_facts},
+        defeasible_rules=[
+            GunrayRule(id="birds_fly", head="flies(X)", body=["bird(X)"]),
+        ],
+        defeaters=[
+            GunrayRule(id="except", head=defeater_head, body=["exception(X)"]),
+        ],
+    )
+
+
+def test_named_defeater_undercuts_only_its_matching_rule_instance() -> None:
+    """Issue #66: ``~birds_fly(a)`` undercuts only the ``X = a`` instance.
+
+    Diller et al. 2025 ground each rule instance ``r theta`` separately, and
+    an undercut targets the name ``n(r)`` of one defeasible rule (Def 3), so
+    a named defeater for ``birds_fly(a)`` must not undercut ``birds_fly(b)``.
+    """
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(
+        _birds_fly_theory("~birds_fly(X)", {("a",)})
+    )
+
+    targets = [
+        grounded.rule_origins[origin.target_rule].substitution
+        for origin in grounded.rule_origins.values()
+        if origin.role == "undercut" and origin.target_rule is not None
+    ]
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert targets == [(("X", "a"),)]
+    assert _flies("b") in accepted
+    assert _flies("a") not in accepted
+
+
+def test_named_defeater_without_exception_undercuts_nothing() -> None:
+    """Issue #66 control: with no exception fact both birds fly."""
+    from argumentation.structured.aspic.aspic_encoding import solve_aspic_grounded
+
+    grounded = ground_defeasible_theory(_birds_fly_theory("~birds_fly(X)", set()))
+    accepted = solve_aspic_grounded(
+        grounded.system, grounded.kb, grounded.pref
+    ).accepted_conclusions
+
+    assert {_flies("a"), _flies("b")} <= accepted
