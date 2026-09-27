@@ -943,10 +943,9 @@ def update_assignment(
                 changed = True
     if not belief_assignment_satisfies(graph, assignment):
         raise ValueError("updated assignment cannot satisfy the graph constraints")
-    return {
-        argument: round(assignment[argument], 12)
-        for argument in sorted(graph.arguments)
-    }
+    # Return exactly the validated values: rounding here could move a value
+    # across an exact constraint bound after validation.
+    return {argument: assignment[argument] for argument in sorted(graph.arguments)}
 
 
 def project_to_constellation_praf(graph: EpistemicGraph) -> ProbabilisticAF:

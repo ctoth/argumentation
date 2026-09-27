@@ -20,6 +20,7 @@ import argumentation.probabilistic.epistemic as epistemic
 from argumentation.probabilistic.epistemic import (
     AndTerm,
     ArgumentTerm,
+    BeliefConstraint,
     EpistemicGraph,
     Influence,
     InfluenceKind,
@@ -30,6 +31,7 @@ from argumentation.probabilistic.epistemic import (
     OrTerm,
     ProbabilityTerm,
     Term,
+    belief_assignment_satisfies,
     least_squares_update_labelling,
     parse_term,
     update_assignment,
@@ -162,6 +164,43 @@ def _run_with_line_budget(func: Callable[[], object], budget: int) -> object:
         return func()
     finally:
         sys.settrace(None)
+
+
+@pytest.mark.parametrize(
+    "influences",
+    [(), (Influence("a", "b", InfluenceKind.NEGATIVE),)],
+    ids=["exact-bound", "negative-influence-from-exact-bound"],
+)
+def test_update_assignment_returns_values_that_satisfy_exact_bounds(
+    influences: tuple[Influence, ...],
+) -> None:
+    """Issue #16: the returned assignment must satisfy the graph constraints
+    (Hunter & Thimm 2017 epistemic constraints), including an exact bound
+    finer than 12 decimal places and a negative influence ``b <= 1 - a``
+    computed from it."""
+    value = 0.1234567890123
+    graph = EpistemicGraph(
+        frozenset({"a", "b"}),
+        influences=frozenset(influences),
+        constraints=(BeliefConstraint("a", value, value),),
+    )
+
+    result = update_assignment(graph, {})
+
+    assert result["a"] == value
+    assert belief_assignment_satisfies(graph, result)
+
+
+def test_update_assignment_coarse_bound_control() -> None:
+    """Control: a bound with few decimals is returned unchanged."""
+    graph = EpistemicGraph(
+        frozenset({"a"}), constraints=(BeliefConstraint("a", 0.25, 0.25),)
+    )
+
+    result = update_assignment(graph, {})
+
+    assert result == {"a": 0.25}
+    assert belief_assignment_satisfies(graph, result)
 
 
 def test_update_assignment_rejects_contradictory_influences() -> None:

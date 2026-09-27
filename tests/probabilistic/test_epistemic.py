@@ -74,7 +74,11 @@ def test_update_assignment_clamps_evidence_and_propagates_fragment() -> None:
         ),
     )
 
-    assert update_assignment(graph, {"a": 0.8}) == {"a": 0.8, "b": 0.8, "c": 0.2}
+    # Values are returned exactly as validated (issue #16), so c is the float
+    # 1 - 0.8 rather than a rounded 0.2.
+    assert update_assignment(graph, {"a": 0.8}) == pytest.approx(
+        {"a": 0.8, "b": 0.8, "c": 0.2}
+    )
 
 
 def test_update_assignment_respects_explicit_belief_constraints() -> None:
