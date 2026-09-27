@@ -105,6 +105,21 @@ class ContrarinessFn:
     contradictories: frozenset[tuple[Literal, Literal]]
     contraries: frozenset[tuple[Literal, Literal]] = frozenset()
 
+    def __post_init__(self) -> None:
+        # Def 1: mutual contrary edges are one contradiction, not two contraries.
+        mutual = frozenset(
+            (left, right)
+            for left, right in self.contraries
+            if (right, left) in self.contraries
+        )
+        if mutual:
+            object.__setattr__(
+                self,
+                "contradictories",
+                frozenset(self.contradictories) | mutual,
+            )
+            object.__setattr__(self, "contraries", self.contraries - mutual)
+
     def is_contradictory(self, a: Literal, b: Literal) -> bool:
         """True if a and b are contradictories (symmetric conflict).
 

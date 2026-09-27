@@ -2930,3 +2930,32 @@ class TestRationalityPostulatesConcrete:
             f"Grounded extension contains both bachelor and ~bachelor — "
             f"direct consistency violated. Conclusions: {ext_conclusions}"
         )
+
+
+def test_mutual_contrary_edges_are_contradictories() -> None:
+    """Issue #28: phi in bar(psi) and psi in bar(phi) makes them contradictories.
+
+    Modgil & Prakken 2018, Def 1 (p.8): a contrary requires that the reverse
+    direction does NOT hold, so both directed contrary edges denote one
+    symmetric contradiction.
+    """
+    a = Literal(GroundAtom("a"))
+    b = Literal(GroundAtom("b"))
+    cfn = ContrarinessFn(frozenset(), frozenset({(a, b), (b, a)}))
+
+    assert cfn.is_contradictory(a, b)
+    assert cfn.is_contradictory(b, a)
+    assert not cfn.is_contrary(a, b)
+    assert not cfn.is_contrary(b, a)
+    assert cfn == ContrarinessFn(frozenset({(a, b), (b, a)}))
+
+
+def test_one_directed_contrary_edge_stays_a_contrary() -> None:
+    """Issue #28 control: a single directed edge is an asymmetric contrary."""
+    a = Literal(GroundAtom("a"))
+    b = Literal(GroundAtom("b"))
+    cfn = ContrarinessFn(frozenset(), frozenset({(a, b)}))
+
+    assert not cfn.is_contradictory(a, b)
+    assert cfn.is_contrary(a, b)
+    assert not cfn.is_contrary(b, a)
