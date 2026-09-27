@@ -9,7 +9,11 @@ probability is the product over present/absent arguments and defeats
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import subprocess
+import sys
 
 import pytest
 
@@ -392,3 +396,131 @@ def test_world_exponent_ignores_deterministic_relations() -> None:
     )
 
     assert probabilistic._exact_enumeration_world_exponent(praf) == 3
+
+
+def _exact_methods_agree(praf: ProbabilisticAF) -> dict[str, float]:
+    enumerated = compute_probabilistic_acceptance(praf, strategy="exact_enum")
+    dynamic = compute_probabilistic_acceptance(praf, strategy="exact_dp")
+    assert enumerated.acceptance_probs is not None
+    assert dynamic.acceptance_probs is not None
+    assert dynamic.acceptance_probs == pytest.approx(enumerated.acceptance_probs)
+    return dynamic.acceptance_probs
+
+
+def test_exact_dp_treats_missing_defeat_probability_as_certain() -> None:
+    """Issue #50: a defeat without a P_D entry is present in every induced
+    world, as in exact enumeration; both exact methods compute Li 2011
+    Eq 2 (p.4), so with P(a) = 0.5, b is grounded-accepted iff a is absent."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 0.5, "b": 1.0},
+        {},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 0.5, "b": 0.5})
+
+
+def test_exact_dp_explicit_defeat_probability_control() -> None:
+    """Issue #50 control: an explicit P_D((a,b)) = 0.5 (Li 2011 Def 2, p.2)."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1.0, "b": 1.0},
+        {("a", "b"): 0.5},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 1.0, "b": 0.5})
+
+
+@pytest.mark.parametrize(
+    ("p_attack", "expected_b"),
+    [(0.0, 1.0), (0.25, 0.75)],
+)
+def test_exact_dp_honors_explicit_attack_probability(
+    p_attack: float,
+    expected_b: float,
+) -> None:
+    """Issue #51: an explicit primitive attack probability takes precedence
+    over the direct-defeat probability in the induced-world distribution
+    (Li 2011 p.3-4), so both exact methods must use it."""
+    edge = ("a", "b")
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({edge})),
+        {"a": 1.0, "b": 1.0},
+        {edge: 1.0},
+        p_attacks={edge: p_attack},
+    )
+
+    assert _exact_methods_agree(praf) == pytest.approx({"a": 1.0, "b": expected_b})
+
+
+def test_exact_dp_rejects_defeats_outside_base_defeats() -> None:
+    """Issue #51: when base_defeats narrows the direct defeats, world
+    enumeration realizes only those defeats (Li 2011 Def 3, p.2), which the
+    DP does not model; the route guard must reject that representation."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(frozenset({"a", "b"}), frozenset({("a", "b")})),
+        {"a": 1.0, "b": 1.0},
+        {},
+        base_defeats=frozenset(),
+    )
+
+    with pytest.raises(ValueError, match="exact_dp only supports"):
+        compute_probabilistic_acceptance(praf, strategy="exact_dp")
+
+
+_SEEDED_MC_PROGRAM = """
+import json
+from argumentation.core.dung import ArgumentationFramework
+from argumentation.probabilistic.probabilistic import (
+    ProbabilisticAF,
+    compute_probabilistic_acceptance,
+)
+framework = ArgumentationFramework(
+    frozenset({"a", "b", "c", "d", "e"}),
+    frozenset({("a", "b"), ("b", "c"), ("d", "e")}),
+)
+praf = ProbabilisticAF(
+    framework,
+    {"a": 0.2, "b": 0.8, "c": 0.5, "d": 0.4, "e": 0.7},
+    {("a", "b"): 0.9, ("b", "c"): 0.6, ("d", "e"): 0.3},
+)
+result = compute_probabilistic_acceptance(
+    praf, strategy="mc", rng_seed=42, mc_epsilon=0.1
+)
+print(json.dumps([result.acceptance_probs, result.samples], sort_keys=True))
+"""
+
+
+def _run_seeded_mc(hash_seed: str) -> object:
+    completed = subprocess.run(
+        [sys.executable, "-c", _SEEDED_MC_PROGRAM],
+        env={**os.environ, "PYTHONHASHSEED": hash_seed},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=120,
+    )
+    return json.loads(completed.stdout)
+
+
+def test_seeded_mc_is_independent_of_hash_randomization() -> None:
+    """Issue #53: Li 2011 Algorithm 1 (p.5) samples each argument and defeat
+    from one seeded stream; the documented fixed-seed reproducibility needs
+    that stream consumed in an order independent of PYTHONHASHSEED."""
+    results = [_run_seeded_mc(hash_seed) for hash_seed in ("1", "2", "3")]
+
+    assert results[0] == results[1] == results[2]
+
+
+def test_seeded_mc_repeats_within_one_interpreter() -> None:
+    """Issue #53 control: the same seed repeats in one interpreter."""
+    praf = _dense_praf(4, 0.5)
+
+    first = compute_probabilistic_acceptance(
+        praf, strategy="mc", rng_seed=7, mc_epsilon=0.1
+    )
+    second = compute_probabilistic_acceptance(
+        praf, strategy="mc", rng_seed=7, mc_epsilon=0.1
+    )
+
+    assert first == second
