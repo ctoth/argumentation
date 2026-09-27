@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import pytest
 
 from argumentation.core.finite import (
+    is_acyclic,
     iter_subsets_bitmask,
     maximal_by,
     maximal_sets,
@@ -173,3 +176,24 @@ def test_strongly_connected_components_are_deterministic() -> None:
         frozenset({"a", "b"}),
         frozenset({"c"}),
     ]
+
+
+def _one_shot_two_cycle() -> dict[str, Iterator[str]]:
+    return {"a": iter(["b"]), "b": iter(["a"])}
+
+
+def test_graph_helpers_read_one_shot_adjacency_once() -> None:
+    """The ``Mapping[T, Iterable[T]]`` contract admits one-shot iterators;
+    node discovery must not exhaust them before traversal."""
+    assert strongly_connected_components(_one_shot_two_cycle()) == [
+        frozenset({"a", "b"})
+    ]
+    assert is_acyclic(_one_shot_two_cycle()) is False
+
+
+def test_graph_helpers_on_reusable_adjacency_control() -> None:
+    """Control: tuple adjacency gives the same two-cycle answers."""
+    graph = {"a": ("b",), "b": ("a",)}
+
+    assert strongly_connected_components(graph) == [frozenset({"a", "b"})]
+    assert is_acyclic(graph) is False
