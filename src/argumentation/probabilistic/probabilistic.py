@@ -26,6 +26,7 @@ from argumentation.probabilistic.probabilistic_components import connected_compo
 
 _Z_SCORES = {0.90: 1.645, 0.95: 1.960, 0.99: 2.576}
 _DETERMINISTIC_EPSILON = 1e-12
+_EXACT_ENUMERATION_MAX_WORLD_EXPONENT = 13
 _UNSET = object()
 _ALLOWED_STRATEGIES = frozenset(
     {
@@ -394,6 +395,24 @@ def _uses_attack_only_conflicts(praf: ProbabilisticAF) -> bool:
 
 def _requires_relation_rich_worlds(praf: ProbabilisticAF) -> bool:
     return _supports_structure(praf) or _uses_attack_only_conflicts(praf)
+
+
+def _exact_enumeration_world_exponent(praf: ProbabilisticAF) -> int:
+    """Log2 upper bound of the world space exact enumeration walks.
+
+    `_compute_exact_enumeration` iterates every argument subset and, within
+    it, every configuration of the attacks and supports that carry a
+    probability. Per Li et al. (2011, p.3-4) this is O(2^(|A|+|D|)).
+    """
+    probabilistic_attacks = sum(
+        1 for edge in _primitive_attacks(praf) if _attack_opinion(praf, edge) is not None
+    )
+    probabilistic_supports = sum(
+        1 for edge in praf.supports if _support_opinion(praf, edge) is not None
+    )
+    return (
+        len(praf.framework.arguments) + probabilistic_attacks + probabilistic_supports
+    )
 
 
 def _all_structure_deterministic(praf: ProbabilisticAF) -> bool:
@@ -841,9 +860,13 @@ def _compute_probabilistic_acceptance(
             queried_set=normalized_queried_set,
         )
 
-    # Small AF: exact enumeration (Li 2012, p.8: exact beats MC below ~13 args)
-    n_args = len(praf.framework.arguments)
-    if n_args <= 13:
+    # Small world space: exact enumeration. Li (2012, p.8) measured exact
+    # beating MC below ~13 arguments with deterministic defeats; exact cost is
+    # O(2^(|A|+|D|)) (p.3-4), so uncertain relations count against the budget.
+    if (
+        _exact_enumeration_world_exponent(praf)
+        <= _EXACT_ENUMERATION_MAX_WORLD_EXPONENT
+    ):
         return _compute_exact_enumeration(
             praf,
             semantics,

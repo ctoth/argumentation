@@ -15,7 +15,9 @@ import pytest
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.gradual.gradual import GradualConvergenceError
+from argumentation.probabilistic import probabilistic
 from argumentation.probabilistic.probabilistic import (
+    PrAFResult,
     ProbabilisticAF,
     _z_for_confidence,
     compute_probabilistic_acceptance,
@@ -311,3 +313,82 @@ def test_mc_grounded_component_decomposition_control(inference_mode: str) -> Non
     assert result.acceptance_probs is not None
     assert result.acceptance_probs["a"] == 1.0
     assert result.acceptance_probs["b"] == 0.0
+
+
+def _dense_praf(n_args: int, p_defeat: float) -> ProbabilisticAF:
+    arguments = frozenset(f"a{i:02d}" for i in range(n_args))
+    defeats = frozenset(
+        (source, target)
+        for source in arguments
+        for target in arguments
+        if source != target
+    )
+    return ProbabilisticAF(
+        ArgumentationFramework(arguments, defeats),
+        {argument: 0.9 for argument in arguments},
+        {defeat: p_defeat for defeat in defeats},
+    )
+
+
+def _sentinel_result(strategy: str) -> PrAFResult:
+    return PrAFResult(acceptance_probs={}, strategy_used=strategy)
+
+
+def test_auto_route_skips_exact_enumeration_for_relation_world_explosion(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #2: exact enumeration costs O(2^(|A|+|D|)) (Li 2011, p.3-4), and
+    the ~13-argument crossover (p.8) was measured with deterministic defeats.
+    13 arguments with all 156 directed defeats uncertain is a 2^169 world
+    space, so auto must not enter exact enumeration. Backends are sentinels:
+    this contract never runs the exponential search."""
+    praf = _dense_praf(13, 0.5)
+    assert probabilistic._exact_enumeration_world_exponent(praf) == 13 + 156
+
+    def exact_enumeration_forbidden(*args: object, **kwargs: object) -> PrAFResult:
+        raise AssertionError("auto routed a 2^169 world space to exact enumeration")
+
+    monkeypatch.setattr(
+        probabilistic, "_compute_exact_enumeration", exact_enumeration_forbidden
+    )
+    monkeypatch.setattr(
+        probabilistic,
+        "_compute_exact_dp",
+        lambda *args, **kwargs: _sentinel_result("exact_dp"),
+    )
+    monkeypatch.setattr(
+        probabilistic,
+        "_compute_mc",
+        lambda *args, **kwargs: _sentinel_result("mc"),
+    )
+
+    for semantics in ("grounded", "preferred", "stable", "complete"):
+        result = compute_probabilistic_acceptance(praf, semantics=semantics)
+        assert result.strategy_used in {"exact_dp", "mc"}
+
+
+def test_auto_route_keeps_exact_enumeration_for_small_world_space() -> None:
+    """Issue #2 control: 3 arguments and 6 uncertain defeats is a 2^9 world
+    space, which stays on exact enumeration (Li 2011, p.8)."""
+    praf = _dense_praf(3, 0.5)
+    assert probabilistic._exact_enumeration_world_exponent(praf) == 9
+
+    auto = compute_probabilistic_acceptance(praf)
+    exact = compute_probabilistic_acceptance(praf, strategy="exact_enum")
+
+    assert auto.strategy_used == "exact_enum"
+    assert auto.acceptance_probs == exact.acceptance_probs
+
+
+def test_world_exponent_ignores_deterministic_relations() -> None:
+    """Issue #2 control: relations without a probability are fixed in every
+    enumerated world, so only arguments contribute to the exponent."""
+    praf = ProbabilisticAF(
+        ArgumentationFramework(
+            frozenset({"a", "b", "c"}), frozenset({("a", "b"), ("b", "c")})
+        ),
+        {"a": 0.5, "b": 0.5, "c": 0.5},
+        {},
+    )
+
+    assert probabilistic._exact_enumeration_world_exponent(praf) == 3
