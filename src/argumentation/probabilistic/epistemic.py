@@ -698,25 +698,48 @@ def _project_labelling(
     constraints: Sequence[LinearAtomicConstraint],
     max_iterations: int = 10_000,
 ) -> dict[str, float]:
-    tolerance = 1e-10
+    """Project ``current`` onto the intersection of the constraint sets.
+
+    Uses Dykstra's alternating projection (Boyle & Dykstra 1986): cyclic
+    projections alone reach *a* feasible point, while Dykstra's per-constraint
+    correction terms make the iterates converge to the *nearest* one in
+    Euclidean distance, the d_2 repair of Hunter & Thimm (2017, Def 10).
+    The tolerance sits below the 1e-12 slack of ``satisfied_by`` so the
+    returned point satisfies every constraint under that check.
+    """
+    tolerance = 1e-13
     point = {argument: float(value) for argument, value in current.items()}
+    corrections: list[dict[str, float]] = [
+        {argument: 0.0 for argument in constraint.coefficients}
+        for constraint in constraints
+    ]
     max_violation = float("inf")
-    for iteration in range(1, max_iterations + 1):
-        max_violation = 0.0
-        for constraint in constraints:
-            violation = _constraint_violation(point, constraint)
-            max_violation = max(max_violation, abs(violation))
-            if abs(violation) <= 1e-12:
-                continue
+    for _iteration in range(1, max_iterations + 1):
+        displacement = 0.0
+        for constraint, correction in zip(constraints, corrections, strict=True):
             norm = sum(
                 coefficient * coefficient
                 for coefficient in constraint.coefficients.values()
             )
             if norm == 0.0:
                 continue
+            shifted = dict(point)
+            for argument, value in correction.items():
+                shifted[argument] += value
+            violation = _constraint_violation(shifted, constraint)
             for argument, coefficient in constraint.coefficients.items():
-                point[argument] = point[argument] - (violation / norm) * coefficient
-        if max_violation <= tolerance:
+                projected = shifted[argument] - (violation / norm) * coefficient
+                correction[argument] = shifted[argument] - projected
+                displacement = max(displacement, abs(projected - point[argument]))
+                point[argument] = projected
+        max_violation = max(
+            (
+                abs(_constraint_violation(point, constraint))
+                for constraint in constraints
+            ),
+            default=0.0,
+        )
+        if max_violation <= tolerance and displacement <= tolerance:
             return point
     raise EpistemicProjectionError(max_violation, max_iterations, tolerance)
 
