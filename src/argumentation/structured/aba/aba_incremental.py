@@ -404,6 +404,16 @@ class AbaIncrementalSolver:
             return None
         return self._clingo.Function("supported", [self._clingo.Function(literal_id)])
 
+    @staticmethod
+    def _is_grounded(ctl, symbol) -> bool:
+        """Whether ``symbol`` is an atom of the grounded program.
+
+        ``supported(s)`` is grounded only if some rule can derive ``s``; an
+        absent atom is false in every model and must not be passed to clingo
+        as an assumption (potassco/clingo#671).
+        """
+        return symbol in ctl.symbolic_atoms
+
     def _extract_in_set(self, model) -> AssumptionSet:
         # MUST be called only inside the on_model callback -- clingo Model objects
         # are invalid afterwards.
@@ -604,6 +614,12 @@ class AbaIncrementalSolver:
             # Any preferred set is a counterexample; produce one.
             return False, self.find_preferred_extension(telemetry=telemetry)
         ctl = self._new_control(telemetry=telemetry)
+        if not self._is_grounded(ctl, query_symbol):
+            # No rule can derive the query, so no assumption set derives it and
+            # every preferred set is a counterexample. Assuming the absent atom
+            # false must not reach clingo: it reports UNSAT (potassco/clingo#671),
+            # which would read as skeptical acceptance.
+            return False, self.find_preferred_extension(telemetry=telemetry)
         permanently_unsat = {"flag": False}
 
         def add_refinement(out_set: frozenset[Literal]) -> bool:
@@ -728,6 +744,8 @@ class AbaIncrementalSolver:
         if query_symbol is None:
             return False, None
         ctl = self._new_control()
+        if not self._is_grounded(ctl, query_symbol):
+            return False, None
         witness = self._solve_one(ctl, assumptions=[(query_symbol, True)])
         if witness is None:
             return False, None
@@ -740,6 +758,8 @@ class AbaIncrementalSolver:
         if query_symbol is None:
             return False, None
         ctl = self._new_control(extra_program=":- out(X), not defeated(X).")
+        if not self._is_grounded(ctl, query_symbol):
+            return False, None
         witness = self._solve_one(ctl, assumptions=[(query_symbol, True)])
         if witness is None:
             return False, None
