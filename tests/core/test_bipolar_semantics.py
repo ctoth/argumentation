@@ -14,7 +14,6 @@ from argumentation.core.bipolar import (
     d_admissible,
     d_preferred_extensions,
     defends,
-    derived_set_defeats,
     s_admissible,
     s_preferred_extensions,
     safe,
@@ -91,10 +90,12 @@ class TestCayrolDefinitions:
         assert safe(frozenset({"G", "H", "E"}), framework)
 
     def test_preferred_hierarchy_distinguishes_d_s_c(self):
+        # {A, H} set-defeats and set-supports B: d-admissible but not safe
+        # (so not s-admissible) and not closed for supports (not c-admissible).
         framework = baf(
-            {"A", "B", "C", "H"},
-            {("H", "B"), ("A", "C")},
-            {("A", "B"), ("C", "A")},
+            {"A", "B", "H"},
+            {("H", "B")},
+            {("A", "B")},
         )
         assert frozenset({"A", "H"}) in d_preferred_extensions(framework)
         assert frozenset({"A", "H"}) not in s_preferred_extensions(framework)
@@ -194,25 +195,27 @@ class TestCayrolProperties:
 
     @given(bipolar_frameworks())
     @_PROP_SETTINGS
-    def test_derived_set_defeats_is_idempotent(self, framework):
-        first = derived_set_defeats(framework)
-        second = derived_set_defeats(
-            BipolarArgumentationFramework(
-                arguments=framework.arguments,
-                defeats=first,
-                supports=framework.supports,
-            )
-        )
-        assert second == first
-
-    @given(bipolar_frameworks())
-    @_PROP_SETTINGS
     def test_stable_extensions_are_d_admissible(self, framework):
         for extension in stable_extensions(framework):
             assert d_admissible(extension, framework)
 
 
 # ── Support cycle and self-support property tests (audit-2026-03-28) ──
+
+
+def _support_reachable(
+    supports: frozenset[tuple[str, str]], source: str
+) -> frozenset[str]:
+    """Arguments reachable from ``source`` by one or more support edges."""
+    reached: set[str] = set()
+    frontier = [source]
+    while frontier:
+        current = frontier.pop()
+        for supporter, supported in supports:
+            if supporter == current and supported not in reached:
+                reached.add(supported)
+                frontier.append(supported)
+    return frozenset(reached)
 
 
 @st.composite
@@ -284,44 +287,41 @@ class TestBipolarCycleProperties:
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
-    def test_derived_defeats_no_self_defeats(self, framework):
-        """Derived defeats never include self-defeats (A, A).
-
-        Self-defeats are filtered by cayrol_derived_defeats (source != target).
-        """
+    def test_derived_defeats_are_exactly_definition_3_sequences(self, framework):
+        """Cayrol & Lagasquie-Schiex 2005, Def. 3 (p. 383): each derived defeat
+        is witnessed by supports then one primitive defeat (supported defeat)
+        or one primitive defeat then supports (indirect defeat), and every such
+        sequence not already a primitive defeat is derived."""
+        reach = {
+            argument: _support_reachable(framework.supports, argument)
+            for argument in framework.arguments
+        }
+        expected = {
+            (source, target)
+            for source in framework.arguments
+            for defeater, target in framework.defeats
+            if defeater in reach[source]
+        } | {
+            (source, target)
+            for source, defeated in framework.defeats
+            for target in reach[defeated]
+        }
+        expected -= framework.defeats
         derived = cayrol_derived_defeats(framework.defeats, framework.supports)
-        for src, tgt in derived:
-            assert src != tgt, f"Self-defeat ({src}, {src}) in derived defeats"
-
-    @given(bipolar_frameworks_with_cycles())
-    @_PROP_SETTINGS
-    def test_derived_defeats_idempotent_with_cycles(self, framework):
-        """Applying derived_set_defeats twice gives the same result — even with cycles."""
-        first = derived_set_defeats(framework)
-        second = derived_set_defeats(
-            BipolarArgumentationFramework(
-                arguments=framework.arguments,
-                defeats=first,
-                supports=framework.supports,
-            )
-        )
-        assert second == first, (
-            f"Not idempotent: first pass added {first - framework.defeats}, "
-            f"second pass added {second - first}"
-        )
+        assert derived == expected
 
     @given(bipolar_frameworks_with_cycles())
     @_PROP_SETTINGS
     def test_derived_defeats_bounded_by_argument_pairs(self, framework):
         """Total defeats (original + derived) bounded by |args|^2.
 
-        The defeat closure cannot exceed the total number of possible
-        directed pairs (excluding self-edges).
+        Def. 3 sequences need not have distinct endpoints, so supported
+        self-defeats count among the possible directed pairs.
         """
         derived = cayrol_derived_defeats(framework.defeats, framework.supports)
         total = framework.defeats | derived
         n = len(framework.arguments)
-        max_possible = n * (n - 1)  # directed pairs, no self-edges
+        max_possible = n * n
         assert len(total) <= max_possible
 
     @given(bipolar_frameworks_with_cycles())

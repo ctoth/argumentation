@@ -77,52 +77,69 @@ def claim_level_extensions(
     """Return KR 2020 claim-level CAF semantics.
 
     The stable branch implements cl-stable; use ``stable-admissible`` for the
-    admissible cl-stable variant.
+    admissible cl-stable variant. As in the inherited (Dung) view,
+    conflict-freeness uses the explicit attack relation when one is present
+    (Modgil & Prakken 2018 Def. 14) and defence uses defeats.
     """
+    framework = caf.framework
+    conflict_relation = (
+        framework.attacks if framework.attacks is not None else framework.defeats
+    )
+
+    def is_conflict_free(candidate: frozenset[str]) -> bool:
+        return conflict_free(candidate, conflict_relation)
+
+    def is_admissible(candidate: frozenset[str]) -> bool:
+        return admissible(
+            candidate, framework.arguments, framework.defeats, attacks=framework.attacks
+        )
+
     if semantics == "preferred":
         return _maximal_claim_sets(
             _project(caf, candidate)
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+            for candidate in _argument_subsets(framework.arguments)
+            if is_admissible(candidate)
         )
     if semantics == "naive":
         return _maximal_claim_sets(
             _project(caf, candidate)
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if conflict_free(candidate, caf.framework.defeats)
+            for candidate in _argument_subsets(framework.arguments)
+            if is_conflict_free(candidate)
         )
     if semantics == "stable":
         all_claims = _all_claims(caf)
         return _deduplicate_claim_sets(
             _project(caf, candidate)
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if conflict_free(candidate, caf.framework.defeats)
-            and claim_range(caf, candidate) == all_claims
+            for candidate in _argument_subsets(framework.arguments)
+            if is_conflict_free(candidate) and claim_range(caf, candidate) == all_claims
         )
     if semantics == "stable-admissible":
         all_claims = _all_claims(caf)
         return _deduplicate_claim_sets(
             _project(caf, candidate)
-            for candidate in _argument_subsets(caf.framework.arguments)
-            if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
-            and claim_range(caf, candidate) == all_claims
+            for candidate in _argument_subsets(framework.arguments)
+            if is_admissible(candidate) and claim_range(caf, candidate) == all_claims
         )
     if semantics == "semi-stable":
         return _claim_range_maximal(
             caf,
             (
                 candidate
-                for candidate in _argument_subsets(caf.framework.arguments)
-                if admissible(candidate, caf.framework.arguments, caf.framework.defeats)
+                for candidate in _argument_subsets(framework.arguments)
+                if is_admissible(candidate)
             ),
         )
     if semantics == "stage":
+        if framework.attacks is not None and framework.attacks != framework.defeats:
+            raise ValueError(
+                "stage semantics is undefined for distinct attack and defeat relations"
+            )
         return _claim_range_maximal(
             caf,
             (
                 candidate
-                for candidate in _argument_subsets(caf.framework.arguments)
-                if conflict_free(candidate, caf.framework.defeats)
+                for candidate in _argument_subsets(framework.arguments)
+                if is_conflict_free(candidate)
             ),
         )
     raise ValueError(f"unsupported CAF claim-level semantics: {semantics}")

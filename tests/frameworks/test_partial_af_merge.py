@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from itertools import product
 
+import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
@@ -16,6 +17,7 @@ from argumentation.frameworks.af_merging import (
 from argumentation.frameworks.partial_af import (
     EnumerationExceeded,
     consensual_expand,
+    merge_framework_edit_distance,
 )
 
 
@@ -44,6 +46,51 @@ def test_consensual_expand_preserves_in_scope_pairs_and_marks_out_of_scope_as_ig
     assert ("A", "B") in expanded.ignorance
     assert ("B", "A") in expanded.ignorance
     assert ("B", "B") in expanded.ignorance
+
+
+def test_consensual_expand_rejects_universe_missing_source_arguments():
+    """Coste-Marquis et al. 2007, Def. 11 (p.6-7): the expansion universe is
+    ``A = union A_i``, so every source argument set ``A_i`` is contained in it.
+    A smaller universe must not silently drop ``B`` and its attack."""
+    af = _af({"A", "B"}, {("A", "B")})
+
+    with pytest.raises(ValueError, match="universe"):
+        consensual_expand(af, frozenset({"A"}))
+
+
+def test_consensual_expand_to_superset_universe_keeps_source_arguments():
+    """Control: a universe containing ``A_i`` keeps every source argument."""
+    af = _af({"A", "B"}, {("A", "B")})
+
+    expanded = consensual_expand(af, frozenset({"A", "B", "C"}))
+
+    assert af.arguments <= expanded.arguments
+    assert expanded.attacks == frozenset({("A", "B")})
+
+
+def test_edit_distance_to_own_expansion_uses_pre_preference_attacks():
+    """Coste-Marquis et al. 2007, Def. 15/18 (p.8-9): ``d(x, y) = 0`` iff
+    ``x = y``. An AF whose attack ``A -> B`` was filtered from its defeats must
+    read the same attack relation as its same-universe consensual expansion."""
+    af = ArgumentationFramework(
+        arguments=frozenset({"A", "B"}),
+        defeats=frozenset(),
+        attacks=frozenset({("A", "B")}),
+    )
+
+    expanded = consensual_expand(af, af.arguments)
+
+    assert merge_framework_edit_distance(af, expanded) == 0
+
+
+def test_edit_distance_counts_attack_versus_non_attack_pairs():
+    """Control: Def. 18 counts one pair labelled attack vs non-attack."""
+    left = _af({"A", "B"}, {("A", "B")})
+    right = _af({"A", "B"}, set())
+
+    assert merge_framework_edit_distance(left, right) == 1
+    expanded = consensual_expand(left, left.arguments)
+    assert merge_framework_edit_distance(left, expanded) == 0
 
 
 def test_consensual_expand_on_shared_universe_introduces_no_ignorance():

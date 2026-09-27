@@ -98,8 +98,10 @@ def cayrol_derived_defeats(
 ) -> frozenset[tuple[str, str]]:
     """Return the derived defeats induced by support/defeat interaction.
 
-    This computes Cayrol & Lagasquie-Schiex (2005, Definition 3)
-    supported and indirect defeats to a fixpoint.
+    This computes Cayrol & Lagasquie-Schiex (2005, Definition 3) supported
+    defeats (support edges then one primitive defeat) and indirect defeats
+    (one primitive defeat then support edges). Derived defeats are not fed
+    back into the construction.
     """
     support_reach: dict[str, frozenset[str]] = {}
     successors = successors_index(supports)
@@ -116,38 +118,15 @@ def cayrol_derived_defeats(
                     queue.append(target)
         support_reach[source] = frozenset(reach)
 
-    working_defeats = set(defeats)
-    all_derived: set[tuple[str, str]] = set()
-    while True:
-        new_derived: set[tuple[str, str]] = set()
+    derived: set[tuple[str, str]] = set()
+    for defeater, target in defeats:
+        for source, reachable in support_reach.items():
+            if defeater in reachable:
+                derived.add((source, target))
+        for supported in support_reach.get(target, frozenset()):
+            derived.add((defeater, supported))
 
-        for defeated, target in working_defeats:
-            for source, reachable in support_reach.items():
-                if (
-                    defeated in reachable
-                    and source != target
-                    and (source, target) not in working_defeats
-                ):
-                    new_derived.add((source, target))
-
-        for source, defeated in working_defeats:
-            reachable = support_reach.get(defeated)
-            if not reachable:
-                continue
-            for target in reachable:
-                if source != target and (source, target) not in working_defeats:
-                    new_derived.add((source, target))
-
-        new_derived = {
-            (source, target) for source, target in new_derived if source != target
-        }
-        if not new_derived:
-            break
-
-        working_defeats |= new_derived
-        all_derived |= new_derived
-
-    return frozenset(all_derived)
+    return frozenset(derived - defeats)
 
 
 def derived_set_defeats(
