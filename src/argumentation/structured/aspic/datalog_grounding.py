@@ -112,12 +112,16 @@ def grounding_inspection_to_aspic(
 
     axioms = frozenset(_literal_from_ground_atom(atom) for atom in fact_atoms)
     rule_origins: dict[Rule, GroundRuleOrigin] = {}
+    # Distinct authored rules can ground to one ASPIC+ rule; keep every
+    # (rule, origin) pair so no source id is dropped.
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]] = []
     strict_rules = tuple(
         _rule_from_instance(
             instance,
             kind="strict",
             name=None,
             origins=rule_origins,
+            ground_origins=ground_origins,
         )
         for instance in strict_instances
     )
@@ -129,6 +133,7 @@ def grounding_inspection_to_aspic(
                 kind="defeasible",
                 name=f"gr{index}",
                 origins=rule_origins,
+                ground_origins=ground_origins,
             )
         )
     defeasible_rules.extend(
@@ -139,7 +144,7 @@ def grounding_inspection_to_aspic(
         )
     )
 
-    source_to_ground = _source_to_ground_rules(rule_origins)
+    source_to_ground = _source_to_ground_rules(ground_origins)
     pref = PreferenceConfig(
         rule_order=_project_rule_order(superiority, source_to_ground),
         premise_order=frozenset(),
@@ -195,6 +200,7 @@ def _rule_from_instance(
     kind: str,
     name: str | None,
     origins: dict[Rule, GroundRuleOrigin],
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]],
 ) -> Rule:
     if getattr(instance, "default_negated_body", ()):
         raise ValueError("ASPIC+ grounding does not accept default-negated rule bodies")
@@ -204,11 +210,13 @@ def _rule_from_instance(
         kind=kind,
         name=name,
     )
-    origins[rule] = GroundRuleOrigin(
+    origin = GroundRuleOrigin(
         source_rule_id=instance.rule_id,
         substitution=tuple((name, value) for name, value in instance.substitution),
         role="ground",
     )
+    origins.setdefault(rule, origin)
+    ground_origins.append((rule, origin))
     return rule
 
 
@@ -281,12 +289,10 @@ def _defeater_targets(
 
 
 def _source_to_ground_rules(
-    origins: Mapping[Rule, GroundRuleOrigin],
+    ground_origins: list[tuple[Rule, GroundRuleOrigin]],
 ) -> Mapping[str, frozenset[Rule]]:
     grouped: dict[str, set[Rule]] = {}
-    for rule, origin in origins.items():
-        if origin.role != "ground":
-            continue
+    for rule, origin in ground_origins:
         grouped.setdefault(origin.source_rule_id, set()).add(rule)
     return {source_id: frozenset(rules) for source_id, rules in grouped.items()}
 

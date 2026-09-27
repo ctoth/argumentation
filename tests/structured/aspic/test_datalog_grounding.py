@@ -236,3 +236,45 @@ def test_named_defeater_without_exception_undercuts_nothing() -> None:
     ).accepted_conclusions
 
     assert {_flies("a"), _flies("b")} <= accepted
+
+
+def _animal_theory(heads: tuple[str, str]) -> DefeasibleTheory:
+    return DefeasibleTheory(
+        facts={"bird": {("a",)}},
+        strict_rules=[
+            GunrayRule(id=rule_id, head=head, body=["bird(X)"])
+            for rule_id, head in zip(("s1", "s2"), heads, strict=True)
+        ],
+    )
+
+
+def test_identically_grounded_strict_rules_keep_every_source_id() -> None:
+    """Issue #67: two authored rules grounding to one ASPIC+ rule keep both ids.
+
+    Diller et al. 2025 (Def 9) ground each authored rule separately, so the
+    source-to-ground relation is many-to-one and must not drop ``s1``.
+    """
+    grounded = ground_defeasible_theory(
+        _animal_theory(("animal(X)", "animal(X)")), simplify=False
+    )
+    animal = Literal(GroundAtom("animal", ("a",)))
+
+    assert set(grounded.source_to_ground_rules) == {"s1", "s2"}
+    assert grounded.source_to_ground_rules["s1"] == grounded.source_to_ground_rules[
+        "s2"
+    ]
+    assert {rule.consequent for rule in grounded.source_to_ground_rules["s1"]} == {
+        animal
+    }
+
+
+def test_distinctly_grounded_strict_rules_keep_every_source_id() -> None:
+    """Issue #67 control: distinct heads give distinct ground rules."""
+    grounded = ground_defeasible_theory(
+        _animal_theory(("animal(X)", "creature(X)")), simplify=False
+    )
+
+    assert set(grounded.source_to_ground_rules) == {"s1", "s2"}
+    assert grounded.source_to_ground_rules["s1"].isdisjoint(
+        grounded.source_to_ground_rules["s2"]
+    )
