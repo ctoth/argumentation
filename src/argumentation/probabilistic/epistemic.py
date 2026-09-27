@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 from itertools import product
+import math
 import re
 from typing import Literal, Mapping, Sequence
 
@@ -135,6 +136,13 @@ class ProbabilityFunction:
             raise ValueError(
                 "probability function must assign all possible worlds exactly once"
             )
+        nonfinite = sorted(
+            world
+            for world, probability in normalized.items()
+            if not math.isfinite(probability)
+        )
+        if nonfinite:
+            raise ValueError(f"world probabilities must be finite: {nonfinite!r}")
         negative = sorted(
             world for world, probability in normalized.items() if probability < 0.0
         )
