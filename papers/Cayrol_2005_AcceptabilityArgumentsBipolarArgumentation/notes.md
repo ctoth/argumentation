@@ -8,6 +8,10 @@ doi_url: "https://doi.org/10.1007/11518655_33"
 
 # On the Acceptability of Arguments in Bipolar Argumentation Frameworks
 
+## Targeted implementation check, 2026-09-26
+
+Rechecked Definition 3 on printed p.383 against [page image 005](pngs/page-005.png), using the paper-reader page-image workflow. This is a scoped check, not a full reread. Supported and indirect defeats use the primitive relations: support followed by defeat, or defeat followed by support. Feeding derived defeats back into both constructions admits support-defeat-support paths that the definition does not include ([implementation issue #45](https://github.com/ctoth/argumentation/issues/45)). The definition also imposes no distinct-endpoint restriction: a support edge from a to b followed by a defeat from b to a derives a self-defeat ([issue #46](https://github.com/ctoth/argumentation/issues/46)). These points clarify the path algorithms below; the implementation's fixed-point and self-loop filters are not paper requirements.
+
 ## One-Sentence Summary
 Extends Dung's abstract argumentation framework with an independent support relation alongside defeat, defining bipolar argumentation frameworks (BAFs) with new acceptability semantics (d-admissible, s-admissible, c-admissible extensions) that enforce coherence between support and defeat. *(p.378)*
 

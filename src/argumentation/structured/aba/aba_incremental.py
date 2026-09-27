@@ -98,6 +98,12 @@ class ClingoSolveTimeout(TimeoutError):
     """Raised when an internal diagnostic clingo solve budget is exhausted."""
 
 
+class ClingoSolveIncomplete(ClingoSolveTimeout):
+    """Raised when clingo stops without a definite answer (UNKNOWN), e.g. at a
+    ``--solve-limit``, or before exhausting a required enumeration. Neither is
+    a proof of UNSAT nor a complete model set."""
+
+
 def _sanitize_clingo_statistics(value: Any) -> Any:
     if isinstance(value, Mapping) or hasattr(value, "items"):
         return {
@@ -417,13 +423,35 @@ class AbaIncrementalSolver:
         assumptions=None,
         telemetry: IncrementalTelemetry | None = None,
     ) -> AssumptionSet | None:
-        """Solve for one model; return its ``in`` assumption set, or ``None`` if UNSAT."""
+        """Solve for one model; return its ``in`` assumption set, or ``None`` if UNSAT.
+
+        Raises ``ClingoSolveIncomplete`` when clingo ends UNKNOWN: that is
+        not a proof of UNSAT, and callers read ``None`` as one.
+        """
         captured: list[AssumptionSet] = []
 
         def on_model(model) -> bool:
             captured.append(self._extract_in_set(model))
             return False  # stop after first model
 
+        result = self._run_solve(
+            ctl, assumptions=assumptions, on_model=on_model, telemetry=telemetry
+        )
+        if result.satisfiable:
+            return captured[-1]
+        if result.unsatisfiable:
+            return None
+        raise ClingoSolveIncomplete("clingo solve ended UNKNOWN (search limit)")
+
+    def _run_solve(
+        self,
+        ctl,
+        *,
+        assumptions=None,
+        on_model,
+        telemetry: IncrementalTelemetry | None,
+    ):
+        """Run one solve, interruptibly when a budget is set; return its result."""
         self._record_telemetry_control(telemetry)
         if self.solve_timeout_seconds is None:
             result = ctl.solve(assumptions=assumptions or [], on_model=on_model)
@@ -438,7 +466,7 @@ class AbaIncrementalSolver:
                 finished = handle.wait(self.solve_timeout_seconds)
                 if not finished:
                     handle.cancel()
-                    result = handle.get()
+                    handle.get()
                     self._record_telemetry_statistics(ctl, telemetry)
                     if telemetry is not None:
                         telemetry.clingo_interrupted = True
@@ -447,9 +475,7 @@ class AbaIncrementalSolver:
                     )
                 result = handle.get()
         self._record_telemetry_statistics(ctl, telemetry)
-        if not result.satisfiable:
-            return None
-        return captured[-1]
+        return result
 
     # -- complete / stable: single solve, Control reused --------------------
 
@@ -465,9 +491,11 @@ class AbaIncrementalSolver:
 
         if telemetry is not None:
             telemetry.solver_calls += 1
-        self._record_telemetry_control(telemetry)
-        ctl.solve(on_model=on_model)
-        self._record_telemetry_statistics(ctl, telemetry)
+        result = self._run_solve(ctl, on_model=on_model, telemetry=telemetry)
+        if not result.exhausted:
+            raise ClingoSolveIncomplete(
+                "clingo enumeration stopped before exhausting the search"
+            )
         return _sorted_extensions(found)
 
     def enumerate_complete(

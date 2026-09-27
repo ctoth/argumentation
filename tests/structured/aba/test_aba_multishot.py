@@ -490,6 +490,8 @@ def test_incremental_solver_passes_diagnostic_control_args(monkeypatch) -> None:
 
     class FakeResult:
         satisfiable = False
+        unsatisfiable = True
+        exhausted = True
 
     class FakeControl:
         def __init__(self, args):
@@ -530,6 +532,8 @@ def test_incremental_solver_collects_sanitized_clingo_statistics(monkeypatch) ->
 
     class FakeResult:
         satisfiable = False
+        unsatisfiable = True
+        exhausted = True
 
     class FakeControl:
         def __init__(self, args):
@@ -726,6 +730,8 @@ def test_incremental_solver_default_does_not_collect_statistics(monkeypatch) -> 
 
     class FakeResult:
         satisfiable = False
+        unsatisfiable = True
+        exhausted = True
 
     class FakeControl:
         def __init__(self, args):
@@ -917,3 +923,105 @@ def test_skeptical_preferred_accepts_fact_without_assumptions(
     )
 
     assert result.answer is True
+
+
+def _mutual_contrary_pair() -> tuple[ABAFramework, Literal, Literal]:
+    pytest.importorskip("clingo")
+    a, b = (Literal(GroundAtom(name)) for name in "ab")
+    framework = ABAFramework(
+        language=frozenset({a, b}),
+        rules=frozenset(),
+        assumptions=frozenset({a, b}),
+        contrary={a: b, b: a},
+    )
+    return framework, a, b
+
+
+@pytest.mark.parametrize("semantics", ["complete", "stable"])
+def test_budgeted_enumeration_uses_interruptible_solve(
+    monkeypatch, semantics: str
+) -> None:
+    """Operational contract: with a solve budget, complete/stable enumeration
+    must use the async wait/cancel path (a blocking ``solve`` cannot be
+    interrupted). The control wrapper checks every solve call."""
+    framework, _a, _b = _mutual_contrary_pair()
+    original = AbaIncrementalSolver._new_control
+    async_flags: list[bool] = []
+
+    class CheckedControl:
+        def __init__(self, inner) -> None:
+            self.inner = inner
+
+        def __getattr__(self, name):
+            return getattr(self.inner, name)
+
+        def solve(self, **kwargs):
+            async_flags.append(bool(kwargs.get("async_", False)))
+            assert len(async_flags) <= 2
+            return self.inner.solve(**kwargs)
+
+    def checked(self, **kwargs):
+        return CheckedControl(original(self, **kwargs))
+
+    monkeypatch.setattr(AbaIncrementalSolver, "_new_control", checked)
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics=semantics,
+        task="enum",
+        simplify=False,
+        clingo_solve_timeout_seconds=30.0,
+    )
+
+    assert async_flags and all(async_flags)
+    assert result.status == "success"
+    assert _show(result.extensions) == _show(
+        native_aba.stable_extensions(framework)
+        if semantics == "stable"
+        else native_aba.complete_extensions(framework)
+    )
+
+
+@pytest.mark.parametrize(
+    ("semantics", "task"),
+    [("preferred", "skeptical"), ("complete", "enum"), ("stable", "single-extension")],
+)
+def test_solve_limit_unknown_is_not_reported_as_a_result(
+    semantics: str, task: str
+) -> None:
+    """Clingo's --solve-limit=0 stops search with UNKNOWN. That is neither
+    UNSAT nor a complete enumeration: {a} and {b} are both preferred, so a
+    is NOT skeptically accepted, and no request may report success."""
+    framework, a, _b = _mutual_contrary_pair()
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics=semantics,
+        task=task,
+        query=a if task == "skeptical" else None,
+        simplify=False,
+        clingo_control_args=("--solve-limit=0",),
+    )
+
+    assert result.status == "timeout"
+    assert result.metadata["solver_calls"] <= 1
+
+
+def test_mutual_contrary_skeptical_preferred_control() -> None:
+    """Control: without a search limit, a is not skeptically preferred."""
+    framework, a, b = _mutual_contrary_pair()
+
+    result = solve_aba_with_backend(
+        framework,
+        backend="asp",
+        semantics="preferred",
+        task="skeptical",
+        query=a,
+        simplify=False,
+    )
+
+    assert result.status == "success"
+    assert result.answer is False
+    assert result.counterexample == frozenset({b})
