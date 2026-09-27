@@ -624,3 +624,88 @@ def test_source_asp_facts_count_single_rule_antecedent() -> None:
     system, kb = _repeated_antecedent_theory((Literal(GroundAtom("p")),))
 
     _assert_asp_backend_matches_reference(system, kb)
+
+
+def _assert_asp_semantics_match_reference(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+    semantics: str,
+) -> None:
+    pytest.importorskip("clingo")
+    reference = solve_aspic_with_backend(
+        system, kb, NO_PREFERENCES, backend="materialized_reference", semantics=semantics
+    )
+    asp = solve_aspic_with_backend(
+        system, kb, NO_PREFERENCES, backend="asp", semantics=semantics
+    )
+
+    assert asp.status is ASPICQueryStatus.SUCCESS, asp.metadata
+    assert set(asp.extension_conclusions) == set(reference.extension_conclusions)
+
+
+def _rebutting_defeasible_facts(
+    heads: tuple[Literal, ...],
+) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    atoms = frozenset(Literal(head.atom) for head in heads)
+    return (
+        ArgumentationSystem(
+            language=atoms | frozenset(atom.contrary for atom in atoms),
+            contrariness=ContrarinessFn(
+                frozenset((atom, atom.contrary) for atom in atoms)
+            ),
+            strict_rules=frozenset(),
+            defeasible_rules=frozenset(
+                Rule((), head, "defeasible", f"d{index}")
+                for index, head in enumerate(heads)
+            ),
+        ),
+        KnowledgeBase(axioms=frozenset(), premises=frozenset()),
+    )
+
+
+@pytest.mark.parametrize("semantics", ["grounded", "complete", "stable"])
+def test_source_asp_backend_rebuts_defeasible_conclusions(semantics: str) -> None:
+    """Issue #65: a defeasible rule is attacked by a contrary of its head.
+
+    Lehtonen et al. 2020, Def 10: ``(P, D)`` attacks ``r`` in ``R_d`` if a
+    contrary of the rule name *or of its head* is derivable. Equally
+    preferred defeasible facts ``r`` and ``~r`` rebut each other, so the
+    grounded extension accepts neither.
+    """
+    r = Literal(GroundAtom("r"))
+    system, kb = _rebutting_defeasible_facts((r, r.contrary))
+
+    _assert_asp_semantics_match_reference(system, kb, semantics)
+
+
+@pytest.mark.parametrize("semantics", ["grounded", "complete", "stable"])
+def test_source_asp_backend_accepts_unrebutted_defeasible_conclusion(
+    semantics: str,
+) -> None:
+    """Issue #65 control: with no contrary conclusion, ``r`` is accepted."""
+    system, kb = _rebutting_defeasible_facts((Literal(GroundAtom("r")),))
+
+    _assert_asp_semantics_match_reference(system, kb, semantics)
+
+
+@given(
+    st.lists(
+        st.sampled_from(
+            [
+                Literal(GroundAtom(atom), negated=negated)
+                for atom in ("a", "b")
+                for negated in (False, True)
+            ]
+        ),
+        min_size=1,
+        max_size=4,
+    )
+)
+@settings(max_examples=15, deadline=None)
+def test_source_asp_backend_matches_reference_on_rebutting_facts(
+    heads: list[Literal],
+) -> None:
+    """Issue #65: differential check over small rebutting fact theories."""
+    system, kb = _rebutting_defeasible_facts(tuple(heads))
+
+    _assert_asp_semantics_match_reference(system, kb, "grounded")
