@@ -76,3 +76,44 @@ def test_flat_aba_to_dung_preserves_joint_support_attacks() -> None:
     assert argument_label(frozenset({alpha}), alpha) in grounded
     assert argument_label(frozenset({beta}), beta) in grounded
     assert argument_label(frozenset({gamma}), gamma) not in grounded
+
+
+def _fact_framework(first: Literal, second: Literal) -> ABAFramework:
+    return ABAFramework(
+        language=frozenset({first, second}),
+        rules=frozenset({Rule((), first, "strict"), Rule((), second, "strict")}),
+        assumptions=frozenset(),
+        contrary={},
+    )
+
+
+def test_aba_to_dung_keeps_distinct_literals_with_identical_display_text() -> None:
+    """Issue #58: each deduction ``(support, conclusion)`` is its own argument.
+
+    Bondarenko et al. 1997 (p.76) build arguments as deductions of a
+    conclusion from assumptions; ``p(1)`` and ``p('1')`` are different
+    conclusions even though both print as ``p(1)``, so the Dung projection
+    needs two nodes.
+    """
+    integer = Literal(GroundAtom("p", (1,)))
+    text = Literal(GroundAtom("p", ("1",)))
+    assert integer != text
+
+    dung = aba_to_dung(_fact_framework(integer, text))
+
+    assert len(dung.arguments) == 2
+
+
+def test_aba_to_dung_keeps_readable_labels_for_distinct_display_text() -> None:
+    """Issue #58 control: distinct conclusions keep their plain labels."""
+    first = Literal(GroundAtom("p", (1,)))
+    second = Literal(GroundAtom("q", (1,)))
+
+    dung = aba_to_dung(_fact_framework(first, second))
+
+    assert dung.arguments == frozenset(
+        {
+            argument_label(frozenset(), first),
+            argument_label(frozenset(), second),
+        }
+    )
