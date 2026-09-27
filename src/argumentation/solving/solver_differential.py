@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Collection
 from dataclasses import dataclass
 import json
 from pathlib import Path
@@ -52,8 +53,20 @@ def assert_solver_results_agree(
     task: SolverTask,
     expected: SolverResult,
     actual: SolverResult,
+    *,
+    reference_extensions: Collection[frozenset[object]] | None = None,
+    query: object | None = None,
 ) -> None:
-    """Assert two solver results are comparable and semantically equal."""
+    """Assert two solver results are comparable and semantically equal.
+
+    Single-extension witnesses and acceptance certificates are choices: a
+    solver may return any extension of the semantics, and any extension that
+    contains (credulous witness) or omits (skeptical counterexample) the
+    query. Differing choices therefore agree when each is valid against
+    ``reference_extensions``, the full extension set of the semantics.
+    Identical choices need no reference; differing ones cannot be judged
+    without it. Acceptance certificates are validated with ``query``.
+    """
     if task == "enumeration":
         if isinstance(expected, SingleExtensionSolverSuccess) or isinstance(
             actual, SingleExtensionSolverSuccess
@@ -82,7 +95,13 @@ def assert_solver_results_agree(
             raise AssertionError(
                 "single-extension comparison requires two single-extension successes"
             )
-        assert expected.extension == actual.extension
+        if (expected.extension is None) != (actual.extension is None):
+            raise AssertionError("solvers disagree on whether an extension exists")
+        _validate_certificates(
+            "single-extension witness",
+            _present(expected.extension, actual.extension),
+            reference_extensions,
+        )
         return
     if task == "acceptance":
         if not isinstance(expected, AcceptanceSolverSuccess) or not isinstance(
@@ -92,10 +111,57 @@ def assert_solver_results_agree(
                 "acceptance comparison requires two acceptance successes"
             )
         assert expected.answer is actual.answer
-        assert expected.witness == actual.witness
-        assert expected.counterexample == actual.counterexample
+        witnesses = _present(expected.witness, actual.witness)
+        counterexamples = _present(expected.counterexample, actual.counterexample)
+        _validate_certificates("credulous witness", witnesses, reference_extensions)
+        _validate_certificates(
+            "skeptical counterexample", counterexamples, reference_extensions
+        )
+        if reference_extensions is not None and (witnesses or counterexamples):
+            if query is None:
+                raise AssertionError("acceptance certificates need the query")
+            for witness in witnesses:
+                if query not in witness:
+                    raise AssertionError(
+                        f"credulous witness {sorted(map(repr, witness))} "
+                        f"does not contain the query {query!r}"
+                    )
+            for counterexample in counterexamples:
+                if query in counterexample:
+                    raise AssertionError(
+                        f"skeptical counterexample {sorted(map(repr, counterexample))} "
+                        f"contains the query {query!r}"
+                    )
         return
     raise ValueError(f"unsupported solver differential task: {task}")
+
+
+def _present(
+    *certificates: frozenset[object] | None,
+) -> tuple[frozenset[object], ...]:
+    return tuple(certificate for certificate in certificates if certificate is not None)
+
+
+def _validate_certificates(
+    label: str,
+    certificates: tuple[frozenset[object], ...],
+    reference_extensions: Collection[frozenset[object]] | None,
+) -> None:
+    """Require each certificate to be an extension, or all to be identical."""
+    if reference_extensions is None:
+        if len(set(certificates)) > 1:
+            raise AssertionError(
+                f"differing {label}s {certificates!r} cannot be validated "
+                "without reference_extensions"
+            )
+        return
+    reference = {frozenset(extension) for extension in reference_extensions}
+    for certificate in certificates:
+        if frozenset(certificate) not in reference:
+            raise AssertionError(
+                f"{label} {sorted(map(repr, certificate))} is not an extension "
+                "of the reference semantics"
+            )
 
 
 def load_benchmark_manifest(path: Path) -> tuple[BenchmarkCase, ...]:
