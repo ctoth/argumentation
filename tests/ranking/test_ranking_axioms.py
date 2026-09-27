@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from argumentation.core.dung import ArgumentationFramework
-from argumentation.ranking.ranking import categoriser_ranking
+from argumentation.ranking.ranking import RankingResult, categoriser_ranking
 from argumentation.ranking.ranking_axioms import (
     abstraction,
     cardinality_precedence,
@@ -135,3 +135,23 @@ def test_distributed_defense_precedence_prefers_spread_defense() -> None:
     )
 
     assert distributed_defense_precedence(framework, categoriser_ranking(framework))
+
+
+def _all_tied(framework: ArgumentationFramework) -> RankingResult:
+    return RankingResult(
+        {argument: 0.0 for argument in framework.arguments},
+        (framework.arguments,),
+        True,
+        0,
+        "all-tied",
+    )
+
+
+def test_self_contradiction_rejects_tie_with_self_attacker() -> None:
+    """Bonzon et al. 2016, p. 2, SC: (a, a) not in R and (b, b) in R imply
+    a > b, strictly; a tie with the self-attacker violates it."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b"}), defeats=frozenset({("b", "b")})
+    )
+
+    assert self_contradiction(framework, _all_tied(framework)) is False

@@ -130,7 +130,11 @@ def self_contradiction(
     framework: ArgumentationFramework,
     result: RankingResult,
 ) -> bool:
-    """Check Bonzon et al. 2016 p. 1 self-contradiction precedence."""
+    """Check Bonzon et al. 2016 p. 2 self-contradiction (SC).
+
+    Every non-self-attacking argument ranks strictly above every
+    self-attacking one: (a, a) not in R and (b, b) in R imply a > b.
+    """
 
     self_attacking = {
         argument
@@ -139,7 +143,7 @@ def self_contradiction(
     }
     clean = set(framework.arguments) - self_attacking
     return all(
-        not result.strictly_prefers(self_attacker, other)
+        result.strictly_prefers(other, self_attacker)
         for self_attacker in self_attacking
         for other in clean
     )
