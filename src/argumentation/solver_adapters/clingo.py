@@ -17,8 +17,12 @@ from argumentation.core.solver_results import (
     SolverProtocolError,
     SolverUnavailable,
 )
+from argumentation.solver_adapters._commands import _timeout_stream
 
 
+# Clasp exit codes are result bits: 10 SAT, 20 search exhausted, 30 both;
+# ``python -m clingo`` exits 0. Other codes (interrupt, memory, error) fail.
+_COMPLETED_RETURNCODES = frozenset({0, 10, 20, 30})
 _ACCEPTED_ARG_RE = re.compile(r"^accepted_arg\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
 _ACCEPTED_LIT_RE = re.compile(r"^accepted_lit\((?P<id>[A-Za-z_][A-Za-z0-9_]*)\)$")
 _CLINGO_CONTROL_TOKENS = {
@@ -116,10 +120,12 @@ def run_extension_enumeration_protocol(
             timeout=timeout_seconds,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        return _timeout_error(binary, problem, exc)
     finally:
         path.unlink(missing_ok=True)
 
-    if completed.returncode != 0:
+    if completed.returncode not in _COMPLETED_RETURNCODES:
         return ClingoProcessError(
             backend=binary,
             problem=problem,
@@ -129,6 +135,7 @@ def run_extension_enumeration_protocol(
         )
 
     try:
+        _require_completed_search(completed, require_exhausted=True)
         extensions, extension_literal_ids = _parse_extension_answer_sets(
             completed.stdout,
             known_argument_ids=known_argument_ids,
@@ -176,10 +183,12 @@ def run_aspic_grounded_protocol(
             timeout=timeout_seconds,
             check=False,
         )
+    except subprocess.TimeoutExpired as exc:
+        return _timeout_error(binary, "ASPIC-GR", exc)
     finally:
         path.unlink(missing_ok=True)
 
-    if completed.returncode != 0:
+    if completed.returncode not in _COMPLETED_RETURNCODES:
         return ClingoProcessError(
             backend=binary,
             problem="ASPIC-GR",
@@ -189,6 +198,7 @@ def run_aspic_grounded_protocol(
         )
 
     try:
+        _require_completed_search(completed, require_exhausted=False)
         accepted_argument_ids, accepted_literal_ids = _parse_grounded_answer_set(
             completed.stdout,
             known_literal_ids=known_literal_ids,
@@ -208,6 +218,48 @@ def run_aspic_grounded_protocol(
         accepted_literal_ids=accepted_literal_ids,
         stdout=completed.stdout,
     )
+
+
+def _timeout_error(
+    binary: str, problem: str, exc: subprocess.TimeoutExpired
+) -> SolverProcessError:
+    """Report a timed-out run like the ICCMA adapters: code -1, partial streams."""
+    return ClingoProcessError(
+        backend=binary,
+        problem=problem,
+        returncode=-1,
+        stderr=_timeout_stream(exc.stderr),
+        stdout=_timeout_stream(exc.stdout),
+    )
+
+
+_COMPLETED_STATUSES = frozenset({"SATISFIABLE", "UNSATISFIABLE", "OPTIMUM FOUND"})
+_STATUS_LINES = _COMPLETED_STATUSES | {"UNKNOWN"}
+
+
+def _require_completed_search(
+    completed: subprocess.CompletedProcess[str],
+    *,
+    require_exhausted: bool,
+) -> None:
+    """Raise ``ValueError`` unless clingo reported a completed search.
+
+    The final status line must be SATISFIABLE, UNSATISFIABLE or OPTIMUM
+    FOUND; UNKNOWN, empty or truncated output is not a result. When all
+    models are required, native exit code 10 (SAT without the exhaustion
+    bit) means the enumeration stopped early.
+    """
+    statuses = [
+        line.strip()
+        for line in completed.stdout.splitlines()
+        if line.strip() in _STATUS_LINES
+    ]
+    if not statuses:
+        raise ValueError("clingo output has no solver status (empty or truncated)")
+    if statuses[-1] not in _COMPLETED_STATUSES:
+        raise ValueError(f"clingo search did not complete: {statuses[-1]}")
+    if require_exhausted and completed.returncode == 10:
+        raise ValueError("clingo stopped before exhausting the model enumeration")
 
 
 def _parse_grounded_answer_set(

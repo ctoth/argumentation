@@ -319,9 +319,21 @@ def _solve_multishot(
 
     # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
     if semantics == "preferred" and task == "skeptical" and query is not None:
-        answer, counterexample = solver.is_skeptically_accepted_preferred(
-            query, telemetry=telemetry
-        )
+        try:
+            answer, counterexample = solver.is_skeptically_accepted_preferred(
+                query, telemetry=telemetry
+            )
+        except aba_incremental.ClingoSolveTimeout as exc:
+            return _failure_result(
+                status="timeout",
+                semantics=semantics,
+                backend=backend,
+                encoding=encoding,
+                reason=str(exc),
+                metadata=metadata_base
+                | {"task": task, "algorithm": "L21-TPLP-Alg1"}
+                | _incremental_telemetry_metadata(telemetry),
+            )
         return ABAQueryResult(
             status="success",
             semantics=semantics,
@@ -375,16 +387,26 @@ def _solve_multishot(
             | _incremental_telemetry_metadata(telemetry),
         )
 
-    if semantics == "grounded":
-        extensions = (solver.grounded_extension(),)
-    elif semantics == "complete":
-        extensions = solver.enumerate_complete(telemetry=telemetry)
-    elif semantics == "stable":
-        extensions = solver.enumerate_stable(telemetry=telemetry)
-    elif semantics == "preferred":
-        extensions = solver.enumerate_preferred(telemetry=telemetry)
-    else:  # pragma: no cover - dispatcher gates this
-        raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+    try:
+        if semantics == "grounded":
+            extensions = (solver.grounded_extension(),)
+        elif semantics == "complete":
+            extensions = solver.enumerate_complete(telemetry=telemetry)
+        elif semantics == "stable":
+            extensions = solver.enumerate_stable(telemetry=telemetry)
+        elif semantics == "preferred":
+            extensions = solver.enumerate_preferred(telemetry=telemetry)
+        else:  # pragma: no cover - dispatcher gates this
+            raise ValueError(f"unsupported ABA semantics for multishot: {semantics}")
+    except aba_incremental.ClingoSolveTimeout as exc:
+        return _failure_result(
+            status="timeout",
+            semantics=semantics,
+            backend=backend,
+            encoding=encoding,
+            reason=str(exc),
+            metadata=metadata_base | _incremental_telemetry_metadata(telemetry),
+        )
 
     return _task_result(
         framework,
@@ -452,6 +474,7 @@ def _solve_simplified(
             query=query,
             clingo_control_args=clingo_control_args,
             collect_clingo_statistics=collect_clingo_statistics,
+            clingo_solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
 
     residual_task = "single-extension" if task == "single-extension" else "enum"
@@ -517,6 +540,7 @@ def _solve_simplified_ds_pr(
     query: Literal,
     clingo_control_args: tuple[str, ...],
     collect_clingo_statistics: bool,
+    clingo_solve_timeout_seconds: float | None,
 ) -> ABAQueryResult:
     """DS-PR on a non-trivial preprocessed framework: lift rules + Algorithm 1 on the residual.
 
@@ -558,6 +582,7 @@ def _solve_simplified_ds_pr(
             residual,
             control_args=clingo_control_args,
             collect_statistics=collect_clingo_statistics,
+            solve_timeout_seconds=clingo_solve_timeout_seconds,
         )
     except RuntimeError as exc:
         return _failure_result(
@@ -578,12 +603,23 @@ def _solve_simplified_ds_pr(
     decision = _simplified_query_decision(simplification, query)
     if decision in {"fixed_in", "fixed_in_closure"}:
         return _result(True, None)
-    if decision in {"fixed_out", "outside_residual"}:
-        return _result(False, _some_preferred())
-
-    answer, residual_counterexample = residual_solver.is_skeptically_accepted_preferred(
-        query, telemetry=telemetry
-    )
+    try:
+        if decision in {"fixed_out", "outside_residual"}:
+            return _result(False, _some_preferred())
+        answer, residual_counterexample = (
+            residual_solver.is_skeptically_accepted_preferred(
+                query, telemetry=telemetry
+            )
+        )
+    except aba_incremental.ClingoSolveTimeout as exc:
+        return _failure_result(
+            status="timeout",
+            semantics="preferred",
+            backend=backend,
+            encoding=encoding,
+            reason=str(exc),
+            metadata=dict(metadata) | _incremental_telemetry_metadata(telemetry),
+        )
     if answer:
         return _result(True, None)
     counterexample = (

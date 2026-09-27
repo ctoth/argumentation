@@ -8,6 +8,8 @@ doi_url: "https://ojs.aaai.org/index.php/AAAI/article/view/10116"
 
 # A Comparative Study of Ranking-based Semantics for Abstract Argumentation
 
+> Scoped audit reread (2026-09-27): verified PDF page 2, page-001.png, for SC/CP/QP/CT/SCT/DP. Corrected definitions below; other sections remain unverified.
+
 ## One-Sentence Summary
 Provides a systematic axiomatic comparison of five ranking-based semantics for abstract argumentation frameworks, cataloguing 16 desirable properties and determining which semantics satisfy which properties. *(p.0-7)*
 
@@ -130,11 +132,11 @@ Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is
 
 ## Testable Properties
 - Void Precedence: A non-attacked argument must be strictly higher than any attacked argument. *(p.1)*
-- Self-Contradiction: A self-attacking argument is ranked no higher than any non-self-attacking argument. *(p.1)*
-- Cardinality Precedence: If a has strictly fewer direct attackers than b (all non-attacked), a ranks strictly higher. *(p.1)*
-- Quality Precedence: For arguments attacked by one direct attacker each, the one with the weaker attacker ranks higher. *(p.1)*
-- Counter-Transitivity (CT): If a is at least as acceptable as b, then an argument attacked only by b should be at least as acceptable as one attacked only by a. *(p.2)*
-- Strict Counter-Transitivity (SCT): If a is strictly more acceptable than b, then an argument attacked only by b is strictly more acceptable than one attacked only by a. *(p.2)*
+- Self-Contradiction: A self-attacking argument is ranked strictly lower than every non-self-attacking argument; a tie violates SC. *(p.1)*
+- Cardinality Precedence: If a has strictly fewer direct attackers than b, a ranks strictly higher, regardless of whether those attackers are themselves attacked and including zero attackers. *(p.1)*
+- Quality Precedence: If some direct attacker of b strictly outranks every direct attacker of a, then a strictly outranks b; attacker sets need not be singletons. *(p.1)*
+- Counter-Transitivity (CT): If the direct attackers of b are at least as numerous and acceptable as those of a under the injective group comparison in Definition 6, then a is at least as acceptable as b. *(p.2)*
+- Strict Counter-Transitivity (SCT): If the direct attackers of b strictly dominate those of a under the strict group comparison in Definition 6, then a strictly outranks b. *(p.2)*
 - Distributed Defense Precedence (DDP): An argument with distributed defense (multiple independent defenders) should be preferred over one with concentrated defense (same number of defenders through one path). *(p.2)*
 
 ## Relevance to Project
