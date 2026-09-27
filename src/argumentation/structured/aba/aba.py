@@ -111,7 +111,13 @@ def attacks(
     attacker_assumptions: AssumptionSet,
     target_assumptions: AssumptionSet,
 ) -> bool:
-    return bool(_attack_supports(framework, attacker_assumptions, target_assumptions))
+    """Bondarenko et al. 1997, Def 3.1: the attackers derive a target's contrary.
+
+    Horn deduction is monotone, so some subset of the attackers derives a
+    contrary iff the whole attacker set does; one closure decides the query.
+    """
+    derived = _closure(framework, attacker_assumptions)
+    return any(framework.contrary[target] in derived for target in target_assumptions)
 
 
 def attacks_with_preferences(
