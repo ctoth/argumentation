@@ -64,6 +64,21 @@ def _range_maximal(
     )
 
 
+def _conflict_free(
+    framework: ArgumentationFramework,
+    candidate: frozenset[str],
+) -> bool:
+    """Conflict-free under defeats and, when present, attacks.
+
+    Mirrors the reference stable and complete semantics: labellings over
+    defeats, filtered by attack conflict-freeness (Modgil & Prakken 2018,
+    Definition 14).
+    """
+    return conflict_free(candidate, framework.defeats) and (
+        framework.attacks is None or conflict_free(candidate, framework.attacks)
+    )
+
+
 def k_stable_extensions(
     framework: ArgumentationFramework,
     *,
@@ -84,7 +99,7 @@ def k_stable_extensions(
 
     candidates: list[frozenset[str]] = []
     for candidate in _all_subsets(framework.arguments):
-        if not conflict_free(candidate, framework.defeats):
+        if not _conflict_free(framework, candidate):
             continue
         covered = range_of(candidate, framework.defeats)
         if len(covered) >= k:
@@ -155,9 +170,14 @@ def approximate_semi_stable(
                 )
             examined += 1
             candidate = frozenset(subset)
-            if not conflict_free(candidate, framework.defeats):
+            if not _conflict_free(framework, candidate):
                 continue
-            if not admissible(candidate, framework.arguments, framework.defeats):
+            if not admissible(
+                candidate,
+                framework.arguments,
+                framework.defeats,
+                attacks=framework.attacks,
+            ):
                 continue
             if (
                 characteristic_fn(candidate, framework.arguments, framework.defeats)

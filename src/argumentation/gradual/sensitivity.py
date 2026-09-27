@@ -23,10 +23,11 @@ def score_conflict(
 
     For each of ``claim_a_id`` and ``claim_b_id``, the argument (and every
     defeat touching it) is removed and the grounded extension is recomputed.
-    The symmetric difference between the original and the reduced extension
-    measures how many acceptance verdicts that removal flips. The returned
-    value is the larger of the two normalized swing counts, clamped to
-    ``[0, 1]``.
+    The number of *other* arguments whose acceptance verdict flips, divided
+    by the number of other arguments, is that removal's swing; the removed
+    argument itself is not scored (Delobelle & Villata 2019, Def. 7 evaluates
+    ``y`` against ``F (-)_y X``). The returned value is the larger of the two
+    swings, in ``[0, 1]``.
 
     A value of ``0.0`` means removing either argument leaves every other
     argument's acceptance unchanged; a value near ``1.0`` means one of them
@@ -40,27 +41,26 @@ def score_conflict(
     if not framework.arguments:
         return 0.0
 
-    total = len(framework.arguments)
     current = grounded_extension(framework)
 
-    def _remove(arg_id: str) -> frozenset[str]:
+    def _swing(arg_id: str) -> float:
+        others = frozenset(
+            argument for argument in framework.arguments if argument != arg_id
+        )
+        if not others:
+            return 0.0
         reduced = ArgumentationFramework(
-            arguments=frozenset(
-                argument for argument in framework.arguments if argument != arg_id
-            ),
+            arguments=others,
             defeats=frozenset(
                 (attacker, target)
                 for attacker, target in framework.defeats
                 if attacker != arg_id and target != arg_id
             ),
         )
-        return grounded_extension(reduced)
+        flipped = (current & others).symmetric_difference(grounded_extension(reduced))
+        return len(flipped) / len(others)
 
-    ext_remove_a = _remove(claim_a_id)
-    ext_remove_b = _remove(claim_b_id)
-    dist_a = len(current.symmetric_difference(ext_remove_a))
-    dist_b = len(current.symmetric_difference(ext_remove_b))
-    return min(1.0, max(dist_a, dist_b) / total)
+    return max(_swing(claim_a_id), _swing(claim_b_id))
 
 
 def attack_removal_sensitivity(
