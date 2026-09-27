@@ -8,6 +8,11 @@ doi_url: "https://doi.org/10.1613/jair.5393"
 
 # Probabilistic Reasoning with Abstract Argumentation Frameworks
 
+> Targeted verification, 2026-09-26: corrected FOU, SFOU, OPT, JUS,
+> Table 2, and the scope of Proposition 18 against existing page images
+> 009, 010, 013, 026, and 027 (printed pp. 574-575, 578, 591-592).
+> This is a scoped correction, not a fresh verification of the entire notes file.
+
 ## One-Sentence Summary
 Defines the epistemic approach to probabilistic argumentation — assigning probability functions over sets of arguments constrained by AF topology — with rationality postulates, partial assessment propagation via maximum entropy, inconsistency measures for contradictory assessments, and consolidation operators. *(p.0)*
 
@@ -77,21 +82,18 @@ $$
 \text{If } A \to B \text{ then } P(A) + P(B) \leq 1
 $$
 
-**FOU** (Founded): *(p.10)*
-$$
-P \text{ is founded iff } \text{if } P(A) \geq 1 - P(B) \text{ for every } A \in \text{Arg with } \text{Att}_{AF}(A) = B
-$$
+**FOU** (Founded): for every unattacked argument A, P(A) = 1.
+*(printed p.575; `pngs/page-010.png`)*
 
-**SFOU** (Semi-founded): *(p.9)*
-$$
-P \text{ is semi-founded iff } P(A) \leq 1 - \frac{\sum_{B \in \text{Att}(A)} P(B)}{|\text{Att}(A)|}
-$$
-Where Att(A) is the set of attackers of A. Actually stated as: if P(A) >= 0.5 for every A in Arg with Att(A) = B, then P(B) <= 0.5.
+**SFOU** (Semi-founded): for every unattacked argument A, P(A) >= 0.5.
+*(printed p.574; `pngs/page-009.png`)*
 
-**OPT** (Optimistic): *(p.10)*
+**OPT** (Optimistic): for every argument A,
 $$
-\text{If } P(A) \geq 0.5 \text{ for every } A \in \text{Arg with } \text{Att}_{AF}(A) = B, \text{ then } P(B) \leq 0.5
+P(A) \geq 1 - \sum_{B \in \operatorname{Att}_{AF}(A)} P(B).
 $$
+**SOPT** (Semi-optimistic) imposes the same inequality only on arguments
+with nonempty attacker sets. *(printed p.575; `pngs/page-010.png`)*
 
 **RAT** (Rational): *(p.9)*
 $$
@@ -109,22 +111,27 @@ $$
 
 **MIN** (Minimal): P(A) = 0 for every A *(p.15)*
 
-**JUS** (Justifiable): P(A) >= 0.5 for every A *(p.15)*
+**JUS** (Justifiable): P is both coherent (COH) and optimistic (OPT).
+*(printed p.575; `pngs/page-010.png`)*
 
 **TER** (Ternary): P(A) in {0, 0.5, 1} for every A *(p.9)*
 
 ### Correspondence Table (Table 2)
 
-| Restriction on P | Classical semantics |
+The table assumes a **complete probability function**, not an arbitrary P.
+The following reproduces the restrictions as stated in Table 2, printed p.578
+(`pngs/page-013.png`), with its Proposition 3 correspondence to labellings.
+
+| Restriction on a complete P | Classical semantics |
 |---|---|
-| No restriction (complete P) | complete extensions |
-| Max A with P(A) = 0.5 | stable |
-| Max A with P(A) = 1 | preferred |
-| Min A with P(A) = 0.5 | preferred |
-| Min A with P(A) = 0.5 (different sense) | grounded |
-| Min A with P(A) = 1 | grounded |
-| Min A with P(A) = 0.5 | semi-stable |
-*(p.13)*
+| No restriction | complete extensions |
+| No arguments A with P(A) = 0.5 | stable |
+| Maximal number of A with P(A) = 1 | preferred |
+| Maximal number of A with P(A) = 0 | preferred |
+| Maximal number of A with P(A) = 0.5 | grounded |
+| Minimal number of A with P(A) = 1 | grounded |
+| Minimal number of A with P(A) = 0 | grounded |
+| Minimal number of A with P(A) = 0.5 | semi-stable |
 
 ### Class Hierarchy (Proposition 1 + Figure 5)
 
@@ -214,7 +221,20 @@ $$
 
 Where d_p is a pre-metrical distance measure (e.g., Euclidean for p=2, Manhattan for p=1, KL divergence for d_KL). *(p.24-25)*
 
-**Proposition 18**: For p >= 1, I^{d_p}_T satisfies consistency and monotonicity. For p = 1 it also satisfies separability and super-additivity. *(p.27)*
+**Proposition 18**: For p >= 1, I^{d_p}_T satisfies consistency and monotonicity. For p = 1 it also satisfies separability and super-additivity. *(printed pp.591-592; `pngs/page-026.png`, `pngs/page-027.png`)*
+
+**Implementation scope correction (2026-09-26):** this proposition concerns
+an epistemic inconsistency measure. It does **not** establish that constellation
+argument-acceptance probabilities can always be computed component by component.
+The references to Proposition 18 in `probabilistic.py` and
+`probabilistic_components.py` overstate its scope. In particular, stable
+extensions of a disconnected AF exist only when every component has one.
+An isolated a and a self-attacking b have no global stable extension, although
+a is accepted in its component. Under the package's non-vacuous acceptance
+convention, P(a) is zero when b is certainly present, and 0.5 when b is present
+with probability 0.5. The current MC decomposition instead reports 1.0 in both
+cases. This counterexample is an implementation finding, not a theorem attributed
+to Hunter and Thimm.
 
 ### Consolidation Operators (Section 7.2)
 
@@ -339,14 +359,14 @@ Key properties tested: *(p.37-38)*
 
 ## Design Rationale
 - **Why epistemic over constellations**: The epistemic approach models degree of belief in argument acceptability, which is the natural question for audience modeling, dialogue, and multi-agent scenarios. Constellations model uncertainty about which arguments exist. *(p.1-2)*
-- **Why multiple constraint classes**: Different applications need different strength of topology enforcement. COH is weak (just pairwise), FOU is strong (all attackers), RAT is intermediate. The hierarchy allows choosing the right level. *(p.9-11)*
+- **Why multiple constraint classes**: Different applications need different strength of topology enforcement. COH is weak (just pairwise), FOU fixes unattacked arguments at probability 1; RAT constrains an attacked argument when its attacker is believed above 0.5. The hierarchy allows choosing the right level. *(p.9-11)*
 - **Why maximum entropy**: Unique solution, well-motivated by information theory (least commitment), corresponds to grounded extension in the limit. *(p.22-23)*
 - **Why two consolidation modes**: Soft repair preserves prior beliefs (like revision), hard repair preserves topology constraints (like update). Both are needed depending on whether the topology or the prior is more trusted. *(p.31-32)*
 
 ## Testable Properties
 - For any P in P_COH(AF): if A -> B then P(A) + P(B) <= 1 *(p.9)*
 - For any P in P_RAT(AF): if A -> B and P(A) > 0.5 then P(B) <= 0.5 *(p.9)*
-- For any P in P_FOU(AF): if A -> B then P(A) <= 1 - P(B) *(p.10)*
+- For any P in P_FOU(AF): if Att_AF(A) is empty then P(A) = 1 *(printed p.575; `pngs/page-010.png`)*
 - For complete P: L_P is a complete labelling in the Dung sense *(p.8)*
 - P^ME is unique for any non-empty convex constraint set *(p.22)*
 - Inconsistency I^{d_1}_T satisfies separability: decomposes over connected components *(p.27)*
@@ -362,7 +382,7 @@ This paper provides the formal foundation for replacing bare floats with princip
 2. **Partial assessment propagation**: When only some arguments have assigned probabilities, use maximum entropy to derive the rest — this is the principled way to "fill in" missing beliefs.
 3. **Inconsistency detection**: When new evidence contradicts existing probabilities, the inconsistency measure quantifies how bad the contradiction is before any repair.
 4. **Consolidation = belief revision**: The two consolidation operators map directly to the existing concern about not collapsing disagreement — soft repair preserves prior beliefs, hard repair preserves topology.
-5. **Decomposition**: Separability by connected components means the exponential blowup can be managed if the AF decomposes into small components.
+5. **Decomposition**: Proposition 18 establishes component separability for the d_1 epistemic inconsistency measure. It does not justify independently computing stable constellation acceptance probabilities; see the scoped correction above.
 6. **ATMS connection**: The probability function over subsets of arguments is conceptually similar to ATMS labels — each subset is like an assumption context, and the probability weights them.
 
 ## Open Questions

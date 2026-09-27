@@ -18,6 +18,7 @@ from typing import Mapping, TypeAlias
 
 from argumentation.core.dung import ArgumentationFramework
 from argumentation.core.finite import sorted_extensions, subsets_by_size
+from argumentation.core.frozen import freeze_mapping
 from argumentation.structured.aba._closure import horn_closure
 from argumentation.structured.aspic.aspic import Literal, Rule
 
@@ -70,7 +71,7 @@ class ABAFramework:
         object.__setattr__(self, "language", language)
         object.__setattr__(self, "rules", rules)
         object.__setattr__(self, "assumptions", assumptions)
-        object.__setattr__(self, "contrary", contrary)
+        object.__setattr__(self, "contrary", freeze_mapping(contrary))
 
 
 @dataclass(frozen=True)
@@ -111,7 +112,13 @@ def attacks(
     attacker_assumptions: AssumptionSet,
     target_assumptions: AssumptionSet,
 ) -> bool:
-    return bool(_attack_supports(framework, attacker_assumptions, target_assumptions))
+    """Bondarenko et al. 1997, Def 3.1: the attackers derive a target's contrary.
+
+    Horn deduction is monotone, so some subset of the attackers derives a
+    contrary iff the whole attacker set does; one closure decides the query.
+    """
+    derived = _closure(framework, attacker_assumptions)
+    return any(framework.contrary[target] in derived for target in target_assumptions)
 
 
 def attacks_with_preferences(
@@ -261,7 +268,7 @@ def ideal_extension(framework: ABAInput) -> AssumptionSet:
 
 def aba_to_dung(framework: ABAFramework) -> ArgumentationFramework:
     aba_arguments = _all_arguments(framework)
-    labels = {argument: _argument_label(argument) for argument in aba_arguments}
+    labels = _argument_labels(aba_arguments)
     defeats = frozenset(
         (labels[attacker], labels[target])
         for attacker in aba_arguments
@@ -349,6 +356,42 @@ def _argument_label(argument: ABAArgument) -> str:
         sorted(repr(assumption) for assumption in argument.assumptions)
     )
     return f"{{{support_text}}} |- {argument.conclusion!r}"
+
+
+def _argument_labels(arguments: tuple[ABAArgument, ...]) -> dict[ABAArgument, str]:
+    """Return injective Dung node labels, readable where display text is unique.
+
+    Distinct literals can share display text (``p(1)`` and ``p('1')``), so
+    arguments whose plain labels collide get a typed-term suffix.
+    """
+    plain = {argument: _argument_label(argument) for argument in arguments}
+    counts: dict[str, int] = {}
+    for label in plain.values():
+        counts[label] = counts.get(label, 0) + 1
+    labels = {
+        argument: label
+        if counts[label] == 1
+        else f"{label} #{_typed_argument_text(argument)}"
+        for argument, label in plain.items()
+    }
+    if len(set(labels.values())) != len(labels):
+        raise ValueError("ABA arguments cannot be given distinct Dung labels")
+    return labels
+
+
+def _typed_argument_text(argument: ABAArgument) -> str:
+    support_text = ",".join(
+        sorted(_typed_literal_text(assumption) for assumption in argument.assumptions)
+    )
+    return f"{{{support_text}}} |- {_typed_literal_text(argument.conclusion)}"
+
+
+def _typed_literal_text(literal: Literal) -> str:
+    terms = ", ".join(
+        f"{type(term).__name__}:{term!r}" for term in literal.atom.arguments
+    )
+    sign = "~" if literal.negated else ""
+    return f"{sign}{literal.atom.predicate!r}({terms})"
 
 
 def _defends(

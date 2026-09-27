@@ -509,3 +509,207 @@ def simple_aspic_theory():
         link="last",
     )
     return system, kb, pref
+
+
+NO_PREFERENCES = PreferenceConfig(
+    rule_order=frozenset(),
+    premise_order=frozenset(),
+    comparison="elitist",
+    link="last",
+)
+
+
+def _assert_asp_facts_parse(facts: tuple[str, ...]) -> None:
+    clingo = pytest.importorskip("clingo")
+    clingo.Control().add("base", [], "\n".join(facts))
+
+
+def _assert_asp_backend_matches_reference(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+) -> frozenset[Literal]:
+    pytest.importorskip("clingo")
+    reference = solve_aspic_with_backend(
+        system, kb, NO_PREFERENCES, backend="materialized_reference"
+    )
+    asp = solve_aspic_with_backend(system, kb, NO_PREFERENCES, backend="asp")
+
+    assert asp.status is ASPICQueryStatus.SUCCESS, asp.metadata
+    assert asp.accepted_conclusions == reference.accepted_conclusions
+    return asp.accepted_conclusions
+
+
+def _undercut_theory(rule_name: str) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    p = Literal(GroundAtom("p"))
+    name = Literal(GroundAtom(rule_name))
+    undercutter = Literal(GroundAtom("u"))
+    system = ArgumentationSystem(
+        language=frozenset({p, name, undercutter}),
+        contrariness=ContrarinessFn(frozenset(), frozenset({(undercutter, name)})),
+        strict_rules=frozenset(),
+        defeasible_rules=frozenset({Rule((), p, "defeasible", rule_name)}),
+    )
+    return system, KnowledgeBase(axioms=frozenset({undercutter}), premises=frozenset())
+
+
+def test_aspic_encoding_emits_valid_asp_for_arbitrary_rule_names() -> None:
+    """Issue #52: rule names are encoded as ASP constants, not raw text.
+
+    Lehtonen et al. 2020 encode each defeasible rule through its name
+    ``n(r)``, a literal of L, so undercutting targets the same identifier
+    as the rule. A legal name such as ``Rule 1`` must still produce parseable
+    facts and the undercut must still land.
+    """
+    system, kb = _undercut_theory("Rule 1")
+
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    _assert_asp_facts_parse(encoding.facts)
+    assert Literal(GroundAtom("p")) not in _assert_asp_backend_matches_reference(
+        system, kb
+    )
+
+
+def test_aspic_encoding_keeps_asp_safe_rule_names() -> None:
+    """Issue #52 control: an already ASP-safe name is emitted unchanged."""
+    system, kb = _undercut_theory("r1")
+
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    assert "d_head(r1,p)." in encoding.facts
+    _assert_asp_facts_parse(encoding.facts)
+    _assert_asp_backend_matches_reference(system, kb)
+
+
+def _repeated_antecedent_theory(
+    antecedents: tuple[Literal, ...],
+) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    p = Literal(GroundAtom("p"))
+    q = Literal(GroundAtom("q"))
+    r = Literal(GroundAtom("r"))
+    system = ArgumentationSystem(
+        language=frozenset({p, q, r}),
+        contrariness=ContrarinessFn(frozenset()),
+        strict_rules=frozenset({Rule(antecedents, q, "strict")}),
+        defeasible_rules=frozenset({Rule(antecedents, r, "defeasible", "dr")}),
+    )
+    return system, KnowledgeBase(axioms=frozenset(), premises=frozenset({p}))
+
+
+def test_source_asp_facts_count_distinct_rule_antecedents() -> None:
+    """Issue #64: a body count must match the set of emitted body facts.
+
+    The rule body is the set of antecedents that must be derived
+    (Lehtonen et al. 2020, AT(T) body facts), so ``p, p -> q`` fires on
+    ``p`` exactly as the materialized reference does.
+    """
+    from argumentation.structured.aspic.aspic_encoding import _source_aspic_facts
+
+    p = Literal(GroundAtom("p"))
+    system, kb = _repeated_antecedent_theory((p, p))
+    encoding = encode_aspic_theory(system, kb, NO_PREFERENCES)
+
+    facts, _element_ids = _source_aspic_facts(system, kb, NO_PREFERENCES, encoding)
+
+    assert "s_body_count(s_0,1)." in facts
+    assert "d_body_count(dr,1)." in facts
+    assert _assert_asp_backend_matches_reference(system, kb) >= {
+        Literal(GroundAtom("q")),
+        Literal(GroundAtom("r")),
+    }
+
+
+def test_source_asp_facts_count_single_rule_antecedent() -> None:
+    """Issue #64 control: an ordinary one-antecedent body."""
+    system, kb = _repeated_antecedent_theory((Literal(GroundAtom("p")),))
+
+    _assert_asp_backend_matches_reference(system, kb)
+
+
+def _assert_asp_semantics_match_reference(
+    system: ArgumentationSystem,
+    kb: KnowledgeBase,
+    semantics: str,
+) -> None:
+    pytest.importorskip("clingo")
+    reference = solve_aspic_with_backend(
+        system,
+        kb,
+        NO_PREFERENCES,
+        backend="materialized_reference",
+        semantics=semantics,
+    )
+    asp = solve_aspic_with_backend(
+        system, kb, NO_PREFERENCES, backend="asp", semantics=semantics
+    )
+
+    assert asp.status is ASPICQueryStatus.SUCCESS, asp.metadata
+    assert set(asp.extension_conclusions) == set(reference.extension_conclusions)
+
+
+def _rebutting_defeasible_facts(
+    heads: tuple[Literal, ...],
+) -> tuple[ArgumentationSystem, KnowledgeBase]:
+    atoms = frozenset(Literal(head.atom) for head in heads)
+    return (
+        ArgumentationSystem(
+            language=atoms | frozenset(atom.contrary for atom in atoms),
+            contrariness=ContrarinessFn(
+                frozenset((atom, atom.contrary) for atom in atoms)
+            ),
+            strict_rules=frozenset(),
+            defeasible_rules=frozenset(
+                Rule((), head, "defeasible", f"d{index}")
+                for index, head in enumerate(heads)
+            ),
+        ),
+        KnowledgeBase(axioms=frozenset(), premises=frozenset()),
+    )
+
+
+@pytest.mark.parametrize("semantics", ["grounded", "complete", "stable"])
+def test_source_asp_backend_rebuts_defeasible_conclusions(semantics: str) -> None:
+    """Issue #65: a defeasible rule is attacked by a contrary of its head.
+
+    Lehtonen et al. 2020, Def 10: ``(P, D)`` attacks ``r`` in ``R_d`` if a
+    contrary of the rule name *or of its head* is derivable. Equally
+    preferred defeasible facts ``r`` and ``~r`` rebut each other, so the
+    grounded extension accepts neither.
+    """
+    r = Literal(GroundAtom("r"))
+    system, kb = _rebutting_defeasible_facts((r, r.contrary))
+
+    _assert_asp_semantics_match_reference(system, kb, semantics)
+
+
+@pytest.mark.parametrize("semantics", ["grounded", "complete", "stable"])
+def test_source_asp_backend_accepts_unrebutted_defeasible_conclusion(
+    semantics: str,
+) -> None:
+    """Issue #65 control: with no contrary conclusion, ``r`` is accepted."""
+    system, kb = _rebutting_defeasible_facts((Literal(GroundAtom("r")),))
+
+    _assert_asp_semantics_match_reference(system, kb, semantics)
+
+
+@given(
+    st.lists(
+        st.sampled_from(
+            [
+                Literal(GroundAtom(atom), negated=negated)
+                for atom in ("a", "b")
+                for negated in (False, True)
+            ]
+        ),
+        min_size=1,
+        max_size=4,
+    )
+)
+@settings(max_examples=15, deadline=None)
+def test_source_asp_backend_matches_reference_on_rebutting_facts(
+    heads: list[Literal],
+) -> None:
+    """Issue #65: differential check over small rebutting fact theories."""
+    system, kb = _rebutting_defeasible_facts(tuple(heads))
+
+    _assert_asp_semantics_match_reference(system, kb, "grounded")
