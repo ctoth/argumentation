@@ -34,6 +34,39 @@ def test_aba_iccma_round_trip_preserves_flat_framework() -> None:
     assert parse_aba(write_aba(framework)) == framework
 
 
+def test_write_aba_rejects_language_literals_it_cannot_represent() -> None:
+    """Issue #21: the compact format has no vocabulary declaration line.
+
+    Bondarenko 1997 (notes.md, p.69) makes the language L a component of the
+    deductive system independent of the rules, so a literal may belong to L
+    without occurring in any assumption, contrary, or rule.  The compact
+    reader rebuilds L only from those lines, so the writer must refuse
+    rather than silently drop the literal.
+    """
+    framework = ABAFramework(
+        language=frozenset({lit("unused")}),
+        rules=frozenset(),
+        assumptions=frozenset(),
+        contrary={},
+    )
+
+    with pytest.raises(ValueError, match="unused"):
+        write_aba(framework)
+
+
+def test_write_aba_round_trips_when_every_literal_occurs() -> None:
+    """Control: the same literal round-trips once a rule mentions it."""
+    unused = lit("unused")
+    framework = ABAFramework(
+        language=frozenset({unused}),
+        rules=frozenset({Rule((), unused, "strict")}),
+        assumptions=frozenset(),
+        contrary={},
+    )
+
+    assert parse_aba(write_aba(framework)) == framework
+
+
 def test_parse_official_iccma_2025_numeric_aba_example() -> None:
     framework = parse_aba(
         """
@@ -97,6 +130,37 @@ def test_parse_apx_reads_aspartix_argumentation_framework() -> None:
 
     assert framework.arguments == frozenset({"a1", "a2"})
     assert framework.defeats == frozenset({("a1", "a2"), ("a2", "a1")})
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "arg(a).\narg(b).\natt(a, b).\n",
+        "arg( a ).\narg(b ).\natt( a ,b ).\n",
+    ],
+)
+def test_parse_apx_ignores_whitespace_around_fact_terms(text: str) -> None:
+    """Issue #23: APX facts are ASP facts (Egly 2010, notes.md: the AF is the
+    database {arg(a)} and binary attack facts), and ASP allows whitespace
+    between the terms of an atom, so ``att(a, b).`` names the argument b,
+    not a new argument " b"."""
+    framework = parse_apx(text)
+
+    assert framework.arguments == frozenset({"a", "b"})
+    assert framework.defeats == frozenset({("a", "b")})
+
+
+def test_parse_apx_reads_compact_attack_fact_control() -> None:
+    framework = parse_apx("arg(a).\narg(b).\natt(a,b).\n")
+
+    assert framework.arguments == frozenset({"a", "b"})
+    assert framework.defeats == frozenset({("a", "b")})
+
+
+@pytest.mark.parametrize("line", ["arg( ).", "att( ,b).", "att(a, )."])
+def test_parse_apx_rejects_blank_fact_terms(line: str) -> None:
+    with pytest.raises(ValueError, match="invalid APX line 1"):
+        parse_apx(line + "\n")
 
 
 def test_parse_tgf_reads_trivial_graph_format_framework() -> None:

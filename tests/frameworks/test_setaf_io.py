@@ -74,6 +74,35 @@ def test_aspartix_writer_uses_only_official_fact_types(framework: SETAF) -> None
         assert line.endswith(").")
 
 
+def test_aspartix_round_trip_preserves_numeric_argument_names() -> None:
+    """Issue #22: integers are ASP constants, so ``arg(1).`` is a valid fact.
+
+    Egly 2010 (notes.md, deployment note on pi_<) recommends encoding
+    arguments as numeric constants, e.g. ``arg(1), arg(2)``, for clingo.
+    """
+    framework = SETAF(
+        arguments=frozenset({"1", "2"}),
+        attacks=frozenset({(frozenset({"1"}), "2")}),
+    )
+
+    assert parse_aspartix_setaf(write_aspartix_setaf(framework)) == framework
+
+
+@pytest.mark.parametrize("name", ["01", "a b", "a,b", "-1"])
+def test_aspartix_writer_rejects_names_that_are_not_asp_constants(name: str) -> None:
+    """Issue #22: names outside the reader's constant grammar must be rejected
+    before writing instead of emitting facts the reader cannot read back."""
+    framework = SETAF(arguments=frozenset({name}), attacks=frozenset())
+
+    with pytest.raises(ValueError, match="ASP constant"):
+        write_aspartix_setaf(framework)
+
+
+def test_parse_aspartix_setaf_rejects_noncanonical_integer_constant() -> None:
+    with pytest.raises(ValueError, match="invalid ASPARTIX SETAF line"):
+        parse_aspartix_setaf("arg(01).\n")
+
+
 def test_parse_aspartix_setaf_rejects_compact_header() -> None:
     with pytest.raises(ValueError, match="invalid ASPARTIX SETAF line"):
         parse_aspartix_setaf("p setaf\narg a\n")

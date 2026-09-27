@@ -66,6 +66,21 @@ def test_potyka_coherence_attack_constraint_is_upper_bound_by_attacker_belief() 
     assert not constraint.satisfied_by({"a": 0.7, "b": 0.4})
 
 
+def test_coherence_attack_constraint_for_self_attack_bounds_belief_by_half() -> None:
+    """Issue #10: a self-attack keeps both coefficients of COH.
+
+    Hunter and Thimm (2017), COH (p.9): if A attacks B then P(A) + P(B) <= 1;
+    for a self-attacking A this is P(A) + P(A) <= 1, so P(A) <= 0.5.
+    """
+    self_attack = coherence_attack_constraint("a", "a")
+
+    assert not self_attack.satisfied_by({"a": 1.0})
+    assert not self_attack.satisfied_by({"a": 0.6})
+    assert self_attack.satisfied_by({"a": 0.5})
+    # Control: an ordinary attack still permits a fully believed target.
+    assert coherence_attack_constraint("a", "b").satisfied_by({"a": 0.0, "b": 1.0})
+
+
 def test_support_dual_monotonic_constraint_requires_target_at_least_supporter() -> None:
     constraint = support_monotonic_constraint("a", "b")
 
