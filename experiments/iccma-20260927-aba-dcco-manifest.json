@@ -1,0 +1,1609 @@
+{
+  "source_sha256": "02f7c840b6a62a660d39e03921a2fc9203de62b63d6cf6a56ee8c9fdca6ec788",
+  "track": "aba",
+  "subtrack": "DC-CO",
+  "timeout_seconds": 60,
+  "jobs": 4,
+  "rows": [
+    {
+      "instance": "ABAs/aba_100_0.1_10_10_6.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_10_10_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_10_10_9.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_10_5_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_5_10_2.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_5_10_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.1_5_10_4.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_10_1.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_10_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_10_5.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_10_6.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_5_5.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_10_5_8.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_5_10_0.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_5_10_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_5_10_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_5_5_1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_100_0.3_5_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_10_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_10_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_10_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_10_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_11_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_11_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_11_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_11_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_12_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_12_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_12_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_12_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_13_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_13_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_13_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_13_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_14_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_14_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_14_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_14_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_15_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_15_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_15_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_15_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_16_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_16_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_16_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_16_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_17_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_17_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_17_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_17_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_18_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_18_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_18_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_18_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_19_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_19_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_19_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_19_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_1_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_1_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_1_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_1_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_10_0.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_10_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_5_0.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_5_1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_5_2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_5_4.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_10_5_8.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_10_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_10_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_0.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_1.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_6.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.1_5_5_9.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_10_4.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_10_5.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_10_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_10_8.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_10_9.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_5_0.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_5_1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_10_5_6.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_5_10_8.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_5_5_2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_5_5_6.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_2000_0.3_5_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_20_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_20_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_20_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_20_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_21_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_21_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_21_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_21_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_22_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_22_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_22_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_22_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_23_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_23_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_23_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_23_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_24_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_24_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_24_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_24_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_25_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_25_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_25_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_25_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_26_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_26_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_26_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_26_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_27_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_27_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_27_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_27_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_28_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_28_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_28_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_28_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_29_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_29_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_29_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_29_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_2_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_30_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_30_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_30_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_30_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_3_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_3_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_3_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_3_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_4_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_4_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_4_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_4_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_10_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_10_4.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_10_5.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_10_9.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_5_1.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_5_6.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5000_0.1_5_5_9.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_10_10_2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_10_10_8.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_10_5_3.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_5_10_0.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_5_10_2.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_5000_0.3_5_10_9.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_10_10_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_10_10_4.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "false"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_10_10_6.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_10_5_2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_10_5_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_5_10_1.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_5_10_7.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_5_5_3.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.1_5_5_6.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_10_10_1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_10_10_3.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_10_10_5.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_10_10_7.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_10_10_9.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_10_1.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_10_4.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_10_5.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_5_2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_5_3.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_5_4.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_500_0.3_5_5_5.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/aba_5_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_5_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_6_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_6_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_6_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_6_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_7_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_7_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_7_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_7_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_8_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_8_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_8_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_8_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_9_1250literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_9_2500literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_9_3750literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/aba_9_5000literals.aba",
+      "baseline_status": "solved",
+      "baseline_answer": "true"
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms30_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms25_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms25_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms30_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms30_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms30_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c25_atoms35_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms25_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms30_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms25_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms25_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms30_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms30_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms30_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms25_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms30_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms30_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c30_atoms35_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms25_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms25_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms25_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms30_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms35_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms30_asms35_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms25_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms25_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms30_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms30_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms35_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c35_atoms35_asms35_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms100_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms150_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms150_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms150_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms100_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms100_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms100_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms150_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms150_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms150_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms150_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms100_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms150_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms150_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c5_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms100_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms150_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms100_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms150_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms150_asms150_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms150_asms150_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms150_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms100_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms150_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms150_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms150_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.8_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins1.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    },
+    {
+      "instance": "ABAs/abcgen_c7_atoms200_asms200_mra3_mbs2_cp0.9_ins2.aba",
+      "baseline_status": "timeout",
+      "baseline_answer": ""
+    }
+  ]
+}
