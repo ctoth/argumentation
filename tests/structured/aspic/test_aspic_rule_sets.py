@@ -1,12 +1,12 @@
-"""Strict-rule antecedents are read as sets (issue #102, maintainer decision).
+"""Rule antecedents are read as sets (issue #102, maintainer decision).
 
 Modgil & Prakken 2018 (Def 2, p.8; Def 5, p.9) and Prakken 2010 (Def 3.6)
 write a rule as phi_1, ..., phi_n -> phi and build A_1, ..., A_n -> phi
 from it. Neither fixes whether the antecedents form a sequence or a set;
-this library adopts the set reading for strict rules as a chosen
-convention: a repeated antecedent literal is dropped, and strict rules
-with the same antecedent set and consequent are one rule. Defeasible rules
-keep their antecedent sequence and stay distinct by name n(r).
+this library adopts the set reading for strict and defeasible rules as a
+chosen convention: a repeated antecedent literal is dropped, and rules with
+the same kind, antecedent set, consequent and name are one rule. Named
+defeasible rules stay distinct by name n(r).
 """
 
 from __future__ import annotations
@@ -62,14 +62,47 @@ def test_permuted_strict_rules_are_one_rule() -> None:
     assert len({first, second}) == 1
 
 
-def test_defeasible_rules_keep_their_antecedent_sequence() -> None:
-    """Defeasible rules are not canonicalised: they stay distinct by name."""
+def test_defeasible_rule_drops_repeated_antecedent_literal() -> None:
+    """Set reading also applies to defeasible rules: ``a, a => b`` is ``a => b``."""
+    repeated = Rule((P, P), R, "defeasible", "d0")
+
+    assert repeated.antecedents == (P,)
+    assert repeated == Rule((P,), R, "defeasible", "d0")
+
+
+def test_permuted_unnamed_defeasible_rules_are_one_rule() -> None:
+    first = Rule((P, Q), R, "defeasible")
+    second = Rule((Q, P), R, "defeasible")
+
+    assert first == second
+    assert len({first, second}) == 1
+
+
+def test_named_defeasible_rules_stay_distinct_by_name() -> None:
+    """n(r) is part of the rule: same body and head, different names, two rules."""
     forward = Rule((P, Q), R, "defeasible", "d0")
     backward = Rule((Q, P), R, "defeasible", "d1")
 
-    assert forward.antecedents == (P, Q)
-    assert backward.antecedents == (Q, P)
+    assert forward.antecedents == backward.antecedents
     assert forward != backward
+
+
+def test_repeated_defeasible_antecedent_does_not_square_arguments() -> None:
+    """With two arguments for q, ``q, q => p`` builds one p-argument per
+    q-argument under the set reading, not one per ordered pair."""
+    s, t = Literal(GroundAtom("s")), Literal(GroundAtom("t"))
+    system = ArgumentationSystem(
+        frozenset({P, Q, s, t, P.contrary, Q.contrary, s.contrary, t.contrary}),
+        ContrarinessFn(frozenset((atom, atom.contrary) for atom in (P, Q, s, t))),
+        frozenset({Rule((s,), Q, "strict"), Rule((t,), Q, "strict")}),
+        frozenset({Rule((Q, Q), P, "defeasible", "d0")}),
+    )
+    kb = KnowledgeBase(axioms=frozenset(), premises=frozenset({s, t}))
+
+    arguments = build_arguments(system, kb)
+
+    assert sum(1 for argument in arguments if conc(argument) == Q) == 2
+    assert sum(1 for argument in arguments if conc(argument) == P) == 2
 
 
 def test_repeated_antecedent_does_not_square_arguments() -> None:
