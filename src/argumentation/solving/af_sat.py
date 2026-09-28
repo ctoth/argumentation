@@ -244,7 +244,16 @@ class AfSatKernel:
                 self.solver.add(self.in_vars[argument])
                 self.solver.add(self.z3.Not(self.out_vars[argument]))
 
-        self.add_conflict_free()
+        # out(target) iff some defeater is in, together with not(in & out),
+        # already forbids accepting both endpoints of every defeat. Avoid
+        # rebuilding one redundant Z3 formula per edge on ordinary Dung AFs.
+        if (
+            self.framework.attacks is None
+            or self.framework.attacks <= self.framework.defeats
+        ):
+            self._added.add("conflict_free")
+        else:
+            self.add_conflict_free()
         self._added.add("complete")
 
     def add_stable_coverage(self) -> None:
