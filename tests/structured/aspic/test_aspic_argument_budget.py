@@ -11,8 +11,6 @@ from __future__ import annotations
 
 from collections import Counter
 
-import pytest
-
 from argumentation.structured.aspic.aspic import (
     Argument,
     ArgumentationSystem,
@@ -101,14 +99,10 @@ def _issue_102_theory() -> tuple[ArgumentationSystem, KnowledgeBase]:
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="#102: argument multiplication; 18,850 arguments and ~306M attacks "
-    "until rule canonicalisation (option A) lands",
-)
 def test_issue_102_theory_stays_within_argument_and_attack_budget() -> None:
-    """Refs #102: the theory must build at most 200 arguments and at most
-    20,000 attack pairs (98 and 7,226 under antecedent-set rules)."""
+    """Issue #102: the theory must build at most 200 arguments and at most
+    20,000 attack pairs. With strict antecedents read as sets it builds 98
+    arguments and 7,226 attack pairs (it was 18,850 and ~306M)."""
     system, kb = _issue_102_theory()
 
     arguments = build_arguments(system, kb)
