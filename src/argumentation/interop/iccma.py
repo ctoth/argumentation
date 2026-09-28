@@ -24,6 +24,7 @@ CANONICAL_NUMERIC_ID_RE = re.compile(r"0|[1-9][0-9]*")
 def parse_af(text: str) -> ArgumentationFramework:
     """Parse the ICCMA ``p af n`` numeric AF format."""
     argument_count: int | None = None
+    argument_ids: dict[str, str] = {}
     attacks: set[tuple[str, str]] = set()
 
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
@@ -37,20 +38,32 @@ def parse_af(text: str) -> ArgumentationFramework:
             if len(parts) != 3 or not parts[2].isdigit():
                 raise ValueError("p af header must be: p af <n>")
             argument_count = int(parts[2])
+            argument_ids = {
+                value: value for value in map(str, range(1, argument_count + 1))
+            }
             continue
         if argument_count is None:
             raise ValueError("ICCMA AF input must start with a p af header")
-        if len(parts) != 2 or not all(part.isdigit() for part in parts):
+        if len(parts) != 2:
             raise ValueError(f"attack line {line_number} must contain two numeric ids")
-        attacker, target = parts
-        _validate_attack_id(attacker, argument_count, line_number)
-        _validate_attack_id(target, argument_count, line_number)
+        # Valid vertices are already canonical and in range. Reuse their strings
+        # across edges: dense graphs otherwise retain two fresh strings per edge.
+        try:
+            attacker, target = argument_ids[parts[0]], argument_ids[parts[1]]
+        except KeyError:
+            if not all(part.isdigit() for part in parts):
+                raise ValueError(
+                    f"attack line {line_number} must contain two numeric ids"
+                ) from None
+            _validate_attack_id(parts[0], argument_count, line_number)
+            _validate_attack_id(parts[1], argument_count, line_number)
+            raise AssertionError("validated AF vertex absent from header")
         attacks.add((attacker, target))
 
     if argument_count is None:
         raise ValueError("ICCMA AF input must include a p af header")
 
-    arguments = frozenset(str(index) for index in range(1, argument_count + 1))
+    arguments = frozenset(argument_ids)
     return ArgumentationFramework(arguments=arguments, defeats=frozenset(attacks))
 
 
