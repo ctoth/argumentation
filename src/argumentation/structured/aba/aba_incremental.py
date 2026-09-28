@@ -738,15 +738,19 @@ class AbaIncrementalSolver:
     # -- credulous helpers (NP queries) ------------------------------------
 
     def is_credulously_accepted_complete(
-        self, query: Literal
+        self, query: Literal, *, telemetry: IncrementalTelemetry | None = None
     ) -> tuple[bool, AssumptionSet | None]:
         query_symbol = self._symbol_supported(query)
         if query_symbol is None:
             return False, None
-        ctl = self._new_control()
+        ctl = self._new_control(telemetry=telemetry)
         if not self._is_grounded(ctl, query_symbol):
             return False, None
-        witness = self._solve_one(ctl, assumptions=[(query_symbol, True)])
+        if telemetry is not None:
+            telemetry.solver_calls += 1
+        witness = self._solve_one(
+            ctl, assumptions=[(query_symbol, True)], telemetry=telemetry
+        )
         if witness is None:
             return False, None
         return True, witness

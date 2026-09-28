@@ -285,9 +285,8 @@ def _solve_multishot(
     """Solve a flat ABA query with the incremental multi-shot clingo solver.
 
     Implements Lehtonen-Wallner-Jaervisalo TPLP 2021 Algorithm 1 for DS-PR (the
-    timeout cluster); falls back to enumeration (Algorithm 4 for preferred, a
-    single grounded solve for complete/stable) plus the shared task projection for
-    the other ABA queries.
+    timeout cluster), and a single query-constrained solve for complete credulous
+    acceptance. Other queries retain enumeration plus the shared task projection.
     """
     from argumentation.structured.aba import aba_incremental
 
@@ -316,6 +315,36 @@ def _solve_multishot(
     telemetry = aba_incremental.IncrementalTelemetry(
         clingo_control_args=solver.control_args
     )
+
+    if semantics == "complete" and task == "credulous" and query is not None:
+        metadata = metadata_base | {
+            "task": task,
+            "algorithm": "query-constrained-complete",
+        }
+        try:
+            answer, witness = solver.is_credulously_accepted_complete(
+                query, telemetry=telemetry
+            )
+        except aba_incremental.ClingoSolveTimeout as exc:
+            return _failure_result(
+                status="timeout",
+                semantics=semantics,
+                backend=backend,
+                encoding=encoding,
+                reason=str(exc),
+                metadata=metadata | _incremental_telemetry_metadata(telemetry),
+            )
+        return ABAQueryResult(
+            status="success",
+            semantics=semantics,
+            backend=backend,
+            extensions=() if witness is None else (witness,),
+            accepted_assumptions=witness or frozenset(),
+            encoding=encoding,
+            metadata=metadata | _incremental_telemetry_metadata(telemetry),
+            answer=answer,
+            witness=witness,
+        )
 
     # The DS-PR fast path: Algorithm 1, avoids enumerating every preferred set.
     if semantics == "preferred" and task == "skeptical" and query is not None:
@@ -478,12 +507,36 @@ def _solve_simplified(
         )
 
     residual_task = "single-extension" if task == "single-extension" else "enum"
+    residual_query = None
+    if (
+        semantics == "complete"
+        and task == "credulous"
+        and query is not None
+        and backend in {"asp", "clingo"}
+    ):
+        decision = _simplified_query_decision(simplification, query)
+        if decision in {"fixed_out", "outside_residual"}:
+            return _task_result(
+                original,
+                encoding=encode_aba_theory(original, include_supports=False),
+                semantics=semantics,
+                backend=backend,
+                task=task,
+                query=query,
+                extensions=(),
+                metadata={"preprocessing": "grounded_reduct_aba", "solver_calls": 0},
+            )
+        if decision in {"fixed_in", "fixed_in_closure"}:
+            residual_task = "single-extension"
+        else:
+            residual_task = "credulous"
+            residual_query = query
     residual_result = solve_aba_with_backend(
         residual,
         backend=backend,
         semantics=semantics,
         task=residual_task,
-        query=None,
+        query=residual_query,
         binary=binary,
         timeout_seconds=timeout_seconds,
         simplify=False,
