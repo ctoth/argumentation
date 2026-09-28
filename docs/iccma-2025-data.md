@@ -124,3 +124,28 @@ name; if you pass a custom `--root`, the tag changes accordingly.
 The runner uses the package-native ABA path. Library-level
 `argumentation.solving.solver.solve_aba_*` surfaces separately support
 ICCMA-compatible ABA subprocess dispatch via `ICCMAConfig(...)`.
+
+### Automatic timeout diagnostics
+
+On an outer worker deadline, the runner attempts a `py-spy dump` of the real
+Python worker and its subprocesses **before** killing the worker tree. Install
+the collector with `uv tool install py-spy` and ensure `py-spy` is on PATH.
+No profiling flag is needed for timeout snapshots.
+
+Each attempt writes a unique JSON artifact under
+`<root>/runs/timeout-diagnostics/`. Result JSON, CSV, and progress events include
+`diagnostic_path` and `diagnostic_error`. The artifact records the task, worker
+PID, command, stack output, and collection failure if any. Missing py-spy,
+attachment failures, or unwritable artifacts do not prevent termination;
+an unwritable artifact is reported through `diagnostic_error` on the row.
+
+The solve deadline still determines the timeout result. Collection gets up to
+two additional seconds; Windows tree cleanup and direct-child reaping each get
+up to two seconds, and output pipes each get one second. `elapsed_seconds`
+includes this diagnostic/cleanup overhead. A result arriving during collection
+does not turn the timed-out row into a solve.
+
+This is a snapshot at the deadline, not a historical profile. Use
+`--profile-workers-dir <directory>` for sampled profiles across execution.
+In-process solver timeouts that return normally retain their existing reason
+and metadata; external snapshots apply to the outer deadline path.

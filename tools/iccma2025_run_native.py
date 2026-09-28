@@ -10,11 +10,14 @@ import lzma
 import os
 from pathlib import Path
 import re
+import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+import uuid
 from typing import Any
 
 
@@ -66,6 +69,8 @@ RESULT_FIELDS = [
     "witness_size",
     "witness",
     "profile_path",
+    "diagnostic_path",
+    "diagnostic_error",
     "solver_metadata",
     "arguments_or_atoms",
     "attacks",
@@ -407,6 +412,8 @@ def log_progress(
         "reason": row["reason"],
         "elapsed_seconds": row["elapsed_seconds"],
         "answer": row["answer"],
+        "diagnostic_path": row.get("diagnostic_path"),
+        "diagnostic_error": row.get("diagnostic_error"),
     }
     emit_json_event(config.event_log_path, event)
 
@@ -653,20 +660,23 @@ def iter_instance_lines(path: Path):
 
 
 def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
+    job = dict(job)
     with tempfile.NamedTemporaryFile(
         "w",
         encoding="utf-8",
         suffix=".json",
         delete=False,
     ) as handle:
-        json.dump(job, handle)
         job_path = Path(handle.name)
+        job["worker_pid_path"] = str(job_path.with_suffix(".pid"))
+        json.dump(job, handle)
     try:
         process = subprocess.Popen(
             build_worker_command(job, job_path),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            start_new_session=os.name != "nt",
         )
         stdout_lines: list[str] = []
         stderr_lines: list[str] = []
@@ -688,13 +698,28 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
         try:
             returncode = process.wait(timeout=timeout_seconds)
         except subprocess.TimeoutExpired:
-            process.kill()
+            diagnostics: dict[str, Any] = {}
+            try:
+                diagnostics = capture_timeout_diagnostics(
+                    job, supervisor_pid=process.pid
+                )
+            except Exception as exc:
+                diagnostics = {"diagnostic_error": f"{type(exc).__name__}: {exc}"}
+            finally:
+                try:
+                    kill_worker_tree(process, job)
+                except Exception as exc:
+                    diagnostics["diagnostic_error"] = (
+                        str(diagnostics.get("diagnostic_error", ""))
+                        + f"; worker cleanup failed: {exc}"
+                    )
             stdout_thread.join(timeout=1.0)
             stderr_thread.join(timeout=1.0)
             return {
                 "status": "timeout",
                 "reason": f"timeout>{timeout_seconds}",
                 "error": None,
+                **diagnostics,
             }
         stdout_thread.join(timeout=1.0)
         stderr_thread.join(timeout=1.0)
@@ -712,6 +737,7 @@ def run_child(job: dict[str, Any], *, timeout_seconds: float) -> dict[str, Any]:
         }
     finally:
         job_path.unlink(missing_ok=True)
+        Path(job["worker_pid_path"]).unlink(missing_ok=True)
     stdout = "".join(stdout_lines)
     stderr = "".join(stderr_lines)
     if returncode != 0:
@@ -757,6 +783,82 @@ def parse_worker_stdout(stdout: str) -> dict[str, Any] | None:
         if isinstance(parsed, dict):
             return parsed
     return None
+
+
+def diagnostic_worker_pid(job: dict[str, Any], supervisor_pid: int) -> int:
+    """The optional profiler is a wrapper; its PID is not the Python worker."""
+    pid_path = job.get("worker_pid_path")
+    if pid_path and Path(pid_path).exists():
+        pid = int(Path(pid_path).read_text(encoding="utf-8"))
+        if pid <= 0:
+            raise ValueError("invalid worker PID")
+        return pid
+    if job.get("profile_path"):
+        raise RuntimeError("profiled worker did not publish its PID")
+    return supervisor_pid
+
+
+def capture_timeout_diagnostics(
+    job: dict[str, Any], *, supervisor_pid: int
+) -> dict[str, Any]:
+    """Bounded external snapshot before termination; never invoke Python cleanup."""
+    evidence: dict[str, Any] = {
+        "kind": "timeout_stack_snapshot",
+        "supervisor_pid": supervisor_pid,
+        "instance": job.get("instance"),
+        "task": job.get("task"),
+        "solver_timeout_seconds": job.get("solver_timeout_seconds"),
+        "status": "failed",
+    }
+    try:
+        pid = diagnostic_worker_pid(job, supervisor_pid)
+        evidence["worker_pid"] = pid
+        binary = shutil.which("py-spy")
+        if binary is None:
+            raise FileNotFoundError(
+                "py-spy is not on PATH; install with uv tool install py-spy"
+            )
+        command = [binary, "dump", "--pid", str(pid), "--subprocesses"]
+        evidence["command"] = command
+        result = subprocess.run(command, capture_output=True, text=True, timeout=2.0)
+        evidence.update(
+            stdout=result.stdout, stderr=result.stderr, returncode=result.returncode
+        )
+        if result.returncode != 0 or not result.stdout.strip():
+            raise RuntimeError(result.stderr.strip() or "py-spy produced no stack dump")
+        evidence["status"] = "captured"
+    except Exception as exc:
+        evidence["error"] = f"{type(exc).__name__}: {exc}"
+    directory = Path(job.get("root", DATA_ROOT)) / "runs" / "timeout-diagnostics"
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"timeout-{supervisor_pid}-{uuid.uuid4().hex}.json"
+    path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
+    return {
+        "diagnostic_path": str(path),
+        "diagnostic_error": evidence.get("error"),
+    }
+
+
+def kill_worker_tree(process: subprocess.Popen, job: dict[str, Any]) -> None:
+    """Terminate descendants as well as profiler wrappers, then reap the child."""
+    try:
+        if os.name == "nt":
+            result = subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True,
+                timeout=2.0,
+            )
+            if result.returncode != 0 and process.poll() is None:
+                raise RuntimeError(f"taskkill failed: {result.stderr!r}")
+        else:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    finally:
+        # Also enforce direct termination if the tree cleanup failed.
+        process.kill()
+        process.wait(timeout=2.0)
 
 
 def profile_duration_result(job: dict[str, Any]) -> dict[str, Any] | None:
@@ -844,6 +946,8 @@ def worker_main(argv: list[str]) -> int:
         print("_worker requires a job json path", file=sys.stderr)
         return 2
     job = load_json(Path(argv[0]))
+    if job.get("worker_pid_path"):
+        Path(job["worker_pid_path"]).write_text(str(os.getpid()), encoding="utf-8")
     print(json.dumps(worker_solve(job), sort_keys=True))
     return 0
 

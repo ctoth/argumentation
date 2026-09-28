@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import json
+from pathlib import Path
 
 from tools.iccma2025_run_native import RunConfig, run_or_skip
 
@@ -55,4 +57,8 @@ def test_run_or_skip_enforces_configured_worker_timeout(tmp_path, monkeypatch) -
 
     assert row["status"] == "timeout"
     assert row["reason"] == "timeout>0.05"
-    assert float(row["elapsed_seconds"]) < 0.20
+    # Collection and tree cleanup have separately bounded grace periods.
+    # A late answer must still be classified by the original solve deadline.
+    evidence = json.loads(Path(row["diagnostic_path"]).read_text())
+    assert evidence["kind"] == "timeout_stack_snapshot"
+    assert evidence["status"] in {"captured", "failed"}
