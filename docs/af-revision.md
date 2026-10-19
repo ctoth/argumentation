@@ -22,6 +22,9 @@ minimal faithful candidates.
 classifies the effect of adding an argument under grounded semantics using the
 WS-B taxonomy values in `AFChangeKind`: decisive, restrictive, questioning,
 destructive, expansive, conservative, and altering.
+The classifier uses the paper's extension-family counts: an empty grounded
+extension becoming nonempty is decisive. Expansive change requires equal
+counts and every new extension strictly containing an old extension.
 
 ## Gates
 

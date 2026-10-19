@@ -394,30 +394,6 @@ class ArgumentationSystem:
     defeasible_rules: frozenset[Rule]
 
 
-def _is_degenerate_rule(rule: Rule, contrariness: ContrarinessFn) -> bool:
-    """Check if a strict rule is degenerate and should be excluded.
-
-    A rule is degenerate if it has a contradictory pair among its
-    antecedents (both φ and ~φ). Such rules can only fire when
-    contradictory information is already present, and their
-    transpositions produce ill-formed rules.
-
-    Modgil & Prakken 2018, Def 12 (p.13): transposition closure requires
-    well-formed rules. Rules with contradictory antecedent pairs cannot
-    be properly closed under transposition.
-
-    Note: rules where an antecedent is the contrary of the consequent
-    (e.g., ~r, p -> ~p) are NOT degenerate — they are valid transpositions
-    needed for the rationality postulates (Thm 14, p.18: direct consistency).
-    """
-    antes = rule.antecedents
-    for i, left in enumerate(antes):
-        for right in antes[i + 1 :]:
-            if contrariness.is_contradictory(left, right):
-                return True
-    return False
-
-
 def _contradictories_of(
     literal: Literal,
     language: frozenset[Literal],
@@ -466,11 +442,11 @@ def transposition_closure(
     (Def 12 applies to R_s only). The fixpoint always terminates because L
     is finite, bounding the number of possible rules.
 
-    Rules with contradictory antecedent pairs (both φ and ~φ) are excluded:
-    they are degenerate (ex falso quodlibet) and their transpositions
-    produce rules where the consequent appears in the antecedents,
-    violating well-formedness. Similarly, any generated transposition
-    whose consequent appears in its own antecedents is excluded.
+    Every input rule is retained, including rules with contradictory
+    antecedents or with their consequent among their antecedents. Every
+    transposition is added without either restriction: Definition 5.2
+    requires the closure to contain the original rules and all their
+    transpositions.
 
     Prakken 2010, Defs. 5.1-5.3 (pp. 141-142; local page image
     ``papers/Prakken_2010_AbstractFrameworkArgumentationStructured/pngs/page-012.png``)
@@ -486,8 +462,8 @@ def transposition_closure(
 
     Returns:
         A pair ``(closed_rules, post_closure_language)`` where
-        ``closed_rules`` is the smallest frozenset of well-formed Rules
-        closed under transposition, containing all well-formed input rules,
+        ``closed_rules`` is the smallest frozenset of Rules
+        closed under transposition, containing all input rules,
         and ``post_closure_language`` contains the input language plus every
         literal appearing in the closed rules.
 
@@ -495,8 +471,7 @@ def transposition_closure(
         ValueError: if a strict-rule literal has no contradictory partner in
             the supplied contrariness relation.
     """
-    # Filter out degenerate seed rules with contradictory antecedent pairs.
-    closed: set[Rule] = {r for r in rules if not _is_degenerate_rule(r, contrariness)}
+    closed: set[Rule] = set(rules)
     changed = True
     while changed:
         changed = False
@@ -520,16 +495,12 @@ def transposition_closure(
                             continue
                         if any(a not in language for a in transposed_antes):
                             continue
-                        if transposed_consequent in transposed_antes:
-                            continue
                         new_rule = Rule(
                             antecedents=tuple(transposed_antes),
                             consequent=transposed_consequent,
                             kind="strict",
                             name=None,
                         )
-                        if _is_degenerate_rule(new_rule, contrariness):
-                            continue
                         if new_rule not in closed:
                             new_rules.add(new_rule)
                             changed = True

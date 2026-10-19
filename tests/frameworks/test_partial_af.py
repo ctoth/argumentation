@@ -107,8 +107,8 @@ def test_merge_framework_edit_distance_is_identity_and_symmetric():
     )
 
     assert merge_framework_edit_distance(left, left) == 0
-    assert merge_framework_edit_distance(left, right) == 1
-    assert merge_framework_edit_distance(right, left) == 1
+    assert merge_framework_edit_distance(left, right) == 0.5
+    assert merge_framework_edit_distance(right, left) == 0.5
 
 
 def test_merge_framework_edit_distance_satisfies_triangle_inequality():

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations, product
@@ -143,8 +144,12 @@ def _coerce_partial_framework(
 def merge_framework_edit_distance(
     left: FrameworkLike,
     right: FrameworkLike,
-) -> int:
-    """Hamming distance over pair labels on a shared argument universe."""
+) -> float:
+    """Coste-Marquis et al. 2007, Definition 18 edit distance over pair labels.
+
+    Equal labels cost zero, ignorance versus a definite label costs 0.5,
+    and attack versus non-attack costs one on the shared argument universe.
+    """
 
     left_framework = _coerce_partial_framework(left)
     right_framework = _coerce_partial_framework(right)
@@ -152,9 +157,14 @@ def merge_framework_edit_distance(
         raise ValueError("merge_framework_edit_distance requires identical arguments")
 
     return sum(
-        1
-        for pair in left_framework.ordered_pairs
-        if left_framework.state_of(pair) != right_framework.state_of(pair)
+        (
+            0.5
+            if pair in left_framework.ignorance or pair in right_framework.ignorance
+            else 1.0
+            for pair in left_framework.ordered_pairs
+            if left_framework.state_of(pair) != right_framework.state_of(pair)
+        ),
+        0.0,
     )
 
 
@@ -209,36 +219,38 @@ def _attack_relation(framework: ArgumentationFramework) -> frozenset[AttackPair]
 
 def consensual_expand(
     framework: ArgumentationFramework,
-    universe: frozenset[str],
+    profile: Mapping[str, ArgumentationFramework],
 ) -> PartialArgumentationFramework:
-    """Expand an AF to a shared universe using ignorance outside source scope.
+    """Expand an AF using the profile's uncontested attack commitments.
 
-    Coste-Marquis et al. 2007, Def. 11 takes the universe as the union of the
-    profile's argument sets, so it must contain the source arguments.
+    Coste-Marquis et al. 2007, Definition 12 preserves the source's attacks
+    and non-attacks, imports uncontested relations outside its scope, and
+    leaves only conflicting outside pairs ignorant. Pairs known to no source
+    become non-attacks. The universe includes the source and every profile AF.
     """
     source_arguments = frozenset(framework.arguments)
-    missing = source_arguments - universe
-    if missing:
-        raise ValueError(
-            f"universe must contain every source argument; missing {sorted(missing)!r}"
+    universe = set(source_arguments)
+    profile_attacks: set[AttackPair] = set()
+    profile_non_attacks: set[AttackPair] = set()
+    for source in profile.values():
+        universe.update(source.arguments)
+        relation = _attack_relation(source)
+        profile_attacks.update(relation)
+        profile_non_attacks.update(
+            set(product(source.arguments, source.arguments)) - relation
         )
-    attack_relation = _attack_relation(framework)
-    attacks: set[AttackPair] = set()
-    ignorance: set[AttackPair] = set()
-    non_attacks: set[AttackPair] = set()
 
-    for pair in product(universe, universe):
-        attacker, target = pair
-        if attacker in source_arguments and target in source_arguments:
-            if pair in attack_relation:
-                attacks.add(pair)
-            else:
-                non_attacks.add(pair)
-        else:
-            ignorance.add(pair)
+    source_attacks = _attack_relation(framework)
+    source_non_attacks = (
+        set(product(source_arguments, source_arguments)) - source_attacks
+    )
+    conflicts = profile_attacks & profile_non_attacks
+    attacks = source_attacks | ((profile_attacks - conflicts) - source_non_attacks)
+    ignorance = conflicts - (source_attacks | source_non_attacks)
+    non_attacks = set(product(universe, universe)) - (attacks | ignorance)
 
     return PartialArgumentationFramework(
-        arguments=universe,
+        arguments=frozenset(universe),
         attacks=frozenset(attacks),
         ignorance=frozenset(ignorance),
         non_attacks=frozenset(non_attacks),

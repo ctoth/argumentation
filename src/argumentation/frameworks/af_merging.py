@@ -48,10 +48,9 @@ def _candidate_frameworks(
 
 def _expanded_profile(
     profile: dict[str, ArgumentationFramework],
-    universe: frozenset[str],
 ) -> dict[str, PartialArgumentationFramework]:
     return {
-        source: consensual_expand(framework, universe)
+        source: consensual_expand(framework, profile)
         for source, framework in profile.items()
     }
 
@@ -112,7 +111,7 @@ def sum_merge_frameworks(
 ) -> list[ArgumentationFramework] | EnumerationExceeded:
     """Return exact Sum-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
-    expanded = _expanded_profile(profile, universe)
+    expanded = _expanded_profile(profile)
     strict_bipartition_winners = _strict_bipartition_sum_merge(universe, expanded)
     if strict_bipartition_winners is not None:
         return strict_bipartition_winners
@@ -121,7 +120,7 @@ def sum_merge_frameworks(
     if isinstance(candidates, EnumerationExceeded):
         return candidates
 
-    best_score: int | None = None
+    best_score: float | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in candidates:
         score = sum(
@@ -143,12 +142,12 @@ def max_merge_frameworks(
 ) -> list[ArgumentationFramework] | EnumerationExceeded:
     """Return exact Max-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
-    expanded = _expanded_profile(profile, universe)
+    expanded = _expanded_profile(profile)
     candidates = _candidate_frameworks(universe, max_candidates=max_candidates)
     if isinstance(candidates, EnumerationExceeded):
         return candidates
 
-    best_score: int | None = None
+    best_score: float | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in candidates:
         score = max(
@@ -170,12 +169,12 @@ def leximax_merge_frameworks(
 ) -> list[ArgumentationFramework] | EnumerationExceeded:
     """Return exact Leximax-minimizing AFs over the shared argument universe."""
     universe = _shared_universe(profile)
-    expanded = _expanded_profile(profile, universe)
+    expanded = _expanded_profile(profile)
     max_winners = max_merge_frameworks(profile, max_candidates=max_candidates)
     if isinstance(max_winners, EnumerationExceeded):
         return max_winners
 
-    best_vector: tuple[int, ...] | None = None
+    best_vector: tuple[float, ...] | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in max_winners:
         vector = tuple(

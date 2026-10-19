@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from itertools import product
 
-import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
@@ -37,35 +36,52 @@ def _af(arguments: set[str], attacks: set[tuple[str, str]]) -> ArgumentationFram
     )
 
 
-def test_consensual_expand_preserves_in_scope_pairs_and_marks_out_of_scope_as_ignorance():
-    af = _af({"A"}, {("A", "A")})
+def test_consensual_expand_matches_example_14_first_source():
+    """Coste-Marquis et al. 2007, pp. 737–738: AF1 imports b->c and c->d."""
+    profile = {
+        "AF1": _af({"a", "b"}, {("a", "b"), ("b", "a")}),
+        "AF2": _af({"b", "c", "d"}, {("b", "c"), ("c", "d")}),
+        "AF3": _af({"a", "b", "d"}, {("a", "b"), ("a", "d")}),
+        "AF4": _af({"a", "b", "d"}, {("b", "d"), ("b", "a")}),
+    }
 
-    expanded = consensual_expand(af, frozenset({"A", "B"}))
+    expanded = consensual_expand(profile["AF1"], profile)
 
-    assert ("A", "A") in expanded.attacks
-    assert ("A", "B") in expanded.ignorance
-    assert ("B", "A") in expanded.ignorance
-    assert ("B", "B") in expanded.ignorance
+    assert expanded.arguments == frozenset({"a", "b", "c", "d"})
+    assert expanded.attacks == frozenset(
+        {("a", "b"), ("b", "a"), ("b", "c"), ("c", "d")}
+    )
+    assert expanded.ignorance == frozenset({("a", "d"), ("b", "d")})
+    assert ("a", "c") in expanded.non_attacks  # No agent knows both endpoints.
 
 
-def test_consensual_expand_rejects_universe_missing_source_arguments():
-    """Coste-Marquis et al. 2007, Def. 11 (p.6-7): the expansion universe is
-    ``A = union A_i``, so every source argument set ``A_i`` is contained in it.
-    A smaller universe must not silently drop ``B`` and its attack."""
+def test_consensual_expand_retains_source_scope_outside_profile():
+    """Definition 12 uses A union union(A_i), preserving a source outside P."""
     af = _af({"A", "B"}, {("A", "B")})
+    profile = {"other": _af({"C"}, {("C", "C")})}
 
-    with pytest.raises(ValueError, match="universe"):
-        consensual_expand(af, frozenset({"A"}))
+    expanded = consensual_expand(af, profile)
+
+    assert expanded.arguments == frozenset({"A", "B", "C"})
+    assert expanded.attacks == frozenset({("A", "B"), ("C", "C")})
+    assert expanded.ignorance == frozenset()
+    assert {("A", "A"), ("B", "A"), ("B", "B"), ("A", "C")} <= expanded.non_attacks
 
 
-def test_consensual_expand_to_superset_universe_keeps_source_arguments():
-    """Control: a universe containing ``A_i`` keeps every source argument."""
-    af = _af({"A", "B"}, {("A", "B")})
+def test_consensual_expand_keeps_conflicting_outside_pairs_ignorant():
+    """Example 14's AF2 retains b->c/c->d and is ignorant about a->b/b->a/a->d."""
+    profile = {
+        "AF1": _af({"a", "b"}, {("a", "b"), ("b", "a")}),
+        "AF2": _af({"b", "c", "d"}, {("b", "c"), ("c", "d")}),
+        "AF3": _af({"a", "b", "d"}, {("a", "b"), ("a", "d")}),
+        "AF4": _af({"a", "b", "d"}, {("b", "d"), ("b", "a")}),
+    }
 
-    expanded = consensual_expand(af, frozenset({"A", "B", "C"}))
+    expanded = consensual_expand(profile["AF2"], profile)
 
-    assert af.arguments <= expanded.arguments
-    assert expanded.attacks == frozenset({("A", "B")})
+    assert expanded.attacks == frozenset({("b", "c"), ("c", "d")})
+    assert expanded.ignorance == frozenset({("a", "b"), ("b", "a"), ("a", "d")})
+    assert ("b", "d") in expanded.non_attacks  # AF2's own non-attack is preserved.
 
 
 def test_edit_distance_to_own_expansion_uses_pre_preference_attacks():
@@ -78,7 +94,7 @@ def test_edit_distance_to_own_expansion_uses_pre_preference_attacks():
         attacks=frozenset({("A", "B")}),
     )
 
-    expanded = consensual_expand(af, af.arguments)
+    expanded = consensual_expand(af, {"source": af})
 
     assert merge_framework_edit_distance(af, expanded) == 0
 
@@ -89,14 +105,16 @@ def test_edit_distance_counts_attack_versus_non_attack_pairs():
     right = _af({"A", "B"}, set())
 
     assert merge_framework_edit_distance(left, right) == 1
-    expanded = consensual_expand(left, left.arguments)
+    expanded = consensual_expand(left, {"source": left})
     assert merge_framework_edit_distance(left, expanded) == 0
 
 
 def test_consensual_expand_on_shared_universe_introduces_no_ignorance():
     af = _af({"A", "B"}, {("A", "B")})
 
-    expanded = consensual_expand(af, frozenset({"A", "B"}))
+    expanded = consensual_expand(
+        af, {"source": af, "contrary": _af({"A", "B"}, set())}
+    )
 
     assert expanded.ignorance == frozenset()
     assert expanded.attacks == frozenset({("A", "B")})

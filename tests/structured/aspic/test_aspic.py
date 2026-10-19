@@ -336,10 +336,9 @@ def strict_rules(draw, language, contrariness, max_rules=4):
     Prakken 2010, Defs 3.4, 5.1-5.2 (pp.47-48, 141-142).
 
     1. Draw 0-max_rules seed rules with 1-2 antecedents from L, consequent from L.
-    2. Filter: consequent not in antecedents.
-    3. Compute transposition closure (calls transposition_closure which does not
-       exist yet -- tests will fail with ImportError in red phase).
-    4. Return the closed rule set.
+    2. Compute transposition closure without excluding contradictory bodies
+       or rules whose consequent also appears in their antecedents.
+    3. Return the closed rule set.
     """
     L_list = sorted(language, key=repr)
     n_rules = draw(st.integers(min_value=0, max_value=max_rules))
@@ -348,9 +347,6 @@ def strict_rules(draw, language, contrariness, max_rules=4):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
         antecedents = _distinct_antecedents(draw, L_list, n_ante)
         consequent = draw(st.sampled_from(L_list))
-        # Filter: consequent must not appear in antecedents
-        if consequent in antecedents:
-            continue
         seed_rules.append(
             Rule(
                 antecedents=antecedents,
@@ -369,7 +365,7 @@ def strict_rules(draw, language, contrariness, max_rules=4):
 
 @st.composite
 def strict_seed_rules(draw, language, contrariness, max_rules=4):
-    """Generate well-formed strict seed rules before transposition closure."""
+    """Generate strict seed rules over L before transposition closure."""
     L_list = sorted(language, key=repr)
     n_rules = draw(st.integers(min_value=0, max_value=max_rules))
     seed_rules: list[Rule] = []
@@ -377,14 +373,6 @@ def strict_seed_rules(draw, language, contrariness, max_rules=4):
         n_ante = draw(st.integers(min_value=1, max_value=min(2, len(L_list))))
         antecedents = _distinct_antecedents(draw, L_list, n_ante)
         consequent = draw(st.sampled_from(L_list))
-        if consequent in antecedents:
-            continue
-        if any(
-            contrariness.is_contradictory(left, right)
-            for index, left in enumerate(antecedents)
-            for right in antecedents[index + 1 :]
-        ):
-            continue
         seed_rules.append(
             Rule(
                 antecedents=antecedents,
@@ -434,20 +422,12 @@ def _schema_transpositions(
             ):
                 transposed_antecedents = list(rule.antecedents)
                 transposed_antecedents[index] = contrary_consequent
-                if contrary_antecedent in transposed_antecedents:
-                    continue
                 candidate = Rule(
                     antecedents=tuple(transposed_antecedents),
                     consequent=contrary_antecedent,
                     kind="strict",
                     name=None,
                 )
-                if any(
-                    contrariness.is_contradictory(left, right)
-                    for left_index, left in enumerate(candidate.antecedents)
-                    for right in candidate.antecedents[left_index + 1 :]
-                ):
-                    continue
                 transpositions.add(candidate)
     return frozenset(transpositions)
 
@@ -577,29 +557,6 @@ class TestRuleProperties:
                 assert ante in L, f"Antecedent {ante} of rule {r} not in L"
             assert r.consequent in L, f"Consequent {r.consequent} of rule {r} not in L"
 
-    @given(
-        logical_language().flatmap(
-            lambda lc: st.tuples(
-                st.just(lc),
-                strict_rules(language=lc[0], contrariness=lc[1]),
-                defeasible_rules(language=lc[0]),
-            )
-        )
-    )
-    @settings(deadline=None)
-    def test_consequent_not_in_antecedents(self, lc_sr_dr):
-        """No rule has its consequent appearing in its antecedents.
-
-        A rule phi_1, ..., phi_n -> psi must have psi not in {phi_1, ..., phi_n}.
-        This is a well-formedness constraint: a rule cannot trivially conclude
-        one of its own premises.
-        """
-        (L, _cfn), s_rules, d_rules = lc_sr_dr
-        for r in s_rules | d_rules:
-            assert r.consequent not in r.antecedents, (
-                f"Rule {r} has consequent {r.consequent} in antecedents"
-            )
-
 
 class TestTranspositionClosure:
     """Property tests for transposition closure of strict rules.
@@ -624,9 +581,7 @@ class TestTranspositionClosure:
         )
     )
     @settings(deadline=None)
-    def test_transposition_closure_is_extensive_for_well_formed_seed_rules(
-        self, lc_rules
-    ):
+    def test_transposition_closure_is_extensive_for_seed_rules(self, lc_rules):
         """Seed strict rules are retained by closure.
 
         Grounded in
@@ -1280,7 +1235,10 @@ class TestArgumentConstructionProperties:
         This is the non-triviality guarantee from the knowledge_base
         strategy: it forces at least one rule's antecedents into K_p,
         ensuring build_arguments produces compound arguments when a
-        c-consistent rule antecedent set is available.
+        c-consistent antecedent set is available for a rule whose conclusion
+        is not already among its antecedents. This matches the builder's
+        existing restriction to non-repeating conclusion paths; the rule-set
+        closure itself also retains tautological rules.
         See reports/hypothesis-aspic-feasibility.md Section 3, Level 4.
         """
         L, cfn = data.draw(logical_language())
@@ -1293,7 +1251,8 @@ class TestArgumentConstructionProperties:
         arguments = build_arguments(system, kb)
         assume(
             any(
-                frozenset(rule.antecedents) <= (kb.axioms | kb.premises)
+                rule.consequent not in rule.antecedents
+                and frozenset(rule.antecedents) <= (kb.axioms | kb.premises)
                 and is_c_consistent(
                     frozenset(rule.antecedents),
                     system.strict_rules,
