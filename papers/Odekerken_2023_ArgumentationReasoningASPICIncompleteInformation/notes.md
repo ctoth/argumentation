@@ -38,7 +38,7 @@ For a defeasible rule r: phi_1, ..., phi_n => phi, the antecedents are {phi_1, .
 
 **Definition 3 (AT).** An argumentation theory AT = (AS, K) with argumentation system AS and knowledge base K.
 
-**Definition 4 (Arguments).** The set of arguments Args(AT) that an AT gives rise to contains arguments obtained by applying defeasible/strict rules iteratively:
+**Definition 4 (Arguments).** The set of arguments Args(AT) contains observation-based arguments and arguments obtained by finitely many applications of the fragment's defeasible rules:
 - If phi in K then phi is an argument A with Prem(A) = {phi}, Conc(A) = phi, Sub(A) = {phi}, Rules(A) = empty, TopRule(A) = undefined, DefRules(A) = empty.
 - If A_1, ..., A_n are arguments and there is r in R with those conclusions as antecedents and consequent phi, then `B = A_1,...,A_n ⇒ phi` is a rule-based argument. Only finitely many rule applications are allowed. *([Definition 4, printed p.532](pngs/page-001.png))*
 
@@ -96,7 +96,7 @@ This section introduces the paper's main contributions: formal definitions of st
 - Q is closed under contradictories: for every q in Q, all contradictories of q are also in Q.
 - Q restricts the allowable enlarged axiom bases; it includes the existing axioms, rather than only unresolved literals. *([Definition 11, printed p.534](pngs/page-003.png))*
 
-Queryables represent the possible future observations -- the unsettled literals that could be resolved.
+Queryables delimit the possible future observations and include the current knowledge base; only consistent additions enlarge that base.
 
 **Definition 12 (Future argumentation theories).** Given an AT = (AS, K) and a set of queryables Q, an AT' = (AS, K') is a *future* of AT w.r.t. Q if:
 - `K ⊆ K′ ⊆ Q`; the argumentation system remains the same.

@@ -4,7 +4,7 @@
 Compare package definitions and paper notes with the original papers, correct confirmed mistranscriptions, commit the corrections, and integrate them onto main. Q authorized implementation with "make it so" on 2026-10-19.
 
 ## State
-Three editing subagents completed comparisons in structured, quantitative/probabilistic, and specialized framework lanes. The primary agent covers abstract/bipolar semantics and solver papers, reviews the corrections, and checks original pages independently. A separate read-only verifier checked eleven selected large/formula-heavy rewrites and found no introduced defect. Corrections currently touch 54 existing notes plus CITATIONS.md. Publication, hosted CI, and integration are pending.
+Three editing subagents completed comparisons in structured, quantitative/probabilistic, and specialized framework lanes. The primary agent covers abstract/bipolar semantics and solver papers, reviews the corrections, and checks original pages independently. A separate read-only verifier checked eleven selected large/formula-heavy rewrites and found no introduced defect. Corrections touch 54 existing notes plus CITATIONS.md. PR #108 is open at https://github.com/ctoth/argumentation/pull/108; its initial commit was rebased onto origin/main ee16aa6 before publication. Hosted CI and integration are pending; the final follow-up repairs repeated Odekerken fragment/queryable descriptions and Freedman result summaries.
 
 ## Decisions and why
 - Smallest change: correct erroneous prose, equations, and examples in existing paper notes and any directly corresponding citation text. Expected size: a few lines per confirmed error, plus this audit record. No new protocols, features, tests, or performance research.
@@ -89,9 +89,9 @@ Not source-verified: Baumann2019 and Lehtonen2020 have no local PDF/page images;
 ## Verification and integration
 
 - Evidence method: visual original-page comparisons; corrected notes carry local image/PDF-page provenance.
-- No production implementation changes and no local test/typecheck/build execution. Hosted PR CI will supply package validation.
+- No production implementation changes and no local test/typecheck/build execution. Hosted PR #108 CI supplies package validation; final follow-up changes require replacement checks on their own head.
 - Separate verifier covered Baumann2015, Diller2025, Odekerken2023, Caminada2007, Freedman2025, Baroni2019, both Rago2016 papers, Potyka2018, and AlAnaissy2024; its verdict was bounded to those inspected changes.
 - Required PR review ledger and exact-head hosted checks remain pending. No external review comments have been posted.
 
 ## Next step
-Commit the scoped corrections and this record, publish a PR for hosted CI, finish the source/diff review, run the existing PR ledger gate, and normally merge the corrections onto main if no blocker remains.
+Commit and push the final follow-up, finish the source/diff review and existing PR ledger gate, then normally merge PR #108 onto main after exact-head hosted CI passes and no blocker remains. Verify the merge parents and update the primary main checkout; preserve unrelated worktrees and untracked artifacts.

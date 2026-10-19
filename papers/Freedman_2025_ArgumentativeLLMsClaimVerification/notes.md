@@ -20,7 +20,7 @@ LLMs have extensive knowledge and can apply it to claim verification, but they a
 - **Explainability via argumentation**: QBAFs serve as the basis for formal explanations of claim verdicts *(p.0)*
 - **Contestability**: Humans can override LLM-generated argument strengths, add/remove arguments, and the framework formally propagates these changes *(p.0, p.6)*
 - **Novel properties**: Formal proofs that DF-QuAD satisfies base score monotonicity and argument relation contestability *(p.6-7, p.17-18)*
-- **Competitive performance**: ArgLLMs match or exceed state-of-the-art on claim verification tasks (TruthfulQA, StrategyQA) while providing transparency *(p.5-6)*
+- **Competitive performance**: ArgLLMs perform comparably with Chain-of-Thought overall on the derived TruthfulClaim, StrategyClaim, and MedClaim datasets; results vary by model and dataset. This is not a uniform improvement over the baselines. *(printed pp.5-7; [Table 1](pngs/page-006.png), [evaluation discussion](paper.pdf#page=6))*
 
 ## Methodology
 
@@ -170,7 +170,7 @@ Three approaches for the base score of the claim and arguments:
 - Tested on **TruthfulClaim, StrategyClaim, and MedClaim**, constructed by converting question-answer pairs from TruthfulQA, StrategyQA, and MedQA into true/false claims. The original QA datasets were not used directly for the main claim-verification experiments. *(printed p.5; [original PDF](paper.pdf#page=5), checked with an opaque visual render)*
 - Seven main models include Mistral, Mixtral, Gemma 7B, Gemma 2 9B, Llama 3 8B, GPT-3.5-turbo, and GPT-4o mini; an additional MedClaim experiment uses GPT-4o. *(printed pp.5-7; [Table 1](pngs/page-006.png), [original setup page](paper.pdf#page=5))*
 - **Examples from Table 1**: On TruthfulClaim, Mixtral reaches 0.81 accuracy with estimated-base arguments at depth 1; GPT-4o mini reaches 0.81 at both depths. The best variant depends on the model and dataset; the table does not report the former 0.675/0.795 claims. *(printed p.7; [page image](pngs/page-006.png))*
-- ArgLLMs generally competitive with baselines; argumentation doesn't hurt performance and provides explainability *(p.5)*
+- ArgLLMs perform comparably with Chain-of-Thought overall, but individual variants can score below the baselines. For example, on StrategyClaim with Mistral, estimated-base arguments at depth 1 score 0.62 versus Chain-of-Thought's 0.68. *([Table 1, printed p.7](pngs/page-006.png))*
 - **Key finding**: Using LLM-estimated base scores ("Estimated Base + Arg") generally outperforms fixed 0.5 base scores *(p.5)*
 - The estimated base score alone (no argumentation) is often competitive, suggesting the LLM's initial confidence is informative *(p.5-6)*
 - **Role-player prompts**: Analyst and debater roles sometimes outperform ChatGPT-style prompts (Tables 4-7, p.14) *(p.14)*
@@ -180,7 +180,7 @@ Three approaches for the base score of the claim and arguments:
 - Argumentation helps more when the base model is weaker *(p.15-16)*
 
 ## Limitations
-- ArgLLMs' added value over base score alone does not lead to a corresponding predictive variance in the task of claim verification in comparison to state-of-the-art methods *(p.7)*
+- The conclusion says ArgLLMs' added value does not compromise prediction accuracy relative to state-of-the-art prompting methods; it does not report a "predictive variance" result. The evaluation discussion and Table 1 qualify this as comparable overall performance, with variation across configurations. *([printed p.7](pngs/page-006.png); [discussion, printed p.6](paper.pdf#page=6))*
 - The method relies on LLM-generated arguments which may be fabricated or hallucinated *(p.6)*
 - Acyclic QBAFs only (trees) — does not handle cyclic argumentation graphs *(p.3)*
 - Claim verification uses a binary verdict at a 0.5 threshold, but the method also outputs a graded final strength and the QBAF as its reasoning trail. *(printed p.5; [original PDF](paper.pdf#page=5), checked with an opaque visual render)*
