@@ -383,9 +383,11 @@ def _classify_extension_change(
 ) -> AFChangeKind:
     """Classify structural extension change after an AF update.
 
-    Cayrol, de Saint-Cyr, and Lagasquie-Schiex 2010, JAIR 38, Table 3
-    distinguishes seven extension-family changes by content relations between
-    the old and new extension families, not by cardinality alone.
+    Cayrol, de Saint-Cyr, and Lagasquie-Schiex 2010, JAIR 38, Definitions
+    8-14 and Table 2 distinguish changes in the number of extensions first.
+    Expansive change preserves that number, and every new extension must
+    strictly contain an old one. A transition from the empty grounded
+    extension to one nonempty extension is decisive.
     """
     before_set = frozenset(frozenset(extension) for extension in before)
     after_set = frozenset(frozenset(extension) for extension in after)
@@ -394,24 +396,16 @@ def _classify_extension_change(
         return AFChangeKind.CONSERVATIVE
     if not after_set or after_set == empty_family:
         return AFChangeKind.DESTRUCTIVE
-    if (
-        before_set
-        and after_set
-        and all(any(old < new for new in after_set) for old in before_set)
+    if len(after_set) == 1 and (
+        len(before_set) >= 2 or before_set in {frozenset(), empty_family}
     ):
-        return AFChangeKind.EXPANSIVE
-    if len(after_set) == 1:
-        survivor = next(iter(after_set))
-        if survivor in before_set or before_set in {frozenset(), empty_family}:
-            return AFChangeKind.DECISIVE
+        return AFChangeKind.DECISIVE
     if len(before_set) < len(after_set):
         return AFChangeKind.QUESTIONING
-    if (
-        before_set
-        and after_set
-        and all(any(new <= old for old in before_set) for new in after_set)
-    ):
+    if len(after_set) < len(before_set):
         return AFChangeKind.RESTRICTIVE
+    if all(any(old < new for old in before_set) for new in after_set):
+        return AFChangeKind.EXPANSIVE
     return AFChangeKind.ALTERING
 
 

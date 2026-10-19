@@ -257,20 +257,24 @@ def test_cayrol_2010_questioning_classification_for_more_extensions() -> None:
     assert _classify_extension_change(before, after) == AFChangeKind.QUESTIONING
 
 
-def test_ws_o_arg_cayrol_2010_decisive_uses_surviving_extension_content() -> None:
-    """Bug 4: a two-extension family collapsing to one old extension is decisive."""
-    before = (frozenset({"a"}), frozenset({"b"}))
-    after = (frozenset({"a"}),)
+def test_cayrol_2010_grounded_addition_is_decisive_from_empty() -> None:
+    """Example 2.1 (p.55): adding Z->A to the cycle yields {Z,B}."""
+    framework = ArgumentationFramework(
+        arguments=frozenset({"a", "b", "c"}),
+        defeats=frozenset({("a", "b"), ("b", "c"), ("c", "a")}),
+    )
 
-    assert _classify_extension_change(before, after) == AFChangeKind.DECISIVE
+    assert cayrol_2014_classify_grounded_argument_addition(
+        framework, "z", frozenset({("z", "a")})
+    ) == AFChangeKind.DECISIVE
 
 
-def test_ws_o_arg_cayrol_2010_expansive_does_not_require_equal_cardinality() -> None:
-    """Bug 4: expansive is content-based, not equal-cardinality-based."""
+def test_cayrol_2010_increasing_extension_count_is_questioning() -> None:
+    """Definition 12 requires equal counts for expansive change."""
     before = (frozenset({"a"}),)
     after = (frozenset({"a", "b"}), frozenset({"a", "c"}))
 
-    assert _classify_extension_change(before, after) == AFChangeKind.EXPANSIVE
+    assert _classify_extension_change(before, after) == AFChangeKind.QUESTIONING
 
 
 def test_ws_o_arg_extension_revision_state_accepts_lazy_ranking() -> None:
