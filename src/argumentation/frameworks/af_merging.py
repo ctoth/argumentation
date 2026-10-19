@@ -121,7 +121,7 @@ def sum_merge_frameworks(
     if isinstance(candidates, EnumerationExceeded):
         return candidates
 
-    best_score: int | None = None
+    best_score: float | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in candidates:
         score = sum(
@@ -148,7 +148,7 @@ def max_merge_frameworks(
     if isinstance(candidates, EnumerationExceeded):
         return candidates
 
-    best_score: int | None = None
+    best_score: float | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in candidates:
         score = max(
@@ -175,7 +175,7 @@ def leximax_merge_frameworks(
     if isinstance(max_winners, EnumerationExceeded):
         return max_winners
 
-    best_vector: tuple[int, ...] | None = None
+    best_vector: tuple[float, ...] | None = None
     winners: list[ArgumentationFramework] = []
     for candidate in max_winners:
         vector = tuple(

@@ -143,8 +143,12 @@ def _coerce_partial_framework(
 def merge_framework_edit_distance(
     left: FrameworkLike,
     right: FrameworkLike,
-) -> int:
-    """Hamming distance over pair labels on a shared argument universe."""
+) -> float:
+    """Coste-Marquis et al. 2007, Definition 18 edit distance over pair labels.
+
+    Equal labels cost zero, ignorance versus a definite label costs 0.5,
+    and attack versus non-attack costs one on the shared argument universe.
+    """
 
     left_framework = _coerce_partial_framework(left)
     right_framework = _coerce_partial_framework(right)
@@ -152,9 +156,14 @@ def merge_framework_edit_distance(
         raise ValueError("merge_framework_edit_distance requires identical arguments")
 
     return sum(
-        1
-        for pair in left_framework.ordered_pairs
-        if left_framework.state_of(pair) != right_framework.state_of(pair)
+        (
+            0.5
+            if pair in left_framework.ignorance or pair in right_framework.ignorance
+            else 1.0
+            for pair in left_framework.ordered_pairs
+            if left_framework.state_of(pair) != right_framework.state_of(pair)
+        ),
+        0.0,
     )
 
 
