@@ -216,7 +216,7 @@ $F_{AF} = Pl_{AF} \circ Pl_{AF}$, where $Pl_{AF}(S) = \{A \mid \text{no argument
 ### Lemma 46 *(p.342)*
 
 Let $GE_{AF}$ be the grounded extension of AF. Then:
-$\phi \subseteq AR_1 \subseteq \cdots \subseteq AR_{2i+1} \subseteq AR_{2i+1} \subseteq \cdots \subseteq GE_{AF} \subseteq \cdots \subseteq AR_{2i} \subseteq \cdots \subseteq AR_2 \subseteq AR_0 = AR$. *(p.342)*
+$\phi \subseteq AR_1 \subseteq \cdots \subseteq AR_{2i-1} \subseteq AR_{2i+1} \subseteq \cdots \subseteq GE_{AF} \subseteq \cdots \subseteq AR_{2i+2} \subseteq AR_{2i} \subseteq \cdots \subseteq AR_2 \subseteq AR_0 = AR$. *(p.342; [page image 021](pngs/page-021.png))*
 
 ### Theorem 47: Pollock's Defeasible Reasoning *(p.342)*
 

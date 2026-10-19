@@ -136,11 +136,11 @@ The following reproduces the restrictions as stated in Table 2, printed p.578
 ### Class Hierarchy (Proposition 1 + Figure 5)
 
 $$
-\emptyset \subset \mathcal{P}_{\text{NEU}} \subset \mathcal{P}_{\text{INV}} \subset \mathcal{P}_{\text{COH}} \subset \mathcal{P}_{\text{SOPT}} \subset \mathcal{P}_{\text{RAT}} \subset \mathcal{P}(\text{AF})
+\emptyset\subsetneq\mathcal P_{\mathrm{JUS}}(AF)\subseteq\mathcal P_{\mathrm{COH}}(AF)\subseteq\mathcal P_{\mathrm{RAT}}(AF)\subseteq\mathcal P(AF)
 $$
 
 $$
-\mathcal{P}_{\text{MIN}} \subset \mathcal{P}_{\text{INV}}, \quad \mathcal{P}_{\text{MIN}} \subset \mathcal{P}_{\text{JUS}}
+\emptyset\subsetneq\mathcal P_{\mathrm{NEU}}(AF)\subseteq\mathcal P_{\mathrm{INV}}(AF)\subseteq\mathcal P_{\mathrm{COH}}(AF),\qquad\emptyset\subsetneq\mathcal P_{\mathrm{INV}}(AF)\subseteq\mathcal P_{\mathrm{SOPT}}(AF)
 $$
 
 $$
@@ -148,13 +148,13 @@ $$
 $$
 
 $$
-\mathcal{P}_{\text{MAX}} \subset \mathcal{P}_{\text{JUS}}
+\emptyset\subsetneq\mathcal P_{\mathrm{MIN}}(AF)\subseteq\mathcal P_{\mathrm{COH}}(AF),\qquad\emptyset\subsetneq\mathcal P_{\mathrm{MAX}}(AF)\subseteq\mathcal P_{\mathrm{OPT}}(AF)
 $$
 
 $$
-\mathcal{P}_{\text{TER}} \subset \mathcal{P}_{\text{COH}}
+\mathcal P_{\mathrm{TER}}(AF)\subseteq\mathcal P(AF)
 $$
-*(p.11-12, 16-17)*
+These are the inclusions from Proposition 6 and Figure 5. Figure 5 places TER separately from COH; it does not give COH⊆SOPT, SOPT⊆RAT, MIN⊆INV/JUS, or MAX⊆JUS. The paper distinguishes non-strict from strict subset arrows. *(printed pp.580-581, `pngs/page-015.png`, `pngs/page-016.png`)*
 
 ### Key Propositions on Structure
 

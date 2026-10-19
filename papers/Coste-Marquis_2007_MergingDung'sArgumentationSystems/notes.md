@@ -32,7 +32,7 @@ Two key problems are identified: *(p.4)*
 ## Methodology
 The paper follows a three-step process: *(p.0-1)*
 1. Each agent's AF is expanded into a PAF (partial argumentation framework) capturing what each agent considers attack, non-attack, and unknown.
-2. A pseudo-distance between PAFs is defined (the edit distance counts the number of pairs (a,b) where one PAF says attack and the other says non-attack).
+2. A pseudo-distance between PAFs is defined (the edit distance charges 1 for attack/non-attack disagreement and 0.5 for ignorance/definite disagreement at each ordered pair).
 3. An aggregation function (sum, max, leximax) combines distances to select the AF(s) closest to the profile.
 
 The approach is analogous to IC merging (Konieczny & Pino Perez) but lifted from propositional bases to argumentation frameworks. *(p.1)*
@@ -60,7 +60,7 @@ The approach is analogous to IC merging (Konieczny & Pino Perez) but lifted from
 
 ### Partial Argumentation Frameworks
 
-**Definition 9** (p.5-6): A *partial argumentation framework* (PAF) over A is a quadruple PAF = (A, R, I, N) where:
+**Definition 8** (p.735): A *partial argumentation framework* (PAF) over A is a quadruple PAF = (A, R, I, N) where:
 - A is a finite set of arguments
 - R, I, N are binary relations on A
 - R is the attack relation
@@ -70,17 +70,28 @@ The approach is analogous to IC merging (Konieczny & Pino Perez) but lifted from
 
 Each PAF can be viewed as a compact representation of a set of AFs over A. *(p.6)*
 
-**Definition 10** (Completion of a PAF): Let PAF = (A, R, I, N). Let AF = (A, R'). AF is a completion of PAF iff R subset R' and R' subset (R union I). *(p.6)*
+**Definition 9** (Completion of a PAF): Let PAF = (A, R, I, N). Let AF = (A, R'). AF is a completion of PAF iff R subseteq R' and R' subseteq (R union I). *(p.736; [page image](pngs/page-006.png))*
 
 The set of all completions of PAF is denoted C(PAF). *(p.6)*
 
 ### Expansion
 
-**Definition 11** (Expansion of an AF): Let P = {AF_1, ..., AF_n}. Let e_i be a profile of n AFs such that AF_i = (A_i, R_i). Let A = union of all A_i, N_i = {(a,b) in A x A : (a,b) not in R_i and a in A_i and b in A_i}, I_i = (A x A) \ (R_i union N_i). The consensual expansion of AF_i is the PAF exp(AF_i, P) = (A, R_i, I_i, N_i). *(p.6-7)*
+**Definition 11** (Expansion of an AF): An expansion of AF=(A,R) over a profile P is any PAF over A'=A union union_i A_i that preserves its original attacks and non-attacks: R subseteq R' and (A x A)\R subseteq N'. The definition leaves policies for newly encountered pairs open; making every outside pair ignorant is one possible generic expansion. *([p.736 image](pngs/page-006.png))*
 
-Key insight: An AF is expanded by treating known non-attacks as non-attacks, known attacks as attacks, and all pairs involving arguments not in the agent's original set as ignorance. *(p.7)*
+**Definition 12** (Consensual expansion): Put conf(P)=(union_i R_i) intersect (union_i N_i), the ordered pairs on which agents disagree. The consensual expansion of AF=(A,R,N) is (A',R',I',N') with:
 
-**Proposition 13** (p.7): The consensual expansion exp_GP of AF over P is an expansion of AF over P in the sense of Definition 12.
+\[
+\begin{aligned}
+A'&=A\cup\bigcup_i A_i,\\
+R'&=R\cup\left(\left(\bigcup_iR_i\setminus conf(P)\right)\setminus N\right),\\
+I'&=conf(P)\setminus(R\cup N),\\
+N'&=(A'\times A')\setminus(R'\cup I').
+\end{aligned}
+\]
+
+Original commitments are preserved. For new pairs, uncontested attacks/non-attacks are imported from agents who know both endpoints; conflicting pairs remain ignorant. Pairs for which no profile agent knows both endpoints fall into N' under this definition. This is more specific than simply marking every outside pair ignorant. Example 14 imports b->c and c->d into AF_1 from the other agents. *([definition, p.737](pngs/page-007.png), [worked expansion, p.738](pngs/page-008.png))*
+
+**Proposition 13**: Consensual expansion satisfies the general expansion conditions of **Definition 11**. *(p.737)*
 
 ### Pseudo-distance and Aggregation
 
@@ -103,11 +114,7 @@ $$
 
 ### Edit Distance
 
-**Definition 18** (Edit distance) (p.9): Let PAF_1 = (A, R_1, I_1, N_1) and PAF_2 = (A, R_2, I_2, N_2) be two PAFs over A. The *edit distance* between PAF_1 and PAF_2 is the mapping d_e such that:
-- d_e(PAF_1, PAF_2) = 0 if R_1 = R_2 and N_1 = N_2 (and hence I_1 = I_2)
-- d_e(PAF_1, PAF_2) = |{(a,b) in A x A : (a,b) in R_1 intersect N_2 or (a,b) in N_1 intersect R_2}| otherwise
-
-The edit distance counts pairs where one PAF says "attack" and the other says "non-attack." Ignorance is treated as halfway between attack and non-attack. *(p.9-10)*
+**Definition 18** (Edit distance): Sum per-pair costs over A x A. The cost is 0 when the two labels agree (both attack, both ignorance, or both non-attack), 1 for attack versus non-attack, and 0.5 otherwise. Thus ignorance is halfway between the two definite states; it is neither free nor a full unit away. *([p.739 image](pngs/page-009.png), [p.740 image](pngs/page-010.png))*
 
 **Proposition 19** (p.10): The edit distance d_e between PAFs is a distance (satisfies triangle inequality).
 
@@ -129,10 +136,13 @@ Where: P is a profile of AFs, de is the edit distance, tensor is an aggregation 
 *(p.9)*
 
 $$
-de(\text{PAF}_1, \text{PAF}_2) = |R_1 \cap N_2| + |N_1 \cap R_2|
+\begin{aligned}
+de(\text{PAF}_1,\text{PAF}_2)
+&=|R_1\cap N_2|+|N_1\cap R_2|\\
+&\quad+\tfrac12\left(|I_1\cap(R_2\cup N_2)|+|(R_1\cup N_1)\cap I_2|\right).
+\end{aligned}
 $$
-Where: R_i is the attack relation, N_i is the non-attack relation of PAF_i.
-*(p.9-10)*
+Where R_i, I_i, and N_i are the attack, ignorance, and non-attack relations. The original shorter formula omitted every ignorance/definite disagreement. *([Definition 18, pp.739-740](pngs/page-009.png), [continuation](pngs/page-010.png))*
 
 $$
 \text{Acc}_{\sigma}(\text{PAF}) = \{E \subseteq A \mid \exists AF \in C(\text{PAF}), \text{Acc}_{\sigma}(AF) = \text{true for } E\}
@@ -151,7 +161,7 @@ Where: C(PAF) is the set of completions of PAF, sigma is a Dung semantics.
 ## Methods & Implementation Details
 
 - **Three-step merging process**: (1) Expand each AF_i to PAF_i, (2) compute edit distances from each PAF_i to every candidate AF over the shared argument set A, (3) aggregate distances and select minimizers. *(p.0-1)*
-- **Expansion policy**: Each agent expands their AF by adding ignorance for all pairs involving arguments they don't know about. The expansion is consensual — it respects each agent's known attacks and non-attacks. *(p.6-7)*
+- **Expansion policy**: Consensual expansion preserves original commitments and imports uncontested outside information from the whole profile; only unresolved conflicting outside pairs become ignorant. A function receiving only one AF and a universe cannot compute the paper's profile-dependent policy. *(Definition 12, p.737)*
 - **Computational note**: The paper notes that computing the merging can be done by considering all AFs over A (which is exponential in |A|^2), but the edit distance only depends on the attack relation, so it suffices to enumerate all possible attack relations. *(p.9)*
 - **Sufficiency many agents**: The concept of "sufficiently many" refers to different voting thresholds — simple majority can be used for instance. *(p.7)*
 
@@ -171,23 +181,23 @@ Where: C(PAF) is the set of completions of PAF, sigma is a Dung semantics.
 
 **Proposition 23** (p.13): If P = <PAF_1, ..., PAF_n> is a profile of PAFs with common part CP(P), the common part is pointwise included in the clash-free part. *(p.13-14)*
 
-**Proposition 25** (p.14): If all PAFs are over the same set of arguments and the common part of P is P-dominated by CP(P), then the clash-free part of the profile and its common part are identical. *(p.14)*
+**Proposition 24** (p.744): For same-universe PAFs, if union_i I_i subseteq conf(P), then their common part and clash-free part have equal argument, attack, and non-attack components. **Proposition 25** says each consensual expansion contains the original profile's clash-free attack and non-attack information and uses the same argument universe. *([page image](pngs/page-014.png))*
 
 ### Properties of Merging Operators
 
-**Proposition 29** (p.15-16): The profile P is concordant iff and only if exp_GP(P) = {Delta^Sigma_de(P)}. When concordant, all aggregation functions produce the same result. *(p.15-16)*
+**Proposition 29** (p.745): P is concordant iff its profile of consensual expansions consists of repeated copies of union_i AF_i. The merging consequence is stated separately in Proposition 35. *([page image](pngs/page-015.png))*
 
-**Proposition 33** (p.17): P is compatible iff P is concordant and every exp_GP(AF_i, P) is compatible with every other. *(p.17)*
+**Proposition 33** (p.747): An AF profile is concordant iff its consensual expansions are compatible, meaning they have a common completion. *([page image](pngs/page-017.png))*
 
-**Proposition 35** (p.17): If P is concordant, then for any aggregation function, the clash-free part of any profile P is included in each AF in the merging. *(p.17)*
+**Proposition 35** (p.747): Under consensual expansion, a concordant AF profile merges to the singleton {union_i AF_i} for any aggregation function and edit distance. **Proposition 36** (p.748) states that the clash-free attack and non-attack components are preserved in every merged AF under consensual expansion, without requiring concordance. *([p.747](pngs/page-017.png), [p.748](pngs/page-018.png))*
 
-**Corollary 37** (p.18): When sum is used and all AFs are over the same arguments, the merging is the PAF obtained by applying strict majority rule to decide each attack. *(p.18)*
+**Corollary 37** (p.748): The common argument, attack, and non-attack information is preserved in each merged AF under consensual expansion and any aggregation function. The same-universe sum/majority-completion characterization is **Proposition 41** on p.749. *([p.748](pngs/page-018.png), [p.749](pngs/page-019.png))*
 
 **Definition 38** (Majority PAF) (p.18): The majority PAF MP(P) of a profile of AFs over the same set A is defined by: (a,b) in R iff more than |P|/2 AFs have the attack; (a,b) in N iff more than |P|/2 AFs don't have the attack; otherwise (a,b) in I. *(p.18-19)*
 
 **Proposition 39** (p.19): MP(P) is a PAF. *(p.19)*
 
-**Proposition 40** (p.19): Every AF over A which minimizes Sum of d_e(AF, AF_i) is a completion of MP(P). *(p.19)*
+**Proposition 41** (p.749): Sum/edit-distance merging of same-universe AFs is **exactly** C(MP(P)), all completions of their majority PAF. Tied pairs generate multiple merged AFs; the PAF compactly represents them rather than being the single AF output. Item 40 is an example, not this proposition. *([page image](pngs/page-019.png))*
 
 ### Joint Acceptability
 
@@ -196,14 +206,14 @@ Where: C(PAF) is the set of completions of PAF, sigma is a Dung semantics.
 **Definition 43** (p.20): Instances of joint acceptability:
 - S is **skeptically jointly acceptable** for P iff for all i, S is included in at least one acceptable set for each AF_i.
 - S is **credulously jointly acceptable** for P iff S is included in at least one acceptable set for at least one AF_i.
-- S is **justly acceptable** by majority for P iff it is included in at least one acceptable set for at least a weak majority of AFs. *(p.20)*
+- S is **jointly acceptable by majority** for P iff it is included in at least one acceptable set for at least a weak majority of AFs (at least n/2). These three clauses apply when n > 1; for n = 1 the joint relation is defined to equal the local relation. *(Definition 43, p.750; [page image](pngs/page-020.png))*
 
-**Proposition 44** (p.21): The set of jointly acceptable sets equals the set of all acceptable sets of the merging when only considering the merging. *(p.21)*
+**Proposition 44** (p.751): The jointly acceptable sets of the **input profile are not necessarily equal** to the jointly acceptable sets of the merging. The surrounding discussion says neither predicate implies the other in general, even with the same local acceptance notion and voting rule. *([page image](pngs/page-021.png))*
 
 ## Limitations
 - The framework only considers the attack relation; support is not modeled. *(p.22)*
 - Computational complexity is not analyzed — enumerating all AFs over A is exponential in |A|^2. *(p.9, implicit)*
-- The expansion policy assumes agents agree on which arguments exist; only the attack relation differs. *(p.5)*
+- Agents may have different argument sets; expansion aligns them to their union. The same-universe assumption belongs to the majority characterization, not the whole merging framework. *(pp.735-738, 748-749)*
 - The paper acknowledges that PAFs could be extended to weighted AFs where agents assign strengths to attacks. *(p.22)*
 - Joint acceptability (Section 7) is explored but the connection to the merging operators is shown to not always hold cleanly — the merged AFs' extensions don't always correspond to what voting on extensions would give. *(p.21-22)*
 
@@ -222,9 +232,9 @@ Where: C(PAF) is the set of completions of PAF, sigma is a Dung semantics.
 - **Edit distance is a metric**: d_e satisfies symmetry, minimality, and triangle inequality. *(p.10)*
 - **Concordant profiles produce unique merging**: If P is concordant, Delta^tensor_de(P) is a singleton for any aggregation function. *(p.15-16)*
 - **Common part preservation**: The common part of a concordant profile is preserved in the merging result. *(p.13-14)*
-- **Clash-free part inclusion**: For concordant profiles, the clash-free part is included in every AF in the merging. *(p.17)*
+- **Clash-free part inclusion**: Under consensual expansion and edit distance, its attack/non-attack information is included in every merged AF, without a concordance assumption. *(Proposition 36, p.748)*
 - **Majority PAF correspondence**: With sum aggregation over same-argument AFs, every merged AF is a completion of the majority PAF. *(p.19)*
-- **Sum merging = majority graph**: With sum and same arguments, the merging is the PAF obtained by strict majority on each pair. *(p.18)*
+- **Sum merging = majority completions**: With sum and same arguments, the merging is exactly the set of AF completions of the strict-majority PAF, allowing either choice at tied pairs. *(Proposition 41, p.749)*
 
 ## Relevance to Project
 This paper is highly relevant to propstore's multi-agent argumentation framework. Key applications:

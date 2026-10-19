@@ -11,7 +11,7 @@ doi_url: "https://ojs.aaai.org/index.php/AAAI/article/view/10116"
 > Scoped audit reread (2026-09-27): verified PDF page 2, page-001.png, for SC/CP/QP/CT/SCT/DP. Corrected definitions below; other sections remain unverified.
 
 ## One-Sentence Summary
-Provides a systematic axiomatic comparison of five ranking-based semantics for abstract argumentation frameworks, cataloguing 16 desirable properties and determining which semantics satisfy which properties. *(p.0-7)*
+Compares Cat, SAF, Dbs, Bbs, Tuples* and Matt-Toni ranking semantics through axiomatic properties, also including grounded semantics as a reference in Table 2. *(Table 2, `pngs/page-005.png`)*
 
 ## Problem Addressed
 Multiple ranking-based semantics for abstract argumentation have been proposed independently, each associated with some desirable properties, but no comparative study existed to take a broader perspective and systematically evaluate all semantics against all proposed properties. *(p.0)*
@@ -19,7 +19,7 @@ Multiple ranking-based semantics for abstract argumentation have been proposed i
 ## Key Contributions
 - Defines a comprehensive set of 16 properties (axioms) for ranking-based semantics *(p.1-3)*
 - Introduces a formal framework (Social Abstract Argumentation Frameworks) to give precise semantics to some properties *(p.3)*
-- Provides complete comparison of five ranking-based semantics (Categoriser, Discussion-based, Burden-based, Matt & Toni, Tuples*) against all 16 properties *(p.4-6)*
+- Compares six ranking-based semantics: Categoriser, SAF, Discussion-based, Burden-based, Matt & Toni, and Tuples*. *(Table 2, `pngs/page-005.png`)*
 - Identifies which properties distinguish between semantics families *(p.5-6)*
 - Shows that no single semantics satisfies all properties simultaneously *(p.6)*
 
@@ -37,16 +37,15 @@ $$
 Where: $Cat(a) = 1$ if $Att(a) = \emptyset$ (no attackers); $Att(a)$ is the set of direct attackers of $a$.
 *(p.3)*
 
-### Discussion-based Semantics (Cayrol & Lagasquie-Schiex 2005)
+### Discussion-based Semantics (Amgoud & Ben-Naim 2013)
 
-The discussion count of $a$ is denoted $Dbs(a)$:
+The discussion count is a sequence $Dis(a)=(Dis_1(a),Dis_2(a),\ldots)$:
 
 $$
-Dbs(a) = P(a) - N(a) + 1
+Dis_i(a)=\begin{cases}-|R_i^\pm(a)|&i\text{ odd},\\|R_i^\pm(a)|&i\text{ even}.\end{cases}
 $$
 
-Where: $P(a)$ is the number of non-attacked defenders; $N(a)$ is the number of non-attacked attackers; the ranking is $a \succeq b$ iff $Dbs(a) \geq Dbs(b)$.
-*(p.3)*
+The counts retain path multiplicities at every depth. Definition 14 compares the complete sequences lexicographically; it is not a scalar count of unattacked leaves. *(Definitions 13-14, `pngs/page-003.png`)*
 
 ### Burden-based Semantics (Amgoud & Ben-Naim 2013)
 
@@ -58,30 +57,27 @@ $$
 Burden_{i+1}(a) = 1 + \sum_{b \in Att(a)} \frac{1}{Burden_i(b)}
 $$
 
-Where: iteration continues until convergence to $Burden_\infty$. The ranking is $a \succeq b$ iff $Burden_\infty(a) \leq Burden_\infty(b)$ (lower burden = more acceptable).
-*(p.3-4)*
+The starting value is $Bur_0(a)=1$. The semantic value is the entire sequence $(Bur_0(a),Bur_1(a),\ldots)$, compared lexicographically with lower burden preferred at the first difference; comparing only its limiting value is not the definition. *(Definitions 15-16, `pngs/page-003.png`, `pngs/page-004.png`)*
 
 ### Matt & Toni Semantics
 
-Uses a two-person zero-sum strategic game. A proponent and opponent play over argument $a$. The proponent picks a path in the grounded game tree; the opponent plays adversarially. The strength of $a$ is computed from equilibrium strategies. *(p.4)*
+Uses a two-person zero-sum strategic game. Proponent strategies are all argument subsets containing a; opponent strategies are all argument subsets. Non-conflict-free proponent sets receive reward 0, an unchallenged conflict-free set receives 1, and other rewards use normalized attack counts. The strength is the max-min expected reward. *(Definitions 18-20 and preceding strategy sets, `pngs/page-004.png`)*
 
 ### Tuples* Semantics (Cayrol & Lagasquie-Schiex 2005)
 
 $$
-v_s(a) = (v_s(a_1), v_s(a_2), \ldots)
+v(a)=[v_p(a),v_i(a)]
 $$
 
-Where: $v_s(a)$ is an ordered tuple of sorted values of attackers; comparison is lexicographic. Assigns each argument a tuple representing sorted attacker values; tuples are compared lexicographically to produce a ranking.
-*(p.4)*
+Here $v_p$ is the sorted tuple of even defense-branch lengths and $v_i$ the sorted tuple of odd attack-branch lengths, with multiplicity. Algorithm 1 first compares tuple cardinalities, then uses opposite lexicographic preferences for defense and attack lengths when counts agree. The resulting ranking is partial: arguments may be incomparable. Tuples* restricts the evaluation to acyclic AFs. *(Definition 17 and Algorithm 1, `pngs/page-004.png`)*
 
 ### Social Abstract Argumentation Framework (SAF)
 
 $$
-SAF = (A, R, \nu_S)
+M_S(a)=\tau(a)\curlywedge\neg\curlyvee\{M_S(b)\mid b\in R^-_1(a)\}
 $$
 
-Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is a social support function mapping arguments to initial scores in $[-I, I]$ where $I$ is a totally ordered set with top $\top$ and bottom $\bot$; an argumentation function $\epsilon$ is monotonic; $w_i$ is the pro-argument and $w_\epsilon$ is for the attacked argument.
-*(p.3)*
+Definition 11 uses a totally ordered valuation set L and well-behaved operators for combining initial score, aggregated attacker score and negation. For comparison in this paper, arguments receive the same initial social support. The simple product instance uses $L=[0,1]$, $\tau_\epsilon=1/(1+\epsilon)$, product conjunction, probabilistic-sum disjunction and $\neg x=1-x$. *(Definitions 11-12, `pngs/page-003.png`)*
 
 ## Parameters
 
@@ -94,10 +90,10 @@ Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is
 
 ## Implementation Details
 - Categoriser: recursive computation, base case Cat(a)=1 when no attackers. Handle cycles via iterative fixed-point. *(p.3)*
-- Burden-based: iterative computation starting from Burden_1, converging. When cycles exist in AF, some tuples can be infinite; the method requires a topological sort approach or iterative approximation. *(p.4)*
-- Tuples*: construct sorted tuples of attacker values, compare lexicographically. The method returns multiple solutions for acyclic graphs only; cycles require special handling. *(p.4)*
+- Burden-based: construct burden-number sequences from Bur_0=1 and compare lexicographically, retaining the earliest differing step. *(Definitions 15-16, `pngs/page-003.png`, `pngs/page-004.png`)*
+- Tuples*: construct sorted defense/attack branch-length tuples and apply Algorithm 1's cautious partial comparison; cycles are excluded from Tuples* in this study. *(`pngs/page-004.png`)*
 - Algorithm 1 (p.4): For Tuples* — input is initial values of arguments and a set S; output is a ranking between a and b via lexicographic comparison of sorted tuples.
-- SAF evaluation: use the simple product semantics where $\epsilon_P(v_i, w_i, w_\epsilon) = v_i \cdot w_i / (v_i \cdot w_\epsilon)$ to compute argument scores. *(p.3)*
+- SAF evaluation: in the simple product semantics, multiply the common initial support $1/(1+\epsilon)$ by the complement of the probabilistic-sum aggregate of attacker scores. *(Definition 11 and following simple-product instance, `pngs/page-003.png`)*
 
 ## Figures of Interest
 - **Fig 1 (p.3):** Running example argumentation framework with 5 arguments (a,b,c,d,e). Categories: Cat(a)=0.28, Cat(b)=1, Cat(c)=0.5, Cat(d)=0.65, Cat(e)=0.53. Used throughout to compare all semantics.
@@ -105,11 +101,11 @@ Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is
 - **Table 2 (p.5-6):** Complete property satisfaction matrix for all five semantics. The central result of the paper.
 
 ## Results Summary
-- **Categoriser (Cat):** Satisfies Abs, VP+, DP, CT, SCT, CP, DDP, TAB, TDB, +AB, Ext, and Null. Does not satisfy QP or Non-attacked Equivalence. *(p.5)*
-- **Discussion-based (Dbs):** Satisfies Abs, VP+, CT, SCT, CP, DDP, TAB, TDB, +AB, Ext, Ind, Null. Does not satisfy DP or QP. *(p.5)*
-- **Burden-based (Bbs):** Satisfies Abs, VP, DP, CT, DDP, TAB, +DB, +AB, Ext, Ind, Null. Does not satisfy VP+, SCT, CP, QP, TDB. *(p.5)*
-- **Matt & Toni (M&T):** Satisfies Abs, VP+, DP, SCT, TAB, TDB, +AB, Ext, Ind, Null. Does not satisfy CT, CP, DDP, QP. *(p.5)*
-- **Tuples* (Tup*):** Very recently proposed; most properties satisfied. *(p.5-6)*
+- **Categoriser and SAF:** satisfy Abs, In, VP, DP, CT, SCT, ↑AB, ↑DB, +AB, Tot and NaE; other listed properties are not satisfied. *(Propositions 2-3, `pngs/page-003.png`)*
+- **Discussion-based:** satisfies Abs, In, VP, DP, CT, SCT, CP, ↑AB, ↑DB, +AB, Tot and NaE; notably not DDP. *(Proposition 4, `pngs/page-003.png`)*
+- **Burden-based:** satisfies Abs, In, VP, DP, CT, SCT, CP, DDP, ↑AB, ↑DB, +AB, Tot and NaE. *(Proposition 5, `pngs/page-004.png`)*
+- **Matt & Toni:** satisfies Abs, In, VP, +AB, SC, Tot, NaE and AvsFD; notably not DP, CT or SCT. *(Proposition 7, `pngs/page-004.png`)*
+- **Tuples*:** satisfies Abs, In, VP, +DB, ↑AB, ↑DB, +AB, NaE and AvsFD; it fails totality, and SC is marked inapplicable because Tuples* excludes cycles. *(Proposition 6 and Table 2, `pngs/page-004.png`, `pngs/page-005.png`)*
 - No semantics satisfies all 16 properties. *(p.6)*
 - Properties form clusters that distinguish semantics families. *(p.6)*
 
@@ -123,7 +119,7 @@ Where: $A$ = set of arguments; $R$ = attack relation; $\nu_S : A \to [-I, I]$ is
 ## Arguments Against Prior Work
 - Extension-based semantics (grounded, preferred, stable, complete) produce only a binary classification (accepted/rejected) or a limited number of levels, while ranking-based semantics provide a finer-grained total preorder. *(p.0)*
 - Prior proposals of ranking-based semantics were made independently without systematic comparison, making it impossible to understand their relative merits. *(p.0)*
-- The discussion-based semantics can produce counterintuitive results in some cases: it does not satisfy Distributed Precedence (DP), meaning it cannot always distinguish arguments based on how their defense is distributed. *(p.5)*
+- Discussion-based semantics satisfies Defense Precedence (DP) but not Distributed Defense Precedence (DDP); Burden-based satisfies both. *(Propositions 4-5, `pngs/page-003.png`, `pngs/page-004.png`)*
 
 ## Design Rationale
 - Properties are chosen to capture intuitive requirements: an unattacked argument should rank higher (Void Precedence), self-attacking arguments should rank lowest (Self-Contradiction), more attackers should mean lower rank (Cardinality Precedence). *(p.1-2)*

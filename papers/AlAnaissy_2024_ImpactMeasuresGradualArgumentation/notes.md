@@ -12,7 +12,7 @@ produced_by:
 # Impact Measures for Gradual Argumentation Semantics
 
 ## One-Sentence Summary
-Defines and axiomatically evaluates two impact measures for QBAFs -- a revised removal-based measure (ImpS^rev) and a new Shapley-value-based measure (ImpSh) -- across four gradual semantics, providing principled tools for explaining how arguments affect each other's scores.
+Defines and axiomatically evaluates two impact measures for attack-only AFs -- a revised removal-based measure (ImpDV) and a Shapley-based path measure (ImpSI) -- across four gradual semantics. *(Definitions 1,12,14; `pngs/page-001.png`, `pngs/page-003.png`, `pngs/page-005.png`)*
 
 ## Problem Addressed
 Gradual argumentation semantics compute numeric strength scores for arguments, but interpreting these scores is difficult. An impact measure quantifies, for each argument, the effect of other arguments on its score. The existing impact measure from Delobelle and Villata (2019) has deficiencies (e.g., the self-attacking argument problem), and no Shapley-value-based measure existed for this setting. *(p.1)*
@@ -22,122 +22,99 @@ Gradual argumentation semantics compute numeric strength scores for arguments, b
 - Novel Shapley-value-based impact measure (ImpSh) for gradual argumentation *(p.5-6)*
 - Nine axiomatic principles for evaluating impact measures *(p.7-9)*
 - Full analysis of which principles are satisfied by each measure under four gradual semantics *(p.10)*
-- Proof that the counting semantics is the only one (of the four studied) satisfying both Independence and Directionality *(p.10)*
+- Counting semantics is the only one of the four studied that violates Independence and Directionality; both impact measures inherit the corresponding impact-property violations. *(Proposition 1 and Table 3, printed pp.3,10, `pngs/page-002.png`, `pngs/page-009.png`)*
 
 ## Methodology
-The paper works within the framework of Quantitative Bipolar Argumentation Frameworks (QBAFs). It defines impact measures as functions that quantify how a set of arguments X affects the score of a target argument x. Two measures are proposed: one based on argument removal (revised from prior work) and one based on Shapley values from cooperative game theory. Both are evaluated against a set of desirable axiomatic principles across four well-known gradual semantics. *(p.1-2)*
+The paper works with attack-only AFs. It defines impact measures as functions that quantify how a set of arguments X affects the score of a target argument x. Two measures are proposed: one based on deletion operators and one based on Shapley attack contributions composed along paths. Both are evaluated across four gradual semantics. *(Definitions 1,12-14; printed pp.2,4,6, `pngs/page-001.png`, `pngs/page-003.png`, `pngs/page-005.png`)*
 
 ## Key Equations / Statistical Models
 
 ### Argumentation Framework
 $$
-AS = (\mathcal{A}, \mathcal{C}, w)
+AS = (\mathcal{A}, \mathcal{C})
 $$
-Where: $\mathcal{A}$ is a set of arguments, $\mathcal{C} \subseteq \mathcal{A} \times \mathcal{A}$ is the attack relation, $w: \mathcal{A} \to [0,1]$ is the initial weighting.
-*(p.2)*
+Where $\mathcal{A}$ is a finite argument set and $\mathcal{C}$ is the attack relation. A gradual semantics assigns an output weighting; an initial-weight function is not part of the AF. *(Definitions 1,3-4, printed p.2, `pngs/page-001.png`)*
 
 ### Attack Structure
 $$
-\text{Dir}(x) = \{(y, x) \mid (y, x) \in \mathcal{C}\}
+\operatorname{Str}_{AS}(x) = \{x\}\cup\{y\in\mathcal{A}\mid\text{there is a path from }y\text{ to }x\}
 $$
 $$
 \text{Att}(x) = \{y \mid (y, x) \in \mathcal{C}\}
 $$
-Where: $\text{Dir}(x)$ is the set of direct attacks on $x$, $\text{Att}(x)$ is the set of direct attackers of $x$.
-*(p.2)*
+Here $\operatorname{Str}_{AS}(x)$ is the attack structure (including indirect attackers and defenders), and $\operatorname{Att}(x)$ is the direct-attacker set. Also $\operatorname{Arg}^-(X)=\{y\in\mathcal{A}\setminus X\mid\exists x\in X:(y,x)\in\mathcal{C}\}$ and $\operatorname{Att}^-(X)=\{(y,x)\in\mathcal{C}\mid y\in\operatorname{Arg}^-(X),x\in X\}$. *(Definitions 1-2, printed p.2, `pngs/page-001.png`)*
 
 ### h-Categoriser Semantics
 $$
-\sigma_{h\text{-cat}}(a_i) = \frac{w(a_i)}{1 + \sum_{(a_j, a_i) \in \mathcal{C}} \sigma_{h\text{-cat}}(a_j)}
+\sigma_{h\text{-cat}}(a_i) = \frac{1}{1 + \sum_{a_j\in\operatorname{Att}(a_i)} \sigma_{h\text{-cat}}(a_j)}
 $$
-Where: $w(a_i)$ is the initial weight of $a_i$, the sum is over all direct attackers.
-*(p.2)*
+The numerator is 1 and the sum is over direct attackers. *(Definition 5, printed p.3, `pngs/page-002.png`)*
 
 ### Card-Based Semantics
 $$
-\sigma_{\text{Card}}(a_i) = \frac{1}{2} \left(1 + \frac{v_i^+ - v_i^-}{1 + v_i^+ + v_i^-}\right)
+\sigma_{\text{Card}}(a_i) = \frac{1}{1+|\operatorname{Att}(a_i)|+\dfrac{\sum_{a_j\in\operatorname{Att}(a_i)}\sigma_{\text{Card}}(a_j)}{|\operatorname{Att}(a_i)|}}
 $$
-Where: $v_i^+$ counts the proponents, $v_i^-$ counts the opponents of argument $a_i$, computed recursively considering the number of direct attackers and their degrees.
-*(p.2)*
+This combines attacker cardinality with the mean attacker degree, rather than a proponent/opponent difference. *(Definition 6, printed p.3, `pngs/page-002.png`)*
 
 ### Max-Based Semantics
 $$
-\sigma_{\text{Max}}(a_i) = \frac{1}{2} \left(1 + \frac{g(v^+) - g(v^-)}{1 + g(v^+) + g(v^-)}\right)
+\sigma_{\text{Max}}(a_i) = \frac{1}{1+\max_{a_j\in\operatorname{Att}(a_i)}\sigma_{\text{Max}}(a_j)}
 $$
-Where: $g$ is a function mapping multisets to values, $v^+$ and $v^-$ are multisets of proponent and opponent scores.
-*(p.3)*
+The strongest direct attacker determines the denominator. *(Definition 7, printed p.3, `pngs/page-002.png`)*
 
 ### Counting Semantics (Pu et al.)
-The counting semantics converts an AF into a matrix $M$, where $M$ is an $N \times N$ normalization factor and $\mathcal{A}$ is the $n$-dimensional column vector of initial weights. The score is: *(p.3)*
+The counting semantics uses the adjacency matrix $M$, normalization factor $N$, normalized matrix $\widetilde M=M/N$, damping $\alpha\in(0,1)$, and all-ones vector $\mathcal I$. *(Definition 8, printed p.3, `pngs/page-002.png`)*
 $$
-\sigma_{\text{count}}(a_i) = \lim_{n \to \infty} \left(\sum_{k=0}^{n} \frac{(-1)^k M^k}{k!}\right) \cdot \mathcal{A}
+v_\alpha=\lim_{k\to\infty}\sum_{i=0}^{k}(-1)^i\alpha^i\widetilde M^i\mathcal I,\qquad \sigma_{\text{count}}(a_i)=(v_\alpha)_i
 $$
-Where: $M$ is the adjacency matrix, the model of $e^{-M}$ is the counting model, $(-1)^k$ alternates attack polarity.
-
-### Acceptability Degree (for counting semantics)
-$$
-\text{Deg}_{AS}(a_i) = w(a_i) \cdot e^{-\sum_{(a_j, a_i) \in \mathcal{C}} \text{Deg}_{AS}(a_j)}
-$$
-Where: the exponential decay captures the cumulative effect of attackers.
-*(p.3)*
+This is an alternating damped matrix series, without factorials; it is not a matrix exponential or an exponential-decay recurrence. *(printed p.3, `pngs/page-002.png`)*
 
 ### Original Impact Measure (Delobelle & Villata 2019)
 $$
-\text{Imp}_{AS}^{\sigma}(X, x) = \sigma_{AS \setminus X}(x) - \sigma_{AS}(x)
+\operatorname{ImpDV}_{AS}^{\sigma}(X,y)=\sigma_{AS\ominus_y^{\mathcal A}\operatorname{Arg}^-(X)}(y)-\sigma_{AS\ominus_y^{\mathcal A}X}(y)
 $$
-Where: $AS \setminus X$ removes all arguments in $X$ and their associated attacks, $\sigma$ is a gradual semantics.
-*(p.4)*
+The first term deletes external attacker arguments of X; the second deletes X. The target-preserving operator $AS\ominus_y^{\mathcal A}X$ keeps y as a node if y belongs to X, but removes every attack with an endpoint in X. *(Definitions 10-11, printed p.4, `pngs/page-003.png`)*
 
 ### Revised Impact Measure (ImpS^rev) - Definition 12
 $$
-\text{Imp}_{AS}^{\sigma, \text{rev}}(X, x) = \sigma_{AS'}(x) - \sigma_{AS}(x)
+\operatorname{ImpDV}_{AS}^{\sigma}(X,y)=\sigma_{AS\ominus^{\mathcal C}\operatorname{Att}^-(X)}(y)-\sigma_{AS\ominus_y^{\mathcal A}X}(y)
 $$
-Where: $AS' = (\mathcal{A}, \mathcal{C}')$ with $\mathcal{C}' = \mathcal{C} \setminus \{(y, x) \mid y \in X, (y, x) \in \mathcal{C}\}$. Instead of removing arguments entirely, it removes only the direct attacks from $X$ to $x$, preserving the rest of the framework structure. This fixes the self-attack problem.
-*(p.4)*
+The first term removes external attacks **into X**, not attacks from X to y. The second term still removes X using the target-preserving argument-deletion operator. *(Definitions 10,12, printed p.4, `pngs/page-003.png`)*
 
-### Shapley Measure (Definition 13)
+### Extended Shapley Attack Measure (Definition 13)
 $$
-\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|!(|N|-|S|-1)!}{|N|!} [v(S \cup \{i\}) - v(S)]
+s((b,a))=\sum_{X\subseteq Y}\frac{|X|!(n-|X|-1)!}{n!}\left(\sigma_{AS\ominus^{\mathcal C}(X\cup\{(b,a)\})}(a)-\sigma_{AS\ominus^{\mathcal C}X}(a)\right)
 $$
-Where: $\phi_i(v)$ is the Shapley value of player $i$ in game $v$, $N$ is the set of players, $S$ ranges over subsets not containing $i$.
-*(p.5)*
+Here $Y=\{(z,a)\mid z\in\operatorname{Att}(a)\}\setminus\{(b,a)\}$ and $n=|\operatorname{Att}(a)|$. Players are incoming attacks, and each marginal is the gain from deleting one more attack. The extended range is [-1,1]. *(printed p.6, `pngs/page-005.png`)*
 
 ### Shapley-Based Impact Measure (ImpSh) - Definition 14
 $$
-\text{Imp}_{AS}^{\sigma, \text{Sh}}(x, \cdot) = \sum_{z \in P(x, z, \text{even})} \phi_z - \sum_{z \in P(x, z, \text{odd})} \phi_z
+\operatorname{ImpSI}_{AS}^{\sigma}(X,a)=\sum_{x\in X}\operatorname{ImpSI}_{AS}^{\sigma}(\{x\},a)
 $$
-More precisely: *(p.6)*
+The singleton impact composes edge contributions along paths: *(printed p.6, `pngs/page-005.png`)*
 $$
-\text{Imp}_{AS}^{\sigma, \text{Sh}}(x) = \sum_{z \in \text{Att}(x)} \phi_z(v_x)
+\operatorname{ImpSI}_{AS}^{\sigma}(\{x\},a)=\sum_{(a_1,\ldots,a_n)\in P_E(x,a)}\prod_{i=1}^{n-1}s((a_{i+1},a_i))-\sum_{(a_1,\ldots,a_n)\in P_O(x,a)}\prod_{i=1}^{n-1}s((a_{i+1},a_i))
 $$
-Where: $P(x, z, \text{even/odd})$ are the set of all odd/even paths from $z$ to $x$, $\phi_z$ is the Shapley value of $z$ in the coalition game $v_x$ defined for target $x$.
-
-The coalition game $v_x$ for target argument $x$ is defined as:
-$$
-v_x(S) = \sigma_{AS}(x) - \sigma_{AS \setminus S}(x)
-$$
-Where: $S \subseteq \mathcal{A} \setminus \{x\}$, this measures how much coalition $S$ contributes to changing $x$'s score.
-*(p.6)*
+Here $P_E$ and $P_O$ are even and odd paths from x to a. The displayed indexing follows Definition 14; this measure uses products of attack Shapley values, not a Shapley game whose players are arbitrary argument subsets. *(printed p.6, `pngs/page-005.png`)*
 
 ## Parameters
 
 | Name | Symbol | Units | Default | Range | Page | Notes |
 |------|--------|-------|---------|-------|------|-------|
-| Initial weight | $w(a_i)$ | — | — | [0, 1] | 2 | Weight assigned to each argument |
+| Output weighting | $\sigma_{AS}(a_i)$ | — | — | [0, 1] | 2 | Degree assigned by the semantics, not an initial AF weight |
 | Acceptability degree | $\text{Deg}_{AS}(a_i)$ | — | — | [0, 1] | 3 | Output of gradual semantics |
 | Impact value | $\text{Imp}(X, x)$ | — | — | [-1, 1] | 4 | Impact of set X on argument x |
 | Shapley value | $\phi_i(v)$ | — | — | (-∞, ∞) | 5 | Shapley contribution of player i |
 
 ## Methods & Implementation Details
-- Impact measures operate on QBAFs with attack-only relations (no support) *(p.2)*
-- The revised measure (ImpS^rev) removes only direct attacks from X to x, not the arguments themselves. This preserves the graph structure and avoids the self-attack problem where removing a self-attacking argument changes its own score *(p.4)*
-- For the Shapley measure, a cooperative game $v_x$ is defined for each target argument $x$. The game assigns to each coalition $S$ the value $\sigma_{AS}(x) - \sigma_{AS \setminus S}(x)$ *(p.6)*
-- Computing Shapley values requires evaluating all $2^n$ subsets where $n = |\mathcal{A}| - 1$, making it exponentially expensive *(p.6)*
+- Impact measures operate on attack-only AFs. *(Definition 1, printed p.2, `pngs/page-001.png`)*
+- Revised ImpDV compares deletion of external incoming attacks to X against target-preserving deletion of X. *(Definition 12, printed p.4, `pngs/page-003.png`)*
+- The Shapley measure enumerates coalitions of the other incoming attacks to each target; ImpSI then combines edge values along even and odd paths. For one edge the coalition count is $2^{|\operatorname{Att}(a)|-1}$. *(Definitions 13-14, printed p.6, `pngs/page-005.png`)*
 - The paper only considers attack relations, not support. Extension to bipolar frameworks is mentioned as future work *(p.11)*
 
 ## Figures of Interest
 - **Fig 1 (p.2):** Example AF with 7 arguments showing attack structure. Used throughout for examples.
-- **Fig 2 (p.6):** Counter-example for Bounded Loss with counting semantics. 3-argument chain.
+- **Fig 2 (p.6):** Counterexample to Attack Removal Monotonicity for counting semantics; adding $(a_2,a_3)$ raises $a_3$ from 0.02 to 0.26. *(`pngs/page-005.png`)*
 - **Fig 3 (p.7):** AF with 8 arguments used for Shapley measure observations. Edge labels show red intensity values.
 - **Fig 4 (p.7):** Intensity of attacks with Shapley measure for the h-categoriser semantics. Blue = argument degrees, red = impact intensity on edges.
 - **Fig 5 (p.9):** Illustration of Impact Symmetry concept.
@@ -145,11 +122,7 @@ Where: $S \subseteq \mathcal{A} \setminus \{x\}$, this measures how much coaliti
 ## Results Summary
 
 ### Table 1 (p.5): ImpS^rev values for example AF
-Values of $\text{Imp}_{AS}^{\sigma,\text{rev}}(X, x)$ for various semantics with $AS = AS'$, $\mathcal{A}' = \{a_1\}$, and $AS - AS' \setminus X$:
-- h-cat: ranges from -0.158 to 0.397
-- Card-based: ranges from -0.175 to 0.514
-- Max-based: similar ranges
-- Counting: 0 to 0.5
+Table 1 reports **only h-categoriser**, with revised impacts 0.015, -0.158, -0.175, 0.07, and 0 for the five displayed (X,y) pairs. Values such as 0.397 and 0.514 are component framework scores, not impacts or results for other semantics. *(printed p.5, `pngs/page-004.png`)*
 
 ### Table 3 (p.10): Properties satisfied by impact measures
 
@@ -157,25 +130,24 @@ Values of $\text{Imp}_{AS}^{\sigma,\text{rev}}(X, x)$ for various semantics with
 |-----------|-------|------|------|-------|------|------|------|-------|
 | Impact Anonymity | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Void Impact | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Impact Independence | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✓ |
-| Balanced Impact | ✗ | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ |
-| Impact Monotonisation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Impact Independence | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ |
+| Balanced Impact | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
+| Impact Minimisation | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Zero Impact | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Impact Symmetry | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Impact Directionality | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✓ |
-| Bounded Loss | ✓(≥2 args) | ✓ | ✓ | ✗ | ✓(≥2 args) | ✓ | ✓ | ✗ |
+| Impact Directionality | ✓ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✗ |
+| Impact Existence | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓(≥2 max-indegree args) |
 
-*(p.10)*
+The table uses ImpDV for the revised measure and ImpSI for the Shapley-based path measure. The qualification concerns at least two arguments attaining maximum in-degree, not merely two arguments. Bounded Loss is a separate semantics property and is conjectured in Section 3.2; it is not a Table 3 row. *(printed pp.6,10, `pngs/page-005.png`, `pngs/page-009.png`)*
 
 ### Key Theorems
-- **Theorem 1 (p.5):** ImpS^rev is a well-defined impact measure for any gradual semantics $\sigma$.
-- **Theorem 2 (p.5):** Let $\sigma$ be a gradual semantics and $AS = (\mathcal{A}, \mathcal{C}, w)$ be an AF. ImpS^rev is an impact measure.
-- **Theorem 3 (p.6):** The Shapley-based impact measure is well-defined.
-- **Proposition 1 (p.3):** The counting semantics does not satisfy Impact Independence and Directionality (for the original measure).
+- **Theorem 2 (p.5):** Revised ImpDV is an impact measure for any gradual semantics. *(`pngs/page-004.png`)*
+- **Theorem 3 (p.6):** If $\sigma$ satisfies Attack Removal Monotonicity, then $\operatorname{ImpSI}_{AS}^{\sigma}(\mathcal A,x)\in[-1,0]$. *(`pngs/page-005.png`)*
+- **Proposition 1 (p.3):** Counting semantics violates the semantics-level Independence and Directionality properties. *(`pngs/page-002.png`)*
 - **Propositions 7-10 (p.10):** Satisfaction results for specific principles.
-- **Theorem 4 (p.9):** ImpS^rev satisfies Impact Anonymity, Void Impact, Impact Minimisation, Zero Impact, Impact Symmetry.
-- **Theorem 5 (p.9):** ImpSh satisfies Impact Anonymity, Void Impact, Impact Minimisation, Zero Impact, Impact Symmetry.
-- **Theorem 6 (p.9):** For ImpS^rev: Impact Independence and Impact Directionality only for counting semantics.
+- **Theorem 4 (p.9):** Impact Anonymity, Impact Directionality, Impact Minimisation and Impact Independence jointly imply Impact Symmetry. *(`pngs/page-008.png`)*
+- **Theorem 5 (p.9):** Zero Impact and Balanced Impact jointly imply Impact Minimisation. **Theorem 6:** Void Impact and Impact Minimisation jointly imply Zero Impact. *(`pngs/page-008.png`)*
+- **Propositions 7-8 (p.10):** Both measures satisfy Impact Independence/Directionality when the underlying semantics satisfies Independence/Directionality. Counting is the studied exception. *(`pngs/page-009.png`)*
 
 ## Limitations
 - Both measures only handle attack relations, not support *(p.11)*
@@ -185,12 +157,12 @@ Values of $\text{Imp}_{AS}^{\sigma,\text{rev}}(X, x)$ for various semantics with
 - Neither measure captures the difference between complete removal and partial weakening of attack influence *(p.12)*
 
 ## Arguments Against Prior Work
-- The original Delobelle & Villata (2019) impact measure has the "self-attack problem": when measuring impact of a self-attacking argument, removing it changes its own score, leading to counterintuitive results *(p.4)*
+- The original measure gives a self-attacking argument zero self-impact; the revised measure separates the retained self-attacking graph from the isolated retained target, producing a negative self-impact (about -0.382 for h-categoriser). *(printed pp.4-5, `pngs/page-003.png`, `pngs/page-004.png`)*
 - The original measure removes arguments entirely, which also removes indirect effects through the graph structure *(p.4)*
 - Previous work on Attack Removal Monotonicity (Property 3) used a different formulation; this paper shows the counting semantics does not satisfy it *(p.5)*
 
 ## Design Rationale
-- The revised measure removes only direct attacks (not arguments) to preserve graph structure and avoid the self-attack problem *(p.4)*
+- The revised measure changes the first term from deleting external attackers of X to deleting their attacks into X, preserving their other effects; the second term still deletes X with the target-preserving operator. *(printed p.4, `pngs/page-003.png`)*
 - Shapley values chosen because they provide a unique allocation satisfying efficiency, symmetry, dummy player, and additivity axioms from cooperative game theory *(p.5)*
 - Principles derived from existing gradual semantics properties (Independence, Directionality from Amgoud & Ben-Naim) adapted to the impact measure setting *(p.8)*
 - The choice to study only attack-only frameworks is deliberate to establish foundations before extending to bipolar settings *(p.2)*
@@ -199,8 +171,8 @@ Values of $\text{Imp}_{AS}^{\sigma,\text{rev}}(X, x)$ for various semantics with
 - For any gradual semantics $\sigma$ and any AF, ImpS^rev(∅, x) = 0 (Void Impact) *(p.8)*
 - If argument y does not attack x directly or indirectly, ImpS^rev({y}, x) = 0 (Zero Impact) *(p.8)*
 - If two AFs have isomorphic attack structures on x, impact values must be equal (Impact Anonymity) *(p.8)*
-- For counting semantics: ImpS^rev is additive over independent subgraphs (Impact Independence) *(p.8)*
-- ImpSh always returns a value in [0, σ(x)] when removing only attackers (Bounded Loss, for h-cat with ≥2 args) *(p.6)*
+- For Hbs, Car and Max, both impact measures satisfy Impact Independence and Directionality; counting violates them. *(Table 3, printed p.10, `pngs/page-009.png`)*
+- Bounded Loss means $|s((a,b))|\le\sigma_{AS}(a)$; the paper conjectures it for all four studied semantics. It is not a proven [0,σ(x)] impact bound. *(Property 4 and Conjecture 1, printed p.6, `pngs/page-005.png`)*
 - For h-cat semantics: ImpS^rev({y}, x) = ImpS^rev({z}, x) when y and z are structurally symmetric attackers of x (Impact Symmetry) *(p.9)*
 
 ## Relevance to Project
@@ -225,7 +197,7 @@ This paper is directly relevant to propstore's argumentation layer. The project 
 - Delobelle and Villata (2019/2020) — "Interpretability of gradual semantics in abstract argumentation" — original impact measure that this paper revises; essential predecessor
 - Kampik et al. (2024) — "Contribution functions for quantitative bipolar argumentation graphs" — parallel approach to QBAF explainability using contribution functions
 - Yun et al. (2023) — "Argument attribution explanations in quantitative bipolar argumentation frameworks" — Shapley-based attribution in bipolar setting
-- Pu et al. (2021) — Counting semantics — the only semantics satisfying both Independence and Directionality
+- Pu et al. (2015), ref. [32] — Counting semantics, the studied semantics violating Independence and Directionality. *(Proposition 1, printed p.3, `pngs/page-002.png`)*
 
 ### Conceptual Links (not citation-based)
 - [[Bonzon_2016_ComparativeStudyRanking-basedSemantics]] — Both papers perform systematic axiomatic evaluation of gradual semantics properties. Bonzon evaluates the semantics themselves; Al Anaissy evaluates impact measures derived from those semantics. The axiomatic methodology is shared (Independence, Directionality principles originate from the same Amgoud & Ben-Naim lineage).

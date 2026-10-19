@@ -26,7 +26,7 @@ Both relations, defeat and support, are assumed to be independent (i.e., the sup
 - Two notions of coherence for sets of arguments: internal coherence (conflict-free) and external coherence (safe sets) *(pp.384-385)*
 - Three new admissibility-based semantics: d-admissible, s-admissible, c-admissible *(p.386)*
 - Generalized stable and preferred extensions for BAFs *(pp.385-386)*
-- Structural properties of extensions in acyclic BAFs (Property 4) *(p.387)*
+- Structural properties of extensions in acyclic BAFs (Property 3) *(p.387)*
 
 ## Methodology
 Extends Dung's abstract approach by adding a support relation to the framework tuple. Derives new types of defeat by combining support sequences with direct defeats. Defines set-level operations (set-defeat, set-support) and builds coherence and admissibility notions on top. Restricts main results to acyclic bipolar interaction graphs. *(pp.382-387)*
@@ -60,7 +60,7 @@ The acceptability of an argument depends on its membership of some sets, called 
 
 ### Definition 1 (Abstract Bipolar Argumentation Framework)
 A BAF is a tuple $\langle \mathcal{A}, \mathcal{R}_{def}, \mathcal{R}_{sup} \rangle$ where:
-- $\mathcal{A}$ is a finite set of arguments
+- $\mathcal{A}$ is a set of arguments (finiteness is added explicitly in parts of Property 3)
 - $\mathcal{R}_{def} \subseteq \mathcal{A} \times \mathcal{A}$ is a defeat relation
 - $\mathcal{R}_{sup} \subseteq \mathcal{A} \times \mathcal{A}$ is a support relation
 
@@ -123,10 +123,10 @@ $S \subseteq \mathcal{A}$ is a stable extension of $\langle \mathcal{A}, \mathca
 In acyclic BAFs, Definition 8 ensures the existence of a unique stable extension (by instantiating Dung's framework with set-defeats, footnote 8). However, the unique stable extension is not always safe. *(p.385)*
 
 ### Example 3
-The set $\{A, H\}$ is the unique stable extension, and it is safe. An acyclic bipolar argumentation framework may have no safe stable extension. *(pp.385-386)*
+For $\mathcal{A}=\{A,B,H\}$, $H\mathcal{R}_{def}B$ and $A\mathcal{R}_{sup}B$, the set $\{A,H\}$ is the unique stable extension, and it is **not safe**: it both set-defeats and set-supports $B$. An acyclic bipolar argumentation framework may therefore have no safe stable extension. *(p.386; [page image 008](pngs/page-008.png))*
 
 ### Consequence 1
-If $S$ is a stable extension of $\langle \mathcal{A}, \mathcal{R}_{def}, \mathcal{R}_{sup} \rangle$, then $S$ is not safe iff $S$ set-supports an element of $\mathcal{A} \setminus S$. *(p.386)*
+If $S$ is a stable extension of $\langle \mathcal{A}, \mathcal{R}_{def}, \mathcal{R}_{sup} \rangle$, then $S$ is safe iff $S$ is closed for $\mathcal{R}_{sup}$. Equivalently, it is unsafe iff it set-supports an element outside $S$. *(p.386; [page image 008](pngs/page-008.png))*
 
 ### Definition 9 (d-Admissible Set)
 $S \subseteq \mathcal{A}$ is d-admissible iff $S$ is conflict-free and $S$ defends all its elements. *(p.386)*
@@ -145,34 +145,35 @@ Note: c-admissible implies s-admissible (by Property 1). From all the previous r
 - A **c-preferred** extension is a maximal c-admissible set *(p.386)*
 
 ### Example 3 (continued)
-The set $\{G, H, E\}$ is d-admissible, but not s-admissible. The set $\{G, H, I, E, D\}$ is the unique d-preferred extension. *(p.387)*
+The set $\{A,H\}$ is the unique d-preferred extension. The s-preferred extensions are $\{A\}$ and $\{H\}$, and the unique c-preferred extension is $\{H\}$. *(p.386; [page image 008](pngs/page-008.png))*
+
+### Example 2 (continued)
+The set $\{G,H,E,F\}$ is s-admissible but not c-admissible. The unique c-preferred extension is $\{G,H,I,E,F,D,J\}$. *(p.387; [page image 009](pngs/page-009.png))*
 
 ### Property 2
-There exists a d-preferred (resp. s-preferred, c-preferred) extension. *(p.386)*
+If $S$ is a stable extension and $S$ is safe, then $S$ is closed for $\mathcal{R}_{sup}$. This is the converse needed with Property 1 to obtain Consequence 1. *(p.386; [page image 008](pngs/page-008.png))*
 
-### Property 3
-A d-preferred (resp. s-preferred) extension of $\langle \mathcal{A}, \mathcal{R}_{def}, \mathcal{R}_{sup} \rangle$ is a d-preferred extension of $\langle \mathcal{A}, \mathcal{R}_{def} \cup \mathcal{R}_{sup}, \emptyset \rangle$. *(p.386, implied from text; need to verify)*
-
-### Property 4 (Acyclic BAFs)
+### Property 3 (Acyclic BAFs)
 Let $S$ be the unique stable extension of an acyclic BAF: *(p.387)*
 1. The s-preferred extensions and c-preferred extensions are subsets of $S$ *(p.387)*
-2. If $S$ is safe, there is a unique s-preferred extension which equals $S$, which is also a d-preferred extension *(p.387)*
-3. If $S$ is not safe, each s-preferred extension is included in a s-preferred extension. The s-preferred extensions are the subsets of $S$ which are maximal for set-inclusion and safe *(p.387)*
-4. If $S$ is safe, $\emptyset$ is safe, there is only one c-preferred extension *(p.387)*
-5. If $S$ is not safe and $\emptyset$ is safe, there is only one c-preferred extension *(p.387)*
+2. Each s-preferred extension closed for $\mathcal{R}_{sup}$ is also c-preferred. *(p.387)*
+3. If $S$ is safe, it is both the unique c-preferred extension and the unique s-preferred extension. *(p.387)*
+4. If $\mathcal{A}$ is finite, each c-preferred extension is included in an s-preferred extension. *(p.387)*
+5. If $S$ is unsafe, the s-preferred extensions are the subsets of $S$ that are maximal for set-inclusion among s-admissible sets. *(p.387)*
+6. If $S$ is unsafe and $\mathcal{A}$ is finite, there is exactly one c-preferred extension. *(p.387; [page image 009](pngs/page-009.png))*
 
 ### Example 4
 Consider the argumentation system on p.387:
-- $\{A_1, A_2, B\}$ is the only d-preferred extension *(p.387)*
-- $\{A_1, A_3\}$ and $\{M\}$ are the only two s-preferred extensions. None of them is closed for $\mathcal{R}_{sup}$. *(p.387)*
-- $\{A_1\}$ is the unique c-preferred extension *(p.387)*
-- $\{A_1, A_2, B\}$ is the unique stable extension *(p.387)*
+- $\{A_1,A_2,H\}$ is the only d-preferred extension. *(p.387)*
+- $\{A_1,A_2\}$ and $\{H\}$ are the only s-preferred extensions; neither is closed for $\mathcal{R}_{sup}$. *(p.387)*
+- $\emptyset$ is the unique c-preferred extension. *(p.387)*
+- Adding an isolated argument $A_3$ gives the unique d-preferred extension $\{A_1,A_2,A_3,H\}$, s-preferred extensions $\{A_1,A_2,A_3\}$ and $\{H,A_3\}$, and unique c-preferred extension $\{A_3\}$. *(p.387; [page image 009](pngs/page-009.png))*
 
 ## Parameters
 
 | Name | Symbol | Units | Default | Range | Notes | Page |
 |------|--------|-------|---------|-------|-------|------|
-| Arguments | $\mathcal{A}$ | - | - | finite set | Set of abstract arguments | p.382 |
+| Arguments | $\mathcal{A}$ | - | - | set | Finiteness is explicit in Property 3.4 and 3.6 | p.382, p.387 |
 | Defeat relation | $\mathcal{R}_{def}$ | - | - | $\subseteq \mathcal{A} \times \mathcal{A}$ | Binary relation on arguments | p.382 |
 | Support relation | $\mathcal{R}_{sup}$ | - | - | $\subseteq \mathcal{A} \times \mathcal{A}$ | Binary relation on arguments, independent of defeat | p.382 |
 
@@ -194,27 +195,26 @@ Consider the argumentation system on p.387:
 8. **Compute extensions**: Enumerate maximal admissible sets under chosen semantics *(p.386)*
 
 ### Edge Cases
-- Acyclic vs. cyclic: Main results (Property 4) only hold for acyclic bipolar interaction graphs *(p.387)*
-- Empty set is always d-admissible and s-admissible (when safe), but not necessarily c-admissible *(p.386)*
-- A stable extension may not be safe (Example 3: {A, H} is unique stable extension but not s-admissible in the second sub-example) *(pp.385-386)*
+- Acyclic vs. cyclic: the structural results in Property 3 concern acyclic bipolar interaction graphs. *(p.387)*
+- The empty set is c-admissible, hence also s-admissible and d-admissible; the paper uses this to establish existence of s-preferred and c-preferred extensions. *(p.387)*
+- A stable extension may not be safe: Example 3's unique stable extension $\{A,H\}$ both defeats and supports $B$. *(p.386)*
 - Unique stable extension always exists for acyclic BAFs (by instantiating Dung with set-defeats) *(p.385)*
 - An acyclic bipolar argumentation framework may have no safe stable extension *(p.386)*
 
 ## Figures of Interest
-- **Fig (p.381, Example 1):** Argumentation graph for murder trial example with 5 arguments ($A_1$ through $A_5$), showing defeat edges. A leaf is an argument with no defeaters and no supporters.
-- **Fig (p.383, Example 2):** Bipolar interaction graph with nodes A-K showing supported defeats (A-B-C-D, E-C) and indirect defeat (G-A-B-C). Support edges shown with double-line arrows, defeat edges with single arrows.
+- **Fig (pp.381–382, Example 1):** Murder scenario with four arguments: $A_3$ defeats $A_2$, which defeats $A_1$; $A_4$ supports $A_1$ by confirming one of its premises.
+- **Fig (p.383, Example 2):** Bipolar interaction graph with nodes A-K showing supported defeats (A-B-C-D, E-C) and indirect defeat (G-A-B-C). Support edges use ordinary arrows and defeat edges crossed arrows. *([page image 005](pngs/page-005.png))*
 - **Fig (p.384):** Diagrams illustrating internal vs external coherence violations. Top row: three cases of internal incoherence (set-defeat within Set S). Bottom row: two cases of external incoherence (Set S simultaneously set-defeats and set-supports same argument).
 - **Fig (p.387, Example 4):** Argumentation system showing distinct d-preferred, s-preferred, and c-preferred extensions.
 
 ## Example 1 (Murder Trial)
 Arguments in a murder trial scenario: *(p.381)*
-- $A_1$: in favour of *w* (the butler did it), with premises [*r*: witness saw him]
-- $A_2$: in favour of *w*, with premises [*s*: the butler had a motive]
-- $A_3$: in favour of $\neg w$, with premises [*t*: the butler has an alibi]
-- $A_4$: in favour of *w*, with premises [*r'*: if the alibi is short-sighted, reliable witness]
-- $A_5$: in favour of *w* confirming the witness is reliable
+- $A_1$: in favour of $m$ (the killer is Mary), with premises $\{s,f,(s\land f)\to m\}$, where $s$ means the killer is small and $f$ means the killer is female.
+- $A_2$: in favour of $\neg s$, with premises $\{w,w\to\neg s\}$, where $w$ means the witness is reliable.
+- $A_3$: in favour of $\neg w$, with premises $\{b,b\to\neg w\}$, where $b$ means the witness is short-sighted.
+- $A_4$: in favour of $f$, with premises $\{l,l\to f\}$, where $l$ means the killer has long hair and uses lipstick.
 
-Defeat edges: $A_3$ defeats $A_1$, $A_4$ defeats $A_3$. Support edges: $A_2$ supports $A_1$ (same conclusion), $A_5$ supports $A_4$ (confirms premise). *(p.381)*
+Defeat edges: $A_3$ defeats $A_2$, which defeats $A_1$. Thus $A_3$ defends $A_1$, while $A_4$ independently supports $A_1$ by confirming premise $f$. *(pp.381–382; [page image 003](pngs/page-003.png), [page image 004](pngs/page-004.png))*
 
 Note: a defeat edge is represented by a crossed arrow on the interaction graph. *(p.381)*
 
@@ -245,7 +245,7 @@ Three types of positive interaction identified in the literature: *(p.381)*
 3. **Derived interaction types from primitive relations.** Supported defeat (support chain + final defeat) and indirect defeat (initial defeat + support chain) are defined as composite interaction types derived from sequences of primitive defeat and support edges. This allows the framework to capture transitive effects of support on conflict. *(p.383)*
 4. **Two-level coherence: internal and external.** Internal coherence requires conflict-free (no set-defeat within the set). External coherence requires safety (no argument is simultaneously set-defeated and set-supported or contained by the set). This two-level design captures the distinct problems of self-contradiction (internal) and ambivalence (external). *(p.384-385)*
 5. **Three-tier admissibility hierarchy.** d-admissible (conflict-free + defence), s-admissible (safe + defence), and c-admissible (conflict-free + closed for R_sup + defence) form an increasing strength hierarchy. This gives users three levels of commitment to bipolar coherence, with c-admissible being the strongest (and most conservative). *(p.386)*
-6. **Restriction to acyclic frameworks for clean results.** The paper deliberately restricts its main structural results (Property 4) to acyclic bipolar interaction graphs, where unique stable extensions exist and the relationships between d-preferred, s-preferred, and c-preferred extensions can be precisely characterized. Cyclic frameworks are left for future work. *(p.385, p.387)*
+6. **Restriction to acyclic frameworks for clean results.** The paper deliberately restricts its main structural results (Property 3) to acyclic bipolar interaction graphs, where unique stable extensions exist and the relationships between d-preferred, s-preferred, and c-preferred extensions can be precisely characterized. Cyclic frameworks are left for future work. *(p.385, p.387)*
 7. **Instantiation of Dung via set-defeats.** The framework generates a standard Dung-style AF by using set-defeats (which incorporate both supported and indirect defeats) as the attack relation. This ensures all of Dung's results about extension existence carry over to the bipolar setting. *(p.385, footnote 8)*
 
 ## Results Summary
@@ -255,8 +255,8 @@ Three types of positive interaction identified in the literature: *(p.381)*
 - c-admissible sets are always s-admissible (Property 1 consequence) *(p.386)*
 - The paper focuses on acyclic frameworks; cyclic case left for future work *(p.387)*
 - The hierarchy: c-admissible $\Rightarrow$ s-admissible $\Rightarrow$ d-admissible *(p.386)*
-- Each d-preferred (resp. c-preferred) extension is included in a d-preferred extension *(p.387)*
-- There is only one d-preferred extension in an acyclic BAF and it is the unique stable extension (implied by Property 4 and instantiation of Dung) *(p.387)*
+- If $\mathcal{A}$ is finite, each c-preferred extension is included in an s-preferred extension. *(p.387, Property 3.4)*
+- There is only one d-preferred extension in an acyclic BAF and it is the unique stable extension. *(p.387)*
 
 ## Limitations
 - Results restricted to acyclic bipolar argumentation frameworks *(p.387)*

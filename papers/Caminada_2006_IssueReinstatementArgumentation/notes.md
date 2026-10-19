@@ -97,8 +97,8 @@ $\mathcal{L}$ is a reinstatement labelling with minimal $\texttt{in}$ iff $\text
 ### Theorem 8: Grounded Semantics (minimal out) *(p.5)*
 $\mathcal{L}$ is a reinstatement labelling with minimal $\texttt{out}$ iff $\texttt{Lab2Ext}(\mathcal{L})$ is the grounded extension.
 
-### Theorem 9: Preferred Extension Subsumption *(p.6)*
-If $\mathcal{A}rgs$ is a preferred extension, there is not necessarily a reinstatement labelling where $\texttt{undec}$ is minimal. A preferred extension does not necessarily imply semi-stable.
+### Theorem 9: Minimal Undec Implies Preferred *(p.6)*
+If $\mathcal{L}$ is a reinstatement labelling with minimal $\texttt{undec}(\mathcal{L})$, then $\texttt{Lab2Ext}(\mathcal{L})$ is a preferred extension. The converse fails: a preferred extension's own $\texttt{Ext2Lab}$ labelling need not minimize undec. In Example 1, $\{B,D\}$ is preferred and stable with no undecided arguments, whereas the preferred extension $\{A\}$ leaves $\{C,D,E\}$ undecided. *([page image 005](pngs/page-005.png))*
 
 ### Theorem 10: Semi-stable = Minimal Undec *(p.6)*
 $\mathcal{L}$ is a reinstatement labelling with minimal $\texttt{undec}$ iff $\texttt{Lab2Ext}(\mathcal{L})$ is a semi-stable extension.
@@ -109,11 +109,11 @@ If there exists a stable extension, then the semi-stable extensions coincide wit
 ### Theorem 12: Semi-stable = Admissible Stage Extension *(p.7)*
 $(\mathcal{A}rgs, \mathcal{A}rgs^+)$ is an admissible stage extension iff $\mathcal{A}rgs$ is a semi-stable extension.
 
-### Theorem 13: Complete Semantics and Excluded Middle *(p.10)*
-The set of complete extensions $CE_1, \ldots, CE_n$ is the set of complete extensions iff for every complete extension, for each argument $A$, $A \in CE_i$ or $A$ has an attacker in $CE_i$.
+### Theorem 13: Sceptical Complete Equals Grounded *(p.10)*
+For complete extensions $CE_1,\ldots,CE_n$ and grounded extension $GE$, $A\in GE$ iff $A\in CE_1\cap\cdots\cap CE_n$. This theorem does not require excluded middle or the absence of undecided arguments. *([page image 009](pngs/page-009.png))*
 
-### Theorem 14: Conditions for Excluded Middle *(p.10)*
-Complete semantics coincides with condensed complete semantics when the principle of excluded middle holds (no undec arguments). Credulous and sceptical complete semantics coincide with credulous and sceptical preferred semantics in the excluded-middle case.
+### Theorem 14: Credulous Complete Equals Admissible *(p.10)*
+For complete extensions $CE_1,\ldots,CE_n$ and admissible sets $AS_1,\ldots,AS_m$, there is a $CE_i$ containing $A$ iff there is an $AS_j$ containing $A$. Consequently, credulous complete acceptance also coincides with credulous preferred acceptance; sceptical complete acceptance coincides with grounded acceptance by Theorem 13. No excluded-middle assumption is needed. *([page image 009](pngs/page-009.png))*
 
 ## Parameters
 

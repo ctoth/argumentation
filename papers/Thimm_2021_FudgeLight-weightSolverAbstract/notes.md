@@ -64,7 +64,7 @@ Where `Phi_2` enforces that every argument outside a stable extension is attacke
 ## Methods & Implementation Details
 - Stable witness formula is satisfiable iff the AF has a stable extension; a model of `Phi_1 and Phi_2` gives one stable extension. *(p.2)*
 - First-level polynomial-hierarchy tasks are handled similarly; counting is implemented through iterative satisfiability tests over extension models. *(p.2)*
-- For `DS-PR`, Fudge uses the theorem that `a` is skeptically accepted iff an admissible set containing `a` exists and every admissible set containing `a` attacked by another admissible set can be extended together with `a`. *(p.2)*
+- For `DS-PR`, Fudge uses the theorem that `a` is skeptically accepted iff an admissible set containing `a` exists and, for every admissible `S` containing `a` and every admissible **attacker** `S'` with `S' R S`, there is an admissible `S''` containing `S' union {a}`. The set extended together with `a` is the attacker `S'`. *(Theorem 1, p.2; [page image 001](pngs/page-001.png))*
 - For ideal semantics, the paper cites Dung et al. 2007 and the later observation that the largest admissible subset of arguments not attacked by admissible sets yields the ideal extension. *(p.2)*
 - Incremental SAT is an explicit engineering choice, because repeated related SAT calls dominate these algorithms. *(p.3)*
 

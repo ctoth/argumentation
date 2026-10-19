@@ -95,8 +95,8 @@ Labellings extend from arguments to their conclusions (literals/statements).
 - **Def 2.39 (Bivalent labelling of literals):** {in, no} — in iff ∃A ∈ IN(L) with conc(A) = φ *(p.15)*
 - **Def 2.40 (Worst-case sensitive labelling of literals):** {in, out, un, off, unp} labels *(p.15-16)*
   - **in:** ∃A ∈ IN(L) with conc(A) = φ
-  - **out:** ∃A ∈ OUT(L) ∪ OFF(L) with conc(A) = φ, and all such arguments are OUT or OFF
-  - **un:** ∃A ∈ IN(L) with conc(A) = φ and ∃A ∈ UN(L) with conc(A) = φ
+  - **out:** ∃A ∈ OUT(L) with conc(A) = φ, and every argument concluding φ is OUT or OFF. At least one must be OUT, so the all-OFF case remains distinct. *(printed p.16, `pngs/page-015.png`)*
+  - **un:** no A ∈ IN(L) has conc(A) = φ, and at least one A ∈ UN(L) has conc(A) = φ. The first quantifier is nonexistence, not existence. *(printed p.16, `pngs/page-015.png`)*
   - **off:** ∃A with conc(A) = φ and all such arguments OFF
   - **unp (unprovable):** no argument in L with conclusion φ *(p.16)*
 

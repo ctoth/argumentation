@@ -20,7 +20,7 @@ ICCMA encourages systems for reasoning in argumentation formalisms and supplies 
 
 ## Key Contributions
 
-- A compact primary-source record of 12 submitted solvers—AFGCN v2, ARIPOTER-Degrees, ARIPOTER-hcat, ASTRA, AcbAr, ASPforABA, Crustabri, fargo-limited, flexABle, Fudge, harper++, k-Solutions, mu-toksia, and PORTSAT—and the Crusti_g2io benchmark generator. *(pp.5-6)*
+- A compact primary-source record of 14 solver descriptions—AFGCN v2, ARIPOTER-Degrees, ARIPOTER-hcat, ASTRA, AcbAr, ASPforABA, Crustabri, fargo-limited, flexABle, Fudge, harper++, k-Solutions, mu-toksia, and PORTSAT—and the Crusti_g2io benchmark generator. *([contents p.5](pngs/page-005.png), [p.6](pngs/page-006.png))*
 - Cross-paradigm implementation descriptions spanning SAT and incremental SAT, ASP/Clingo, dynamic programming on tree decompositions, bounded ABA-to-AF instantiation, GCN inference, gradual scoring, and depth-limited search. *(pp.8-35)*
 - The direct Crustabri description: a Rust rewrite/evolution of CoQuiAAS using iterative CaDiCaL calls, direct maximal-subset enumeration, selector-based dynamic updates, and ABA-to-AF translation. *(p.20)*
 
@@ -117,7 +117,7 @@ Where $\tau\in[0,1]$ is calibrated by task; the solver answers YES exactly when 
 - It is intended as a reusable toolbox: multiple encodings, optional certificates, instance checking, extensible format I/O, and a competition CLI wrapper. SAT encodings are mainly inherited from CoQuiAAS, except stage semantics no longer needs additional variables. *(p.20)*
 - CoQuiAAS treated its internal (co)MSS engine as a difficult-to-reuse black box. Crustabri instead uses CaDiCaL for both decision and optimization via iterative calls. This enables direct maximal-subset enumeration and improved results for ideal semantics and stage/semi-stable acceptance, although regression can occur when seeking a stage or semi-stable extension. *(p.20)*
 - ABA is translated to an AF: deduction sets become arguments, and one argument attacks another when the first conclusion is the contrary of an assumption in the second. *(p.20)*
-- Dynamic reasoning reuses one SAT solver throughout. Each attack’s constraints use a selector. Deleting an attack discards its selector; adding a replacement attack adds fresh constraints with a fresh selector. Adding an argument declares a variable; deleting an argument removes incident attacks and marks its SAT variable unused. *(p.20)*
+- Dynamic reasoning reuses one SAT solver throughout. A selector controls the **whole set of constraints for all attacks to a given target argument**. Removing an attack deactivates that selector and adds replacement constraints for the remaining attacks to that target with a fresh selector; adding an attack follows the same principle. Adding an argument declares a variable; deleting an argument removes incident attacks and marks its SAT variable unused. *(p.20; [page image](pngs/page-020.png))*
 - IPAFAIR packaging comprises the core Crustabri crate, Rust IPAFAIR bindings, and a composed Crustabri IPAFAIR crate, intended for publication on crates.io. *(p.20)*
 
 ## Parameters

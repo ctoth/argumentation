@@ -35,10 +35,9 @@ Where: $(A, R)$ is an AF with arguments $A$ and attacks $R \subseteq A \times A$
 
 ### Subframework Probability
 $$
-P(F') = \prod_{x \in A' \cup R'} P(x) \cdot \prod_{x \in (A \cup R) \setminus (A' \cup R')} (1 - P(x))
+P(F')=\prod_{a\in A'}P(a)\prod_{a\in A\setminus A'}(1-P(a))\prod_{r\in R'}P(r)\prod_{r\in D\setminus R'}(1-P(r)),\qquad D=R\cap(A'\times A')
 $$
-Where: $F' = (A', R')$ is a subframework of $F$; each element present with probability $P(x)$, absent with $1 - P(x)$; independence assumed.
-*(p.2)*
+Only attacks whose endpoints are both in A' receive present/absent factors. An attack touching an absent argument contributes no factor. The source Example 2 illustrates this with an absent a and probability 0.027 for the displayed world. *(printed p.587, `pngs/page-002.png`)*
 
 ### Extension Probability
 $$

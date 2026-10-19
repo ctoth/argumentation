@@ -10,7 +10,7 @@ Gabbay defines equational semantics for argumentation frameworks: assign each no
 
 1. **Existence (Theorem 2.2):** Any finite equational network with continuous functions has at least one extension, by Brouwer's fixed-point theorem.
 
-2. **Caminada equivalence (Theorem 2.7):** Eq_max (f(a) = 1 - max(f(x_i))) is in exact bijection with Caminada complete labellings. Every Eq_max solution maps to a valid labelling (1->in, 0->out, between->undecided) and vice versa (undecided->1/2).
+2. **Caminada correspondence (Theorem 2.7):** Every Eq_max solution maps to a complete labelling (1->in, 0->out, strictly between 0 and 1->undecided). Conversely, every complete labelling has an Eq_max solution obtained by assigning undecided arguments 1/2. The theorem establishes these two directions, not injectivity of the map from arbitrary real solutions to labellings. *(printed pp.106-107, `pngs/page-020.png`, `pngs/page-021.png`)*
 
 3. **Eq_inverse sensitivity:** f(a) = product(1 - f(x_i)) produces irrational values sensitive to loop structure. E.g., the asymmetric 3-loop yields values involving sqrt(2). This means Eq_inverse captures more information about network topology than the discrete in/out/undecided labelling.
 
@@ -65,7 +65,7 @@ Gabbay defines equational semantics for argumentation frameworks: assign each no
 - [[Dung_1995_AcceptabilityArguments]] — the foundational AF paper whose grounded/preferred/stable/complete semantics this paper re-derives equationally (Eq_max = Caminada complete labellings)
 - [[Baroni_2005_SCC-recursivenessGeneralSchemaArgumentation]] — cited as Baroni, Giacomi & Guida (2005); SCC-recursive decomposition relates to equational treatment of loop topology
 - [[Cayrol_2005_AcceptabilityArgumentsBipolarArgumentation]] — cited as Cayrol & Lagasquie-Schiex (2005, 2010); Gabbay's Section 3 models support equationally, extending Cayrol's bipolar framework approach
-- [[Caminada_2006_IssueReinstatementArgumentation]] — Gabbay's Theorem 2.7 proves Eq_max is in exact bijection with Caminada complete labellings (the labelling framework introduced here)
+- [[Caminada_2006_IssueReinstatementArgumentation]] — Theorem 2.7 maps Eq_max solutions to complete labellings and supplies a canonical 0/1/half-valued solution for each labelling; it does not assert a bijection over arbitrary real solutions. *(printed p.106, `pngs/page-020.png`)*
 
 ### New Leads (Not Yet in Collection)
 - Brewka & Woltran (2010) — "Abstract Dialectical Frameworks" — Boolean conditions on nodes; Gabbay shows relationship to equational approach in Section 2.2

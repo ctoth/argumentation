@@ -73,11 +73,11 @@ An **accrual set** is a nonempty set of same-conclusion arguments that contains 
 The paper extends a structured argumentation framework to an **aSAF**, where preferences may compare **sets of arguments** rather than only single arguments. This is how cumulative vs non-cumulative accrual can affect defeat. *(pp.4-5)*
 
 ### l-Defeat
-An argument `A` **l-defeats** `B` if `A` undercuts `B`, or if `A` rebuts `B` and some accrual set of `A` is preferred to some accrual set of `B` under the set-ordering. Defeat therefore depends on the current labelling because accrual sets depend on weak/strong applicability in that labelling. *(pp.4-5)*
+An argument `A` **l-defeats** `B` if `A` undercuts `B`, or if `A` rebuts `B` and there are accrual sets for their conclusions such that the set for `A` is **not strictly less preferred** than the set for `B` (`s_l(Conc(A)) ⊀ s_l(Conc(B))`). Strict preference for the attacker is not required: ties and incomparability can also permit defeat. Defeat depends on the current labelling because accrual sets depend on weak/strong applicability in that labelling. *(Definition 4.4, p.5; [page image](pngs/page-04.png))*
 
 ## Formal Results
 ### Monotonicity
-Lemma 5.1 proves that `l`-defeat is monotone in the labelling order. Proposition 5.2 then shows that the induced characteristic function `F` is monotone as well. This is the key technical repair: it guarantees existence of a least fixpoint and therefore a well-behaved grounded l-labelling. *(p.6)*
+Lemma 5.1 states the reverse inclusion for defeat: if `l ⊆ l′` and `A` l′-defeats `B`, then `A` l-defeats `B`. Thus the defeat relation is antitone in the labelling order. Proposition 5.2 states that the characteristic function `F` is monotone (`l₁ ⊆ l₂ ⇒ F(l₁) ⊆ F(l₂)`). The paper uses the latter result to obtain a least fixpoint and the grounded l-labelling. *(p.6; [page image](pngs/page-05.png))*
 
 ### Reduction to Ordinary ASPIC+
 Lemmas 5.3 and 5.4, together with Proposition 5.5, show that when each conclusion is supported by at most one argument, the new l-labellings collapse back to the ordinary p-labellings of ASPIC+. In other words, the new formalism is conservative over the non-accrual case. *(pp.6-7)*

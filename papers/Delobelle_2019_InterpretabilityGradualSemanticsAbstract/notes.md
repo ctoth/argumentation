@@ -143,7 +143,7 @@ $$
 | ACY tree depth | — | iterations | convergence-iter count | finite if S converges | 8 (footnote) | Max depth of ACY tree bounded by gradual-semantics fixed-point iterations |
 
 ## Methods & Implementation Details
-- **Complement operator** (Def. 6) *(p.4)*: deletes X\{y} from A and removes attacks involving any removed node, preserving target y.
+- **Complement operator** (Def. 6): deletes X\{y} from A, but removes attacks with either endpoint in **X**, including attacks incident on y when y belongs to X. The target node is retained and isolated in that case. *(printed p.4, `pngs/page-004.png`)*
 - **Impact (non-attacked X)** (Def. 7) *(p.4)*: Deg(y) − Deg(y in F⊖_y X).
 - **Generalised impact** (Def. 8) *(p.5)*: pre-step that removes direct attackers of X, then takes the difference. Captures "X at its strongest".
 - **ACY transformation** (Algorithm 1) *(p.8)*: BFS unfolding rooted at the target argument; each layer alternates attackers/defenders. Infinite in general; depth bounded in practice by the gradual-semantics convergence iteration count (footnote 1).

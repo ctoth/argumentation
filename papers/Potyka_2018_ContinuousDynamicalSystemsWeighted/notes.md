@@ -51,32 +51,32 @@ $$
 $$
 Where: $\sigma(b)$ is the current strength of argument $b$, the sum of supporter strengths minus the sum of attacker strengths. *(p.1)*
 
-### Quadratic Energy Model - Iteration Scheme (Proposition 19)
+### Quadratic Energy Model - Differential Equation (Definition 2)
 $$
-f_a(\sigma) = \begin{cases} \tau(a) + \text{agg}(a) \cdot (1 - \tau(a)) & \text{if } \text{agg}(a) \geq 0 \\ \tau(a) + \text{agg}(a) \cdot \tau(a) & \text{if } \text{agg}(a) < 0 \end{cases}
+h(x)=\frac{\max\{x,0\}^2}{1+\max\{x,0\}^2},\qquad \frac{ds_j}{dt}=w(j)-s_j+(1-w(j))h(E_j)-w(j)h(-E_j)
 $$
-Where: $f_a$ is a function that depends on the initial weight and the strength of attackers and supporters; the strength values $\sigma_a$ are computed in topological order. If $f$ is continuously differentiable with respect to all involved strength values, then for all BAG $A$, the system converges. *(p.7)*
+Here $E_j$ is the sum of supporter strengths minus the sum of attacker strengths and $s_j(0)=w(j)$. The quadratic impact h is essential; this is a continuous ODE, not a piecewise linear update. Proposition 1 establishes a unique trajectory for every BAG; it does not assert convergence of every trajectory as time tends to infinity. *(printed p.150, Definition 2 and Proposition 1, `pngs/page-002.png`)*
 
-### Quadratic Energy Model - Unique Solution for Acyclic BAGs
+### Quadratic Energy Model - Trajectory and Equilibrium
 $$
-\sigma^* = f(\sigma^*)
+0=w(j)-s_j^*+(1-w(j))h(E_j^*)-w(j)h(-E_j^*)
 $$
 with initial conditions $\sigma_a(0) = \tau(a)$ for all $a \in A$.
 
-A unique solution of $\frac{d\sigma}{dt} = f(\sigma) - \sigma$ exists on $[0, \infty)$ for acyclic BAGs. *(p.7)*
+Proposition 1 gives a unique ODE solution on nonnegative time for every BAG, including cyclic ones. The equilibrium equation above is the zero-derivative condition if a limit exists; existence of a unique trajectory is distinct from existence of its limit. *(printed p.150, `pngs/page-002.png`)*
 
 ### DF-QuAD Aggregation (from Rago et al. 2016)
 $$
-\sigma_{t+1}(a) = \begin{cases} \tau(a) + \tau(a) \cdot (1 - \tau(a)) \cdot v_S - \tau(a) \cdot v_A & \text{combined} \end{cases}
+\sigma(a)=\begin{cases}\tau(a)-\tau(a)(v_A-v_S)&v_A\ge v_S,\\\tau(a)+(1-\tau(a))(v_S-v_A)&v_A<v_S.\end{cases}
 $$
-Where: $v_S$ is the result of combining supporters, $v_A$ is the result of combining attackers. The combination uses a specific recursive formula. *(p.0)*
+Here $v_S=1-\prod_{b\in Sup(a)}(1-\sigma(b))$ and $v_A=1-\prod_{b\in Att(a)}(1-\sigma(b))$. These are the cited DF-QuAD equations, verified against Rago et al. (2016), printed p.65, Definitions 1-2 and Lemma 1 (`../Rago_2016_DiscontinuityFreeQuAD/pngs/page-002.png`).
 
 ### Euler-Based Model (from Amgoud et al.)
 Uses Euler number based semantics where the influence function involves the Euler constant $e$:
 $$
-\sigma_{t+1}(a) = \frac{1}{1 + (1/\tau(a) - 1) \cdot e^{-\alpha \cdot \text{agg}(a)}}
+\sigma(a) = 1-\frac{1-\tau(a)^2}{1+\tau(a)\exp(\text{agg}(a))}
 $$
-Where: $\alpha$ controls the steepness of the sigmoid. Note: the exact Euler formulation from Amgoud and Ben-Naim 2017 is referenced throughout. *(p.1)*
+Equation 1 has no sigmoid-steepness parameter alpha; its numerator is $1-\tau(a)^2$. The restricted semantics excludes initial weights 0 and 1. *(printed p.149, Equation 1, `pngs/page-001.png`)*
 
 ### Proposition 2 (Equilibria/Fixed Points)
 For a BAG, equilibrium states of the Euler-based restricted semantics cause an oscillation because mean attack and support can cycle. An argument's initial weight $\tau$ and its supporters/attackers determine whether equilibrium exists. *(p.2)*

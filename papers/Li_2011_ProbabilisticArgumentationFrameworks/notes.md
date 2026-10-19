@@ -30,7 +30,7 @@ A PrAF assigns independent probabilities to each argument and each defeat. The s
 
 **Definition 1 (Dung AF):** $DAF$ is a pair $(Arg, Def)$ where $Arg$ is a set of arguments, and $Def \subseteq Arg \times Arg$ is defeats. *(p.1)*
 
-**Definition 2 (PrAF):** A Probabilistic Argumentation Framework $PrAF$ is a tuple $(A, P_A, D, P_D)$ where $(A, D)$ is a DAF, $P_A : A \to [0,1]$ and $P_D : D \to [0,1]$. *(p.2)*
+**Definition 2 (PrAF):** A Probabilistic Argumentation Framework $PrAF$ is a tuple $(A,P_A,D,P_D)$ where $(A,D)$ is a DAF, $P_A:A\to(0,1]$ and $P_D:D\to(0,1]$. Zero-probability elements are excluded as redundant in the paper's definition. *(PDF p.3, `pngs/page-002.png`)*
 
 - $P_A(a)$ = probability that argument $a$ exists
 - $P_D((f,t))$ = probability that defeat from $f$ to $t$ exists
@@ -39,8 +39,10 @@ A PrAF assigns independent probabilities to each argument and each defeat. The s
 **Definition 3 (Inducing a DAF from PrAF):** A DAF $(Arg, Def)$ can be induced from PrAF if: *(p.2)*
 1. $Arg \subseteq A$ (arguments are a subset)
 2. $Def \subseteq \{(f,t) \in D : f,t \in Arg\}$ (defeats only between present arguments)
-3. For each $a \in A$: $a \notin Arg \Rightarrow \forall (a,b) \in D, (b,a) \in D$, those defeats also absent
-4. A defeat can only appear if BOTH its source and target arguments are present
+3. If $P_A(a)=1$, then $a\in Arg$.
+4. If $P_D((f,t))=1$ and $P_A(f)=P_A(t)=1$, then $(f,t)\in Def$.
+
+The endpoint restriction is already in condition 2; conditions 3-4 are the paper's certain-element requirements. *(Definition 3, PDF p.3, `pngs/page-002.png`)*
 
 This is the "subcontext" concept — each inducible DAF is a possible world/context. *(p.2-3)*
 
@@ -107,8 +109,8 @@ Where: $p'$ = observed success ratio, $\epsilon$ = desired error. At 95% confide
 
 | Name | Symbol | Units | Default | Range | Page | Notes |
 |------|--------|-------|---------|-------|------|-------|
-| Argument probability | $P_A(a)$ | - | - | [0,1] | 2 | Independent per argument |
-| Defeat probability | $P_D((f,t))$ | - | - | [0,1] | 2 | Independent per defeat relation |
+| Argument probability | $P_A(a)$ | - | - | (0,1] | 2 | Independent per argument; zero-probability elements omitted |
+| Defeat probability | $P_D((f,t))$ | - | - | (0,1] | 2 | Implicitly conditional on endpoint existence |
 | Number of MC trials | $N$ | - | - | $\mathbb{N}$ | 5 | Determined by convergence criterion |
 | Error tolerance | $\epsilon$ | - | 0.01 | (0,1) | 8 | Desired approximation error |
 | Confidence level | $1-\alpha$ | - | 0.95 | (0,1) | 6 | For convergence bound |
@@ -181,7 +183,7 @@ PrAF with 4 arguments $\{a, b, c, d\}$:
 - **Exponential exact method**: only feasible for small frameworks (~13 args) *(p.4, 8)*
 - **Scalability of coalition application**: identifying all possible coalitions doesn't scale *(p.11)*
 - **Only Dung semantics**: no structured argumentation (ASPIC+), no support relations *(p.12)*
-- **No conditional probabilities**: $P_A$ and $P_D$ are marginal, not conditioned on other arguments/defeats *(p.3)*
+- **Conditional defeat probability:** the paper explicitly describes $P_D$ as implicitly conditional; an attack can be present only when its endpoint arguments are present. Arbitrary correlations between arguments are not represented by the independent model. *(PDF p.3, `pngs/page-002.png`)*
 
 ## Arguments Against Prior Work
 - Prior work on likelihoods in argumentation focused on "strength" measures as proxies (e.g., number of attackers, numerical values assigned to arguments) — these don't capture probabilistic uncertainty about argument/defeat existence *(p.12)*

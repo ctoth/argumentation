@@ -54,7 +54,7 @@ Given `E` and an SCC `S`, partition `S` by how the ancestor choice `E` attacks i
 
 **Restriction (Def 19):** `AF|S = <S, -> cap (S x S)>`. Selection within `S` is carried out on `AF|UP_AF(S,E)`. *(p.178)*
 
-**Selection function** `GF(AF, C)`: inputs a (possibly restricted) `AF` and a set `C subseteq A` of **defended nodes**; outputs the set of all admissible choices for `E cap A`. *(p.179)*
+**Selection function** `GF(AF, C)`: inputs a (possibly restricted) `AF` and a set `C subseteq A` of **defended nodes**; outputs possible choices for `E cap A`. The schema makes no prior assumption about the output or how `C` is used; in particular, its choices need not be Dung-admissible (CF2 is an example). *(p.179; [page image 017](pngs/page-017.png))*
 
 **SCC-recursiveness (Def 20).** A semantics `S` is SCC-recursive iff for every AF, `E_S(AF) = GF(AF, A)`, where `GF(AF, C) subseteq 2^A` is:
 
@@ -79,7 +79,7 @@ Fully worked two-SCC example in Fig. 11 (p.181-183).
 ## Base functions for the traditional semantics (Thm 43, p.194)
 Generalized-in-`C` Dung definitions (Sec 5.1, Def 21-24): `E` admissible/stable/complete/preferred/grounded **in C** means `E subseteq C` plus the usual condition evaluated on the *full* AF. Recovering Dung: `C = A`. Note `AS(AF,C) != AS(AF|C)` in general (Fig. 12). The base functions:
 
-- `BF_ST(AF, C) = SE(AF, C)` (stable). For stable, `C` is provably inert: `SE(AF,C) = SE(AF)` (p.188).
+- `BF_ST(AF, C) = SE(AF, C)` (stable). The defined generalized family still requires `E subseteq C`. The remark on p.188 says the same SCC-recursive result would follow from the **alternative definition** `SE(AF,C) = SE(AF)`; it does not assert equality of the two families for arbitrary `C`. *(Proposition 34 and following remark; [p.187](pngs/page-025.png), [p.188](pngs/page-026.png))*
 - `BF_CO(AF, C) = CE(AF, C)` (complete).
 - `BF_PR(AF, C) = PE(AF, C)` (preferred).
 - `BF_GR(AF, C) = {GE(AF, C)}` (grounded, singleton). Explicit on a single-SCC AF (Prop 44): `= {{a}}` if `C = A = {a}` and `-> = empty`; `= {empty}` otherwise. *(p.194)*

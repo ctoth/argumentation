@@ -22,8 +22,7 @@ The DF-QuAD algorithm [6] was originally defined for QuAD frameworks, which requ
 - Definition of three core functions: strength aggregation function (sigma), mediating function (mu), and score function (SF) *(p.2)*
 - Proof that the adapted semantics is continuous (discontinuity-free) on [0,1] *(p.3)*
 - Proof that QuAD frameworks with base score 0.5 can be seen as restricted BAFs under this semantics *(p.4)*
-- Comparison with the gradual valuation of social models of AFs [1] and equivalence to Euler-based semantics *(p.5)*
-- Extension to social models (SAFs) by defining equivalent aggregation and mediating functions *(p.5)*
+- Comparison with the gradual valuation of BAFs [9], which differs from the new semantics, and correspondence with social models of SAFs [8] when social support is 0.5. *(printed p.38, `pngs/page-004.png`)*
 
 ## Methodology
 The paper defines three functions that compose to compute argument strength in a BAF:
@@ -69,7 +68,7 @@ $$
 \mathcal{SF}(a) = \mu(\sigma(SEQ_{\mathcal{SF}}(\mathcal{R}^-(a))), \sigma(SEQ_{\mathcal{SF}}(\mathcal{R}^+(a))))
 $$
 
-Where $\mathcal{R}^-(a)$ = set of attackers of $a$, $\mathcal{R}^+(a)$ = set of supporters of $a$, $SEQ_{\mathcal{SF}}$ is an arbitrary permutation of the attacker/supporter sets ordered by their SF scores. *(p.2-3)*
+Where $\mathcal{R}^-(a)$ = set of attackers of $a$, $\mathcal{R}^+(a)$ = set of supporters of $a$, $SEQ_{\mathcal{SF}}$ lists their strengths in an arbitrary permutation; it does not sort by strength. *(printed pp.35,38, `pngs/page-001.png`, `pngs/page-004.png`)*
 
 ### Combination Function (from original DF-QuAD [6])
 
@@ -94,23 +93,23 @@ The mediating function equals the combination function when base score is 0.5. *
 ### Explicit closed form of SF
 
 $$
-\mathcal{SF}(a) = 0.5 + 0.5 \cdot \left(\prod_{i=1}^{n} (1 - s_i) - \prod_{j=1}^{m} (1 - a_j)\right)
+\mathcal{SF}(a) = 0.5 + 0.5 \cdot \left(\prod_{j=1}^{m} (1 - a_j) - \prod_{i=1}^{n} (1 - s_i)\right)
 $$
 
-Where $(s_1, \ldots, s_n)$ are the (n >= 0) supporter strengths and $(a_1, \ldots, a_m)$ are the (m >= 0) attacker strengths, after recursive evaluation. This is the closed form derived from iterating the base function. *(p.3)*
+Where $(s_1, \ldots, s_n)$ are the supporter strengths and $(a_1, \ldots, a_m)$ are the attacker strengths. This follows algebraically from the noisy-OR aggregation and $\mu(v_a,v_s)=0.5+0.5(v_s-v_a)$; the attacker product comes first. *(Definitions 1-3, printed p.35, `pngs/page-001.png`)*
 
-### Gradual Valuation Equivalence (Social Models)
+### Comparison with Gradual Valuation of BAFs
 
-For equivalence with social models of AFs [1], the aggregation function is redefined on $\mathbb{Z}^* \to \mathbb{R}$:
+For the gradual valuation semantics of BAFs [9], the paper gives an equivalent presentation with aggregation $\sigma':[-1,1]^*\to[0,\infty)$:
 
 $$
-\sigma'(S) = \sum_{i=1}^{n} s_i
+\sigma'(S) = \sum_{i=1}^{n} \frac{s_i+1}{2}
 $$
 
 The mediating function becomes:
 
 $$
-\mu' : [0, n] \times [0, m] \to [-1, 1]
+\mu' : [0, \infty) \times [0, \infty) \to [-1, 1]
 $$
 
 $$
@@ -120,16 +119,10 @@ $$
 The equivalent score function:
 
 $$
-\mathcal{SF}'(a) = 1 + \sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^-(a))) \cdot \sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^+(a))) - \mathcal{SF}'(a)(\text{something})
+\mathcal{SF}'(a) = \mu'\!\left(\sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^-(a))),\sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^+(a)))\right)
 $$
 
-Actually the full formulation is:
-
-$$
-\mathcal{SF}'(a) = 1 + \sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^-(a)))^{-1} \cdot (1 + \sigma'(SEQ_{\mathcal{SF}'}(\mathcal{R}^+(a))))^{-1}
-$$
-
-*(p.5)*
+This is a reformulation of the older gradual valuation, not an equivalence between that semantics and the new DF-QuAD adaptation. The separate social-model correspondence is with SAF social support equal to 0.5. *(printed p.38, `pngs/page-004.png`)*
 
 ## Parameters
 
@@ -144,10 +137,10 @@ $$
 - BAF is defined as triple (X, R^-, R^+) where X = set of arguments, R^- = attack relation, R^+ = support relation *(p.2)*
 - The semantics does NOT require a base score — all arguments implicitly start at 0.5 *(p.2)*
 - The strength aggregation function sigma uses a recursive base function f(v1,v2) = v1 + v2 - v1*v2, which is the probabilistic OR *(p.2)*
-- sigma is order-dependent in general, but the paper uses SEQ_SF which is an arbitrary permutation; the SF values are used to sort but the paper notes this is an arbitrary choice *(p.2-3)*
-- The score function SF is well-defined because BAFs are acyclic (no cycles in attack/support) *(p.3)*
+- sigma is order-independent: its noisy-OR base function is commutative and associative, so the arbitrary permutation does not change the aggregate. *(Definition 1, printed p.35, `pngs/page-001.png`)*
+- The adaptation includes possibly cyclic BAFs; acyclicity is a restriction of the original QuAD frameworks. Existence is sketched and uniqueness conjectured. *(Conclusion, printed p.39, `pngs/page-005.png`)*
 - Continuity: SF is continuous on [0,1] because it is a composition of continuous functions (the base function f is a polynomial, mu is linear) *(p.3)*
-- The product form gives the closed expression: SF(a) = 0.5 + 0.5 * (product(1-s_i) - product(1-a_j)) where s_i are supporter scores and a_j are attacker scores *(p.3)*
+- The product form gives SF(a) = 0.5 + 0.5 * (product(1-a_j) - product(1-s_i)), where a_j are attacker scores and s_i are supporter scores. *(derived from Definitions 1-3, printed p.35, `pngs/page-001.png`)*
 - Brouwer's fixed-point theorem guarantees existence of a solution for the score function on BAFs *(p.3)*
 - The paper conjectures uniqueness (unique fixed point) but does not prove it — left for future work *(p.3)*
 
@@ -156,20 +149,17 @@ $$
 
 ## Results Summary
 - The adapted DF-QuAD semantics for BAFs is continuous (discontinuity-free) on [0,1] *(p.3)*
-- QuAD frameworks with base score 0.5 correspond exactly to acyclic BAFs under this semantics (Proposition 3, Definition 4) *(p.4)*
-- The semantics differs from the gradual valuation of social models [1] because it saturates: adding an attacker/supporter with maximum strength saturates sigma at 1 (Proposition 1) *(p.4)*
-- For social models [1], the equivalent semantics increases argument strength monotonically with supporter count — no saturation *(p.5)*
-- The paper's Proposition 1 on saturation does NOT hold for social model equivalence — the social model version increases unboundedly with more supporters *(p.5)*
+- QuAD frameworks with base score 0.5 map to corresponding BAFs with the same strengths; this does not assert that every acyclic BAF is a QuAD framework. *(Proposition 4, printed p.38, `pngs/page-004.png`)*
+- The older gradual valuation of BAFs [9] differs: its aggregation $\sigma'$ is unbounded as more maximum-strength arguments are added, unlike the saturating noisy-OR aggregation. Its final strengths remain in [-1,1]. *(printed pp.38-39, `pngs/page-004.png`, `pngs/page-005.png`)*
 
 ## Limitations
 - Uniqueness of the fixed point (score function solution) is conjectured but NOT proven — left as future work *(p.3)*
-- The semantics only works for acyclic BAFs — cyclic frameworks are not addressed *(p.3-4)*
-- Comparison with Euler-based semantics and social models is informal; full formal comparison deferred *(p.5)*
-- The order of the permutation SEQ_SF may affect results — the paper acknowledges this is arbitrary *(p.2-3)*
+- Cyclic BAFs are included, but uniqueness is conjectured and a computational system is left for future work. *(printed p.39, `pngs/page-005.png`)*
+- Details of the social-model correspondence and equivalence of the reformulated older gradual valuation to its original presentation are omitted for space. *(printed p.38, `pngs/page-004.png`)*
 
 ## Arguments Against Prior Work
 - The original DF-QuAD [6] requires base scores for all arguments, which BAFs don't have — this paper removes that requirement *(p.1-2)*
-- Social models of AFs [1] use simple summation for aggregation, which doesn't saturate — the adapted DF-QuAD uses probabilistic OR which saturates at 1 *(p.4-5)*
+- The older gradual valuation of BAFs [9] uses shifted summation for aggregation, which does not saturate; the adapted DF-QuAD uses noisy-OR. *(printed p.38, `pngs/page-004.png`)*
 - The adapted semantics differs from social models in that extreme values 0 and 1 can only be achieved if they are "somehow already present" (Proposition 2) *(p.4)*
 
 ## Design Rationale
@@ -186,14 +176,14 @@ $$
 - Continuity: SF is continuous on [0,1] *(p.3)*
 - Range: SF(a) is always in [0,1] for any argument a in an acyclic BAF *(p.2-3)*
 - Base function: f(v1,v2) = v1 + v2 - v1*v2 (probabilistic OR) *(p.2)*
-- Closed form: SF(a) = 0.5 + 0.5*(prod(1-s_i) - prod(1-a_j)) *(p.3)*
+- Closed form: SF(a) = 0.5 + 0.5*(prod(1-a_j) - prod(1-s_i)), with a_j attacker strengths and s_i supporter strengths. *(derived from printed p.35, `pngs/page-001.png`)*
 
 ## Relevance to Project
 This paper is directly relevant to propstore's DF-QuAD implementation. The current implementation (noted in CLAUDE.md as "DF-QuAD gradual semantics for quantitative bipolar argumentation frameworks — but P_A conflated with base score") uses the original QuAD formulation. This paper provides the BAF adaptation which eliminates the need for base scores entirely, using a fixed 0.5 default. The key equations (sigma, mu, SF) and their closed forms are directly implementable. The saturation property and extreme value propositions provide testable invariants.
 
 ## Open Questions
 - [ ] Is the fixed point unique? (conjectured but unproven)
-- [ ] How does order-dependence of SEQ_SF affect results in practice?
+- [ ] Which numerical solution methods perform best on the possibly cyclic BAFs allowed by the adaptation?
 - [ ] How does this relate to our current DF-QuAD implementation's P_A/base-score conflation?
 
 ## Collection Cross-References

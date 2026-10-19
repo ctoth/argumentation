@@ -20,11 +20,11 @@ The target problem is therefore not merely "which argument wins under a value or
 ## Key Contributions
 - Defines a **value-based framework (VBF)** with agents, propositions, values, a totally ordered scale, and two agent-specific functions: a threshold/limit for each value and a score for each proposition relative to that value. *(p.2-3)*
 - Integrates the VBF into ASPIC+ by defining an **agent-specific subjective knowledge base** that keeps propositions passing the agent's value filter and introduces complementary literals for rejected propositions. *(p.4-5)*
-- Defines an **agent-specific subjective defeasible-rule set** by filtering rules whose body or head uses filtered-out propositions, yielding one subjective ASPIC+ theory and one associated AF per agent. *(p.5-6)*
+- Defines an **agent-specific subjective defeasible-rule set** by requiring the body, head, and rule name to pass the proposition filter, yielding one subjective ASPIC+ theory and one associated AF per agent. *(Definition 13, printed p.331; [page image](pngs/page-006.png))*
 - Defines a **collective grounded extension** `G*` as the intersection of all agents' grounded extensions and proves that it is conflict-free while showing by example and proposition that it need not be admissible. *(p.5-6)*
 
 ## Methodology
-The paper starts from two inputs: a standard ASPIC+ argumentation theory `T` and a value-based framework `V`. It first defines which propositions survive an agent's value profile, then converts filtered-out propositions into complementary literals so that the agent's subjective knowledge base can explicitly express rejection of those propositions. It next filters defeasible rules so that only rules whose body and head survive the filter remain available. This produces one subjective argumentation theory `T_a` per agent. Each `T_a` is turned into an AF in the ordinary ASPIC+ way, grounded semantics is applied separately to each AF, and the collective result is taken as the intersection of those grounded extensions. *(p.2-6)*
+The paper starts from two inputs: a standard ASPIC+ argumentation theory `T` and a value-based framework `V`. It first defines which propositions survive an agent's value profile, then converts filtered-out propositions into complementary literals so that the agent's subjective knowledge base can explicitly express rejection of those propositions. It next filters defeasible rules so that only rules whose body, head, and name survive the filter remain available. This produces one subjective argumentation theory `T_a` per agent. Each `T_a` is turned into an AF in the ordinary ASPIC+ way, grounded semantics is applied separately to each AF, and the collective result is taken as the intersection of those grounded extensions. *(Definitions 11-14; [premises](pngs/page-005.png), [rules and subjective theory](pngs/page-006.png), [intersection](pngs/page-007.png))*
 
 ## Formal Background Reused from ASPIC+
 The paper works with a simplified ASPIC+ setup. A knowledge base is split into axioms `K_n` and ordinary premises `K_p`; a language `L` is closed under negation; rules are partitioned into strict and defeasible rules; and arguments are finite derivation trees built from the knowledge base and rules. *(p.3-4)*
@@ -58,7 +58,7 @@ For each agent `a`, the VBF induces a filtered set of positive literals that are
 The subjective knowledge base for an agent is obtained by taking the original knowledge base, removing filtered-out ordinary premises, and adding the complementary literals for those rejected propositions as ordinary premises. The paper explicitly keeps strict rules untouched. *(p.5)*
 
 ### Subjective Defeasible Rules
-Defeasible rules are filtered more aggressively than premises. A rule survives for agent `a` only when every literal in its body and its head survives the agent's proposition filter. Thus the rule layer is also personalized, not merely the premise layer. *(p.5)*
+Defeasible rules are filtered more aggressively than premises. A rule survives for agent `a` only when every literal in its body, its head, **and its name `n(r)`** belongs to `PropBaseClean_a`. Thus the rule layer is also personalized, not merely the premise layer. *(Definition 13, printed p.331; [page image](pngs/page-006.png))*
 
 ### Subjective Argumentation Theory
 For each agent `a`, the paper defines a subjective AT `T_a` by pairing the original language/contrary function/strict rules with the agent's subjective knowledge base and subjective defeasible-rule set. The corresponding AF `F_a` is constructed in the ordinary ASPIC+ manner from `T_a`. *(p.5)*
@@ -130,7 +130,7 @@ The most important example constructs a case where the intersection of the agent
 If `A` is an argument in a subjective AT `T_a`, then the premises and defeasible rules used by `A` do not contain elements filtered out by the agent's value profile. This formalizes that the construction really is upstream: filtered-out material is not merely defeated later; it is absent from the agent's argument construction basis. *(p.6)*
 
 ### Proposition 2
-If a proposition `p` is in `CompaProps_a`, then `¬p` belongs to the grounded extension `G_a`. In effect, when a proposition is ruled out by values, the subjective theory does not simply stay silent; it contains an undefeated ordinary premise expressing rejection of `p`. *(p.6)*
+If `¬p` is in `CompaProps_a`, then the premise argument `¬p` belongs to the grounded extension `G_a`. The complementary set already contains negative literals: it is not necessary to negate its member again. In effect, when a proposition `p` is ruled out by values, the subjective theory contains an undefeated ordinary premise expressing rejection of `p`. *(Proposition 2, printed p.334; [page image](pngs/page-009.png))*
 
 ### Proposition 3
 The collective grounded extension `G*` is conflict-free in the original AT and in all subjective ATs, but it is not admissible in general. This is the paper's headline metatheoretic result: intersection is safe from outright internal conflict, but it does not preserve the stronger defense condition. *(p.6)*

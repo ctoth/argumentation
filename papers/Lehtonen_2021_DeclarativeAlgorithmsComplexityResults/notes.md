@@ -103,7 +103,7 @@ Where: `\phi` is a Boolean 3-CNF formula over variables `X={x_1,...,x_n}`, and `
 | JAIR article page count | - | pages | 54 | 265-318 | 265 | The paper spans JAIR pages 265-318. |
 | ABA framework component count | - | components | 4 | - | 269 | ABA is represented as language, rules, assumptions, and contrary mapping. |
 | ABA+ framework component count | - | components | 5 | - | 274 | ABA+ adds a preorder over assumptions. |
-| Grounded iteration bound | `|\mathcal{A}|` | iterations | - | 0 to `|\mathcal{A}|` | 279 | Grounded computation reaches a fixpoint after at most one new assumption per iteration. |
+| Grounded iteration bound | `|\mathcal{A}|` | iterations | - | 0 to `|\mathcal{A}|` | 279 | Each iteration either reaches a fixpoint or adds at least one further assumption; hence a fixpoint is reached after at most `|\mathcal{A}|` applications of `def`. Visually verified against `pngs/page-014.png`. |
 | 3-CNF clause width | - | literals/clause | 3 | max 3 | 282 | Hardness reductions use classical 3-CNF unsatisfiability. |
 | Reduction rule count | `|\mathcal{R}|` | rules | `5|X|+|C|+1` | polynomial | 283 | For Reduction 1, five rules per variable, one per clause, and one extra rule. |
 | Reduction sentence count | `|\mathcal{L}|` | sentences | `5|X|+4` | polynomial | 283 | Sentence vocabulary size in the constructed ABA+ framework. |

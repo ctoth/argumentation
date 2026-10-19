@@ -30,33 +30,19 @@ Standard ASPIC+ assumes complete knowledge bases where all premises are known. I
 
 ### ASPIC+ Background (Definitions 1-5)
 
-**Definition 1 (Argumentation system).** An argumentation system AS = (L, C, R, n) with:
-- L: a logical language closed under negation (complement function)
-- C: a set of contraries (if phi in C(psi) then phi attacks psi; asymmetric)
-- R = R_s union R_d: strict rules R_s and defeasible rules R_d of form phi_1, ..., phi_n -> phi (strict) or phi_1, ..., phi_n => phi (defeasible)
-- n: a naming function for defeasible rules (names are used for undercutting)
-- R_s must be closed under contraposition and transitive binary closure
+**Definition 1 (Argumentation system).** The paper studies the restricted fragment `AS = (L, contradiction, R, <=)` with finite literal set L, a symmetric contradiction function, a finite set R of **defeasible rules only**, and a partial preorder on R. Every literal has at least one contradictory and is not its own contradictory. There are no strict rules or rule-naming function in this fragment. *([printed p.532](pngs/page-001.png))*
 
-**Contrariness**: phi is a *contrary* of psi if phi in C(psi) but psi not in C(phi). phi is a *contradictory* of psi if phi in C(psi) and psi in C(phi).
-
-**Definition 2 (Knowledge base).** K = (K_n, K_p, K_a) with:
-- K_n: axiom premises (not attackable)
-- K_p: ordinary premises (attackable)
-- K_a: assumption premises (attackable)
+**Definition 2 (Knowledge base).** K is a consistent set of literals. All knowledge-base elements are axioms, so there are no attackable ordinary or assumption premises. Consistency means no literal in K contradicts another literal in K. *([printed p.532](pngs/page-001.png))*
 
 For a defeasible rule r: phi_1, ..., phi_n => phi, the antecedents are {phi_1, ..., phi_n} and the consequent is phi (the conclusion of r).
 
 **Definition 3 (AT).** An argumentation theory AT = (AS, K) with argumentation system AS and knowledge base K.
 
-**Definition 4 (Arguments).** The set of arguments Args(AT) that an AT gives rise to contains arguments obtained by applying defeasible/strict rules iteratively:
+**Definition 4 (Arguments).** The set of arguments Args(AT) contains observation-based arguments and arguments obtained by finitely many applications of the fragment's defeasible rules:
 - If phi in K then phi is an argument A with Prem(A) = {phi}, Conc(A) = phi, Sub(A) = {phi}, Rules(A) = empty, TopRule(A) = undefined, DefRules(A) = empty.
-- If A_1, ..., A_n are arguments and there is r in R_s such that Conc(A_1), ..., Conc(A_n) -> phi, then B = A_1, ..., A_n -> phi is an argument.
-- If A_1, ..., A_n are arguments and there is r in R_d such that Conc(A_1), ..., Conc(A_n) => phi, then B = A_1, ..., A_n => phi is an argument.
+- If A_1, ..., A_n are arguments and there is r in R with those conclusions as antecedents and consequent phi, then `B = A_1,...,A_n ⇒ phi` is a rule-based argument. Only finitely many rule applications are allowed. *([Definition 4, printed p.532](pngs/page-001.png))*
 
-**Definition 5 (Attacks).** Arguments A attacks B if:
-- A *undermines* B: Conc(A) in C(phi) for some phi in Prem(B) \ K_n (ordinary premise attack)
-- A *rebuts* B at B' (sub-argument): Conc(A) in C(Conc(B')) for some B' in Sub(B) where B' has a defeasible top rule
-- A *undercuts* B at B': Conc(A) in C(n(r)) for some B' in Sub(B) with defeasible top rule r
+**Definition 5 (Rebuttal attack).** A rebuts B on a rule-based subargument B′ iff `conc(A)` contradicts `conc(B′)`. Rebuttal is the only attack type considered here. **Definition 6 (Defeat)** makes this attack successful iff A is not strictly less preferred than B′. *([printed p.533](pngs/page-002.png))*
 
 ### Argumentation Frameworks and Semantics
 
@@ -64,13 +50,9 @@ An argumentation system gives rise to arguments as defined above. These argument
 - An AF = (Args, Defeats) where Defeats is derived from attacks plus preference ordering
 - Grounded semantics provides a unique fixpoint (grounded extension)
 
-### Observation-Based Arguments (Definition 6)
+### Observation-Based Arguments and Last-Link (Definitions 4, 6-7)
 
-**Definition 6 (Observation-based AT).** An *observation-based AT* is a pair (AT, O) where:
-- AT = (AS, K) is an argumentation theory
-- O subset of L is a set of *observations*
-- Each literal in O is an observation-based argument (no rules needed)
-- Both A and the complement of A can be observed
+An observation-based argument is a literal in the consistent axiom base K (Definition 4); there is no separate `(AT,O)` object. Definition 6 concerns defeat, not observation-based theories. Under Definition 7's last-link order, `B <= A` iff A is observation-based or both are rule-based and `top-rule(B) <= top-rule(A)`. *([observation arguments](pngs/page-001.png), [defeat and last-link](pngs/page-002.png))*
 
 ### Incomplete Information Extension
 
@@ -78,29 +60,26 @@ An argumentation system gives rise to arguments as defined above. These argument
 - Some observations are definite (settled)
 - Others are *unsettled* -- their truth value is not yet known
 
-**Definition 7 (Full-link triples).** Let A, B in AT. B is two-sided if Conc(A) in C(Conc(B)) and Conc(B) in C(Conc(A)). A full-link triple (A, f, B) exists when:
-- f: O -> {t, f} is an observation-based argument
-- A and B are both in the AT's arguments
-- If A is observation-based, then both A and B are observation-based
+Definition 7 is the last-link preference principle above. The paper does not introduce the previously transcribed "full-link triples" or a Boolean observation function. Future information is represented by enlarging the consistent axiom base using queryable literals (Definitions 11-12). *([Definition 7](pngs/page-002.png), [queryables and futures](pngs/page-003.png))*
 
 ### Justification Statuses under Incomplete Information
 
 The paper defines four justification statuses for literals, extending beyond the standard three:
 
-**Definition 8 (corresponding AFs).** As, corresponding AFs are used. For an AT = (AS, K), an observation-based AT (AT, O), and a set of defeasible rules D subset of R_d, define:
-- AF(AT, O, D): the AF over the full argumentation theory with observations O and rules D
-- This allows computing the grounded extension for different possible completions
+**Definition 8 (corresponding AF).** The corresponding AF has all arguments of T as its nodes and the defeat relation determined by T as its edges. Definition 9 supplies grounded semantics; the paper writes `G(T)` for this grounded extension. There is no three-argument `AF(AT,O,D)` construction in this definition. *([printed p.533](pngs/page-002.png))*
 
-**Justification statuses** (Definition 9, building on Modgil and Prakken 2013):
+**Justification statuses** (Definition 10, building on Modgil and Prakken 2013):
 
-For a literal l relative to an AT with a set of possible completions:
+For a literal l relative to one current AT T:
 
-1. **Unsatisfiable**: A literal is *unsatisfiable* if there is no argument A in Args with Conc(A) = l. The literal cannot be concluded regardless of what information arrives.
+1. **Unsatisfiable**: There is no current argument with conclusion l. This alone says nothing about future additions; stable-unsatisfiable is the separate condition ruling out such arguments in every future theory.
 2. **Defended**: A literal is *defended* if there is an argument for l in the grounded extension. The literal is justified under grounded semantics.
-3. **Out**: A literal is *out* if it is not unsatisfiable but not defended -- there exists an argument for it, but it is not in the grounded extension (it is defeated).
-4. **Blocked**: A literal is *blocked* if there is an argument for l in an observation-based argument A, but it is not in the grounded extension and not definitively out.
+3. **Out**: There is at least one argument for l, and **every** argument for l is defeated by an argument in G(T).
+4. **Blocked**: There is an argument for l, none is in G(T), and at least one argument for l is not defeated by any argument in G(T).
 
-These four statuses correspond to the justified status of conclusions of arguments (Modgil and Prakken 2013, Definition 13). Conclusions of arguments that are justified (in the grounded extension) are *defended*. A literal that is *out* is not justifiable (every argument for the literal is defeated based on the grounded extension). A literal that is *blocked* is not justified under the grounded semantics but might be justifiable for semantics other than grounded (Baroni, Caminada, and Giacomin 2011).
+*These quantifiers distinguish out from blocked. [Definition 10, printed p.533](pngs/page-002.png).*
+
+The defended status corresponds to the justified status of conclusions of arguments (Modgil and Prakken 2013, Definition 15). Conclusions that are not justified can be out or blocked: out requires every argument for the literal to be defeated by G(T), whereas blocked leaves at least one such argument undefeated. *([printed p.533](pngs/page-002.png))*
 
 **Example 4 (Justification statuses).** Illustrates the four justification statuses on a concrete AT:
 - A literal with no supporting argument is *unsatisfiable*
@@ -113,15 +92,15 @@ These four statuses correspond to the justified status of conclusions of argumen
 This section introduces the paper's main contributions: formal definitions of stability and relevance for justification statuses under incomplete information.
 
 **Definition 11 (Queryables).** Given an AT = (AS, K), a set Q subset of L is a set of *queryables* if:
-- Q is closed under contradictories: for every q in Q, the contradictory q_bar is also in Q
-- Q represents the literals whose truth value is not yet known but could potentially be added to the axioms K_n
+- K is a subset of Q, and Q is a subset of L.
+- Q is closed under contradictories: for every q in Q, all contradictories of q are also in Q.
+- Q restricts the allowable enlarged axiom bases; it includes the existing axioms, rather than only unresolved literals. *([Definition 11, printed p.534](pngs/page-003.png))*
 
-Queryables represent the possible future observations -- the unsettled literals that could be resolved.
+Queryables delimit the possible future observations and include the current knowledge base; only consistent additions enlarge that base.
 
 **Definition 12 (Future argumentation theories).** Given an AT = (AS, K) and a set of queryables Q, an AT' = (AS, K') is a *future* of AT w.r.t. Q if:
-- K_n subset of K'_n subset of K_n union Q (the axioms can only grow by adding queryables)
-- K'_p = K_p and K'_a = K_a (ordinary and assumption premises remain unchanged)
-- K'_n is consistent (no contradictory pair from Q is added simultaneously)
+- `K ⊆ K′ ⊆ Q`; the argumentation system remains the same.
+- K′ is consistent, as required of every AT by Definition 2. There are no ordinary/assumption partitions to preserve. *([Definition 12, printed p.534](pngs/page-003.png))*
 
 A future AT represents a possible state of knowledge after resolving some or all queryables.
 
@@ -133,15 +112,15 @@ A future AT represents a possible state of knowledge after resolving some or all
 
 **Definition 14 (Minimal stable-j future theory).** Given an AT = (AS, K), a set of queryables Q, a justification status j, and a literal l:
 - A future AT' of AT w.r.t. Q is a *minimal stable-j future theory* for l if:
-  1. l is stable-j in AT' w.r.t. Q' = Q \ (K'_n \ K_n) (the remaining queryables after resolving those added to K'_n)
-  2. There is no future AT'' of AT with K_n subset K''_n subset K'_n such that l is stable-j in AT'' w.r.t. the corresponding remaining queryables
+  1. l is stable-j in AT′ with respect to the **same Q**.
+  2. There is no AT″ with `T ⊑_Q T″ ⊏_Q T′` in which l is stable-j. Minimality includes the original T as a possible smaller future. *([Definition 14, printed p.534](pngs/page-003.png))*
 - In other words, the knowledge base is minimally expanded to achieve stability of l at status j
 
 **Example 6 (Minimal stable-j future theory).** Shows that a literal may require resolving only a subset of queryables to become stable, and the minimal stable-j future theory identifies the smallest such subset.
 
 **Definition 15 (j-relevance).** Given an AT = (AS, K), a set of queryables Q, a justification status j, and a literal l:
-- A queryable q in Q is *j-relevant* for l if q or q_bar appears in K'_n \ K_n for some minimal stable-j future theory AT' for l
-- Intuitively, q is j-relevant if resolving q could be part of the minimal information needed to stabilize l's status at j
+- For `q ∈ Q` with `q ∉ K` and no contradictory of q already in K, q is *j-relevant* for l iff q itself belongs to K′ for some minimal stable-j future theory `(AS,K′)` for l.
+- Relevance is literal-specific: q and a contradictory of q are considered separately, and both can be relevant via different minimal futures. *([Definition 15 and Example 8, printed p.534](pngs/page-003.png))*
 
 **Example 7 (j-relevance).** Shows a case where a queryable q is defended-relevant for a literal l because adding q to the axioms changes l's status.
 
@@ -149,45 +128,39 @@ A future AT represents a possible state of knowledge after resolving some or all
 
 ### Complexity Results (Section 4)
 
-Justification status (Definition 9) is decidable in **polynomial time**: given a complete AT, the grounded extension can be computed in polynomial time via the characteristic function's least fixpoint, and each literal's justification status is determined by its membership (or non-membership) in the extension.
+Justification status (Definition 10) is decidable in **polynomial time** for the paper's fragment (Theorem 1). The proof works over rule sets rather than first enumerating every argument, which can be exponential in theory size. The least fixpoint C of the rule defence operator yields `G(T)=Arg_T(C)` (Proposition 4). *([rule reformulation](pngs/page-004.png), [Theorem 1](pngs/page-005.png))*
 
 ### Stability (Section 4.3)
 
-**Definition 10.** For deciding stability by rule:
-- Given an AT = (AS, K), the corresponding AF, a set of defeasible rules D subset of R_d, and a rule r in R_d:
-  - r is *applicable* if its antecedents are all in K or derivable
-  - r is *defeated* if there exists a defeating argument against it
+**Definitions 16-19 (rule-set reformulation).** A rule r is applicable by D iff an argument using r can be constructed from `D ∪ {r}` and K. D defeats r iff an applicable rule in D has a contradictory consequent and is not strictly less preferred than r, or an axiom contradicts r's consequent. D defends r iff the set of rules not defeated by D does not defeat r. The characteristic function collects rules both applicable and defended by D. These are not Definition 10, which defines literal justification statuses. *([printed p.535](pngs/page-004.png))*
 
 **Stability** means a literal's justification status will not change regardless of how the unsettled observations are resolved.
 
-**Proposition 7.** Deciding whether a literal is j-stable in an AT w.r.t. a set of defeasible rules is coNP-complete for {unsatisfiable, defended, out, blocked}. Hardness holds for each status.
+**Proposition 7.** Deciding j-stability with respect to the allowed future theories is coNP-complete for each of {unsatisfiable, defended, out, blocked}; hardness holds even without rule preferences. *([printed p.536](pngs/page-005.png))*
 
 ### Relevance (Section 4.4)
 
 A query (unsettled observation) is *relevant* for a given literal if resolving that query could change the literal's justification status.
 
-**Lemma 1.** Let AT = (AS, K), let AF be a set of queryables and let j be a justification status. Given a literal l in L and queryable q in Q where q != l and q_bar != l:
-- if l is not in AF's arguments then l is not q-relevant
-- otherwise relevance can be checked by examining whether resolving q (positively or negatively) would change l's status
+**Lemma 1.** Let T=(AS,K), let Q be its queryables, and let q be an unobserved queryable with no contradictory already in K. Then q is j-relevant for l iff there is a future `T′=(AS,K′)` such that l is **not stable-j** in T′ but **is stable-j** in `(AS,K′ ∪ {q})`. The test concerns stability across all remaining futures, rather than a single current-label change; q need not differ from l. *([printed p.536](pngs/page-005.png))*
 
 **Theorem 2.** Deciding whether a queryable is j-relevant for a literal in an AT w.r.t. a set of queryables is Sigma_2^P-complete for each j in {unsatisfiable, defended, out, blocked}. Hardness holds even without preferences.
 
 ## Key Equations
 
 1. **Grounded extension computation**: The grounded extension is the least fixpoint of a characteristic function F applied iteratively:
-   - F(S) = {A in Args | A is not attacked by any B in Args \ S, or every attacker of A is attacked by some C in S}
+   - `F(S) = {A in Args | every defeater B of A is defeated by some C in S}`.
    - Grounded extension = lfp(F) = F^0 subset F^1 subset ... (iterated until fixpoint)
 
 2. **Stability condition**: A literal l with status j is *j-stable* iff for all possible completions C of unsettled observations, the status of l remains j in the resulting grounded extension.
 
-3. **Relevance condition**: A queryable q is *j-relevant* for literal l iff there exists a completion C and a completion C' that differ only on q such that l has status j in one but not the other.
+3. **Relevance condition**: A queryable q is *j-relevant* for l iff some future `(AS,K′)` is not stable-j for l, while `(AS,K′ ∪ {q})` is stable-j (Lemma 1). Equivalently, q occurs in some minimal stable-j future theory (Definition 15). A marginal change between two current labels is not the definition. *([Definition 15](pngs/page-003.png), [Lemma 1](pngs/page-005.png))*
 
 ## Parameters
 
-- **Argumentation system parameters**: L (language), C (contrariness function), R_s (strict rules), R_d (defeasible rules), n (naming function)
-- **Knowledge base partitions**: K_n (axioms), K_p (ordinary premises), K_a (assumptions)
-- **Observations**: O (set of observed literals)
-- **Queryables**: Q (set of unsettled literals whose truth value is unknown)
+- **Argumentation system parameters**: finite literal set L, symmetric contradiction function, finite defeasible-rule set R, and partial preorder on R.
+- **Knowledge base**: consistent axiom-only set K; its members yield observation-based arguments.
+- **Queryables**: `K ⊆ Q ⊆ L`, closed under contradictories; future bases K′ are consistent sets between K and Q. *([fragment](pngs/page-001.png), [queryables](pngs/page-003.png))*
 - **Preferences**: Ordering over defeasible rules or arguments (optional; used to convert attacks to defeats)
 
 ## Implementation Details
@@ -196,13 +169,11 @@ A query (unsettled observation) is *relevant* for a given literal if resolving t
 
 The algorithms are implemented as Answer Set Programming (ASP) encodings using the Clingo solver.
 
-**Listing 1: Justification Status Algorithm**
-- The ASP program has 5 modules:
-  1. Lines 1-3: Collect literals from the AT and AF, enumerate observations
-  2. Lines 3-5: Determine which literals are derivable and not derivable
-  3. Lines 5-7: Determine which literals' conclusions are defeatable
-  4. Lines 7-8: Use Clingo's Python scripting for conflict detection
-  5. Lines 8-set: Compute the justification labels
+**Listing 1: Common Module**
+- Lines 1-3 collect literals and rules from the input theory, and line 4 makes contradiction symmetric.
+- Lines 5-7 compute derivable literals and applicable rules; line 8 marks nonderivable literals `unsat`.
+- Line 7 uses an ASP conditional literal over rule-body members. It does not invoke Clingo's Python scripting.
+- The common module is combined with Listing 2 for the no-preference justification encoding or Listing 3 for the preference-aware encoding. *([printed p.537](pngs/page-006.png))*
 
 The encoding assigns justification labels (defended, out, blocked, unsatisfiable) for each literal in the program by:
 1. Collecting all rules from D_AT
@@ -211,13 +182,12 @@ The encoding assigns justification labels (defended, out, blocked, unsatisfiable
 4. Assigning labels based on membership in the extension
 
 **Key ASP constructs used**:
-- `vertex(X)` for arguments
-- `att(X,Y)` for attacks
-- `defended(X)` for literals in the grounded extension
-- `not_defended(X)` for literals not in the extension
-- `unsatisfiable(X)` for literals with no supporting argument
+- `literal`, `xrule`, `head`, `body`, `axiom`, and `ctr` describe the compact theory.
+- `derivable`, `applicable_rule`, and `unsat` are provided by the common module.
+- `defended`, `out`, and `blocked` are obtained by the justification modules, with rule-level `defended_rule`, `defeated`, and undefeated-rule predicates.
+- The encodings reason over literals and rules rather than building `vertex`/`att` facts for an explicit argument graph. *([Listings 1-2](pngs/page-006.png), [Listing 3](pngs/page-007.png))*
 
-**Listing 2: Stability Algorithm**
+**Stability Encoding (Section 5.2; Listing 2 itself is the no-preference justification module)**
 - Uses counterexample-based checking
 - A literal's status is stable if no completion of unsettled observations changes its status
 - The ASP solver searches for a counterexample (a completion where the status differs)
@@ -227,14 +197,12 @@ The stability check uses the brave/cautious reasoning modes of Clingo:
 - For each literal and its current status, attempt to find a completion that yields a different status
 - If the solver returns UNSAT, the status is stable
 
-**Listing 3: Relevance Algorithm (Algorithm 1)**
-- A candidate q is a queryable; tests whether resolving q could change the status of a target literal
-- The algorithm:
-  1. For each candidate queryable q:
-     a. Set q to true, compute grounded extension, check if target's status changes
-     b. Set q to false, compute grounded extension, check if target's status changes
-  2. If either resolution changes the target's status, q is relevant
-- Uses ASP with multi-shot solving (Clingo's incremental interface)
+**Relevance Algorithm (Algorithm 1; Listing 3 itself is the preference-aware justification module)**
+- The input includes one queryable q, target literal l, and desired justification status j.
+- Guess a consistent candidate axiom set containing q and the original K.
+- Check that l is stable-j under that candidate, and that it is not stable-j after removing q.
+- If both checks succeed, return YES. Otherwise refine the candidate space using the counterexample: exclude subsets when the first stability check fails, or supersets when the candidate without q is already stable-j.
+- Exhausting the candidate space returns NO. This is a CEGAR search over future theories, not two current-status evaluations with q true/false. *([Algorithm 1 and Proposition 9, printed p.538](pngs/page-007.png))*
 
 **ASP-Based Counterexample Generation (Section 5.3)**
 - Uses CEGAR (Counterexample-Guided Abstraction Refinement) approach
@@ -243,9 +211,7 @@ The stability check uses the brave/cautious reasoning modes of Clingo:
 - Iteratively refines by drawing candidates from the abstract space and verifying in the concrete semantics
 - Candidate solutions are compared with an ASP solver; if valid, it's a solution; if there's a counterexample, the candidate is refined
 
-**Proposition 5.** Given an AT = (AS, K) where |O| = 0, delta is labeled:
-- *defended* if there is an argument A for l such that ext(A) subset of K_n ∪ K_a, where del ⊆ L, there is no argument for ext(l) based on l, and
-- *out* if l is not unsatisfiable and there is no argument A for l with ext(A) subset of Args(AT, O)
+**Proposition 5.** The least fixpoint of the rule-set defence operator is reached in at most `ceil(|R|/2)` iterations. Proposition 6 then characterizes the four justification labels from that fixpoint; Proposition 8 supplies the simpler no-preference characterization used by Listing 2. *([Propositions 5-6](pngs/page-004.png), [Proposition 6 continued](pngs/page-005.png), [Proposition 8](pngs/page-006.png))*
 
 The implementation is available as open source at https://bitbucket.org/odekerken/...
 
@@ -267,7 +233,7 @@ For synthetic data:
 
 ## Figures of Interest
 
-- **Figure 1 (page 1)**: Example AT (ASPIC+ argumentation theory). Each square is a literal in the knowledge base. Rounded rectangles are rules. Arrows represent attack relations. Shows a concrete example with fixed arrows (solid) and unfixed arrows (dashed) to illustrate the difference between complete and incomplete information settings.
+- **Figure 1 (printed p.532)**: Each square is a literal; rounded squares are queryable literals, and shading identifies current knowledge-base members. Double-lined arrows are rules and single-lined arrows are negations. It is a theory diagram, not an argument attack graph with fixed/unfixed edges. *([page image](pngs/page-001.png))*
 - **Table 1 (page 8)**: Number of solved instances and mean runtimes over solved instances for different configurations (with/without preferences, stability/relevance).
 - **Table 2 (page 8)**: Detailed results for relevance with and without preferences across different instance sizes.
 
@@ -282,18 +248,18 @@ For synthetic data:
 ## Limitations
 
 1. **Grounded semantics only**: The paper focuses exclusively on grounded semantics. Extension to preferred, stable, or other Dung semantics is left as future work.
-2. **No preferences in some results**: Some complexity results and algorithms are presented without preferences; adding preferences increases computational difficulty.
+2. **Preference scope**: The fragment includes rule preferences. Separate simpler justification encodings are given without preferences, but the coNP/Sigma_2^P hardness results already hold without preferences; the paper does not establish a higher complexity class from adding them. *([complexity](pngs/page-005.png), [encodings](pngs/page-006.png))*
 3. **Scalability ceiling**: For larger instances (100+ literals/rules), the ASP approach can time out (600s limit), suggesting limitations for very large knowledge bases.
 4. **Binary observations only**: Observations are binary (true/false); no support for graded or probabilistic observations.
-5. **Single page rendering issue**: Page 003 originally rendered as black but has been reconstructed from pdftotext extraction.
+5. **Research-note provenance**: The earlier note recorded reconstruction from extracted text. The formal corrections above were checked against the original page images, including the original rendered page 003; reconstructed prose is not used as paper evidence. *([original page 003](pngs/page-003.png))*
 
 ## Testable Properties
 
 1. **Justification label correctness**: For any complete AT (no unsettled observations), the four justification labels should partition all literals in L.
 2. **Stability monotonicity**: If a literal is j-stable, adding more observations (resolving queryables) should not change its status.
-3. **Relevance soundness**: If queryable q is not j-relevant for literal l, then resolving q in any direction should not change l's justification status.
+3. **Relevance soundness**: For an eligible unobserved q, non-j-relevance means no future theory changes from not stable-j to stable-j for l when q is added. This does not equate q with its contradictories or reduce relevance to current-label changes. *(Lemma 1; [page image](pngs/page-005.png))*
 4. **Grounded extension uniqueness**: For any given complete AT, there is exactly one grounded extension.
-5. **Complexity bounds**: Stability decisions should be verifiable in polynomial time given a witness (coNP membership). Relevance decisions should be verifiable with a Sigma_2^P oracle.
+5. **Complexity bounds**: A witness to **non-stability** is a future theory with a different justification status, checkable in polynomial time. Relevance is in Sigma_2^P by guessing the future from Lemma 1 and using two stability-oracle checks. *([complexity proofs, printed p.536](pngs/page-005.png))*
 
 ## Relevance to Project
 

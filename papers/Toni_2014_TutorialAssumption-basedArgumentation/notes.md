@@ -190,8 +190,11 @@ Otherwise whose turn?
 **Branch [2] O's turn**: choose π from O. If um(π) is empty → abort. Otherwise select premise σ.
 - **[2(i)]** σ ∈ A (assumption): non-deterministic choice — either ignore σ (mark σ; important for completeness per Dung 2006), or:
   - **[2(i)(a)]** (ignore case) mark σ in π.
-  - **[2(i)(b)]** σ ∈ D already (culprit is already a defence) → get rid of π (already dealt with).
-  - **[2(i)(c)]** σ ∉ D: add σ to C; expand by σ; start counter-attack in P (add new `{} ⊢_{σ̄} σ̄`); possibly expand D; get rid of π.
+  - If the assumption is not ignored and **σ ∈ D**, abort: a defence cannot be selected as a culprit.
+  - **[2(i)(b)]** σ ∈ C already → get rid of π (already dealt with).
+  - **[2(i)(c)]** σ is in neither D nor C: add σ to C; start counter-attack in P (add new `{} ⊢_{σ̄} σ̄`); possibly expand D; get rid of π.
+
+  *The two membership tests have different outcomes: defence membership aborts; existing culprit membership discards the already-counterattacked opponent argument. [Figure 3, printed p.104](pngs/page-016.png), [worked explanation, printed p.106](pngs/page-018.png).*
 - **[2(ii)]** σ ∉ A: unfold σ with **ALL** rules to get potential p-args π1'..πk' (k≥0); get rid of "dealt with" πi'.
 
 The two forms of **bold** (defence-by-defence filtering, culprit-by-culprit filtering) appear only in admissible semantics — removed for grounded.

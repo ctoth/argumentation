@@ -59,10 +59,10 @@ $$
 Where `A` is the set of arguments and `R` is the attack relation. *(p.927)*
 
 $$
-S \in cf2(F) \iff S \in naive([F - A_{F,S}])
+S \in cf2(F) \iff S \in cf(F) \cap naive([[F - \Delta_{F,S}]])
 $$
 
-Where `A_{F,S}` is the least-fixpoint operator characterization of the recursively component-defeated arguments relative to `S`. This is the paper's main alternative characterization of `cf2`. *(p.937)*
+Where $\Delta_{F,S}$ is the least fixed point of the paper's operator for recursively component-defeated arguments, and $[[\cdot]]$ denotes the separated framework. The original-framework conflict-free condition $S\in cf(F)$ is part of Theorem 3.11, not an optional check after separation. *(p.937; [page image 012](pngs/page-012.png))*
 
 $$
 F \equiv_{cf2}^s G \iff F = G
@@ -110,7 +110,7 @@ This is a theoretical paper; it introduces no empirical hyperparameters or tuned
 - Represent the AF explicitly as a directed graph with SCC decomposition support. Tarjan's algorithm is cited as the standard SCC primitive. *(p.927, p.949)*
 - To test `cf2`, compute SCCs and identify component-defeated arguments coming from attacks that cross SCC boundaries. *(p.928-929)*
 - Use the monotone operator `A_{F,S}` to compute recursively component-defeated arguments as a least fixpoint instead of materializing all recursively generated subframeworks. *(p.935-937)*
-- Verification can be implemented by checking `S ∈ naive([F - A_{F,S}])`; because `A_{F,S}` is computable in polynomial time, the full verification procedure is polynomial. *(p.937-938)*
+- Verification checks both `S ∈ cf(F)` and maximal conflict-freeness in the separated framework after deleting $\Delta_{F,S}$. The fixed point is computable in polynomial time. *(p.937-938)*
 - For complexity reductions, the paper encodes 3-CNF satisfiability into AF structure, using clause nodes, literal nodes, and a distinguished query argument. *(p.938-939)*
 - For stage and naive strong equivalence, kernelization can remove outgoing attacks from self-attacking arguments before comparing frameworks. *(p.944-947)*
 
@@ -126,7 +126,7 @@ This is a theoretical paper; it introduces no empirical hyperparameters or tuned
 - **Why compare with stage and naive semantics?** Because `cf2` often behaves similarly to stage on cyclic examples, and these two semantics offer a useful contrast where strong equivalence is coarser than syntax. *(p.931-932, p.944-947)*
 
 ## Testable Properties
-- For any AF `F` and set `S`, `S ∈ cf2(F)` iff `S ∈ naive([F - A_{F,S}])`. *(p.937)*
+- For any AF `F` and set `S`, $S\in cf2(F)$ iff $S\in cf(F)\cap naive([[F-\Delta_{F,S}]])$. *(p.937, Theorem 3.11)*
 - `Ver_cf2 ∈ P`. *(p.938)*
 - `Cred_cf2` is `NP`-complete. *(p.939)*
 - `Skept_cf2` is `coNP`-complete. *(p.940)*
