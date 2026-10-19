@@ -294,10 +294,10 @@ def revised_direct_impact(
 ) -> RevisedImpactResult:
     """Compute the revised removal-based impact of ``influencers`` on ``target``.
 
-    Al Anaissy et al. 2024, Definition 12: remove direct attacks from the
-    influencer set to the target, and compare against target-preserving argument
-    deletion. The latter keeps ``target`` when it is also in ``influencers``,
-    which makes self-attack attribution defined.
+    Al Anaissy et al. 2024, Definitions 10 and 12: first remove external
+    attacks entering the influencer set, then compare against deletion of that
+    set. Argument deletion retains ``target`` but removes relations incident
+    on any influencer, isolating the target when it is an influencer itself.
     """
     normalized_influencers = frozenset(str(argument) for argument in influencers)
     target = str(target)
@@ -315,7 +315,7 @@ def revised_direct_impact(
     removed_attacks = frozenset(
         (source, attacked)
         for source, attacked in graph.attacks
-        if source in normalized_influencers and attacked == target
+        if source not in normalized_influencers and attacked in normalized_influencers
     )
     attack_removed = _without_attacks(graph, removed_attacks)
     after_attack_removal = quadratic_energy_strengths(
@@ -330,7 +330,7 @@ def revised_direct_impact(
         )
 
     removed_arguments = normalized_influencers - {target}
-    argument_removed = _without_arguments(graph, removed_arguments)
+    argument_removed = _without_arguments(graph, normalized_influencers, target=target)
     after_argument_removal = quadratic_energy_strengths(
         argument_removed,
         tolerance=tolerance,
@@ -458,8 +458,10 @@ def _without_attacks(
 def _without_arguments(
     graph: WeightedBipolarGraph,
     removed_arguments: frozenset[str],
+    *,
+    target: str,
 ) -> WeightedBipolarGraph:
-    remaining = graph.arguments - removed_arguments
+    remaining = graph.arguments - (removed_arguments - {target})
     return WeightedBipolarGraph(
         arguments=remaining,
         initial_weights={
@@ -468,11 +470,11 @@ def _without_arguments(
         attacks=frozenset(
             (source, target)
             for source, target in graph.attacks
-            if source in remaining and target in remaining
+            if source not in removed_arguments and target not in removed_arguments
         ),
         supports=frozenset(
             (source, target)
             for source, target in graph.supports
-            if source in remaining and target in remaining
+            if source not in removed_arguments and target not in removed_arguments
         ),
     )
