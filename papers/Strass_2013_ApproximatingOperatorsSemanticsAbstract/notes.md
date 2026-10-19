@@ -67,7 +67,7 @@ Strass embeds Brewka & Woltran's abstract dialectical frameworks (ADFs) into the
 | three-valued stable model (x,y)        | SO(x,y) = (x,y)                     |
 | two-valued stable model (x,x)          | SO(x,x) = (x,x)                     |
 
-Inclusion lattice: every two-valued ⇒ three-valued; KK is a 3-valued supported model and equals well-founded for the 3-valued stable case; every 3-valued/2-valued stable is also supported.
+Inclusions: every two-valued supported/stable model is respectively three-valued supported/stable; Kripke-Kleene semantics is a three-valued supported model, while well-founded semantics is a three-valued stable model; every stable model is supported. Kripke-Kleene and well-founded semantics need not be equal for a general approximating operator. *([Definition 2.2, p.44 image](pngs/page-005.png))*
 
 ### Ultimate approximations (Denecker et al. 2004, p.44)
 For consistent (x,y) in (L^2, ≤_i):
@@ -300,13 +300,17 @@ Consistent (x,y) is *M-conflict-free* iff ≤_i-maximal among conflict-free pair
 | two-valued stable model (x,x) | SO(x,x)=(x,x) |
 
 ### Fig. 1 (p.67) inclusion lattice
-Subset relations (arrow = "⊆"):
-- two-valued stable → two-valued supported → three-valued supported (complete) → conflict-free → admissible
-- L-stable (semi-stable) ⊆ L-supported (semi-stable) ⊆ L-conflict-free (stage)
-- M-stable (preferred) ⊆ M-supported (preferred) ⊆ M-conflict-free (naive)
+Subset relations (arrow = "⊆"), transcribed from the actual figure:
+- two-valued stable → L-stable → M-stable → three-valued stable
+- two-valued supported → L-supported → M-supported → three-valued supported
+- two-valued supported → L-conflict-free → M-conflict-free → conflict-free
+- two-valued stable → two-valued supported
+- three-valued stable → three-valued supported → admissible → conflict-free
 - well-founded (grounded) ⊆ three-valued stable
 - Kripke-Kleene (grounded) ⊆ three-valued supported
 - All M-/L-/2-valued versions ⊆ corresponding 3-valued
+
+The figure does not assert cross-column inclusions L-stable ⊆ L-supported or M-stable ⊆ M-supported. Its parenthesized argumentation names identify the AF correspondences; supported and stable columns are distinct for general operators. *([Figure 1 and caption, p.67 image](pngs/page-028.png))*
 
 ### Table 2 (p.68) AF / Op / ADF correspondence
 | Operator-based | AF semantics | ADF semantics |

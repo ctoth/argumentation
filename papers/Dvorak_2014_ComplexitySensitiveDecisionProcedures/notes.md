@@ -89,9 +89,9 @@ $$
 Where: SAT encoding of admissible sets; every chosen argument must be defended. *(p.61)*
 
 $$
-\varphi_{\mathit{com}}(F)=\varphi_{\mathit{adm}}(F)\wedge \bigwedge_{a\in A}(x'_a \vee \bigvee_{(b,a)\in R}\neg x'_b)
+\varphi_{\mathit{com}}(F)=\varphi_{\mathit{adm}}(F)\wedge \bigwedge_{a\in A}(x_a \vee \bigvee_{(b,a)\in R}\neg x'_b)
 $$
-Where: SAT encoding of complete extensions. *(p.61)*
+Where: SAT encoding of complete extensions, together with the range constraints above. The positive literal is membership $x_a$, not range membership $x'_a$: a defended argument must itself be included. *(p.61; [page image 007](pngs/page-007.png))*
 
 $$
 \psi^I_{\mathit{prf}}(F)=\varphi_{\mathit{BASE-SEM}(\mathit{prf})}(F)\wedge\bigwedge_{x\in I\cap X}x\wedge\left(\bigvee_{x\in X\setminus I}x\right)

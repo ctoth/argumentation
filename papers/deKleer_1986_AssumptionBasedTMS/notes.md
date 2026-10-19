@@ -250,7 +250,7 @@ Contradictions involving less than three assumptions are common and best handled
 - Label soundness: Every environment in a node's label must entail the node given the justifications *(p.144)*
 - Label completeness: Every consistent environment from which the node is derivable must be a superset of some label environment *(p.144)*
 - Label minimality: No environment in a label is a superset of another environment in the same label *(p.145)*
-- Nogoods are closed under subset: if {A,B} is nogood, {A,B,C} need not be stored (it's implied) *(p.148)*
+- Nogoods are closed under supersets: if {A,B} is nogood, {A,B,C} is also nogood and need not be stored separately. *(p.148; [page image](pngs/page-021.png))*
 - Order independence: The same set of assumptions and justifications must produce the same labels regardless of introduction order *(p.150)*
 - Node categories partition: Every node is in exactly one of {true, in, out, false} sets; these are non-overlapping *(p.145)*
 - Bit-vector subset: For environments E1, E2 represented as bit-vectors, E1 subset of E2 iff (E1 AND NOT E2) == 0 *(p.157)*

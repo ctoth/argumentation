@@ -20,7 +20,7 @@ Explainable AI applications of QBAGs (recommenders, review aggregation, neural-n
 - Five contribution-function principles: Contribution Existence (4.1), Quantitative Contribution Existence (4.2), Directionality (4.3), (Quantitative) Local Faithfulness (4.5/4.6), (Quantitative) Counterfactuality (4.7/4.8). *(p.13-19)*
 - Principle-satisfaction analysis across 5×4 (semantics × function) grid summarized in Table 1; complete proofs in Section 5 with explicit counterexample QBAGs. *(p.6, p.20-32)*
 - Side results / conjectures (Section 6): Shapley sum identity equals σ(a)-τ(a); independence of irrelevant alternatives; conjectures on stability classes. *(p.32-?)*
-- Application example: explanation in clinical-decision-style recommender. *(later sections)*
+- Application example: explaining a movie-rating QBAG with acting, directing, writing and actor-specific criteria. *(Section 7, printed p.40, `pngs/page-039.png`)*
 - Comprehensive related work + roadmap for cyclic-graph extension.
 
 ## Methodology
@@ -93,7 +93,7 @@ First term computes σ(a) in QBAG with all relations *targeting x* removed (so x
 $$
 \mathsf{Ctrb}^{\mathcal{S}}_a(x) = \sum_{X \subseteq Args\setminus\{x,a\}} \frac{|X|!\cdot(|Args\setminus\{a\}|-|X|-1)!}{|Args\setminus\{a\}|!}\Big(\sigma_{\mathsf{G}{\downarrow}_{Args\setminus X}}(a) - \sigma_{\mathsf{G}{\downarrow}_{Args\setminus(X\cup\{x\})}}(a)\Big) \quad (3)
 $$
-Weighted average over coalitions $X$ that contain $a$ but not $x$, of the marginal effect of adding $x$. *(p.10)*
+Here X is the set of removed arguments and excludes both a and x; the retained subgraphs contain the topic a. The weighted marginal compares a retained subgraph containing x with the same subgraph without x. X itself does not contain a. *(Equation 3, printed p.10, `pngs/page-009.png`)*
 
 ### Gradient-based contribution
 $$

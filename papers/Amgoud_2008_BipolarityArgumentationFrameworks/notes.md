@@ -38,9 +38,9 @@ The paper uses a survey + formal framework approach:
 
 **Local gradual valuation** (Definition 9, p.15-16):
 
-$$v(A) = g(h_{def}(v(B_1), \ldots, v(B_n)), h_{sup}(v(C_1), \ldots, v(C_m)))$$
+$$v(A) = g(h_{sup}(v(C_1), \ldots, v(C_m)), h_{def}(v(B_1), \ldots, v(B_n)))$$
 
-where $B_i$ are direct defeaters, $C_j$ are direct supporters, $h$ is an aggregation function, $g$ combines defeat and support values.
+where $B_i$ are direct defeaters and $C_j$ are direct supporters. The argument order of $g$ is **support first, defeat second**; $g(x,y)$ increases with $x$ and decreases with $y$. The numeric instances below use that order. *([Definition 9, p.15 image](pngs/page-014.png))*
 
 Instance 1: $\mathcal{H}_{def} = \mathcal{H}_{sup} = V = [-1,1]$, $h_{def} = h_{sup} = \max$, $g(x,y) = \frac{x-y}{2}$ *(p.16)*
 
@@ -48,7 +48,7 @@ Instance 2: $V = [-1,1]$, $\mathcal{H}_{def} = \mathcal{H}_{sup} = [0,\infty[$, 
 
 **Supported defeat** (Definition 23, p.22):
 
-A supported defeat is a path $A_1, \ldots, A_{n-1}, A_n$ ($n \geq 2$) such that $A_1, \ldots, A_{n-1}$ is in $R_{sup}$ and $A_{n-1}, A_n$ is in $R_{def}$. A homogeneous defeat path of length 1 is also a supported defeat.
+A supported defeat is a path $A_1,\ldots,A_n$ with $n\geq3$, whose first $n-2$ edges belong to $R_{sup}$ and whose final edge belongs to $R_{def}$. By extension the paper also calls a direct defeat (a path with one defeat edge) a supported defeat. *([Definition 23, p.22 image](pngs/page-021.png))*
 
 **Conflict-free in bipolar AF** (Definition 25, p.23):
 
@@ -57,6 +57,8 @@ $S$ is conflict-free iff $\nexists A, B \in S$ such that $\{A\}$ defeats $B$ (wh
 **Admissible in bipolar AF** (Definition 28, p.23):
 
 $S$ is admissible iff $S$ is conflict-free, closed for $R_{sup}$, and defends all its elements.
+
+Here support closure follows the relation forward: $A\in S$ and $A R_{sup} B$ require $B\in S$. Definition 27 defines defense using **direct** $R_{def}$ attackers and direct counterattacks; this differs from extending the entire defense test to supported defeat. *([Definitions 27-28 and worked sets, p.23 image](pngs/page-022.png))*
 
 ## Parameters
 
@@ -72,9 +74,9 @@ $S$ is admissible iff $S$ is conflict-free, closed for $R_{sup}$, and defends al
 
 - The BAF is a triple $(A, R_{def}, R_{sup})$ where $R_{def}$ and $R_{sup}$ are binary relations on arguments *(p.10)*
 - Support relation is independent of the defeat relation; both are built separately *(p.14)*
-- The notion of "closure for $R_{sup}$" is critical for admissibility: if an argument $A$ is in an admissible set and $B$ supports $A$, then $B$ must also be in the set *(p.23)*
+- The notion of "closure for $R_{sup}$" is critical for admissibility: if $A$ belongs to the set and $A$ supports $B$, then $B$ must also belong. It does not require all incoming supporters of an accepted argument. In the paper's graph, $S_2=\{A,B,E,F\}$ omits $C$ despite $B R_{sup} C$ and is not admissible. *([p.23 image](pngs/page-022.png))*
 - Supported defeat creates new attack paths: a support chain ending in a defeat counts as a defeat *(p.22)*
-- For desire-handling systems, a desire $d$ is unachievable if every complete plan is conflict-free but not supported *(p.22)*
+- For desire-handling systems, a desire $d$ is unachievable iff there is **no conflict-free complete plan** rooted at $d$. *([Definition 20, p.22 image](pngs/page-021.png))*
 - Three classes of arguments in selection: acceptable, rejected, in abeyance *(p.19, 24)*
 
 ## Figures of Interest
@@ -114,14 +116,14 @@ The summary table *(p.26)* shows exclusivity always holds, duality sometimes hol
 - Bipolarity is not optional decoration but a fundamental feature of argumentation that appears at every level *(p.25)*
 - The Dubois-Prade taxonomy provides a principled classification rather than ad hoc categories *(p.3)*
 - Exclusivity constraint (cannot simultaneously support and defeat the same argument) is essential for rational reasoning *(p.14, footnote 8)*
-- Closure for support in admissibility ensures that accepted arguments have their support base also accepted *(p.23)*
+- Closure for support in admissibility requires accepting the arguments supported by accepted arguments, following $R_{sup}$ forward. *([p.23 image](pngs/page-022.png))*
 
 ## Testable Properties
 
 1. **Exclusivity**: In a BAF, if $A R_{sup} B$ then $\neg(A R_{def} B)$ and vice versa *(p.14)*
 2. **Supported defeat transitivity**: If A supports B and B defeats C, then A "supported-defeats" C *(p.22)*
-3. **Admissible sets must be closed for R_sup**: If $A \in S$ (admissible) and $B R_{sup} A$, check $B \in S$ *(p.23)*
-4. **Local valuation monotonicity**: Adding a defeater decreases value; adding a supporter increases value *(p.15-16)*
+3. **Admissible sets must be closed for R_sup**: If $A\in S$ and $A R_{sup} B$, check $B\in S$. *([p.23 image](pngs/page-022.png))*
+4. **Local valuation monotonicity**: With existing input values held fixed, adding a defeater cannot increase value and adding a supporter cannot decrease it. A max aggregator can leave the result unchanged when the new input is weaker; strict change is not guaranteed. *([Definition 9 constraints, p.15](pngs/page-014.png), [max instance, p.16](pngs/page-015.png))*
 5. **Conflict-free with supported defeat**: A set containing both an argument and its supported-defeater is not conflict-free *(p.23)*
 
 ## Relevance to Project

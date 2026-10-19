@@ -85,6 +85,8 @@ e_s^i \leftrightarrow \bigvee_{\substack{r \in \mathcal{R} \\ head(r)=s}} \left(
 $$
 same for derivations from B_τ (assumption in body must be un-attacked, i.e. `¬y_a`). *(p.711)*
 
+**Source discrepancy in the later B-derivation displays:** The definition of `B_τ` and the level-based formula above use `¬y_a` for assumption body atoms ([printed pp.710-711](pngs/page-003.png), [continuation](pngs/page-004.png)). The displayed `φ_B^acyc(s)` on p.711 and `φ_B^ufs(s)` on p.712 instead print `y_a`, without the negation ([graph-based display](pngs/page-004.png), [UFS display](pngs/page-005.png)). The UFS formula transcribed below uses `¬y_a` to express the stated undefeated-assumption interpretation; it is not a literal reproduction of that inconsistent printed sign. The discrepancy belongs to the paper and is not silently resolved here.
+
 **Proposition 1:** For σ ∈ {adm, com, stb}, τ satisfying Φ_σ^lvl(F) = φ_σ(F) ∧ φ_att^lvl(F) ∧ φ_ndef^lvl(F) ∧ ⋀_{s∈L}⋀_{i=1}^U φ_A(s,i) ∧ ⋀_{s∈L}⋀_{i=1}^U φ_B(s,i) corresponds to a σ-extension A_τ, and vice versa. For **stable** semantics φ_ndef and φ_B(s,i) are **not needed** (every assumption outside A_τ is attacked). *(p.711)*
 
 **Graph-based acyclicity (SAT-VE / SAT-ACYC), Section 3.2.** Non-assumption variables `d_a`, `e_a`; plus edge-activation variables `r_{s,t}^d`, `r_{s,t}^e` for each s,t ∈ L\A with a rule head(r)=s, t ∈ body(r). Semantics reuse `φ_att`, `φ_ndef` (non-indexed forms with ψ_att(a)=`x_ā` or `d_ā`; ψ_ndef(a)=`¬y_ā` or `e_ā`). *(p.711-712)*

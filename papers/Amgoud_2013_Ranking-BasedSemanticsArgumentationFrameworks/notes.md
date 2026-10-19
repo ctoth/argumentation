@@ -18,11 +18,11 @@ Extension-based semantics (grounded, preferred, stable, complete from Dung 1995)
 
 ## Key Contributions
 - Defines **ranking-based semantics** as a new family that outputs a total preorder (ranking) over arguments, providing gradual acceptability rather than binary in/out *(p.2)*
-- Proposes **eight postulates** (axioms) that any reasonable ranking-based semantics should satisfy, grounded in four considerations: weakening, counting, quality, and cardinality of attackers *(p.2)*
+- Proposes nine numbered postulates, ending with Distributed Defense Precedence (Postulate 9), alongside compatibility and incompatibility results. *(PDF p.8, `pngs/page-007.png`)*
 - Proves **compatibility and incompatibility** results between postulates *(p.9)*
 - Constructs two concrete ranking-based semantics: **Discussion-based (Dbs)** and **Burden-based (Bbs)** *(p.9-11)*
 - Proves which postulates each semantics satisfies and which it violates *(p.10-11)*
-- Shows that Bbs refines Dung's extension-based semantics (ranking within extensions) while Dbs may return different results *(p.12)*
+- Shows that Bbs can distinguish arguments within a Dung extension, but does not generally preserve Dung acceptance order: Example 4 ranks rejected b above accepted a. *(PDF p.12, `pngs/page-011.png`)*
 
 ## Methodology
 The paper follows an axiomatic methodology: first define formal postulates capturing desirable properties, then construct semantics and verify which postulates they satisfy. This mirrors the approach of Baroni & Giacomin (2007) for extension-based semantics but adapted to ranking-based outputs. *(p.2-3)*
@@ -33,9 +33,8 @@ The paper follows an axiomatic methodology: first define formal postulates captu
 An argumentation framework is an ordered pair $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$ where $\mathcal{A}$ is a finite set of arguments and $\mathcal{R}$ is a binary relation on $\mathcal{A}$ (i.e., $\mathcal{R} \subseteq \mathcal{A} \times \mathcal{A}$). $(a, b) \in \mathcal{R}$ means $a$ attacks $b$. *(p.3)*
 
 ### Key Notation
-- $\text{Att}(\mathcal{A}) = \{a \in \mathcal{A} \mid \exists b, (b, a) \in \mathcal{R}\}$: set of attacked arguments *(p.3)*
-- $\text{Arg}(a) = \{b \mid (b, a) \in \mathcal{R}\}$: direct attackers of $a$ *(p.3)*
-- $\text{Def}_i(a)$: defenders of $a$ at depth $i$ --- all defenders of $a$ in $\mathcal{A}$ *(p.5)*
+- $\operatorname{Arg}(\mathbf A)=\mathcal A$: the framework's argument set; $\operatorname{Att}_{\mathbf A}(a)=\{b\in\mathcal A\mid b\mathcal R a\}$: direct attackers of a. *(Notation 1, PDF p.3, `pngs/page-002.png`)*
+- $\operatorname{Def}_{\mathbf A}(a)=\{b\in\mathcal A\mid\exists c\in\mathcal A:c\mathcal R a\text{ and }b\mathcal R c\}$: defenders of a, not a depth-indexed family. *(PDF p.5, `pngs/page-004.png`)*
 
 ### Ranking (Definition 2)
 A ranking on $\mathcal{A}$ is a binary relation $\succeq$ on $\mathcal{A}$ such that:
@@ -87,11 +86,11 @@ Compare burden sequences lexicographically, with smaller burden preferred at the
 A ranking-based semantics $\mathbf{S}$ satisfies **abstraction** iff for any two argumentation frameworks $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$ and $\mathbf{A}' = \langle \mathcal{A}', \mathcal{R}' \rangle$, for any isomorphism $f$ from $\mathbf{A}$ to $\mathbf{A}'$, then $\forall a, b \in \mathcal{A}$: $\langle a, b \rangle \in \mathbf{S}(\mathbf{A})$ iff $\langle f(a), f(b) \rangle \in \mathbf{S}(\mathbf{A}')$. The ranking should not depend on the identity of arguments. *(p.3-4)*
 
 ### Postulate 2: Independence (In)
-For every argumentation framework $\mathbf{A}$: $\forall a, b \in \text{Con}(\mathcal{A})$, $\forall a, b \in \text{Arg}(\mathcal{B})$, $\langle a, b \rangle \in \mathbf{S}(\mathbf{A})$ iff $\langle a, b \rangle \in \mathbf{S}(\mathbf{B})$.
+For every argumentation framework $\mathbf A$, every $\mathbf B\in\operatorname{Com}(\mathbf A)$, and every $a,b\in\operatorname{Arg}(\mathbf B)$: $\langle a,b\rangle\in\mathbf S(\mathbf A)$ iff $\langle a,b\rangle\in\mathbf S(\mathbf B)$. Com includes a weakly connected component or a union of such components. *(Postulate 2, PDF p.4, `pngs/page-003.png`)*
 Ranking within a weakly connected component is independent of arguments in other components. *(p.4)*
 
 ### Postulate 3: Void Precedence (VP)
-For every argumentation framework $\mathbf{A} = \langle \mathcal{A}, \mathcal{R} \rangle$: $\forall a \in \mathcal{A}$, if $a \notin \text{Att}(\mathcal{A})$ then $\forall b \in \text{Att}(\mathcal{A})$, $a \succ b$. A non-attacked argument is strictly more acceptable than any attacked argument. *(p.4-5)*
+For every a,b, if $\operatorname{Att}(a)=\emptyset$ and $\operatorname{Att}(b)\ne\emptyset$, then $a\succ b$. A non-attacked argument is strictly more acceptable than an attacked argument. *(Postulate 3, PDF p.5, `pngs/page-004.png`)*
 
 ### Postulate 4: Defense Precedence (DP)
 If $|\operatorname{Att}(a)|=|\operatorname{Att}(b)|$, $\operatorname{Def}(a)\ne\emptyset$, and $\operatorname{Def}(b)=\emptyset$, then $a\succ b$. A defender is an argument attacking at least one direct attacker; **not every attacker of $a$ must be attacked**. Example 3 has two attackers for each target and only one of $a$'s attackers is defended. *(PDF p.5, page-004.png, Postulate 4 and Example 3)*
@@ -100,14 +99,14 @@ If $|\operatorname{Att}(a)|=|\operatorname{Att}(b)|$, $\operatorname{Def}(a)\ne\
 If there is an injective map $f:\operatorname{Att}(a)\to\operatorname{Att}(b)$ with $f(x)\succeq x$ for every attacker $x$ of $a$, then $a\succeq b$. Thus the more numerous/acceptable attacker group belongs to $b$, not $a$. *(PDF p.6, page-005.png, Definition 6 and Postulate 5)*
 
 ### Definition 7: Strict Group Comparisons (SGC)
-For all $a, b \in \mathcal{A}$: $\langle \mathcal{A}, \mathcal{D} \rangle \models \text{Sgc}(z)$ if there exists an injective function $f$ from $B$ to $A$ that meets two conditions:
+For argument sets A,B and a ranking $\succeq$, $(A,B)$ belongs to the strict group-comparison relation iff an injective function $f:B\to A$ meets two conditions:
 - $\forall x \in B$, $f(x) \succeq x$
 - $|B| < |A|$ or $\exists x \in B, f(x) \succ x$
 
 Essentially, $A$'s elements are strictly better than $B$'s from a global point of view based on both cardinality and acceptability. *(p.6)*
 
 ### Postulate 6: Strict Counter-Transitivity (SCT)
-$\forall a, b \in \mathcal{A}$: if $\text{Sgc}(\text{Arg}(b), \text{Arg}(a))$, then $a \succ b$. *(p.6)*
+For every a,b, if $(\operatorname{Att}(b),\operatorname{Att}(a))$ belongs to the strict group-comparison relation, then $a\succ b$. *(Definitions 6-7 and Postulate 6, PDF p.6, `pngs/page-005.png`)*
 
 ### Postulate 7: Cardinality Precedence (CP)
 If $|\operatorname{Att}(a)|<|\operatorname{Att}(b)|$, then $a\succ b$. There is no condition that the attackers be unattacked, and the zero-attacker case is included. *(PDF p.8, page-007.png, Postulate 7)*
@@ -174,7 +173,7 @@ For arguments with equal attacker counts and equal defender counts, if the defen
 ## Results Summary
 - Dbs gives precedence to the number/quality of discussions (argument chains), comparing lexicographically by discussion length *(p.10)*
 - Bbs gives precedence to cardinality of attackers over their quality, following a burden-accumulation model *(p.11-12)*
-- Bbs refines Dung's extension-based semantics: accepted arguments rank above undecided, which rank above rejected. Dbs may differ. *(p.12)*
+- Bbs is not an order-preserving refinement of Dung acceptance classes. In Example 4, the unique grounded/preferred/stable extension is {h,g,a,e}, yet Bbs ranks rejected b above accepted a. *(PDF p.12, `pngs/page-011.png`)*
 - Both semantics treat the structure obtained by "unrolling" cycles, not distinguishing loops from mutual attacks *(p.12)*
 
 ## Limitations
@@ -202,12 +201,12 @@ For arguments with equal attacker counts and equal defender counts, if the defen
 ## Testable Properties
 - Non-attacked arguments must be ranked strictly above all attacked arguments (VP) *(p.4-5)*
 - Arguments in different weakly connected components must be ranked independently (In) *(p.4)*
-- If there is an injective mapping from $b$'s attackers to $a$'s attackers where each mapped attacker is at least as acceptable, then $a \succeq b$ (CT) *(p.6)*
+- If there is an injective mapping from a's attackers to b's attackers where every mapped attacker is at least as acceptable as its preimage, then $a\succeq b$ (CT). *(PDF p.6, `pngs/page-005.png`)*
 - Strict version: if the mapping is strict (either fewer attackers or at least one strictly more acceptable), then $a \succ b$ (SCT) *(p.6)*
-- When all attackers are non-attacked, the argument with fewer attackers must be ranked higher (CP) *(p.8)*
+- The argument with fewer direct attackers ranks higher regardless of whether those attackers are themselves attacked (CP). *(PDF p.8, `pngs/page-007.png`)*
 - Dbs satisfies Ab, In, CT, SCT, CP but not DDP *(p.10)*
 - Bbs satisfies Ab, In, CT, SCT, CP, and DDP *(p.11-12)*
-- For Bbs: accepted arguments in Dung's grounded/preferred/stable extensions rank above undecided, which rank above rejected *(p.12)*
+- Bbs may rank a Dung-rejected argument above a Dung-accepted one; Example 4 explicitly exhibits this. *(PDF p.12, `pngs/page-011.png`)*
 - Burden numbers at step 0 are always 1 for all arguments *(p.11)*
 - For non-attacked arguments, burden remains 1 at all steps *(p.11)*
 
@@ -251,7 +250,7 @@ The postulate framework provides testable correctness criteria for any ranking i
 - [[Matt_2008_Game-TheoreticMeasureArgumentStrength]] — conceptual competitor; game-theoretic argument strength is an alternative to the axiomatic ranking approach
 
 ### Conceptual Links (not citation-based)
-- [[Gabbay_2012_EquationalApproachArgumentationNetworks]] — **Strong.** Both papers assign graded acceptability values to arguments in Dung AFs, but via fundamentally different methods: Gabbay uses fixed-point equations over [0,1] values (continuous numerical), while Amgoud & Ben-Naim use lexicographic comparison of discussion/burden sequences (discrete ordinal). Gabbay's Eq_max corresponds to Caminada complete labellings; Amgoud's Bbs refines Dung's extensions. The two approaches represent the numerical vs. ordinal branches of gradual argumentation semantics.
+- [[Gabbay_2012_EquationalApproachArgumentationNetworks]] — **Strong.** Gabbay uses fixed-point equations over [0,1], while Amgoud & Ben-Naim compare discussion/burden sequences lexicographically. Bbs can distinguish arguments within an extension but can also rank a rejected argument above an accepted one. *(Example 4, PDF p.12, `pngs/page-011.png`)*
 - [[Matt_2008_Game-TheoreticMeasureArgumentStrength]] — **Strong.** Matt & Toni's game-theoretic semantics and Amgoud & Ben-Naim's axiomatic semantics solve the same problem (gradual argument ranking) from different foundations. Bonzon 2016 later compares both directly, finding they satisfy different subsets of properties. Matt & Toni fails CT and CP which Amgoud's semantics satisfy; Amgoud's Dbs fails DDP which Bbs satisfies.
 - [[Bonzon_2016_ComparativeStudyRanking-basedSemantics]] — **Strong.** Bonzon et al. provide the definitive comparative evaluation of five ranking semantics including both Dbs and Bbs from this paper, testing them against 16 properties (many originating here). The comparison paper is the empirical validation of this paper's axiomatic framework.
 

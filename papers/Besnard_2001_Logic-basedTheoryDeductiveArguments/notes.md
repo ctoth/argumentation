@@ -44,9 +44,9 @@ $$
 
 ### Definition 4.1: Defeater
 $$
-\langle \Phi, \alpha \rangle \text{ defeats } \langle \Psi, \beta \rangle \text{ iff } \beta \vdash \neg(\phi_1 \wedge \cdots \wedge \phi_n) \text{ for some } \{\phi_1, \ldots, \phi_n\} \subseteq \Phi
+\langle \Psi, \beta \rangle \text{ defeats } \langle \Phi, \alpha \rangle \text{ iff } \beta \vdash \neg(\phi_1 \wedge \cdots \wedge \phi_n) \text{ for some } \{\phi_1, \ldots, \phi_n\} \subseteq \Phi
 $$
-Where: the consequent of one argument negates the conjunction of some support elements of another.
+Where: the attacker's consequent $\beta$ entails the negation of a conjunction of elements of the target's support $\Phi$. *([Definition 4.1 page image, printed p.209](pngs/page-006.png))*
 *(p.6/209)*
 
 ### Definition 4.3: Undercut
@@ -110,9 +110,9 @@ An accumulator takes pairs of numbers (from categoriser applied to pro and con t
 - Arguments are pairs <Phi, alpha> where Phi is a minimal consistent subset of Delta that entails alpha *(p.2/205)*
 - Minimality is essential: it ensures every formula in the support contributes to proving the conclusion *(p.2/205)*
 - The "more conservative" relation defines a pre-ordering on arguments (reflexive, transitive) *(p.3/206)*
-- Equivalent arguments (Definition 3.8): <Phi, alpha> and <Phi', alpha'> are equivalent if Phi is logically equivalent to Phi' and alpha is logically equivalent to alpha' *(p.5/208)*
+- Equivalent arguments (Definition 3.9): <Phi, alpha> and <Phi', alpha'> are equivalent if Phi is logically equivalent to Phi' and alpha is logically equivalent to alpha' *(printed p.208; [page image](pngs/page-005.png))*
 - For any argument, there are only finitely many arguments (up to equivalence) per consequent (Theorem 3.7) *(p.4/207)*
-- Normal form: every formula in Phi is in the language of alpha when both are in normal form *(p.4/207)*
+- Normal form maps each formula to a logically equivalent representative and maps equivalent formulas to the same representative. With consequents in normal form, the more-conservative relation is an ordering; restricted to the language of Delta, it yields an upper semilattice (Theorem 3.7). *(printed p.207; [page image](pngs/page-004.png))*
 - Canonical enumeration of Delta required: each subset gets a fixed ordering of its elements *(p.2/205)*
 - Argument tree construction terminates because Delta is finite and condition (2) prevents support cycles *(p.14/217)*
 - If Delta is consistent, all argument trees have exactly one node (Theorem 6.6) *(p.14/217)*

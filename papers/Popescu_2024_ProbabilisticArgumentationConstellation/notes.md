@@ -31,10 +31,9 @@ Under the constellation approach, a subframework F' = (A', R') is a possible wor
 ### Key Probability Formulas
 
 $$
-P(F') = \prod_{a \in A'} P(a) \cdot \prod_{a \in A \setminus A'} (1 - P(a)) \cdot \prod_{(a,b) \in R'} P((a,b)) \cdot \prod_{(a,b) \in R \setminus R'} (1 - P((a,b)))
+P(F') = \prod_{a \in A'} P(a) \cdot \prod_{a \in A \setminus A'} (1 - P(a)) \cdot \prod_{r\in R'} P(r) \cdot \prod_{r\in D\setminus R'} (1-P(r)),\qquad D=R\cap(A'\times A')
 $$
-Where: F' = (A', R') is a subframework (possible world), P(a) is probability of argument a existing, P((a,b)) is probability of attack (a,b) existing.
-*(p.3)*
+Only attacks with both endpoints present in A' receive factors; attacks touching absent arguments receive none. This endpoint restriction is part of the source formula. *(printed p.587, `pngs/page-002.png`)*
 
 $$
 P_\sigma^{ext}(F, S) = \sum_{F' \in \mathcal{F}_P(F) : S \in \sigma(F')} P(F')

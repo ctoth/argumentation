@@ -18,7 +18,7 @@ Prior work on argumentation with preferences had several gaps: (1) the standard 
 
 ## Key Contributions
 
-1. **Revised conflict-free definition**: Replaces defeat-based conflict-free (Def 13, p.14) with attack-based conflict-free (Def 14, p.14), which is strictly stronger and enables all four rationality postulates to hold without additional assumptions. *(p.14)*
+1. **Revised conflict-free definition**: Replaces defeat-based conflict-free (Def 13, p.14) with the stronger attack-based condition (Def 14, p.14). The rationality results still assume well-defined (c-)SAFs and reasonable argument orderings; attack-conflict-freeness does not remove these hypotheses. *(pp.14, 19; [well-definedness and conflict-free definitions](pngs/page-013.png), [comparison](pngs/page-018.png))*
 
 2. **Rationality postulates proven**: Sub-argument closure (Thm 12, p.18), closure under strict rules (Thm 13, p.18), direct consistency (Thm 14, p.18), and indirect consistency (Thm 15, p.19) are all proven for attack-conflict-free extensions under reasonable argument orderings. *(p.18-19)*
 
@@ -40,7 +40,7 @@ The paper is a formal theoretical contribution. It defines mathematical structur
 1. Define the ASPIC+ argumentation system tuple $\langle \mathcal{L}, \overline{\cdot}, \mathcal{R}, n \rangle$ and knowledge base $\mathcal{K} = \mathcal{K}_n \cup \mathcal{K}_p$. *(Def 2, p.8; Def 4, p.9)*
 2. Construct arguments recursively from premises and rules (Def 5, p.9). *(p.9)*
 3. Define three attack types: undermining, rebutting, undercutting (Def 8, p.11). *(p.11)*
-4. Define defeat via preferences (Def 9, p.12): undercutting always succeeds; rebutting and undermining succeed only when the attacker is not strictly less preferred. *(p.12)*
+4. Define defeat via preferences (Def 9, p.12): undercutting, contrary-rebutting, and contrary-undermining always succeed; the remaining rebutting/undermining attacks succeed only when the attacker is not strictly less preferred than the attacked subargument. *(p.12; [page image](pngs/page-011.png))*
 5. Build structured argumentation frameworks (SAF) and c-consistent SAFs (c-SAF) (Def 11, p.13). *(p.13)*
 6. Adopt attack-based conflict-free (Def 14, p.14) instead of defeat-based (Def 13, p.14). *(p.14)*
 7. Prove rationality postulates hold under reasonable orderings (Def 18, p.16). *(p.16-19)*
@@ -84,7 +84,7 @@ $B \prec A$ iff:
 *(Def 21, p.21)*
 
 ### Abstract logic consequence operator (Def 23)
-$cn: 2^\mathcal{L} \to 2^\mathcal{L}$ satisfying: inclusion, idempotency, compactness, non-triviality ($cn(\{p\}) \neq \mathcal{L}$), and $cn(\emptyset) \neq \mathcal{L}$.
+$cn: 2^\mathcal{L} \to 2^\mathcal{L}$ satisfying inclusion, idempotency, compactness, existence of some $p \in \mathcal{L}$ with $cn(\{p\}) = \mathcal{L}$, and $cn(\emptyset) \neq \mathcal{L}$. Condition 4 requires an explosive singleton, rather than forbidding one. *([Definition 23 page image](pngs/page-022.png))*
 *(Def 23, p.23)*
 
 ### Reasonable argument orderings (Def 18)
@@ -94,7 +94,7 @@ An argument ordering $\preceq$ is reasonable iff:
 *(Def 18, p.16-17)*
 
 ### Reasonable inducing ordering (Def 22)
-An ordering $\leq$ is reasonable inducing if it is a strict partial ordering (irreflexive and transitive) and for any $c \in \mathcal{R}_d \cup \mathcal{K}_p$, if $c$ is a defeasible rule or ordinary premise, and for $\text{LastDefRules}$, $\text{Prem}_p$, $\text{DefRules}$ as needed, the last-link and weakest-link principles yield reasonable argument orderings.
+The set comparison $\lhd_s$ is reasonable inducing iff it is a strict partial ordering (irreflexive and transitive) and, for each $kr \in \{LastDefRules, DefRules, Prem_p\}$ and all arguments $B_1,\ldots,B_n,A$, if $\bigcup_{i=1}^n kr(B_i) \lhd_s kr(A)$ then $kr(B_i) \lhd_s kr(A)$ for some $i$. This is a condition on the inducing comparison, from which reasonableness of the argument ordering is proved. *([Definition 22 page image](pngs/page-021.png))*
 *(Def 22, p.22)*
 
 ## Parameters
@@ -139,14 +139,14 @@ An ordering $\leq$ is reasonable inducing if it is a strict partial ordering (ir
 - **ASPIC+ is a framework, not a system**: it specifies how to build argumentation systems by choosing a logical language, contrariness function, rules, knowledge base, and preference ordering. *(p.7)*
 - **Argument construction is recursive**: base case is a premise from $\mathcal{K}$; inductive case applies a strict or defeasible rule to the conclusions of existing arguments. *(Def 5, p.9)*
 - **Three attack types**: undermining (on ordinary premises), rebutting (on conclusions of defeasible inferences), undercutting (on defeasible inference steps via naming convention). Undercutting is always preference-independent. *(Def 8, p.11)*
-- **Defeat filters attacks through preferences**: rebutting and undermining succeed only when the attacker is not strictly weaker ($A \not\prec B'$). Undercutting always succeeds regardless of preferences. *(Def 9, p.12)*
+- **Defeat filters attacks through preferences**: undercutting, contrary-rebutting, and contrary-undermining always succeed. Other rebutting/undermining attacks succeed iff the attacker is not strictly weaker than the attacked subargument ($A \not\prec B'$). *(Def 9, p.12; [page image](pngs/page-011.png))*
 - **Attack-based conflict-free is the recommended definition**: stricter than defeat-based, ensures all rationality postulates hold with fewer auxiliary assumptions. *(Def 14, p.14; discussed p.14-15)*
 - **Reasonable argument orderings (Def 18)**: the sufficient condition for all results; requires (i) strict+firm arguments dominate plausible/defeasible ones, (ii) strict+firm arguments are never dominated, (iii) strict continuation preserves preference status. *(Def 18, p.16-17)*
 - **Classical logic instantiation**: strict rules = classical consequence; without preferences, preferred/stable extensions = maximal consistent subsets; with preferences, = Brewka's preferred subtheories (Theorem 31). *(p.27-29)*
-- **Transposition closure**: required for well-definedness of (c-)SAFs; if $\phi_1, \ldots, \phi_n \to \psi$ is a strict rule, then for each $i$, $\phi_1, \ldots, \overline{\psi}, \ldots \to \overline{\phi_i}$ must also be a strict rule. *(Def 12, p.13; Example 7, p.15)*
+- **Transposition or contraposition closure**: well-definedness requires one of these alternatives, together with axiom consistency and well-formedness (and c-classicality for c-SAFs). Transposition closure is not individually mandatory when contraposition closure holds. *(Def 12 continued, p.14; [page image](pngs/page-013.png))*
 - **Attacks on sub-arguments are critical**: A requirement for attacks is that they should only be targeted at fallible elements of an argument, i.e., only on uncertain premises or defeasible inferences. In particular, conclusions of deductive inferences in an argument cannot be attacked. *(p.5)*
 - **Two roles of attacks**: (1) encoding mutual incompatibility of information (declarative), and (2) determining which arguments prevail (procedural). *(p.5-6)*
-- **Preference-dependent vs preference-independent attacks**: undermining and rebutting are preference-dependent (may be overridden by stronger arguments); undercutting is preference-independent (always succeeds). This distinction is structural in ASPIC+, not requiring separate attack types. *(p.5-6, p.12)*
+- **Preference-dependent vs preference-independent attacks**: undercuts and the asymmetric contrary forms of rebutting/undermining are preference-independent. The contradictory forms of rebutting/undermining are preference-dependent. Thus undermining and rebutting each include both kinds. *(Def 9, p.12; [page image](pngs/page-011.png))*
 - **The naming convention $n$**: maps each defeasible rule to a well-formed formula that names it, enabling undercutting attacks that target specific inference steps. *(Def 2, p.8)*
 - **Well-definedness conditions (Def 12)**: a (c-)SAF is well-defined iff it is axiom consistent, well-formed and closed under contraposition or closed under transposition. *(p.13)*
 - **Fundamental lemma holds for c-SAFs**: under reasonable orderings, Dung's fundamental lemma (Props 9-11, p.17) holds, ensuring admissible extensions form a complete partial order. *(p.17)*
@@ -177,7 +177,7 @@ An ordering $\leq$ is reasonable inducing if it is a strict partial ordering (ir
 - The framework is purely theoretical; no implementation or empirical evaluation is provided. *(p.35)*
 - Computational complexity of computing extensions under ASPIC+ is not addressed (inherits from Dung's framework, which is generally intractable). *(p.35)*
 - The preference ordering must be specified externally; the paper provides last-link and weakest-link as standard options but does not prescribe how to choose between them for a given domain. *(p.20-21)*
-- Transposition closure is required for well-definedness, which may generate a large number of additional strict rules in practice. *(p.13, p.15)*
+- Well-definedness requires closure under contraposition or transposition; the transposition alternative may generate additional strict rules. *(Def 12 continued, p.14; [page image](pngs/page-013.png))*
 - The contrariness function maps formulas to sets of contraries, but for classical logic the paper restricts to symmetric contradictories. *(p.8, p.27)*
 - The paper focuses on Dung semantics (complete, preferred, grounded, stable); other semantics (e.g., semi-stable, ideal) are not considered. *(p.4)*
 - Defeasible rules are essential for non-trivial results: if all rules are strict and monotonic, the framework reduces to classical logic with maximal consistent subsets. *(p.29-30)*
@@ -209,7 +209,7 @@ An ordering $\leq$ is reasonable inducing if it is a strict partial ordering (ir
 ## Testable Properties
 
 1. **Rationality postulates**: Any implementation of ASPIC+ with attack-based conflict-free, reasonable orderings, and well-defined c-SAFs MUST produce extensions that satisfy sub-argument closure, closure under strict rules, direct consistency, and indirect consistency. *(Thms 12-15, p.18-19)*
-2. **Preference filtering**: Undercutting attacks must always succeed regardless of preferences. Rebutting and undermining must succeed only when the attacker is not strictly weaker. *(Def 9, p.12)*
+2. **Preference filtering**: Undercutting, contrary-rebutting, and contrary-undermining must always succeed regardless of preferences. Contradictory rebutting/undermining succeeds iff the attacker is not strictly weaker than the attacked subargument. *(Def 9, p.12; [page image](pngs/page-011.png))*
 3. **Last-link vs weakest-link**: Given the same knowledge base and rules, last-link and weakest-link orderings may produce different defeat relations and different extensions. Both must be reasonable per Definition 18. *(Defs 20-21, p.21; Def 18, p.16)*
 4. **Classical logic correspondence**: For a classical-logic c-SAF without preferences, preferred/stable extensions must correspond to maximal consistent subsets. With preferences, they must correspond to Brewka's preferred subtheories. *(Thm 31, p.29; Section 5.3, p.27-29)*
 5. **Abstract logic embedding**: For any abstract logic $\langle \mathcal{L}, cn \rangle$ satisfying the five conditions of Def 23, the ASPIC+ c-SAF construction must yield the same extensions as the direct abstract logic construction. *(Props 25-27, p.25-26; Def 23, p.23)*

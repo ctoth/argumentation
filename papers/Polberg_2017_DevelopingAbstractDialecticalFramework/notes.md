@@ -49,7 +49,7 @@ The thesis is built on three primary technical devices:
 Onto these are layered:
 
 - **Decisiveness via interpretations and via sets** (Def 3.1.4 vs Def 3.1.5 `acc/reb`): both representations are kept since extension-based semantics need set form, labeling semantics need interpretation form.
-- **Three flavors of range** (Def 3.1.13 standard `E^Ran = E ∪ E^+`, Def 3.1.18 partially-acyclic `E^{p+}`, Def 3.1.20 / 3.1.15-deprecated acyclic `E^{a+}`). Lemma 3.1.21: `E^+ ⊆ E^{p+} ⊆ E^{a+}` for conflict-free `E`.
+- **Three flavors of range**: Definition 3.1.13 gives standard `E^Ran = E ∪ E^+`; Definition 3.1.15 gives the deprecated iterative acyclic range `E^{a+}` (rephrased through evaluations in Lemma 3.1.17); Definition 3.1.18 gives the partially acyclic discarded set `E^{p+}`, and Definition 3.1.20 its **partially acyclic** range interpretation. Lemma 3.1.21 gives `E^+ ⊆ E^{p+} ⊆ E^{a+}` for conflict-free `E`. *([PDF p.76](pngs/page-076.png), [PDF p.77](pngs/page-077.png))*
 - **xy-classification** of admissible / complete / preferred families with `x = "inside" ∈ {a,c}` (acyclic vs cyclic accepted args) and `y = "outside" ∈ {a,c}` (acyclic vs cyclic rejection of attackers); `ca₁` (Pol14a, discard cyclic args independently) vs `ca₂` (Pol15, exception when cycle is internal to accepted set).
 - **Characteristic operator ϒ_F** (Def 2.1.5 for AFs, generalized) plus framework-specific operators (`F_FN, F_ES, F_EF, F_EFC, F_FR, d-F_BF`) for support frameworks.
 - **σ-correspondence proofs**: each translation is anchored by a Theorem stating `E σ-extension of source ⇔ casting(extension(target))` for σ in the listed semantics.
@@ -234,6 +234,7 @@ For three-valued `v: A → {t,f,u}`:
 - `v` admissible iff `v ≤ᵢ Γ_D(v)`; complete iff fixed point; preferred iff ≤ᵢ-maximal admissible; grounded iff ≤ᵢ-least fixed point.
 
 ### Standard range computation — Def 3.1.13 (p.76)
+The definition assumes `E` is conflict-free; the evaluation-based reformulation in Lemma 3.1.14 is the one that removes that assumption. *([PDF pp.75-76](pngs/page-075.png), [continuation](pngs/page-076.png))*
 1. `M := E`; `v_E(a) := t` for `a ∈ E`.
 2. For every `b ∈ A \ M` decisively out w.r.t. `v_E`, set `v_E(b) := f`, add `b` to `M`.
 3. Repeat (2) until fixed point. `E^+ := v_E^f`, `E^Ran := E ∪ E^+`.
@@ -245,10 +246,12 @@ For three-valued `v: A → {t,f,u}`:
 4. Repeat to fixed point. Acyclic grounded `:= v^t`.
 
 ### Stable model via reduct — Def 3.2.4 (p.80)
-1. Take candidate `M ⊆ A`.
-2. Build reduct `D^M` with `C_e^M = φ_e[b/f : b ∉ M]`.
+1. Take candidate `M ⊆ A` that is already a **two-valued model of D**.
+2. Build reduct `D^M=(M,L∩(M×M),C^M)` with `C_e^M = φ_e[b/f : b ∉ M]` for `e ∈ M`.
 3. Compute grounded labeling `gv` of `D^M`.
 4. `M` is stable iff `M = gv^t`.
+
+The initial model requirement matters: grounded truth of the retained nodes alone would not check the acceptance conditions of excluded nodes. *([Definitions 3.2.3-3.2.4, PDF p.80 / printed p.67](pngs/page-080.png))*
 
 ### Stable extension via pd-acyclic cf model — Theorem 3.3.3 (p.84)
 Bypass reduct construction:
@@ -306,7 +309,7 @@ For each source argument `a`, introduce a primed copy `a'` meaning "a is rejecte
 - **2.1.12** Well-founded AF *(p.24)*
 - **2.1.14** Three-valued labeling *(p.25)*
 - **2.1.15** Conflict-free / admissible / complete / preferred / grounded / stable labelings *(p.25)*
-- **2.1.19** SETAF (CAF) `(A, R ⊆ 2^A × A)` *(p.27)*
+- **2.1.19** SETAF (also called CAF here for collective attacks) `(A, R ⊆ (2^A \ {∅}) × A)`: collective attack tails are **nonempty**. This CAF abbreviation is distinct from later claim-augmented frameworks. *(PDF p.27 / printed p.14; [page image](pngs/page-027.png))*
 - **2.1.20** SETAF defense and standard semantics *(p.27)*
 - **2.1.21** SETAF characteristic function *(p.27)*
 - **2.1.26** SETAF discarded set / range *(p.28)*

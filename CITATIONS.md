@@ -2,7 +2,7 @@
 
 ## `argumentation.dung.stable_extensions`
 
-Stable extensions follow Dung 1995 Definition 12 for the base abstract
+Stable extensions follow Dung 1995 Definition 13 (p.328) for the base abstract
 argumentation framework: a stable extension is conflict-free and must defeat
 every argument outside the extension.
 

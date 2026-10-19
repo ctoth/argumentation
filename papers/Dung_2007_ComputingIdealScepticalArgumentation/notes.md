@@ -63,10 +63,10 @@ $$
 Where: attack between sets of assumptions is induced by an argument based on assumptions \(A'\) deriving the contrary of an assumption in \(B\). This lets the paper compute semantics on assumption sets rather than explicit argument objects. *(p.647)*
 
 $$
-S \text{ is ideal } \iff \forall a \text{ attacking } S,\ \nexists X \text{ admissible with } a \in X
+S \text{ is ideal } \iff S \text{ is admissible and } \forall a \text{ attacking } S,\ \nexists X \text{ admissible with } a \in X
 $$
 
-Where: Theorem 3.3 gives the key characterization behind ideal dispute trees: an admissible set is ideal exactly when every attacker fails to belong to any admissible set. *(p.650)*
+Where: Theorem 3.3 gives the key characterization behind ideal dispute trees: an admissible set is ideal exactly when every attacker fails to belong to any admissible set. Admissibility of \(S\) is a prerequisite of the theorem, retained explicitly in the display above. *(p.650; visually verified against `pngs/page-008.png`.)*
 
 ## Parameters
 

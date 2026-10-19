@@ -82,7 +82,7 @@ Not applicable; the paper reports complexity classes and implementation claims r
 - ADFs are represented either directly as \((S,L,C)\) or logically as one propositional formula \(\varphi_s\) per node, with links implicit from formula occurrence. *(p.1)*
 - Three-valued interpretations use Kleene truth values \(t,f,u\), extend to formulas in the standard way, and are ordered by information content with \(u\) below both classical truth values. *(p.1-2)*
 - The admissible/complete/preferred stack is rebuilt around \(\Gamma_D\): admissible means \(v \leq_i \Gamma_D(v)\), complete means a fixpoint, preferred means maximal admissible. *(p.2)*
-- Stable semantics for arbitrary ADFs is defined through reducts of the form \(D^v\): remove statements mapped to false, replace true statements in acceptance formulas by truth, and require the true part of \(v\) to equal the grounded extension of the reduct. *(p.3)*
+- Stable semantics for arbitrary ADFs is defined through reducts of the form \(D^v\): remove statements mapped to false, replace those false statements in the remaining acceptance formulas by \(f\), and require the true part of \(v\) to equal the grounded extension of the reduct. True statements remain as atoms so their constructive justification is checked. *(Definition 6, p.806; [page image](pngs/page-003.png))*
 - The paper proves that these definitions properly generalize Dung AF semantics via the standard AF-to-ADF encoding. *(p.3)*
 - Static preferences are compiled by prioritized ADFs in which support and attack links are filtered by a strict partial order over nodes; an attack fails when the target is more preferred or has a more preferred supporter. *(p.4)*
 - Dynamic preferences are modeled by dedicated preference nodes whose truth values determine a model-dependent order \(>_M\); this lets the framework reason both with preference information and about it. *(p.4-5)*
@@ -90,9 +90,9 @@ Not applicable; the paper reports complexity classes and implementation claims r
 
 ## Figures of Interest
 - **Example 1 (p.3):** Counterexample showing why the old two-valued stable semantics for ADFs can accept an intuitively wrong model.
-- **Example 2 (p.3):** A three-cycle-style example where the grounded model is unknown everywhere and there is no stable model, illustrating the role of the reduct.
+- **Example 2 (p.3):** The ADF \(a[c], b[c], c[a\leftrightarrow b]\) has the all-true interpretation as its only two-valued model. Its grounded model is unknown everywhere, so it has no stable model; minimality alone would not reject the cyclic justification. *([page image](pngs/page-003.png))*
 - **Example 3 (p.4):** Static prioritized ADF example where node preferences recover the desired preferred/stable extension.
-- **Example 4 (p.5):** Dynamic preference example with preference node \(s_5\) encoding whether sax is preferred to oboe and producing the intended stable model.
+- **Example 4 (p.5):** A legal contract example: \(s_1,s_2\) conflict over whether a contract is perfected; \(s_3\) prefers \(s_1\) because of federal law, \(s_4\) prefers \(s_2\) because of recency, \(s_5\) is the judge's support for \(s_3\), and \(s_6\) gives that support preference over \(s_4\). The unique grounded, preferred, and stable extension is \(\{s_1,s_3,s_5,s_6\}\). *([page image](pngs/page-005.png))*
 
 ## Results Summary
 The paper shows that the operator \(\Gamma_D\) already suffices to define admissible, complete, and preferred semantics for arbitrary ADFs once interpretations are allowed to remain three-valued. Preferred models are complete, and the grounded model is the least complete model. Stable semantics can likewise be generalized through reducts on arbitrary ADFs rather than only bipolar ones. On the complexity side, deciding whether an ADF has a two-valued model is NP-complete, checking whether an interpretation is complete is DP-complete, checking admissibility is coNP-complete, and deciding existence of a stable model is \(\Sigma_2^P\)-complete. The implementation section positions DIAMOND as a direct ASP realization of these semantics. *(p.2-5)*
@@ -118,7 +118,7 @@ The paper shows that the operator \(\Gamma_D\) already suffices to define admiss
 - If \(v\) is a preferred model of an ADF, then \(v\) must also be a complete model. *(p.2)*
 - The grounded model of an ADF must be the \(\leq_i\)-least complete model. *(p.2)*
 - The complete models of an ADF form a complete meet-semilattice under the information ordering. *(p.2)*
-- For any AF \(F\), the associated ADF \(D_F\) preserves grounded, complete, preferred, and stable semantics in the sense proved by Theorem 3. *(p.3)*
+- For any AF \(F\), the associated ADF \(D_F\) preserves admissible, complete, preferred, and grounded extensions (Theorem 2); stable correspondence is Theorem 4. Theorem 3 states the inclusion hierarchy \(val_2\subseteq pref\subseteq com\subseteq adm\). *(p.806; [page image](pngs/page-003.png))*
 - A two-valued interpretation \(v\) is stable for an ADF iff \(v^t\) equals the grounded extension of the reduct \(D^v\). *(p.3)*
 - Deciding whether an ADF has a stable model is \(\Sigma_2^P\)-complete. *(p.4)*
 - Checking whether a three-valued interpretation is admissible for an ADF is coNP-complete. *(p.4)*

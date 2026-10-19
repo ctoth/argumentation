@@ -22,30 +22,30 @@ Standard Dung-style abstract argumentation classifies arguments as either accept
 
 ## Methodology
 The paper builds on Dung's abstract argumentation frameworks (AF = (Arg, att)). For a given argument x, a two-person zero-sum game is constructed where:
-- The **proponent** selects an opinion (set of arguments) P containing x from a set of conflict-free sets that defend x *(p.4)*
-- The **opponent** selects an opinion O from sets of arguments that attack x or attack arguments in P *(p.4)*
-- The **payoff** to the proponent is a degree of acceptability measuring how well P defends against O *(p.4)*
+- The **proponent** may select any subset P containing x, including a non-conflict-free subset. *(Definition 3, printed p.288, `pngs/page-003.png`)*
+- The **opponent** may select any subset O of Arg; its strategy set is not restricted to attackers of x or P. *(same source)*
+- The **payoff** penalizes non-conflict-free P with 0, rewards unchallenged conflict-free P with 1, and otherwise uses the degree of acceptability. *(Definition 5, printed p.289, `pngs/page-004.png`)*
 - The **game value** (computed via minimax/simplex) gives the strength of x *(p.6)*
 
-The proponent's strategy set consists of admissible (or stable) sets containing x. The opponent's strategy set consists of sets formed from attacks directed from P to O and from O to P, within the abstract argumentation framework. *(p.4)*
+Admissibility and stability are not restrictions on the strategy sets. They appear in bounds on the resulting game value (Proposition 5). *(printed pp.288,293, `pngs/page-003.png`, `pngs/page-008.png`)*
 
 ## Key Equations
 
 ### Degree of Acceptability
 
 $$
-d(P, O) = \frac{|P \rightarrow O|}{|P \rightarrow O| + |O \rightarrow P|}
+\phi(P,O)=\frac12\left[1+f(|P\rightarrow O|)-f(|O\rightarrow P|)\right],\qquad f(n)=\frac{n}{n+1}
 $$
 
-Where: $P \rightarrow O$ denotes the set of attacks from $P$ against $O$, and $O \rightarrow P$ the set of attacks from $O$ against $P$. If both are empty, $d(P, O) = 0.5$ (draw). *(p.4)*
+The paper first permits a monotonically increasing normalization f with f(0)=0 and limit 1, then adopts $n/(n+1)$ for illustrations and part of Proposition 5. The degree is not a ratio of the two raw attack counts. *(Definition 4, printed p.288, `pngs/page-003.png`)*
 
 ### Payoff Function
 
 $$
-r_F(P_i, O_j) = d(P_i, O_j)
+r_F(P,O)=\begin{cases}0&P\text{ is not conflict-free},\\1&P\text{ is conflict-free and }O\text{ does not attack }P,\\\phi(P,O)&\text{otherwise}.\end{cases}
 $$
 
-Where: $P_i$ is the proponent's $i$-th strategy, $O_j$ is the opponent's $j$-th strategy. The payoff matrix $R = ((r_{i,j}))$ is used to define the game. *(p.4)*
+The payoff matrix $R=((r_{i,j}))$ uses this three-case reward, not the degree alone. *(Definition 5, printed p.289, `pngs/page-004.png`)*
 
 ### Game Value (Argument Strength) via Linear Programming
 
@@ -72,36 +72,36 @@ Where: $m$ = number of proponent strategies, $n$ = number of opponent strategies
 ### Proponent Strategy Set
 
 $$
-P_F(x) = \{ S \subseteq Arg \mid x \in S, S \text{ is conflict-free and } \forall a \in S, \text{ if } \exists b \text{ s.t. } (b,a) \in att, \text{ then } \exists c \in S \text{ s.t. } (c,b) \in att \} \}
+P_F(x)=\{P\subseteq Arg\mid x\in P\}
 $$
 
-Where: $P_F(x)$ is the set of admissible sets containing $x$. *(p.4)*
+Every subset containing x is a pure proponent strategy. *(Definition 3, printed p.288, `pngs/page-003.png`)*
 
 ### Opponent Strategy Set
 
 $$
-O_F^x(P) = \{ O \subseteq Arg \mid \forall o \in O, \exists p \in P \text{ s.t. } (o,p) \in att \text{ or } (p,o) \in att \}
+O_F=2^{Arg}
 $$
 
-Where: $O_F^x$ is derived from the union of all opponent strategies across all proponent plays. The opponent can select from sets of arguments that attack or are attacked by proponent arguments. *(p.4)*
+The opponent can select any subset, including the empty subset; its pure strategy set does not depend on P. *(Definition 3, printed p.288, `pngs/page-003.png`)*
 
 ## Parameters
 
 | Name | Symbol | Units | Default | Range | Page | Notes |
 |------|--------|-------|---------|-------|------|-------|
 | Argument strength | $s_F(x)$ | - | - | [0, 1] | p.7 | Value of the (F,x) game |
-| Degree of acceptability | $d(P,O)$ | - | 0.5 (when no attacks) | [0, 1] | p.4 | Ratio of attacks P->O to total |
-| Payoff matrix entry | $r_{i,j}$ | - | - | [0, 1] | p.4 | $r_F(P_i, O_j) = d(P_i, O_j)$ |
+| Degree of acceptability | $\phi(P,O)$ | - | 0.5 (when no attacks) | [0, 1] | p.4 | Half of 1 plus normalized outgoing minus incoming attack count |
+| Payoff matrix entry | $r_{i,j}$ | - | - | [0, 1] | p.5 | Three-case reward of Definition 5 |
 | Number of proponent strategies | $m$ | - | - | $\geq 1$ | p.7 | Size of $P_F(x)$ |
-| Number of opponent strategies | $n$ | - | - | $\geq 0$ | p.7 | Size of $O_F^x$ |
+| Number of opponent strategies | $n$ | - | - | $2^{|Arg|}$ | p.4 | Size of the full powerset $O_F$ |
 | Strategy probability | $x_i$ | - | - | [0, 1] | p.7 | Probability of proponent playing $P_i$ |
 | Game value | $v$ ($x_{m+1}$) | - | - | [0, 1] | p.7 | Maximized by simplex |
 
 ## Implementation Details
 - The game is a two-person zero-sum game; standard LP solvers (simplex) apply directly *(p.6-7)*
-- Proponent strategies: enumerate all admissible (or stable) sets containing x. Sets $P_F(x)$ and $O_F^x$ may be arbitrarily large, so exact computation may be expensive *(p.6)*
-- When no opponent strategies exist (argument is unattacked), strength = 1 *(p.8)*
-- When argument is attacked by an unattacked argument and has no defense, strength = 0 *(p.8)*
+- Pure strategies are all subsets containing x for the proponent and all subsets for the opponent; non-conflict-free proponent plays receive zero reward. *(Definitions 3,5, printed pp.288-289, `pngs/page-003.png`, `pngs/page-004.png`)*
+- An unattacked argument has strength 1 because the proponent can play {x} and receive 1 against every opponent, not because the opponent lacks strategies. *(Proposition 4, printed pp.292-293, `pngs/page-007.png`, `pngs/page-008.png`)*
+- Strength is 0 exactly for a self-attacking argument. A one-way attack a→b gives b strength 0.25, not 0. *(Proposition 3 and Table 1, printed pp.291-292, `pngs/page-006.png`, `pngs/page-007.png`)*
 - Mixed strategies are essential — the proponent and opponent may randomize over multiple opinions *(p.6)*
 - The value $v$ can be shown to be *a priori* positive by the game-theoretic structure; the LP always has a feasible solution *(p.6-7)*
 - Computation reduces to solving one LP per argument per framework *(p.7)*
@@ -137,16 +137,16 @@ Where: $O_F^x$ is derived from the union of all opponent strategies across all p
 - Two-person zero-sum games are chosen because the proponent's gain is exactly the opponent's loss — there is no cooperation in argumentation disputes *(p.6)*
 - Mixed strategies are necessary because in many frameworks neither proponent nor opponent has a single dominant pure strategy *(p.6)*
 - The simplex algorithm is chosen for computation because the game value is always positive (a priori), enabling direct LP formulation *(p.7)*
-- Admissible sets (not just conflict-free sets) are used for proponent strategies to ensure self-defense — this connects to Dung's fundamental lemma *(p.4)*
+- All subsets containing the topic are available to the proponent; conflict-freeness is encouraged by the reward, while admissibility yields strength bounds rather than a strategy restriction. *(Definitions 3,5 and Proposition 5, printed pp.288-289,293, `pngs/page-003.png`, `pngs/page-004.png`, `pngs/page-008.png`)*
 
 ## Testable Properties
 - **Boundedness (Prop 2):** For all arguments x in AF, $0 \leq s_F(x) \leq 1$ *(p.8)*
-- **Self-confirmation (Prop 3):** $s_F(x) = 0$ if and only if x is attacked by some argument that is not itself attacked (i.e., attacked by an unattacked argument with no counter) *(p.8)*
+- **Self-contradiction (Prop 3):** $s_F(x)=0$ iff x attacks itself. *(printed p.292, `pngs/page-007.png`)*
 - **Unattacked = strongest (Prop 4):** If x has no attackers, $s_F(x) = 1$ *(p.8)*
-- **Criticism reduces strength (Prop 5):** Adding a new attack on x (in a non-superfluous way) reduces $s_F(x)$ *(p.9)*
-- **Strict monotonicity (Prop 6):** Adding an attack strictly reduces strength unless the attack is superfluous (Def 7) *(p.9-10)*
-- **Counter-extra-aggressiveness (Prop 7):** Adding an attack on an attacker of x increases $s_F(x)$ (counter-attack helps) *(p.10)*
-- **Indirect counter-support (Prop 8):** If F' adds an attack on an attacker of x's defender, then $s_F'(x) \geq s_F(x)$ *(p.10)*
+- **Acceptable-argument bound (Prop 5):** If x belongs to an admissible (or stable) set, $s_F(x)\ge\frac12[1+\frac12-\frac{k}{k+1}]$, where k is the maximum out-degree and $f(n)=n/(n+1)$. If n attacks target x, $s_F(x)\le1-\frac12f(n)$. *(printed p.293, `pngs/page-008.png`)*
+- **Criticism reduces strength (Prop 6):** Adding an attack (a,b) gives $s_{F+(a,b)}(b)\le s_F(b)$; strict decrease is not asserted. *(printed p.293, `pngs/page-008.png`)*
+- **Cautious extra-aggressiveness (Prop 7):** Adding (a,b) weakly increases a's strength if b is superfluous with respect to a, and weakly decreases it otherwise. Superfluous means forbidding proponent strategies containing b does not decrease the game value. *(Definition 7, printed p.294, `pngs/page-009.png`)*
+- **Indirect counter-attack (Prop 8):** If b attacks x, adding (a,b) weakly increases x's strength. *(printed p.294, `pngs/page-009.png`)*
 - **Insensitivity to irrelevant info (Prop 9):** Adding arguments and attacks disconnected from x does not change $s_F(x)$ *(p.10-11)*
 - **Symmetry in mutual attack:** Two arguments that mutually attack each other with no other connections both get strength 0.5 (Table 1, F3) *(p.7)*
 

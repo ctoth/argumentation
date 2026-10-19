@@ -40,14 +40,14 @@ The paper defines QuAD frameworks formally, proposes an alternative aggregation 
 
 ### QuAD Framework Definition
 
-A QuAD framework is a 4-tuple $(A, C, R, BS)$ such that:
+A QuAD framework is a 5-tuple $(A,C,P,R,BS)$ such that:
 - $A$ is a finite set of answer arguments
 - $C$ is a finite set of con arguments
-- $R$ is a finite set of pro arguments
-- $(A \cup C \cup R, C \cup R)$ forms a DAG with leaves in $A$ and no two edges share the same parent
-- $BS: A \cup C \cup R \to [0,1]$ is a base score function
+- $P$ is a finite set of pro arguments; A, C and P are pairwise disjoint
+- $R\subseteq(C\cup P)\times(A\cup C\cup P)$ is an acyclic binary relation
+- $BS:A\cup C\cup P\to[0,1]$ is a total base-score function
 
-*(p.1)*
+*(Section 2, printed p.64, `pngs/page-001.png`; answers are roots, not leaves.)*
 
 ### Strength Aggregation (Original QuAD)
 
@@ -59,57 +59,45 @@ $$
 
 where $F_a$ aggregates the strength of attackers and supporters. *(p.1)*
 
-### The Aggregating Function $F_a$
+### Original QuAD Separate Aggregation and Combination
 
-Given the aggregated attacking strength $v_a$ and supporting strength $v_s$:
-
-$$
-F_a(v_0, v_a, v_s) = \begin{cases} v_0 - v_0 \cdot |v_a - v_s| & \text{if } v_a \geq v_s \\ v_0 + (1-v_0) \cdot |v_a - v_s| & \text{if } v_a < v_s \end{cases}
-$$
-
-Where $v_0 = BS(\alpha)$ is the base score, $v_a$ is the aggregated attacking strength, $v_s$ is the aggregated supporting strength. *(p.2, Eq. 14-16)*
-
-### DF-QuAD Strength Aggregation Function (Definition 1)
+For a non-ineffective sequence $S=(v_1,\ldots,v_n)$ (not empty and not all zero), original QuAD uses:
 
 $$
-f(x) = \begin{cases} v_0 + \alpha \cdot F'(v_a, v_s) & \text{if } F'(v_a, v_s) \geq 0 \\ v_0 + \beta \cdot F'(v_a, v_s) & \text{if } F'(v_a, v_s) < 0 \end{cases}
+F_{att}(v_0,S)=v_0\prod_i(1-v_i),\qquad F_{supp}(v_0,S)=1-(1-v_0)\prod_i(1-v_i).
 $$
 
-More precisely, the strength aggregation function is defined as $F^*: [0,1]^3 \to [0,1]$:
+For an ineffective sequence, each function returns nil. Original QuAD combines these two outputs using $g(v_0,v_a,v_s)$: return the non-nil output if exactly one is non-nil, $v_0$ if both are nil, and $(v_a+v_s)/2$ otherwise. Thus the mean is over two already-aggregated scores, not over individual attackers or supporters. *(Equations 5-12, printed pp.64-65, `pngs/page-001.png`, `pngs/page-002.png`)*
+
+### DF-QuAD Combination Function (Definition 2)
 
 $$
-F^*(v_0, v_a, v_s) = \begin{cases} v_0 + v_s \cdot (1 - v_0) & \text{if } v_a = 0, v_s \neq 0 \\ v_0 - v_a \cdot v_0 & \text{if } v_a \neq 0, v_s = 0 \\ v_0 + (v_s - v_a) \cdot (1 - v_0) & \text{if } v_a \leq v_s, v_a \neq 0 \\ v_0 + (v_s - v_a) \cdot v_0 & \text{if } v_a > v_s \end{cases}
+c(v_0,v_a,v_s)=\begin{cases}v_0-v_0|v_s-v_a|&v_a\ge v_s,\\v_0+(1-v_0)|v_s-v_a|&v_a<v_s.\end{cases}
 $$
 
-Where $v_0$ is the base score, $v_a$ is the aggregated attacking strength, $v_s$ is the aggregated supporting strength. All values in $[0,1]$. *(p.2, Definition 1)*
+Here $v_a=F(SEQ_{SF_2}(R^-(a)))$, $v_s=F(SEQ_{SF_2}(R^+(a)))$ and $v_0=BS(a)$. This continuous function belongs to DF-QuAD, not original QuAD. It also covers $v_a=v_s=0$. *(Definition 2, Equations 19-20, printed p.65, `pngs/page-002.png`)*
 
-### Combinative function $c$ (for combining multiple attackers/supporters)
+### Strength Aggregation Function $F$ (Definition 1)
 
-The combinative function $c: [0,1]^* \to [0,1]$ combines the strengths of multiple attackers or supporters:
+The function $F:[0,1]^*\to[0,1]$ combines attacker strengths and supporter strengths separately:
 
 $$
-c(v_1) = v_1
+F(())=0,\qquad F(v_1)=v_1
 $$
 
 $$
-c(v_1, \ldots, v_n) = v_1 + v_2 - v_1 \cdot v_2 \quad \text{(for two values)}
+F(v_1,v_2)=v_1+v_2-v_1v_2
 $$
 
 $$
-c(v_1, \ldots, v_n) = v_1 + (1 - v_1) \cdot c(v_2, \ldots, v_n) \quad \text{(recursive)}
+F(v_1,\ldots,v_n)=f(F(v_1,\ldots,v_{n-1}),v_n)\quad(n>2),\quad f(x,y)=x+y-xy
 $$
 
-This is equivalent to $1 - \prod_{i=1}^{n}(1-v_i)$, i.e. the independent cascade / noisy-OR combination. *(p.1-2, Eqs. 5-7)*
+This equals $1-\prod_i(1-v_i)$ (noisy-OR). *(Definition 1 and Lemma 1, Equations 13-18, printed p.65, `pngs/page-002.png`)*
 
-### Alternative Combinative Functions
+### Difference from Original QuAD
 
-The paper also considers mean-based combination:
-
-$$
-c_{mean}(v_1, \ldots, v_n) = \frac{1}{n}\sum_{i=1}^{n} v_i
-$$
-
-The original QuAD uses this mean-based combination, while DF-QuAD uses either (the properties hold for both, though the proofs use the product-based one). *(p.1-2)*
+Both algorithms use product-based aggregation, but original QuAD distinguishes ineffective sequences by nil and averages the two non-nil scores. DF-QuAD uses F and then c, with zero aggregate for an ineffective sequence. The paper does not offer arithmetic mean over individual parents as an interchangeable Definition 1. *(printed pp.64-65, `pngs/page-001.png`, `pngs/page-002.png`)*
 
 ## Parameters
 
@@ -124,45 +112,44 @@ The original QuAD uses this mean-based combination, while DF-QuAD uses either (t
 
 - The DF-QuAD algorithm can be deployed as a third stage in the process described in Section 3 of Baroni et al. 2015, substituting the strength aggregation step *(p.6)*
 - QuAD frameworks are acyclic by definition — the DAG structure ensures recursive computation terminates *(p.1)*
-- Arguments are partitioned into answer arguments $A$, con arguments $C$, and pro arguments $R$ *(p.1)*
+- Arguments are partitioned into answers A, cons C and pros P; R is the relation. *(printed p.64, `pngs/page-001.png`)*
 - Each non-leaf argument has attackers (con children) and supporters (pro children), but no argument can be both an attacker and supporter of the same argument *(p.1)*
-- The combinative function $c$ is commutative and associative, so argument ordering does not matter *(p.1)*
-- An AA (Abstract Argumentation) framework corresponds to a QuAD framework with $C=\emptyset$, $R=\emptyset$, all base scores = 1 *(p.1)*
+- Noisy-OR aggregation F is order-independent; c instead combines a base score and two differently typed aggregates. *(Definitions 1-2, printed p.65, `pngs/page-002.png`)*
+- An acyclic AA framework (Args,Atts) maps to $(\emptyset,Args,\emptyset,Atts,BS^1)$ with every base score 1. *(printed pp.65,68, `pngs/page-002.png`, `pngs/page-005.png`)*
 - The DF-QuAD function reduces to the grounded extension computation for acyclic AFs when restricted to attack-only frameworks *(p.5, Theorem 1, Corollary 1)*
 
 ## Figures of Interest
 
-- **Fig 1 (p.0):** Example BBS graph showing building, windows, porch with pro/con arguments — engineering design scenario
-- **Fig 2 (p.6):** BBS graph for building design with numerical base scores and computed strengths for both QuAD and DF-QuAD
-- **Fig 3 (p.7):** Example e-democracy scenario with stakeholder arguments and strength computations
+- **Fig 1 (p.0):** IBIS graph for room ventilation control, comparing building-management-system control with user control. *(`pngs/page-000.png`)*
+- **Fig 2 (p.6):** IBIS graph at Stage 1, with answers A1,A2 and pro arguments P1,P2,P3.
+- **Fig 3 (p.6):** Stage 2 adds con argument C1 attacking A2; the same two-stage structure is interpreted for engineering and e-democracy. *(printed p.69, `pngs/page-006.png`)*
 
 ## Results Summary
 
-The DF-QuAD algorithm produces the same results as the original QuAD algorithm when only one of attackers or supporters is present, and when base scores are at extreme values (0 or 1). The key difference emerges with mixed attackers and supporters:
+Theorem 2 says an extreme **original final score** (0 or 1) is preserved by DF-QuAD, not that an extreme base score guarantees agreement. Theorem 3 gives agreement when one side is ineffective and the other side's incoming scores agree between the two algorithms. *(printed p.68, `pngs/page-005.png`)*
 
-- **Example 3 (p.5):** Two attackers ($A1$, $A2$ with $BS=0.5$) and two supporters ($P1$, $P2$ with $BS(P1)=0.3$, $BS(P2)=0.5$). Original QuAD: strength $\approx 0.225$. DF-QuAD: strength $\approx 0.235$. The original QuAD exhibits discontinuity — reducing attacking strength from $SF(A1)=0.6+\epsilon$ to $0.6-\epsilon$ causes a jump in the scoring function. *(p.5)*
+- **Example 3:** Answer arguments A1,A2 have base 0.5, each with a supporter of base 0.9; C1 attacks A1 with base 0.1. $SF_2(A2)=SF_1(A2)=0.95$, $SF_2(A1)=0.9$, $SF_1(A1)=0.7$. As $BS(C1)\to0^+$, DF-QuAD approaches 0.95 while original QuAD approaches 0.725. *(printed p.68, `pngs/page-005.png`)*
 
-- **Example 4 (p.5):** Demonstrates that the reverse of Theorem 1 does not hold — there exist non-acyclic frameworks where DF-QuAD gives the same result as the original QuAD.
+- **Example 4:** The converse of Theorem 2 fails: base scores 1 and 0 can remain extreme under DF-QuAD while original QuAD gives non-extreme values. With $0<x<y<1$, A1 (base 1) has attacker x/supporter y, and A2 (base 0) has attacker y/supporter x. DF-QuAD gives 1 and 0, whereas original QuAD gives a score below 1 for A1 and above 0 for A2. *(printed p.68, `pngs/page-005.png`)*
 
-- **Engineering design case study (p.6):** In stage 2 of BBS, adding an attacker with strength 0.32 against argument $C1$ ($BS=0.5$): original QuAD gives $SF(C1)=0.34$, DF-QuAD gives $SF(C1)=0.34$. But in stage 3, the DF-QuAD produces different results reflecting the discontinuity-free property. *(p.6)*
+- **Application scenarios:** Stage 1 gives A1=0.925 and A2=0.95 under both algorithms. Stage 2 adds C1, base 0.2, attacking A2; original QuAD gives A2=0.675 and DF-QuAD gives 0.85. Both engineering and e-democracy scenarios use these two stages. *(printed p.69, `pngs/page-006.png`)*
 
 ## Limitations
 
 - The paper only considers acyclic frameworks (DAGs) — cyclic argumentation is not addressed *(p.1)*
 - The case studies are illustrative, not empirical evaluations *(p.6-7)*
 - The reverse engineering section is brief and exploratory *(p.7)*
-- The combinative function $c$ (product-based) may give different intuitions than mean-based combination; the paper notes both are possible but proves properties primarily for the product-based version *(p.1-2)*
+- Separate aggregation uses noisy-OR; original QuAD's mean of the two aggregate scores and DF-QuAD's net-influence combination can serve different application intuitions. *(printed pp.65,69, `pngs/page-002.png`, `pngs/page-006.png`)*
 
 ## Arguments Against Prior Work
 
 - The original QuAD algorithm (Baroni et al. 2015) is discontinuous: small changes in attacking/supporting strength can cause jumps in output *(p.0, p.5)*
 - The "initially proposed aggregation method" can give rise to discontinuities *(p.0)*
-- Specifically, the discontinuity arises when $v_a = v_s$ — the original function has a case split at this point that creates a jump *(p.2, p.5)*
-- The QuAD algorithm uses the absolute value $|v_a - v_s|$ which creates the case split discontinuity *(p.2)*
+- The discontinuity occurs when a previously ineffective side acquires arbitrarily small nonzero influence, switching original QuAD's nil case into its averaging case. Equality of aggregated attack and support is not the source of that discontinuity. *(Equations 5,8-12 and Example 3, printed pp.64-65,68, `pngs/page-001.png`, `pngs/page-002.png`, `pngs/page-005.png`)*
 
 ## Design Rationale
 
-- The DF-QuAD function eliminates the absolute value $|v_a - v_s|$ by using a smooth interpolation that handles the transition between attack-dominant and support-dominant regimes continuously *(p.2)*
+- DF-QuAD explicitly uses $|v_s-v_a|$ in c; its branches meet continuously at equality. Absolute value itself does not create a discontinuity. *(Definition 2, printed p.65, `pngs/page-002.png`)*
 - The function is designed so that when attacking strength equals supporting strength ($v_a = v_s$), the result equals the base score $v_0$ — this is the "balance" property *(p.3, Proposition 2)*
 - The scaling factors $(1-v_0)$ and $v_0$ ensure the output stays in $[0,1]$: when support dominates, the increase is bounded by the room above $v_0$; when attack dominates, the decrease is bounded by the room below $v_0$ *(p.2)*
 - QuAD frameworks are a generalization of BAFs (Cayrol and Lagasquie-Schiex 2005) with added base scores *(p.1)*
@@ -170,16 +157,16 @@ The DF-QuAD algorithm produces the same results as the original QuAD algorithm w
 
 ## Testable Properties
 
-- **P1 (Balance):** $F^*(v_0, v_a, v_a) = v_0$ for all $v_0, v_a \in [0,1]$ *(p.3, Proposition 2)*
+- **P1 (Balance):** $c(v_0,v_a,v_a)=v_0$. *(Lemma 3, printed p.66, `pngs/page-003.png`)*
 - **P2 (Monotonicity - attackers strengthen):** Replacing an attacker with one of higher strength does not lower the aggregated attacking strength *(p.3, Proposition 3)*
-- **P3 (Monotonicity - supporters strengthen):** Replacing a supporter with one of higher strength does not lower the aggregated supporting strength *(p.3, Proposition 4)*
-- **P4 (Strengthening):** Adding an attacker/supporter will lower/raise the aggregated attacking/supporting strengths respectively, and will not be offset to the extent of no change *(p.3, Propositions 5-6)*
+- **P3 (Monotonicity - lower input):** Replacing an input by a lower value cannot increase F; both attackers and supporters use F. *(Proposition 4, printed p.66, `pngs/page-003.png`)*
+- **P4 (Aggregation):** Appending a value in [0,1] cannot decrease F; appending 0 leaves F unchanged. Strict increase is not guaranteed. *(Definition 1 and Lemma 1, printed p.65, `pngs/page-002.png`)*
 - **P5 (Weakening):** Adding an attacker will never increase the overall strength; adding a supporter will never decrease it *(p.4, Propositions 7-8)*
-- **P6 (Reinforcement):** Adding an attacker with maximum strength saturates to 0; adding a supporter with maximum strength saturates to 1. $F^*(v_0, 1, v_s) = 0$ and $F^*(v_0, v_a, 1) = 1$ *(p.4, Propositions 9-10)*
-- **P7 (Franklin):** For any $v_0$, if $v_a > v_s$ then $F^*(v_0,v_a,v_s) < v_0$ and if $v_a < v_s$ then $F^*(v_0,v_a,v_s) > v_0$ *(p.4, Propositions 11-12)*
-- **P8 (Discontinuity-free):** $F^*$ is continuous everywhere — no jumps at the $v_a = v_s$ boundary *(p.5, Theorem 1)*
+- **P6 (Extremes):** $c(v_0,v_a,v_s)=0$ iff $(v_a\ge v_s\land v_0=0)$ or $(v_a=1\land v_s=0)$; it equals 1 iff $(v_a\le v_s\land v_0=1)$ or $(v_a=0\land v_s=1)$. A maximum attacker alone does not force 0 when support remains. *(Proposition 9, printed p.67, `pngs/page-004.png`)*
+- **P7 (Dominance):** $v_a\ge v_s$ implies $SF_2(a)\le BS(a)$; $v_s\ge v_a$ implies $SF_2(a)\ge BS(a)$. These inequalities are non-strict at boundary base scores. *(Propositions 14-15, printed p.67, `pngs/page-004.png`)*
+- **P8 (Discontinuity-free):** Appending an attacker or supporter whose strength tends to zero does not create a jump in $c(v_0,F(S_1),F(S_2))$. *(Theorem 1, printed p.68, `pngs/page-005.png`)*
 - **P9 (Grounded extension equivalence):** For acyclic AA frameworks (attack-only, all base scores = 1), DF-QuAD computes the grounded extension *(p.5, Corollary 1)*
-- **P10 (Output range):** $F^*(v_0, v_a, v_s) \in [0,1]$ for all inputs in $[0,1]^3$ *(p.2)*
+- **P10 (Output range):** $c(v_0,v_a,v_s)\in[0,1]$ for inputs in $[0,1]^3$. *(Definition 2, printed p.65, `pngs/page-002.png`)*
 
 ## Relevance to Project
 
@@ -194,7 +181,7 @@ The paper clarifies that base scores $BS(\alpha)$ are **intrinsic** strengths of
 ## Open Questions
 
 - [ ] How does DF-QuAD interact with cyclic frameworks? The paper explicitly restricts to DAGs.
-- [ ] The paper uses product-based combination $c$ for proofs but the original QuAD uses mean — which does propstore use?
+- [ ] Does each consumer distinguish original QuAD's separate product aggregations plus g from DF-QuAD's noisy-OR F plus c?
 - [ ] Reverse engineering (Section 7): computing what base scores achieve a desired outcome — is this useful for propstore's world model?
 - [ ] How does the Freedman et al. 2025 extension relate to this paper's DF-QuAD?
 

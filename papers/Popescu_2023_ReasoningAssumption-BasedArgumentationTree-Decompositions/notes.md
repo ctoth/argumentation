@@ -27,7 +27,7 @@ Pure algorithmic/theoretical paper with a prototype runtime experiment. The expe
 ## Methodology
 The paper first represents a flat finite ABA framework as a relational structure over a vocabulary for atoms, assumptions, rules, heads, bodies, contraries, and queries. It then encodes derivability, attacks, conflict-freeness, defense, admissibility, completeness, preferredness, stable semantics, and credulous/skeptical acceptance as MSO formulas. Courcelle's theorem gives FPT tractability over bounded-tree-width structures. *(p.196-p.199)*
 
-For constructive computation, the paper uses bottom-up dynamic programming over a nice tree-decomposition. Tables store partial stable assumption sets as quadruples `(I, R, D, CW)`, where `I` is a witness set of atoms, `R` is the set of satisfied rules, `D` is the set of atoms defeated by `I`, and `CW` is a set of counterwitnesses. The DP combines child tables, updates entries at introduce/remove nodes, and accepts root entries with no counterwitnesses. *(p.199-p.202)*
+For constructive computation, the paper uses bottom-up dynamic programming over a nice tree-decomposition. Tables store partial stable assumption sets as quadruples `(I, R, D, CW)`, where `I` is a witness set of atoms, `R` is the set of satisfied rules, `D subseteq A` is the set of assumptions defeated by `I`, and `CW` is a set of counterwitnesses. The DP combines child tables, updates entries at introduce/remove nodes, and accepts root entries with no counterwitnesses. *(printed pp.199-200, `pngs/page-007.png`, `pngs/page-008.png`)*
 
 ## Key Equations / Formal Models
 
@@ -104,10 +104,10 @@ This is named `phi_sat(E)` and means each rule is classically satisfied by `E`: 
 Derivability / least-model formula:
 
 $$
-\varphi_{Th}(E)=\varphi_{sat}(E)\wedge \forall E'((E' \subseteq E \wedge E' =_A E)\rightarrow \neg\varphi_{sat}(E'))
+\varphi_{Th}(E)=\varphi_{sat}(E)\wedge \forall E'((E' \subsetneq E \wedge E' =_A E)\rightarrow \neg\varphi_{sat}(E'))
 $$
 
-`E` satisfies the rules and no proper subset with the same assumptions satisfies the rules, so `E` corresponds to the least model of the Horn theory with assumptions as facts. *(p.198)*
+`E` satisfies the rules and no **proper** subset with the same assumptions satisfies the rules, so `E` corresponds to the least model of the Horn theory with assumptions as facts. Allowing E'=E would contradict the first conjunct. *(printed p.198, `pngs/page-006.png`)*
 
 Attack:
 
@@ -193,8 +193,8 @@ where `phi_query(E)` states that all atoms tagged by `query` are in `E`. *(p.198
 ## Methods & Implementation Details
 - The running ABA example has assumptions `{a,b}`, atoms `{a,b,x,y,z}`, rules `r1=(x<-a)`, `r2=(y<-x)`, `r3=(z<-b)`, and contraries `bar(a)=z`, `bar(b)=y`; its stable assumption sets are `{a}` and `{b}`. *(p.194-p.195)*
 - Nice tree-decomposition node types used by the algorithm are leaf, root, introduction, removal, and join. Leaves and the root have empty bags; introduction nodes add one object; removal nodes remove one object; join nodes have two children with the same bag. *(p.199)*
-- Partial stable assumption sets are quadruples `(I,R,D,CW)`: `I subseteq L` is the witness, `R subseteq R` the satisfied rules, `D subseteq A` defeated atoms, and `CW` counterwitness pairs `(C,R_C)`. *(p.199-p.200)*
-- Counterwitnesses share the same assumptions as `I` but have strictly fewer atoms and proper subsets of associated satisfied rules, testing whether atoms in `I` are derivable from the assumptions in `I`. *(p.200)*
+- Partial stable assumption sets are quadruples `(I,R,D,CW)`: `I subseteq L` is the witness, `R subseteq R` the satisfied rules, `D subseteq A` defeated assumptions, and `CW` counterwitness pairs `(C,R_C)`. *(printed p.199, `pngs/page-007.png`)*
+- Counterwitnesses share the same assumptions as I and have strictly fewer atoms; R_C stores their associated satisfied rules. The source does not additionally require R_C to be a proper subset of R. They test whether the atoms in I are derivable from its assumptions. *(printed pp.199-200, `pngs/page-007.png`, `pngs/page-008.png`)*
 - Algorithm 1 iterates over tree-decomposition nodes in post-order and calls Algorithm 2 to fill `Tab(t)` from child tables. *(p.200)*
 - Algorithm 2 returns empty tables for leaves, merges compatible child tables at joins, accepts root entries with empty counterwitnesses, branches at introduced atoms by either not adding or adding the atom, updates defeated atoms and satisfied rules, removes atoms only when stable conditions are met, and removes rules only when satisfied. *(p.201-p.202)*
 - For admissibility, the adaptation tracks derivability for undefeated atoms, checks undefeated atoms are not attacked by the supported assumptions, tracks defeated atoms, requires assumptions to be either undefeated or defeated, and adds an admissibility check rejecting assumption sets attacked by some undefeated atom. *(p.202)*

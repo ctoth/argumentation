@@ -44,13 +44,11 @@ In the absence of supporters, if there is at least one attacker, the strength is
 In the absence of attackers, if there is at least one supporter, the strength is higher than the base score.
 - Captures: supports raise strength (basic soundness of support)
 
-### GP4 — Weakening Completeness
-Strength is lower than base score if and only if the argument has at least one attacker.
-- Stronger than GP2: biconditional rather than one-directional
+### GP4 — Weakening Soundness
+If strength is lower than the base score, the argument has at least one effective attacker: $\sigma(\alpha)<\tau(\alpha)\Rightarrow R^-_*(\alpha)\ne\emptyset$. This is one implication, not a biconditional. *(printed p.257, `pngs/page-005.png`)*
 
-### GP5 — Strengthening Completeness
-Strength is higher than base score if and only if the argument has at least one supporter.
-- Stronger than GP3: biconditional rather than one-directional
+### GP5 — Strengthening Soundness
+If strength is higher than the base score, the argument has at least one effective supporter: $\sigma(\alpha)>\tau(\alpha)\Rightarrow R^+_*(\alpha)\ne\emptyset$. *(printed p.257, `pngs/page-005.png`)*
 
 ### GP6 — Isomorphism / Equivalence
 Arguments with identical base scores, identical attacker multisets (up to strength), and identical supporter multisets have the same strength.
@@ -64,13 +62,11 @@ If R*-(alpha) is a strict subset of R*-(beta), with same base scores and support
 If R*+(alpha) is a strict subset of R*+(beta), with same base scores and attackers, then sigma(beta) > sigma(alpha).
 - More supporters = stronger argument
 
-### GP9 — Strict Counter-Transitivity (attack)
-If attackers of alpha are strictly weaker than attackers of beta (same cardinality, same base scores), then alpha is stronger.
-- Quality of attackers matters, not just quantity
+### GP9 — Higher Base Score
+For equivalent attacker groups and equivalent supporter groups, $\tau(\alpha)<\tau(\beta)$ implies $\sigma(\alpha)\ll\sigma(\beta)$. This GP compares base scores, not attacker quality. *(printed p.258, `pngs/page-006.png`)*
 
-### GP10 — Strict Counter-Transitivity (support via attack)
-If the attackers of alpha's attackers are weaker than the attackers of beta's attackers (with otherwise identical structure), then strength ordering follows.
-- Captures indirect effect: weaker attacks on your attackers = you are weaker
+### GP10 — Weaker Attacker Group
+If $R^-(\alpha)<_*R^-(\beta)$, the effective supporter groups are equal and the base scores are equal, then $\sigma(\beta)\ll\sigma(\alpha)$. This compares direct attacker groups by strength, not attackers of attackers. *(printed pp.258-259, `pngs/page-006.png`, `pngs/page-007.png`)*
 
 ### GP11 — Strict Counter-Transitivity (support)
 If supporters of alpha are strictly stronger than supporters of beta (same cardinality, same base scores), then alpha is stronger.
@@ -79,46 +75,46 @@ If supporters of alpha are strictly stronger than supporters of beta (same cardi
 ## Overarching Meta-Principles
 
 ### Balance (Section 4.1, Principle 1)
-A strength function is **balanced** if:
-1. sigma(alpha) = tau(alpha) when no attackers or supporters (vacuity)
-2. sigma(alpha) < tau(alpha) iff there exists an attacker with strength > bottom
-3. sigma(alpha) > tau(alpha) iff there exists a supporter with strength > bottom
+A strength function is **balanced** if, for every alpha:
+1. $R^-(\alpha)=_*R^+(\alpha)\Rightarrow\sigma(\alpha)=\tau(\alpha)$.
+2. $R^-(\alpha)>_*R^+(\alpha)\Rightarrow\sigma(\alpha)\ll\tau(\alpha)$.
+3. $R^-(\alpha)<_*R^+(\alpha)\Rightarrow\sigma(\alpha)\gg\tau(\alpha)$.
 
-Balance implies GP1, GP2, GP3, GP4, GP5.
+**Strict balance** additionally requires that strength below/above the base score implies the corresponding attacker/supporter group dominance. Mere presence of an attacker or supporter is insufficient in a bipolar graph. Balance implies GP1-GP3; strict balance implies GP1-GP5. *(Principle 1 and Proposition 17, printed p.260, `pngs/page-008.png`)*
 
 ### Monotonicity (Section 4.2, Principle 2)
 A strength function is **(strict) monotonic** if adding/strengthening attackers decreases strength and adding/strengthening supporters increases strength. Defined via multiset orderings on attacker/supporter sets.
 
 Formally defined via comparison of "shaping triples" (tau, multiset of attacker strengths, multiset of supporter strengths) using lexicographic-style ordering on Definitions 8 and 9.
 
-Monotonicity implies GP6, GP7, GP8, GP9, GP10, GP11.
+Monotonicity implies GP6; strict monotonicity implies GP6-GP11.
 
-**Together, balance + monotonicity imply ALL 11 GPs** (Propositions 17-21 prove this).
+**Strict balance and strict monotonicity jointly imply all 11 GPs**, with the same parameter choices. The non-strict principles alone imply only GP1-GP3 and GP6. *(Propositions 17,19 and Table 4, printed pp.260,262, `pngs/page-008.png`, `pngs/page-010.png`)*
 
 ## Semantics Evaluated (Section 5)
 
 ### Semantics that satisfy both balance and strict monotonicity:
-- **h-categorizer** (Besnard & Hunter 2001): sigma is fixed point of sigma(alpha) = tau(alpha) / (1 + sum of attacker strengths). Strictly balanced and strictly monotonic with *= sigma_bot and <<= <.
-- **Weighted card-based** (Amgoud & Ben-Naim 2018): Based on cardinality of attackers/supporters weighted by strength. Strictly balanced and strictly monotonic.
-- **Aggregation-based** (Amgoud & Ben-Naim 2018): Based on aggregation function over attacker/supporter strengths.
+- **h-categorizer** (Besnard & Hunter 2001): $\sigma(\alpha)=1/(1+\sum_{\beta\in R^-(\alpha)}\sigma(\beta))$, fixed base score 1 and range (0,1]. Strictly balanced and strictly monotonic for either strength parameter and every comparison choice. The version with numerator tau is separately the weighted h-categorizer. *(printed pp.263,267, `pngs/page-011.png`, `pngs/page-015.png`)*
+- **Weighted card-based:** attack-only semantics combining attacker cardinality and mean attacker strength; strictly balanced and strictly monotonic.
+- **Aggregation-based support:** support-only semantics; balanced, strictly balanced, monotonic and strictly monotonic.
 
-### Semantics that are balanced but NOT strictly monotonic:
-- **Inverse equational system** (Amgoud et al. 2017): sigma(alpha) = tau(alpha) / (1 + sum of attacker strengths - sum of supporter strengths). Balanced and monotonic but not strictly.
-- **Trusted equational system**: Special treatment for self-defeating arguments.
-- **Max equational system**: Uses max instead of sum.
-- **Card-based** (Amgoud & Ben-Naim 2018): Based on raw counts.
-- **Top-based** (Amgoud & Ben-Naim 2018)
-- **Reward-based** (Amgoud & Ben-Naim 2018)
+### Equational and Support Semantics
+- **Inverse equational system** (Gabbay): $\sigma(\alpha)=\prod_{\beta\in R^-(\alpha)}(1-\sigma(\beta))$, fixed base score 1. Table 5 records balance, strict balance, monotonicity and strict monotonicity, with the stated parameter choices. *(printed p.263, `pngs/page-011.png`)*
+- **Suspect equational system:** balanced and strictly balanced, but neither monotonic nor strictly monotonic.
+- **Max equational system:** uses the strongest attacker; balanced, strictly balanced and monotonic, but not strictly monotonic.
+- **Weighted h-categorizer:** balanced, strictly balanced, monotonic and strictly monotonic.
+- **Top-based support:** balanced, strictly balanced and monotonic, but not strictly monotonic.
+- **Reward-based support:** satisfies all four principles. *(All classifications: Table 5, printed p.263, `pngs/page-011.png`; framework/parameter choices in that table remain essential.)*
 
-### Semantics that are NOT balanced:
-- **Euler-based** (Amgoud et al. 2017): Not strictly balanced (violation occurs when max attacker strength < max supporter strength)
-- **Weighted max-based** (Amgoud & Ben-Naim 2018): Not strictly monotonic
-- **DF-QuAD** (Rago et al. 2016): Balanced and monotonic with *= sigma_bot, but QuAD algorithm is NOT balanced (not monotonic either). The DF-QuAD algorithm is "discontinuity-free" development of QuAD.
-- **CMA** (Gabbriellini & Santini 2016): Strictly balanced with *= sigma_bot and <<= <. NOT strictly monotonic.
-- **Complete labeling** (Grossi & Modgil 2015): Strictly balanced and monotonic.
+### Balanced Semantics Without Both Strict Properties
+- **Restricted Euler-based:** balanced and strictly monotonic, but not strictly balanced.
+- **Weighted max-based:** balanced, strictly balanced and monotonic, but not strictly monotonic.
+- **DF-QuAD** (Rago et al. 2016): Table 5 records balance and monotonicity, but not their strict forms. QuAD also satisfies monotonicity, while violating balance. *(printed p.263, `pngs/page-011.png`)*
+- **GTAA:** for attack-only frameworks, balanced and strictly balanced but not monotonic; its general bipolar version fails all four principles.
+- **Complete labellings**: balanced, strictly balanced and monotonic, but not strictly monotonic. *(Table 5, printed p.263, `pngs/page-011.png`)*
 
-### Key finding from Section 5 (Table 5):
-The parametric values of the GPs and the principles turn out NOT to provide a finer advantage as a classifier: they do not reveal more distinctions than balance/monotonicity alone. The main discriminating power comes from the choice of *= (sigma_bot vs sigma_not_bot) and/or the aggregated effects of attackers and supporters.
+### Classification in Table 5
+The table distinguishes balance, strict balance, monotonicity and strict monotonicity, with explicit framework and parameter choices. For example, weighted max-based and weighted card-based differ on strict monotonicity; QuAD and DF-QuAD differ on balance. QuAD is monotonic but not balanced. *(printed p.263, `pngs/page-011.png`)*
 
 ## Relationship to Propstore
 
@@ -126,7 +122,7 @@ The parametric values of the GPs and the principles turn out NOT to provide a fi
 Propstore implements DF-QuAD (Freedman et al. 2025, which extends Rago et al. 2016). This paper's Table 5 shows DF-QuAD satisfies balance and monotonicity with *= sigma_bot. The paper notes that **P_A is conflated with base score** in the propstore CLAUDE.md — this paper's framework makes that conflation precise: tau IS the base score, and DF-QuAD's aggregation function determines sigma from tau and the attacker/supporter structure.
 
 ### Principle validation for gradual semantics
-The 11 GPs provide a checklist for verifying any gradual semantics implementation. If propstore's DF-QuAD implementation satisfies balance + monotonicity, it automatically satisfies all 11 GPs.
+The 11 GPs distinguish strict from non-strict principles. Balance plus monotonicity does not automatically imply all 11 GPs; the all-GP implication uses strict balance and strict monotonicity, with matching parameters. *(Table 4, printed p.262, `pngs/page-010.png`)*
 
 ### Properties NOT captured
 The paper explicitly notes (Section 6) that its principles do NOT capture:

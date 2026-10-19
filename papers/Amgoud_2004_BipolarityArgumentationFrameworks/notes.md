@@ -33,7 +33,7 @@ The paper proceeds in three layers:
 
 1. **Recap of Dung 1995.** An argumentation framework is `<A, R>` where R ⊆ A × A is a binary defeat relation. Acceptability semantics (admissible, preferred, stable, grounded) and characteristic function F_<A,R>(S) are recalled. *(p.1–2)*
 
-2. **Abstract bipolar AF.** Add a second binary support relation R_sup independent of R_def: `<A, R_def, R_sup>`. The support relation is *not* assumed to be reducible to defeat-of-defeaters; it is taken to be an autonomous primitive. Branches and indirect interactions are read off the bipartite graph G_b. *(p.2–3)*
+2. **Abstract bipolar AF.** Add a second binary support relation R_sup independent of R_def: `<A, R_def, R_sup>`. The support relation is *not* assumed to be reducible to defeat-of-defeaters; it is taken to be an autonomous primitive. Branches and indirect interactions are read off the bipolar graph G_b. *(p.2–3)*
 
 3. **Bipolar valuation.** Each argument α gets a local valuation v(α) computed from a function h_R that aggregates defeat-branch valuations and a function h_R_sup that aggregates support-branch valuations, then combined by a function g (compensation between negative and positive contributions). Local principles P1–P3 fix the qualitative behavior; global principles Pg1–Pg4 fix monotonicity in numbers and quality of attackers/supporters. *(p.4–5)*
 
@@ -46,27 +46,31 @@ The paper is mostly definitional. The substantive numeric machinery is the local
 Local valuation of an argument α with defeat-branch attackers C_1,…,C_n and support-branch supporters B_1,…,B_p:
 
 $$
-v(\alpha) \;=\; g\!\big(\, h_{R_{def}}(v(C_1),\dots,v(C_n)),\ h_{R_{sup}}(v(B_1),\dots,v(B_p)) \,\big)
+v(\alpha) \;=\; g\!\big(\, h_{R_{sup}}(v(B_1),\dots,v(B_p)),\ h_{R_{def}}(v(C_1),\dots,v(C_n)) \,\big)
 $$
 
 Where:
-- v: A → V (V is a finite set of valuations, e.g. an interval [0,1] or {⊕,…,⊖}) *(p.5)*
+- v: A → V, where V is completely ordered and has a minimum and maximum; V need not be finite. *(p.5)*
 - h_R aggregates defeat-branch values, h_R_sup aggregates support-branch values *(p.5)*
-- g compensates between negative and positive contributions *(p.5)*
+- g takes the support aggregate first and the defeat aggregate second; it increases in its first argument and decreases in its second. *(p.5; [page image 005](pngs/page-005.png))*
 
-Concrete numeric instances suggested in footnotes for V = [-1, 1] or V = [0, 1]:
+The concrete instance uses $V=[-1,1]$ and aggregate codomains $\mathcal{H}_{def}=\mathcal{H}_{sup}=[0,\infty]$:
 
 $$
 \alpha = 0,\ \beta = \infty,\ g(\alpha, \alpha) = 0
 $$
 
-with the example aggregator defined elementwise:
+The example aggregators and compensation function are:
 
 $$
-h_{def}(x_1,\dots,x_n) \;=\; \tfrac{1}{1 + \sum_i x_i^{-1}} \quad (\text{example 6 form})
+h_{def}(x_1,\dots,x_n)=h_{sup}(x_1,\dots,x_n)=\sum_{i=1}^{n}\frac{x_i+1}{2}
 $$
 
-i.e. an "1/(1+Σ 1/x_i)" style aggregator that is monotone non-increasing in the number and strength of attackers. The compensation g and exact closed forms are sketched only by example. *(p.5–6)*
+$$
+g(x,y)=\frac{1}{1+y}-\frac{1}{1+x}
+$$
+
+Here $x$ is the support aggregate and $y$ the defeat aggregate. Both aggregators are non-decreasing in their inputs and under addition of another input; the negative influence of defeat enters through $g$. The paper obtains $v(A)=1/15$ for Example 4 and $v(A)=-1/6$ for Example 5. *(p.5; [page image 005](pngs/page-005.png))*
 
 ## Parameters
 
@@ -75,7 +79,7 @@ i.e. an "1/(1+Σ 1/x_i)" style aggregator that is monotone non-increasing in the
 | Argument set | A | — | — | finite | 1 | All bipolar AFs are over a finite A |
 | Defeat relation | R_def | — | — | ⊆ A×A | 2 | Same role as Dung's R |
 | Support relation | R_sup | — | — | ⊆ A×A | 2 | New primitive in bipolar AF; independent of R_def |
-| Valuation codomain | V | — | — | totally ordered finite or [0,1] or [-1,1] | 5 | Numeric or qualitative scale |
+| Valuation codomain | V | — | [-1,1] in example | completely ordered with minimum and maximum | 5 | No finite-cardinality requirement |
 | Compensation neutral element | α | — | 0 | depends on V | 5 | g(α,α) returns the neutral |
 | Compensation maximum | β | — | ∞ or 1 | depends on V | 5 | "best" valuation |
 | Maximum-attack value | v_min | — | 0 | depends on V | 5 | Identifies the worst element |
@@ -90,51 +94,49 @@ The paper does not attach concrete numeric defaults beyond the worked examples; 
 ## Methods & Implementation Details
 
 - A bipolar AF is **<A, R_def, R_sup>** with R_def, R_sup ⊆ A × A independent. *(p.2, abstract bipolar AF definition)*
-- The bipartite graph G_b uses two distinct edge types ("→" for defeat, dashed "⤳" for support). *(p.3, Def.4)*
+- The bipolar graph G_b is directed with two edge types: crossed arrows for defeat and ordinary arrows for support. It is not asserted to be bipartite. *(p.3; [page image 003](pngs/page-003.png))*
 - **Branch structure (Def.4):**
   - A *leaf* of the bipolar graph is a node with no incoming edges.
   - A *path* from a leaf A_t to A is a sequence A_t, A_{t-1}, …, A_0 = A in which each consecutive pair is connected by either a defeat or support edge.
-  - A *defeat branch for A* is a path of length n ≥ 1 (number of edges = n) such that the **last edge** (A_1 → A_0) is a defeat edge.
-  - A *support branch for A* is a path whose last edge is a support edge.
-  - A branch from A is *direct* if A has only one predecessor in the bipolar graph; otherwise the branch is *indirect*. *(p.3)*
+  - A branch for A starts at a leaf and ends at A. Defeat/defence/support branch types are defined separately in Definition 8, using the longest homogeneous terminal path: odd defeat length, even defeat length, or support-only, respectively. The last edge alone does not distinguish defeat from defence. *(pp.3,5; [page image 005](pngs/page-005.png))*
 - **Defeaters/Defenders/Supporters (Def.5):**
   - Direct defeaters of A = elements of R_def^{-1}(A).
   - Direct defenders of A = elements of R_def^{-1}(R_def^{-1}(A)) (i.e. attackers of A's attackers).
-  - Indirect defeaters of A = elements at odd distance ≥ 3 along an alternating attack path.
-  - Indirect defenders of A = elements at even distance ≥ 2.
-  - Direct supporters of A = R_sup^{-1}(A); indirect supporters = R_sup^{-1}(R_sup^{-1}(A)) (transitive closure within R_sup). *(p.4)*
+  - An indirect defeater has a path to A with an odd number of defeat edges and is not a direct defeater. Support edges may also occur; parity counts defeat edges rather than total path length.
+  - An indirect defender has a path to A with a positive even number of defeat edges and is not a direct defender.
+  - Direct supporters of A are R_sup^{-1}(A); indirect supporters have an all-support path to A of length at least two. *(p.4, Defs.5–6; [page image 004](pngs/page-004.png))*
 - **Local principles for v (P1–P3):**
   - **P1**: The valuation of an argument is a function of (i) the valuations of its direct defeaters and (ii) the valuations of its direct supporters. *(p.5)*
   - **P2**: If the quality (the valuation) of the supporters of an argument α increases, then v(α) increases (resp. decreases for defeaters). *(p.5)*
   - **P3**: If the quantity (the number) of supporters of α increases, v(α) increases (resp. decreases for defeaters). *(p.5)*
 - **Global principles for v (Pg1–Pg4):**
   - **Pg1**: v(α) is a function of the valuations of the branches in the bipolar graph leading to α. *(p.5)*
-  - **Pg2**: The set of branches leading to α is partitioned into pairs, each pair containing one defeat branch and one support branch of "the same length". The defeat branch in the pair, no matter the defeat part, the defence part, the support part. *(p.5)*
-  - **Pg3**: The improvement of the defence or the degradation of the defeat part of an argument leads to an increase of the value of this argument. *(p.5)*
+  - **Pg2**: The branches leading to α are partitioned into three parts according to their effect: defeat, defence, and support. *(p.5)*
+  - **Pg3**: Improving the defence or support part, or degrading the defeat part, increases the argument's value. *(p.5)*
   - **Pg4**: The improvement of the defeat part or the degradation of the support part of an argument leads to a decrease of the value of the argument. *(p.5)*
 - **Defeat (resp. defence) branch supports (Def.8):**
-  - A *defeat (resp. defence) branch for A* is a defeat branch (resp. defence branch) of odd (resp. even) length whose first defeat element comes from a homogeneous defeat path (i.e. one made entirely of defeat edges).
-  - A *support branch for A* is a branch for A composed only of support edges and leading to A. *(p.5)*
+  - A branch for A is a defeat (resp. defence) branch iff its longest homogeneous path leading to A is a defeat-only path of odd (resp. even) length.
+  - A branch for A is a support branch iff its longest homogeneous path leading to A is support-only. The whole branch need not be homogeneous. *(p.5; [page image 005](pngs/page-005.png))*
 - **Selection vocabulary for desire-driven decision-making:** *(p.6–7)*
-  - **Desire (Def.9):** an open propositional formula expressing what the agent wants. (Page 6 footer footnote 12.)
-  - **Sub-desire (Def.10):** if D is a desire and h is a literal of D, then "h ∧ φ_1 ∧ … ∧ φ_n → h" is a sub-desire of D. (rule whose head is a literal of the desire)
-  - **Partial plan (Def.11):** a pair (h, U) with h a sub-desire literal and U a defeasible explanation supporting h.
-  - **Elementary partial plan (Def.12):** a partial plan (h, U) with U a single rule whose body literals are elementary, i.e. given facts.
-  - **Complete plan (Def.13):** a tuple (h, U_1 ∪ … ∪ U_n) where U_1 is a partial plan whose head is h, the U_i are elementary partial plans, and the children of (h, U_1) eventually decompose into elementary plans.
-  - **Conflict between complete plans (Def.14):** S is conflicting iff for some pair of plans, their explanations together with the knowledge base derive ⊥.
-  - **Attack between complete plans (Def.16):** plan p_1 = (g_1, U_1) attacks plan p_2 = (g_2, U_2) iff there exists a defeat from a rule in U_1 to a rule in U_2.
-  - **Conflict-free set (Def.17):** S is conflict-free iff no two distinct plans in S attack each other (the union of their explanations is consistent with K).
-  - **Unachievable desire (Def.18):** a desire D is unachievable in <D, Σ, K> iff there is no complete plan whose head is D in any conflict-free set of complete plans.
-- **System for handling desires (Def.18):** a triple S = <D, Σ, K> where D is the set of desires, Σ is the set of defeasible rules, K is the set of formulas. *(p.7)*
+  - **Acceptable/rejected argument (Def.9):** an argument is acceptable when it belongs to the grounded extension, and rejected when attacked by an acceptable argument. This definition precedes the planning application. *(p.6)*
+  - **Desire/sub-desire (Def.10):** desires are literals in $\mathcal{D}$. A literal $h'$ is a sub-desire of $h\in\mathcal{D}\cup Sub\mathcal{D}$ when a rule $\varphi_1\land h'\land\varphi_n\to h$ occurs in $\Sigma$. *(p.6)*
+  - **Partial plan (Def.11):** a pair $\langle h,H\rangle$, with $h$ a desire or sub-desire and $H=\{\varphi_1,\ldots,\varphi_n\}$ for a rule $\varphi_1\land\cdots\land\varphi_n\to h\in\Sigma$; otherwise $H=\emptyset$. *(pp.6–7)*
+  - **Elementary partial plan (Def.12):** a partial plan with $H=\emptyset$. *(p.7)*
+  - **Complete plan (Def.13):** a finite AND tree rooted at a partial plan for a desire $h\in\mathcal{D}$. A node with support $\{\varphi_1,\ldots,\varphi_n\}$ has exactly n children, one partial plan for each $\varphi_i$; leaves are elementary partial plans. *(p.7)*
+  - **Conflict (Defs.14–15):** two partial plans conflict when their desires and supports together with $\mathcal{C}$ derive contradiction. More generally, a set of partial plans conflicts when the union of all their desires and supports with $\mathcal{C}$ is inconsistent. *(p.7)*
+  - **Attack between complete plans (Def.16):** $g_1$ attacks $g_2$ iff some node of $g_1$ conflicts with some node of $g_2$. *(p.7)*
+  - **Conflict-free set (Def.17):** the union of all desires and supports across all nodes of every complete plan in S must be consistent with $\mathcal{C}$. This includes possible conflict within a single plan. *(p.7)*
+  - **Unachievable desire (Def.18):** a desire is unachievable iff there is no conflict-free complete plan rooted at that desire. *(p.7; [page image 007](pngs/page-007.png))*
+- **System for handling desires (Def.19):** from a triple $\langle\mathcal{D},\Sigma,\mathcal{C}\rangle$ of desires, plan rules, and integrity constraints, form the pair $\langle\mathcal{G},Attack\rangle$ of complete plans and their attack relation. *(p.7; [page image 007](pngs/page-007.png))*
 - **Axioms on the acceptable set (S of complete plans) (p.7):**
   1. The acceptable set(s) of complete plans contain the *good plans* used to achieve the corresponding desires.
   2. The class of *rejected* complete plans is the set of *self-attacked plans*.
   3. The class of complete plans *in abeyance* gathers complete plans that neither belong to (1) nor to (2).
-- **Acceptable set (Def.19):** Let <D, Att, ⊆> be a SMD and S ⊆ G. S is an *acceptable set of complete plans* iff (i) S is conflict-free; and (ii) S is maximal (for set inclusion). *(p.7)*
+- **Acceptable set (Def.20):** Let $\langle\mathcal{G},Attack\rangle$ be a system for handling desires and $S\subseteq\mathcal{G}$. The set S is acceptable iff it is conflict-free and maximal for set inclusion. Conflict-freeness in Def.17 requires the union of all supports and desires in all plan nodes, together with $\mathcal{C}$, to be consistent; pairwise non-attack alone is insufficient. *(p.7; [page image 007](pngs/page-007.png))*
 
 ## Figures of Interest
-- **Example 4 figure (p.4, top right):** A bipolar AF with arguments A, B, C, D, E and mixed defeat (solid) / support (dashed) edges, illustrating direct vs indirect defeaters/defenders/supporters. The discussion classifies B as a direct defeater of A, F as an indirect defeater of A, D as an indirect defender of A, etc.
-- **Example 5 figure (p.4, bottom right):** A bipolar AF with arguments A, B, C, D, E, F where U and D are direct defeaters of A, F is a direct defender of A, E is an indirect defender of A. Used to motivate the gradual valuation that follows.
+- **Example 4 figure (p.4, top right):** B is a direct defeater of A, F a direct supporter, C a direct defender, D an indirect defeater, and E an indirect defender. *([page image 004](pngs/page-004.png))*
+- **Example 5 figure (p.4, bottom right):** B and D are direct defeaters of A, F a direct supporter, C a direct defender, and E an indirect defeater (its support edge to D is followed by D's defeat edge to A). *([page image 004](pngs/page-004.png))*
 - **Example 3 figure (p.3, embedded):** A small bipolar AF showing branch structure / homogeneous-vs-heterogeneous paths.
 
 ## Results Summary
@@ -150,9 +152,9 @@ The conclusion (p.7) lists three open directions: (i) the abstract bipolar argum
 
 ## Limitations
 
-- The compensation function g and aggregators h_R, h_R_sup are characterized only by axioms and a worked example (1/(1+Σx_i^{-1}) form); no closed-form recommendation is fixed. *(p.5)*
+- The compensation function and aggregators are specified axiomatically, with a concrete sum-aggregation and reciprocal-difference instance; the instance is not claimed as the unique choice. *(p.5)*
 - "Length" of a branch and "compatibility" of a defeat branch with a support branch are described informally; formal type discipline is incomplete. *(p.5)*
-- The selection layer is sketched: Def.19 (acceptable set of complete plans) gives only conflict-freeness + maximality, deferring stronger admissibility / preferred / grounded analogues to future work. *(p.7)*
+- The selection layer's Def.20 gives conflict-freeness and maximality for acceptable sets of complete plans, without defining plan-level admissible/preferred/grounded analogues here. *(p.7)*
 - Bipolarity in agent applications (psychology motivation) is asserted but not empirically grounded in the paper. *(p.1, p.6)*
 - The independence of R_def and R_sup is stipulated, not derived; the question whether some support relations can or should be reduced to "defeat-of-defeaters" patterns is acknowledged but not settled. *(p.2)*
 
@@ -167,7 +169,7 @@ The conclusion (p.7) lists three open directions: (i) the abstract bipolar argum
 - **Two independent relations rather than one signed relation.** Cognitive psychology (Cacioppo et al. cited p.1) distinguishes positive from negative preference processes, motivating a *bipolar* — i.e. two-dimensional — formal model rather than a single signed scale. *(p.1)*
 - **Aggregator + compensation factorization (h_R, h_R_sup, g).** Decouples how multiple attackers (resp. supporters) combine from how the resulting "negative pressure" and "positive pressure" trade off, so different aggregator and compensation choices can be plugged in without redefining the framework. *(p.5)*
 - **Branch-based valuation.** Anchoring v(α) on the *branches* of the bipolar graph leading to α (Pg1) ensures the value depends only on argumentation pertinent to α, not on disconnected fragments. *(p.5)*
-- **Pairing defeat and support branches by length (Pg2).** Locks down a notion of "balanced" support/defeat counterevidence. *(p.5)*
+- **Three branch-effect groups (Pg2).** Partition all incoming branches into defeat, defence, and support groups; no same-length pairing requirement is imposed. *(p.5; [page image 005](pngs/page-005.png))*
 - **Three-class acceptability (in favor / against / in abeyance).** Mirrors the bipolar split at the selection layer rather than forcing a binary accepted/rejected verdict. *(p.6)*
 - **Plans built from desires + defeasible rules + facts.** Lets the framework apply to decision-making and planning, not just dialogue, by making the desire to be achieved an explicit conclusion of a plan. *(p.6–7)*
 
@@ -177,11 +179,11 @@ The conclusion (p.7) lists three open directions: (i) the abstract bipolar argum
 - **TP2 (P2):** v is monotone non-increasing in the *quality* of α's defeaters and monotone non-decreasing in the *quality* of α's supporters. *(p.5)*
 - **TP3 (P3):** v is monotone non-increasing in the *number* of α's defeaters and monotone non-decreasing in the *number* of α's supporters. *(p.5)*
 - **TP4 (Pg1):** v(α) depends only on the valuations of branches leading to α. *(p.5)*
-- **TP5 (Pg2):** Defeat branches pair with support branches of the same length. *(p.5)*
+- **TP5 (Pg2):** The branches leading to an argument are partitioned into defeat, defence, and support parts. *(p.5)*
 - **TP6 (Pg3):** Improving the defence / degrading the defeat part of α increases v(α). *(p.5)*
 - **TP7 (Pg4):** Improving the defeat part / degrading the support part of α decreases v(α). *(p.5)*
-- **TP8 (Def.17):** Conflict-freeness on complete plans = pairwise non-attack + joint consistency with K. *(p.7)*
-- **TP9 (Def.19):** Acceptable sets are conflict-free *and* set-inclusion maximal. *(p.7)*
+- **TP8 (Def.17):** Conflict-freeness requires joint consistency of all supports and desires in all plan nodes with the integrity constraints $\mathcal{C}$. *(p.7)*
+- **TP9 (Def.20):** Acceptable sets are conflict-free *and* set-inclusion maximal. *(p.7)*
 
 ## Relevance to Project
 
@@ -195,9 +197,9 @@ This is a foundational reference for the **bipolar argumentation** stream in the
 ## Open Questions
 
 - [ ] What concrete g, h_R, h_R_sup pair satisfies all of P1–P3 *and* Pg1–Pg4 simultaneously? The paper offers only an example.
-- [ ] How does Def.19's "conflict-free + maximal" notion of acceptable plan sets relate to Dung-style preferred / grounded / stable extensions when restricted to plans?
+- [ ] How does Def.20's "conflict-free + maximal" notion of acceptable plan sets relate to Dung-style preferred / grounded / stable extensions when restricted to plans?
 - [ ] How does the bipolar AF's R_sup interact with attacks on supporters (R_def edges into a supporter)? The paper sketches it via indirect defeaters but does not give a closed-form valuation rule for that case.
-- [ ] Does the "pair defeat-branch with same-length support-branch" axiom Pg2 always have a unique pairing, or does ambiguity arise on graphs with unbalanced support/defeat fan-in?
+- [ ] How should the defeat, defence, and support branch groups in Pg2 be compared in a concrete implementation of global valuation?
 
 ## Related Work Worth Reading
 

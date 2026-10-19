@@ -12,225 +12,194 @@ produced_by:
 # AGM Meets Abstract Argumentation: Expansion and Revision for Dung Frameworks
 
 ## One-Sentence Summary
-Defines AGM-style expansion and revision operators for Dung argumentation frameworks using "Dung logics" — families of logics where ordinary equivalence equals strong equivalence — and reformulates the AGM postulates as properties of monotonic consequence relations over AFs.
+
+Defines four monotonic Dung logics through kernel-based AF models, constructs expansion via intersection of model sets, and gives a concrete syntactic stable-kernel revision satisfying all eight adapted AGM axioms. *(pp.2735-2739)*
 
 ## Problem Addressed
-Prior work on AF dynamics (expansion, revision, contraction) lacked a systematic connection to the well-established AGM theory of belief change. The classical AGM framework operates on belief sets (deductively closed sets of formulas), but AFs are not propositional theories. The paper bridges this gap by constructing formal logics ("Dung logics") whose models are AFs, enabling the direct application of AGM postulates to argumentation framework change. *(p.1)*
+
+Ordinary equality of extension sets does not ensure that AFs remain interchangeable when combined with additional information. The paper uses semantics-specific kernels to make ordinary equivalence in a new monotonic logic coincide with strong equivalence of AFs. This supplies consequence and consistency notions for AGM-style change without assuming that every selected set of AF models is realizable. *([p.2736 image](pngs/page-002.png), [p.2737 image](pngs/page-003.png))*
 
 ## Key Contributions
-- Introduces **Dung logics**: a family of logics called Dung logics where the models are AFs and propositional inference in these logics coincides with strong equivalence of AFs *(p.1)*
-- Derives **AGM expansion** for AFs: a concrete expansion operator satisfying all required postulates, based on the notion of a Dung logic *(p.3-4)*
-- Derives **AGM revision** for AFs: a concrete revision operator satisfying all required postulates, using a total preorder on models *(p.4-5)*
-- Shows that the intersection of models (AFs) is the key operation, and that standard approaches based on distance measures do not work for AFs *(p.4)*
-- Establishes **4-equivalence**: a notion of model satisfiability for Dung logics that unifies all standard semantics (stable, preferred, grounded, complete, admissible, conflict-free, stage, semi-stable, ideal, eager) *(p.2)*
-- Proves representation theorems for both expansion and revision in terms of AGM postulates *(p.3-5)*
 
-## Methodology
-The paper proceeds by:
-1. Defining abstract argumentation theory preliminaries (Dung AFs, semantics, equivalence notions) *(p.1-2)*
-2. Constructing "Dung logics" — monotonic logics whose models are AFs and whose consequence relation captures strong equivalence *(p.2-3)*
-3. Reformulating AGM expansion postulates for AFs and proving a concrete expansion operator satisfies them *(p.3-4)*
-4. Reformulating AGM revision postulates for AFs and proving a concrete revision operator satisfies them *(p.4-5)*
-5. Discussing the relationship to Cayrol et al.'s revision operators and to enforcement-based approaches *(p.5-6)*
+- Four Dung logics, indexed by stable, admissible, grounded, and complete kernels.
+- A characterization of model-set realizability using closure under kernel inclusion and the existence of a least kernel.
+- Expansion whose models are exactly the intersection of the original model sets.
+- An explicit stable-kernel revision operator selecting the unique inclusion-maximal compatible part of the old kernel together with the new kernel.
+- Selection-based operators for other kernels satisfying R1-R6; sufficient conditions for R7-R8 remain future work.
+- A concrete counterexample showing that a Satoh-style semantic distance construction can select a model set that no AF realizes. *([pp.2736-2739 images](pngs/page-002.png), [expansion](pngs/page-003.png), [revision construction](pngs/page-004.png), [revision theorem](pngs/page-005.png))*
 
-## Key Equations / Statistical Models
+## Frameworks and Kernels
 
-### AF Definition
-$$
-F = (A, R) \text{ where } A \text{ is a set of arguments, } R \subseteq A \times A \text{ is the attack relation}
-$$
-Where: $A$ = arguments, $R$ = attack relation (binary on $A$)
-*(p.1)*
+An AF is \(F=(A,R)\), with \(A\) a finite subset of a fixed infinite background universe and \(R\subseteq A\times A\). Framework inclusion, union, and symmetric difference are componentwise.
 
-### Strong Equivalence
-$$
-F_1 \equiv_s F_2 \iff \forall F': \sigma(F_1 \cup F') = \sigma(F_2 \cup F')
-$$
-Where: $F_1, F_2, F'$ are AFs, $\sigma$ is a semantics, $\cup$ denotes AF union (union of arguments and attacks)
-*(p.2)*
+A kernel \(k\) preserves the arguments and deletes selected redundant attacks. An AF is **\(k\)-r-free** iff \(F=F^k\). Definition 2 supplies four kernels, each retaining self-loops:
 
-### Ordinary Equivalence
-$$
-F_1 \equiv_\sigma F_2 \iff \sigma(F_1) = \sigma(F_2)
-$$
-*(p.2)*
+| Kernel | Delete a non-self attack \((a,b)\) exactly when |
+|--------|----------------------------------------------|
+| \(k(stb)\) | \((a,a)\in R\) |
+| \(k(ad)\) | \((a,a)\in R\) and \(\{(b,a),(b,b)\}\cap R\ne\emptyset\) |
+| \(k(gr)\) | \((b,b)\in R\) and \(\{(a,a),(b,a)\}\cap R\ne\emptyset\) |
+| \(k(co)\) | \((a,a),(b,b)\in R\) |
 
-### 4-Equivalence (Kernel Equivalence)
-$$
-F_1 \equiv_4 F_2 \iff F_1^k = F_2^k
-$$
-Where: $F^k$ is the **kernel** of $F$, obtained by removing all self-attacking arguments and their outgoing attacks. Specifically, $F^k = (A^k, R^k)$ where $A^k = A$ and $R^k = R \setminus \{(a,b) \mid (a,a) \in R\}$ — remove all attacks $(a,b)$ where $a$ attacks itself.
-*(p.2)*
+Theorem 1 relates kernel equality to strong equivalence: use the corresponding kernel for stable, admissible, complete, and grounded semantics; the admissible kernel also characterizes preferred, ideal, semi-stable, and eager strong equivalence; the stable kernel also serves stage semantics. These are different equivalence relations, not one relation unifying all semantics. The notation is **\(k\)-equivalence**, not “4-equivalence.” *([Definition 2 and Theorem 1, p.2735](pngs/page-001.png))*
 
-### Mod Function (Models of a Formula)
-$$
-\text{Mod}^I(F) = \{G \in \mathcal{F}^I \mid G^k = F^k\}
-$$
-Where: $\mathcal{F}^I$ is the set of all AFs over argument set $I$, and $G^k = F^k$ means the kernels match. A formula $F$ is satisfiable iff $\text{Mod}^I(F) \neq \emptyset$ for any $I \supseteq A_F$.
-*(p.2)*
+## Monotonic Dung Logics
 
-### Cn (Consequence Operator)
-$$
-\text{Cn}(X) = \{F \in \mathcal{F} \mid \text{Mod}^I(F') \subseteq \text{Mod}^I(F) \text{ for all } I \supseteq \bigcup_{G \in X} A_G \cup A_F\}
-$$
-Where: $X$ is a set of AFs, $\mathcal{F}$ is the set of all AFs. This captures the "consequences" of $X$ in the Dung logic — all AFs whose models are supersets of the models of $X$.
-*(p.2)*
+### Models and Satisfiability (Definition 3)
 
-### Belief Expansion for AFs
-$$
-F + G = F \cup_k G
-$$
-Where: $\cup_k$ denotes the **kernel union** — $F \cup_k G$ has arguments $A_F \cup A_G$ and attacks $R_F^k \cup R_G^k \cup \{(a,b) \mid a \in A_F \cup A_G, (a,a) \in R_F \cup R_G\}$. In other words, take the kernel attacks from both and re-add self-loop consequences.
-*(p.3-4)*
+\[
+\operatorname{Mod}^k(F)=\{G\in\mathcal A\mid F^k\subseteq G^k\},
+\qquad
+\operatorname{Mod}^k(\mathcal F)=
+\bigcap_{F\in\mathcal F}\operatorname{Mod}^k(F).
+\]
 
-### AGM Expansion Postulates for AFs (K1-K6)
-- **K1**: $\text{Cn}(F) + G$ is a belief set *(closure)*
-- **K2**: $G \in \text{Cn}(F) + G$ *(success)*
-- **K3**: $\text{Cn}(F) \subseteq \text{Cn}(F) + G$ *(inclusion — expansion only adds)*
-- **K4**: If $G \in \text{Cn}(F)$, then $\text{Cn}(F) + G = \text{Cn}(F)$ *(vacuity)*
-- **K5**: If $\text{Cn}(F_1) = \text{Cn}(F_2)$, then $\text{Cn}(F_1) + G = \text{Cn}(F_2) + G$ *(extensionality)*
-- **K6**: $\text{Cn}(F) + G$ is the smallest belief set satisfying K1-K5 *(minimality)*
-*(p.3)*
+The relation is **kernel inclusion**, not equality: a model may carry more information than the formula AF. A set \(\mathcal F\) is \(k\)-satisfiable iff its model set is nonempty and \(k\)-tautological iff its model set is all AFs. Every single ordinary AF is satisfiable because it models itself. The empty AF is tautological. Infinite sets of finite AF formulas can be unsatisfiable, and finite sets can also be inconsistent. The symbol \(\bot\) denotes an unsatisfiable “framework” by convention. *([p.2736 image](pngs/page-002.png))*
 
-### Belief Revision for AFs
-$$
-F * G
-$$
-Defined via a **faithful assignment**: a function $\leq_F$ mapping each AF $F$ to a total preorder on $\mathcal{F}^I$ such that:
-1. If $G_1, G_2 \in \text{Mod}^I(F)$ then $G_1 =_F G_2$ (models of $F$ are minimal)
-2. If $G_1 \in \text{Mod}^I(F)$ and $G_2 \notin \text{Mod}^I(F)$ then $G_1 <_F G_2$
-3. If $F_1^k = F_2^k$ then $\leq_{F_1} = \leq_{F_2}$
-*(p.5)*
+### Consequence (Definition 4)
 
-### AGM Revision Postulates for AFs (R1-R8)
-- **R1**: $F * G$ is a belief set *(closure)*
-- **R2**: $G$ is 4-satisfiable by $F * G$ *(success)*
-- **R3**: $F * G \subseteq \text{Cn}(F) + G$ *(inclusion)*
-- **R4**: If $\lnot G \notin \text{Cn}(F)$ then $\text{Cn}(F) + G \subseteq F * G$ *(vacuity — if G consistent with F, revision = expansion)*
-- **R5**: $F * G$ is 4-satisfiable iff $G$ is 4-satisfiable *(consistency)*
-- **R6**: If $G_1^k = G_2^k$ then $F * G_1 = F * G_2$ *(extensionality)*
-- **R7**: $F * (G_1 \cup_k G_2) \subseteq \text{Cn}(F * G_1) + G_2$ *(superexpansion)*
-- **R8**: If $\lnot G_2 \notin F * G_1$ then $\text{Cn}(F * G_1) + G_2 \subseteq F * (G_1 \cup_k G_2)$ *(subexpansion)*
-*(p.5)*
+\[
+\mathcal F\models^k G
+\quad\Longleftrightarrow\quad
+\operatorname{Mod}^k(\mathcal F)\subseteq\operatorname{Mod}^k(G),
+\qquad
+Cn^k(\mathcal F)=\{G\mid\mathcal F\models^k G\}.
+\]
 
-### Revision Operator Definition
-$$
-F * G = \text{Cn}(\min(G, \leq_F))
-$$
-Where: $\min(G, \leq_F)$ selects the $\leq_F$-minimal models satisfying $G$.
-*(p.5)*
+Proposition 2 proves inclusion, monotony, and idempotency of \(Cn^k\). Definition 5 calls \(F,G\) \(k\)-equivalent iff each entails the other. Theorem 3 identifies these equivalences with the semantics-specific strong-equivalence relations listed above. The paper explicitly says the consequence relations are **not finitary**, and that these logics possess **neither compactness nor the Craig interpolation property**; extension to infinite AFs needs separate study. *([p.2736 image](pngs/page-002.png), [p.2737 image](pngs/page-003.png))*
 
-## Parameters
+### Realizability (Definition 6, Theorem 4)
 
-| Name | Symbol | Units | Default | Range | Page | Notes |
-|------|--------|-------|---------|-------|------|-------|
-| Semantics family | σ | — | — | stable, preferred, grounded, complete, admissible, conflict-free, stage, semi-stable, ideal, eager | 2 | All unified under 4-equivalence |
-| Universe of arguments | I | — | — | any finite/countable set | 2 | Fixed for model comparison |
+A set \(\mathcal M\) is \(k\)-realizable when it is the model set of a set of AF formulas. Theorem 4 gives:
 
-## Methods & Implementation Details
-- **Dung logics construction**: Models are AFs. Satisfiability is defined via kernel equality: $G \models F$ iff $G^k = F^k$. The consequence operator Cn is monotonic (adding formulas only restricts models). *(p.2-3)*
-- **Kernel operation**: Remove from the attack relation all attacks $(a,b)$ where $a$ self-attacks. This is the key operation — it makes ordinary equivalence equal strong equivalence for ALL listed semantics simultaneously. *(p.2)*
-- **Expansion is kernel union**: The expansion of a belief set by a new AF is the kernel union $F \cup_k G$. This is the unique smallest belief set containing both $F$ and $G$. *(p.3-4)*
-- **Revision requires total preorder on models**: Unlike classical AGM where distance measures (Dalal) work, for AFs "standard approaches based on distance measures do not work." The paper proves revision exists but does not provide a concrete distance/preorder — only the representation theorem. *(p.4-5)*
-- **4-satisfiability replaces classical consistency**: An AF $G$ is 4-satisfiable iff there exists an AF $F$ such that $\text{Mod}^I(\{F,G\}) \neq \emptyset$, i.e., $F^k = G^k$ restricted to some domain. Actually: $G$ is 4-satisfiable iff for any $I \supseteq A_G$, $\text{Mod}^I(G) \neq \emptyset$. *(p.2)*
-- **Inconsistency in Dung logics**: Two AFs $F$ and $G$ are inconsistent (no common model) iff their kernels disagree: there exist $a, b$ such that $(a,b)$ is a kernel attack in one but not the other. *(p.3)*
-- **Standard AGM assumptions hold**: Dung logics satisfy compactness, are supra-classical relative to their own language, and satisfy deduction. *(p.3)*
-- **Intersection of models**: For a set of AFs $X$, $\text{Mod}^I(X) = \bigcap_{F \in X} \text{Mod}^I(F)$. This intersection is always non-empty for consistent sets. *(p.2)*
+1. If \(F\in\mathcal M\) and \(F^k\subseteq G^k\), then \(G\in\mathcal M\).
+2. If \(\mathcal M\ne\emptyset\), there is \(F\in\mathcal M\) such that \(F^k\subseteq G^k\) for every \(G\in\mathcal M\).
 
-## Figures of Interest
-- **Example 1 (p.2)**: Three AFs $F$, $G$, $H$ showing 4-equivalence: $F$ has arguments $\{a,b,c\}$ with attacks forming a cycle plus self-loop on $c$; after kernelization all three have the same kernel.
-- **Example 2 (p.3)**: Expansion example: $F$ and $G$ with different arguments, their models, and the expansion $F + G$ which is the kernel union.
-- **Example 3 (p.4)**: Shows that naive distance-based approaches fail for AF revision — $F$ and $G$ have models where the "closest" model by distance is not unique or sensible.
-- **Example 4 (p.5)**: Demonstrates that $\text{Mod}^I_{*G}$ (models of revision result) may indeed contain AFs with more attacks than expected.
+Thus a nonempty realizable set must be upward closed under kernel inclusion and have a least element up to kernel equivalence. A semantic revision method cannot select an arbitrary collection of nearest models and assume it corresponds to an AF. *([Theorem 4, p.2737](pngs/page-003.png))*
 
-## Results Summary
-1. **Theorem 1**: The expansion operator $+$ (kernel union) satisfies all AGM expansion postulates K1-K6 for Dung logics. *(p.3)*
-2. **Theorem 2**: An operator $*$ satisfies R1-R6 iff it can be represented via a faithful assignment (total preorder on models). *(p.5)*
-3. **Lemma 4**: For any AF $F$ and AF $G$, $\text{Mod}^I_{F+G} = \text{Mod}^I_F \cap \text{Mod}^I_G$. *(p.3)*
-4. **Lemma 5**: Belief expansion can be generalized to arbitrary finite intersections of models. *(p.4)*
-5. **Lemma 6**: The kernel union is a syntactic companion of intersection of models — $\text{Mod}^I(F \cup_k G) = \text{Mod}^I(F) \cap \text{Mod}^I(G)$. *(p.4)*
-6. **Key negative result**: Standard distance-based approaches (Dalal-style) do not work for AF revision because AFs have different argument sets and the space is not well-metrized. *(p.4)*
+## Belief Expansion
 
-## Limitations
-- The paper does **not** provide a concrete revision operator — only representation theorems showing that satisfying the postulates is equivalent to having a faithful assignment. No specific distance metric or preorder is given. *(p.5)*
-- Contraction is not addressed (left to companion paper Baumann & Brewka 2019). *(p.1)*
-- The approach works only for **finite** AFs (argument sets can be any set, but specific results assume finite). *(p.2)*
-- The paper notes that the requirement of 4-satisfiability is "in many cases trivially fulfilled" — vacuous opinions about self-attacking arguments can be freely added, making revision trivial in some cases. *(p.5)*
-- Revision results can include "more models" than expected — the paper acknowledges this may seem counter-intuitive (Example 4). *(p.5)*
+Definition 7 defines \(+\!^k\) by
 
-## Arguments Against Prior Work
-- **Cayrol et al. (2010, 2014) revision operators** are criticized as not fully AGM-compliant: "Their definitions are straightforward from a technical point of view since the intersection of models can be simply obtained by taking the conjunction of the given formulas." However, their approach adds new arguments and attacks but doesn't remove existing ones, which limits expressivity. *(p.5-6)*
-- **Coste-Marquis et al. (2005, 2007, 2014)** enforcement-based approaches: a revision operator maps an AF $F$ to a set of AFs, selecting which to add and which are not. Then a two-step procedure is performed. These "do not correspond to former extensions of $F$ if $\sigma$ is selected." *(p.6)*
-- **Baumann & Brewka (2010)** own earlier expansion work: that paper focused on enforcing acceptance of specific arguments, not on AGM-style expansion of the framework's logical content. *(p.6)*
-- **Standard distance measures** (Dalal): "why standard approaches based on distance measures do not work for AFs and present an appropriate satisfying all postulates for a specific Dung logic." *(p.1)*
+\[
+\operatorname{Mod}^k(F+\!^k G)=
+\operatorname{Mod}^k(F)\cap\operatorname{Mod}^k(G).
+\]
 
-## Design Rationale
-- **Why Dung logics?** The key insight is that for 10 standard argumentation semantics, ordinary equivalence coincides with strong equivalence. This means a single logic captures all these semantics simultaneously, avoiding the need for semantics-specific revision operators. *(p.2)*
-- **Why kernel-based?** The kernel operation (removing attacks from self-attacking arguments) is the canonical representative for equivalence classes under 4-equivalence. Two AFs are 4-equivalent iff their kernels are identical. This provides a clean normal form. *(p.2)*
-- **Why not distance-based revision?** Example 3 shows that cardinality-based distance between AFs doesn't give sensible results because AFs with different argument sets are incomparable in useful ways. *(p.4)*
-- **Why monotonic consequence?** AGM postulates require a consequence operator satisfying Tarskian properties (inclusion, monotonicity, idempotence). The Cn operator defined via model intersection satisfies all these. *(p.2-3)*
+Theorem 5 proves this intersection has a single-AF representative. If nonempty, the representative is \(k\)-equivalent to \(F^k\cup G^k\); otherwise the result is \(\bot\). Lemma 6 supplies the syntactic satisfiability condition:
+
+\[
+\operatorname{Mod}^k(F+\!^k G)\ne\emptyset
+\quad\Longleftrightarrow\quad
+F^k\cup G^k\text{ is }k\text{-r-free}.
+\]
+
+One must not simply kernelize a conflicting union: deleting an old required kernel attack may lose an input formula. Nor does the definition re-add all attacks from self-attacking sources. The result depends on the selected kernel. *([Definition 7, Theorem 5, Lemma 6, p.2737](pngs/page-003.png))*
+
+Theorem 7 establishes five expansion properties:
+
+1. The expansion is an AF.
+2. \(F+\!^kG\models^kG\).
+3. If \(F\models^kG\), then \(F+\!^kG\equiv^kF\).
+4. If \(F\models^kG\), then \(F+\!^kH\models^kG+\!^kH\).
+5. Kernel-equivalent inputs yield kernel-equivalent expansions.
+
+The construction generalizes to arbitrary finite intersections. *([p.2737 image](pngs/page-003.png))*
+
+## Belief Revision
+
+### Adapted AGM Postulates (Definition 8)
+
+For AFs \(F,G,H,I\), a \(k\)-revision satisfies all eight axioms:
+
+- **R1:** \(F*_kG\) is an AF.
+- **R2:** \(F*_kG\models^kG\).
+- **R3:** \(F+\!^kG\models^kF*_kG\).
+- **R4:** If \(F+\!^kG\) is satisfiable, then \(F*_kG\models^kF+\!^kG\).
+- **R5:** \(F*_kG\) is satisfiable iff \(G\) is satisfiable.
+- **R6:** \(F\equiv^kG\) and \(H\equiv^kI\) imply \(F*_kH\equiv^kG*_kI\).
+- **R7:** \((F*_kG)+\!^kH\models^kF*_k(G+\!^kH)\).
+- **R8:** If \((F*_kG)+\!^kH\) is satisfiable, then \(F*_k(G+\!^kH)\models^k(F*_kG)+\!^kH\).
+
+These are entailment statements between AFs, not membership statements in a classical belief set. *([p.2737 image](pngs/page-003.png))*
+
+### Why the Satoh-Style Construction Can Fail
+
+Definition 9 selects models of the new AF having inclusion-minimal symmetric difference from some model of the old AF. Example 3 shows the selected set need not be realizable: it contains \(F'\), but omits a framework with the same kernel that upward closedness would require. Thus R1 fails. More generally, distance selection can omit required upward extensions or select multiple incomparable minimal kernels. The obstacle is realizability, not merely different argument sets or an unspecified metric. *([p.2738 image](pngs/page-004.png))*
+
+### Concrete Syntactic Revision (Definitions 10-11)
+
+\[
+\mathcal M^k_{FG}=
+\max_{\subseteq}
+\{G^k\cup H\mid H\subseteq F^k,\ 
+G^k\cup H\text{ is }k\text{-r-free}\}.
+\]
+
+The new kernel is retained; as much of the old kernel as possible is added while preserving kernel redundancy-freedom. Example 4 gives multiple maximal candidates for the admissible, grounded, and complete kernels. Lemma 8 proves the surprising stable-kernel exception:
+
+\[
+|\mathcal M^{k(stb)}_{FG}|=1.
+\]
+
+Definition 11 defines \(F\circ^{k(stb)}G=I\) where \(\mathcal M^{k(stb)}_{FG}=\{I\}\). **Theorem 9 proves this concrete operator satisfies R1-R8.** This is not a faithful-total-preorder representation theorem. *([p.2738 construction](pngs/page-004.png), [p.2739 operator and theorem](pngs/page-005.png))*
+
+### Other Kernels (Definition 12, Proposition 10)
+
+A \(k\)-selection operator chooses a suitable member of \(\mathcal M^k_{FG}\). Proposition 10 proves R1-R6. R7-R8 require additional properties of the selection function; a subset-compatibility idea is sketched, but sufficient conditions are left for future work. *([p.2739 image](pngs/page-005.png))*
+
+## Figures and Examples
+
+- **Example 1 (p.2736):** Six two-argument AFs illustrate satisfiable and unsatisfiable combinations of AF formulas, and dependence on the selected kernel.
+- **Example 2 (p.2737):** Grounded-kernel expansion is satisfiable, while stable/admissible/complete-kernel expansion of the same inputs is unsatisfiable.
+- **Example 3 (p.2738):** Satoh-style closest-model selection violates realizability.
+- **Example 4 (p.2738):** Multiple admissible/complete/grounded maximal candidates contrast with a unique stable candidate.
+- **Example 5 (p.2739):** Concrete revisions in opposite orders illustrate revision's directionality.
+
+The corresponding images are [p.2736](pngs/page-002.png), [p.2737](pngs/page-003.png), [p.2738](pngs/page-004.png), and [p.2739](pngs/page-005.png).
+
+## Limitations and Implementation Consequences
+
+- The concrete fully axiomatized revision result is for the stable kernel; do not claim a single operator works for every semantics.
+- Expansion may be inconsistent even though each input AF is individually satisfiable.
+- A kernel function must preserve argument sets and self-loops and implement the selected redundancy condition.
+- Model testing uses kernel inclusion; kernel equality is reserved for equivalence.
+- A distance-based revision implementation needs a realizability argument.
+- The paper's consequence operations are not finitary or compact.
+- AFs here are finite; infinite-AF behavior is not established by these results.
+- Contraction is outside this paper's construction.
+
+## Relationship to Other Work
+
+The related-work section distinguishes AF revision from answer-set-program revision: strong equivalence of AFs need not coincide with strong equivalence under a logic-program translation, and a logic-program result need not be realizable as an AF.
+
+Cayrol et al. study extension change after adding an argument, and Baumann and Brewka (2010) study enforcement; neither supplies the AGM consistency and inference notions introduced here. Coste-Marquis et al. (2014) select formula-compatible extensions close to old extensions and return a set of AFs because of realizability. Their construction changes attacks and does not add arguments. A subsequent propositional-translation approach changes the revising formula's reading from credulous to skeptical acceptance. *([p.2739 image](pngs/page-005.png))*
 
 ## Testable Properties
-- **4-equivalence correctness**: Two AFs $F_1, F_2$ with $F_1^k = F_2^k$ must produce identical extensions under all 10 semantics *(p.2)*
-- **Expansion postulate K2 (success)**: After expanding $\text{Cn}(F) + G$, the new information $G$ must be entailed *(p.3)*
-- **Expansion postulate K3 (inclusion)**: Expansion must be monotonic — $\text{Cn}(F) \subseteq \text{Cn}(F) + G$ *(p.3)*
-- **Kernel union is model intersection**: $\text{Mod}^I(F \cup_k G) = \text{Mod}^I(F) \cap \text{Mod}^I(G)$ *(p.4)*
-- **Revision postulate R2 (success)**: After revision $F * G$, the AF $G$ must be 4-satisfiable by the result *(p.5)*
-- **Revision postulate R4 (vacuity)**: If $G$ is consistent with $F$, revision reduces to expansion *(p.5)*
-- **Faithful assignment conditions**: Models of $F$ are $\leq_F$-minimal; kernel-equivalent AFs share the same preorder *(p.5)*
 
-## Relevance to Project
-This paper is **highly relevant** to propstore. The project CLAUDE.md lists Dixon 1993 (ATMS context switching = AGM operations) and Alchourron 1985 (AGM postulates) as aspirational, with "no AGM operations implemented." This paper provides the concrete bridge:
-- It defines what AGM expansion and revision **mean** for Dung AFs
-- The kernel operation maps directly to propstore's existing AF infrastructure
-- The expansion operator (kernel union) is immediately implementable
-- The revision representation theorem tells us what a valid revision operator must look like (faithful assignment / total preorder)
-- The connection to strong equivalence means any revision operator built this way works for ALL standard semantics simultaneously
+- Kernel equality matches the corresponding semantics' strong equivalence, with the exact family split in Theorem 1.
+- \(G\models^kF\) iff \(F^k\subseteq G^k\).
+- \(Cn^k\) satisfies inclusion, monotony, and idempotency.
+- Expansion models are the intersection of input model sets.
+- Expansion is satisfiable iff \(F^k\cup G^k\) is \(k\)-r-free.
+- The stable-kernel maximal-candidate set has one element.
+- The concrete stable-kernel operator satisfies R1-R8.
+- Arbitrary suitable selection operators for the other kernels satisfy R1-R6; R7-R8 are not established without further conditions.
 
-## Open Questions
-- [ ] How does this connect to propstore's ATMS layer? Dixon 1993 says ATMS context switching = AGM operations. This paper says AGM expansion for AFs = kernel union. Can ATMS label sets inform the faithful assignment for revision?
-- [ ] The paper leaves the concrete revision preorder unspecified — what distance/ordering over AFs should propstore use?
-- [ ] Baumann & Brewka 2019 covers contraction — should that be retrieved too?
-- [ ] How does this interact with ASPIC+ structured argumentation? The paper works at the abstract (Dung) level only.
+## Relevance to Project and Open Questions
 
-## Related Work Worth Reading
-- **Baumann & Brewka 2019**: "AGM Meets Abstract Argumentation: Contraction for Dung Frameworks" (JELIA 2019) — the contraction companion paper
-- **Cayrol, de Saint-Cyr, Lagasquie-Schiex 2010**: "Change in abstract argumentation frameworks: Adding an argument" — alternative approach to AF dynamics
-- **Coste-Marquis et al. 2014**: Revision via enforcement, different approach
-- **Oikarinen & Woltran 2011**: Characterization of strong equivalence for AFs
-- **Baumann & Brewka 2010**: Earlier expansion work (already in propstore as Baumann_2010)
-- **Diller et al. 2015**: Metalevel approaches to AF revision
+The four kernels provide separate canonical AF representations, while kernel inclusion supplies a monotonic consequence relation for comparing AF information. The stable syntactic revision construction is a concrete reference for AF belief change; a union-and-kernelize helper alone does not implement the paper's expansion when the kernel union is inconsistent.
+
+- [ ] Which kernel and associated equivalence is intended for a consuming application?
+- [ ] Does a proposed revision result preserve realizability and the AF entailment form of the axioms?
+- [ ] Which selection conditions suffice for R7-R8 under the other kernels?
+- [ ] How should structured-argumentation generation interact with change at the abstract AF level?
 
 ## Collection Cross-References
 
-### Already in Collection
-- [[Alchourron_1985_TheoryChange]] — the foundational AGM paper whose postulates this paper reformulates for Dung AFs
-- [[Dung_1995_AcceptabilityArguments]] — defines the AF = (Args, Defeats) framework that this paper builds AGM operations upon
-- [[Baumann_2010_ExpandingArgumentationFrameworksEnforcing]] — the authors' earlier expansion work (enforcement-based, not AGM-based); this paper supersedes the theoretical framing
-- [[Gärdenfors_1988_RevisionsKnowledgeSystemsEpistemic]] — epistemic entrenchment for belief revision; this paper's faithful assignment (total preorder on models) is the AF analogue
-- [[Coste-Marquis_2005_SymmetricArgumentationFrameworks]] — same authors later do enforcement-based revision (2014); the 2005 symmetry work is a precursor
-
-### New Leads (Not Yet in Collection)
-- Oikarinen & Woltran (2011) — "Characterizing Strong Equivalence for Argumentation Frameworks" — foundational for the kernel operation underlying Dung logics
-- Baumann & Brewka (2019) — "AGM Meets Abstract Argumentation: Contraction for Dung Frameworks" — companion paper completing the AGM trilogy
-- Diller et al. (2015) — extension-based approach to AF belief revision (concurrent IJCAI paper, alternative to model-based approach)
-
-### Supersedes or Recontextualizes
-- [[Baumann_2010_ExpandingArgumentationFrameworksEnforcing]] — this 2015 paper provides the full AGM-theoretic foundation for AF expansion, whereas the 2010 paper defined expansion operationally (enforcement). The 2015 kernel union operator is the AGM-compliant generalization.
-
-### Cited By (in Collection)
-- (none found)
-
-### Conceptual Links (not citation-based)
-**AGM and ATMS:**
-- [[Dixon_1993_ATMSandAGM]] — Strong. Dixon proves ATMS context switching is behaviourally equivalent to AGM operations. This paper defines what AGM expansion/revision mean for AFs. Together they suggest ATMS label sets could inform the faithful assignment for AF revision.
-- [[Gärdenfors_1988_RevisionsKnowledgeSystemsEpistemic]] — Strong. Epistemic entrenchment provides a concrete ordering mechanism; this paper's faithful assignment is the AF analogue of entrenchment-based revision.
-
-**AF dynamics:**
-- [[Cayrol_2014_ChangeAbstractArgumentationFrameworks]] — Strong. Cayrol et al.'s approach to AF change (adding arguments) is directly critiqued in Section 5.4; both address the same problem from different angles.
-- [[Boella_2009_DynamicsArgumentationSingleExtensions]] — Strong. Boella et al. study AF dynamics for maintaining single extensions; this paper provides the AGM-theoretic framework for the same problem.
-- [[Doutre_2018_ConstraintsChangesSurveyAbstract]] — Moderate. Survey of constraints and changes in abstract argumentation; contextualizes this paper within the broader AF dynamics literature.
-- [[Coste-Marquis_2007_MergingDung'sArgumentationSystems]] — Strong. Merging AFs is closely related to revision; the merging operators could potentially be connected to the faithful assignment mechanism.
-
-**Belief revision foundations:**
-- [[Rotstein_2008_ArgumentTheoryChangeRevision]] — Strong. Addresses argument theory change and revision from a different angle (structured arguments rather than abstract AFs).
+- [[Dung_1995_AcceptabilityArguments]] — foundational AF semantics.
+- [[Oikarinen_2010_CharacterizingStrongEquivalenceArgumentation]] — semantics-specific strong-equivalence kernels.
+- [[Cayrol_2014_ChangeAbstractArgumentationFrameworks]] — adding-argument dynamics discussed in related work.
+- [[Coste-Marquis_2007_MergingDung'sArgumentationSystems]] — distance-based merging is a related change problem, not this paper's revision construction.
+- [[Diller_2015_ExtensionBasedBeliefRevision]] — extension-based revision is a separate approach.
+- [[Baumann_2019_AGMContractionDung]] — later contraction work; its contents require separate verification.

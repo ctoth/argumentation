@@ -92,22 +92,25 @@ An argumentation theory is a triple $AT = (AS, KB, \leq')$ where $AS$ is an argu
 
 ### Three Attack Types
 
-**Definition 3.12: Undermining attack**
-Argument $A$ *undermines* argument $B$ (on $B'$) iff $Conc(A) \in \bar{\phi}$ for some $B' \in Sub(B)$ of the form $\phi_1, \ldots, \phi_n \to/\Rightarrow \phi$ where $\phi \in \mathcal{K}_p \cup \mathcal{K}_a \cup \mathcal{K}_i$, i.e. $\phi$ is an ordinary premise, assumption, or issue.
+**Definition 3.16: Undermining attack**
+Argument $A$ *undermines* argument $B$ (on $\phi$) iff $Conc(A) \in \bar{\phi}$ for some $\phi \in Prem(B) \setminus \mathcal{K}_n$. It *contrary-undermines* $B$ iff $Conc(A)$ is a contrary of $\phi$ or $\phi \in \mathcal{K}_a$. The target is a non-axiom premise, not a rule application. *(p.9; [page image](pngs/page-008.png))*
 
 **Definition 3.14: Rebutting attack**
 Argument $A$ *rebuts* argument $B$ (on $B'$) iff $Conc(A) \in \bar{\phi}$ for some $B' \in Sub(B)$ of the form $B'_1, \ldots, B'_n \Rightarrow \phi$. So rebutting attacks only target defeasible-rule conclusions.
 
-**Definition 3.16: Undercutting attack**
-Argument $A$ *undercuts* argument $B$ (on $B'$) iff $Conc(A) \in \bar{n}$ for some $B' \in Sub(B)$ of the form $B'_1, \ldots, B'_n \Rightarrow \phi$ where $n$ names the application of that defeasible rule. Requires naming convention for defeasible rules.
+**Definition 3.12: Undercutting attack**
+Argument $A$ *undercuts* argument $B$ (on $B'$) iff $Conc(A) \in \overline{B'}$ for some $B' \in Sub(B)$ of the form $B''_1, \ldots, B''_n \Rightarrow \psi$. The paper leaves the object-language naming convention for inference rules implicit. *(p.8; [page image](pngs/page-007.png))*
 
 ### Defeat Relations
 
 **Definition 3.19: Successful rebuttal**
-Argument $A$ *successfully rebuts* argument $B$ if $A$ rebuts $B$ on $B'$ and either $A$ is a contrary underminer of $B'$ (asymmetric conflict), or $A \not<' B'$ (not strictly weaker by the argument ordering).
+Argument $A$ *successfully rebuts* argument $B$ if $A$ rebuts $B$ on $B'$ and either $A$ contrary-rebuts $B'$ (asymmetric conflict), or $A \not\prec B'$ (not strictly weaker by the argument ordering). *(p.10; [page image](pngs/page-009.png))*
 
-**Definition 3.20: Defeat**
-Argument $A$ *defeats* argument $B$ iff $A$ undercuts or successfully rebuts $B$ on some $B'$, or $A$ undermines $B$ on some $B'$ and either $B'$ is a contrary (not contradictory) or $A \not<' B'$.
+**Definition 3.20: Successful undermining**
+Argument $A$ *successfully undermines* $B$ iff $A$ undermines $B$ on $\phi$ and either $A$ contrary-undermines $B$ or $A \not\prec \phi$ (a premise is itself an argument). *(p.10; [page image](pngs/page-009.png))*
+
+**Definition 3.21: Defeat**
+Argument $A$ *defeats* argument $B$ iff no premise of $A$ is an issue and $A$ undercuts, successfully rebuts, or successfully undermines $B$. Arguments with issue premises are excluded from the sets considered in the extension definitions. *(p.10; [page image](pngs/page-009.png))*
 
 **Definition 3.22: Argumentation Framework**
 The argumentation framework $AF$ corresponding to an argumentation theory $AT$ is the pair $(\mathcal{A}, Def)$ such that:
@@ -120,20 +123,24 @@ Two main approaches for deriving argument orderings from rule orderings:
 
 ### Definition 6.12: Last Defeasible Rule
 - $LastDefRules(A) = \emptyset$ if $DefRules(A) = \emptyset$
-- If $A = B_1, \ldots, B_n \Rightarrow \phi$, then $LastDefRules(A) = \{TopRule(A)\}$ if $Conc(A_i) = \phi_i$ for $i \leq n$ and $DefRules(A_i) = \emptyset$ for all $i$, else $LastDefRules(A) = LastDefRules(A_1) \cup \ldots \cup LastDefRules(A_n)$
+- If $A = A_1, \ldots, A_n \Rightarrow \phi$, then $LastDefRules(A) = \{TopRule(A)\}$; otherwise, for a strict-rule argument, $LastDefRules(A) = LastDefRules(A_1) \cup \ldots \cup LastDefRules(A_n)$. There is no condition that the children of a defeasible top rule must be strict. *(p.16; [page image](pngs/page-015.png))*
+
+The set comparison used below is $S_1 \prec_s S_2$ iff there exists $e_1 \in S_1$ such that for every $e_2 \in S_2$, $e_1 <_e e_2$, where $<_e$ is the strict part of the relevant element preorder. *(p.16; [page image](pngs/page-015.png))*
 
 ### Definition 6.14: Last-Link Principle
 Let $A$ and $B$ be two arguments. Then $A \prec B$ iff either:
-1. $DefRules(A) \neq \emptyset$ and $DefRules(B) = \emptyset$; or
-2. $LastDefRules(A) \neq \emptyset$ and $LastDefRules(B) \neq \emptyset$ and are empty and $Prem(A) \leq' Prem(B)$ (i.e. premises comparison)
+1. $B$ is firm and strict and $A$ is defeasible or plausible (Definition 3.10(1)); or
+2. $LastDefRules(A) \prec_s LastDefRules(B)$; or
+3. Both last-defeasible-rule sets are empty and $Prem(A) \prec_s Prem(B)$.
+
+*(p.17; [page image](pngs/page-016.png); firm/strict priority on [p.8](pngs/page-007.png))*
 
 ### Definition 6.17: Weakest-Link Principle
-Let $A$ and $B$ be two arguments. Then $A \prec B$ iff either:
-1. $Prem(A) \leq' Prem(B)$; or
-2. $DefRules(A) \leq DefRules(B)$; or
-3. $LastDefRules(A) \leq LastDefRules(B)$ and $LastDefRules(B) \leq LastDefRules(A)$ and $Prem(A) \leq' Prem(B)$
+Let $A$ and $B$ be two arguments. Then $A \prec B$ iff either $B$ is firm and strict and $A$ is defeasible or plausible (Definition 3.10(1)), or both of the following hold:
+1. $Prem(A) \prec_s Prem(B)$; and
+2. If $DefRules(B) \neq \emptyset$, then $DefRules(A) \prec_s DefRules(B)$.
 
-(Simplified paraphrase; actual conditions are more nuanced -- see Definition 3.10 in the paper.)
+These are the 2010 conditions; the later Modgil--Prakken account revises weakest-link to remove an asymmetry between premises and rules. *(p.17; [page image](pngs/page-016.png); later correction: [Modgil--Prakken p.21](../Modgil_2018_GeneralAccountArgumentationPreferences/pngs/page-020.png))*
 
 ## Transposition and Contraposition
 
@@ -141,15 +148,17 @@ Let $A$ and $B$ be two arguments. Then $A \prec B$ iff either:
 A strict rule $s$ is a *transposition* of $\phi_1, \ldots, \phi_n \to \psi$ iff $s$ is of the form $\phi_1, \ldots, \phi_{i-1}, -\psi, \phi_{i+1}, \ldots, \phi_n \to -\phi_i$ for some $1 \leq i \leq n$.
 
 ### Definition 5.2: Closure under Transposition
-Let $\mathcal{R}_s$ be a set of strict rules. $Cl_{\mathcal{R}_s}(\mathcal{R}_s)$ is the smallest set such that:
-- $\mathcal{R}_s \subseteq Cl_{\mathcal{R}_s}(\mathcal{R}_s)$
-- If $r \in Cl_{\mathcal{R}_s}(\mathcal{R}_s)$ and $t$ is a transposition of $r$ then $t \in Cl_{\mathcal{R}_s}(\mathcal{R}_s)$
+Let $\mathcal{R}_s$ be a set of strict rules. $Cl_{tp}(\mathcal{R}_s)$ is the smallest set such that:
+- $\mathcal{R}_s \subseteq Cl_{tp}(\mathcal{R}_s)$
+- If $r \in Cl_{tp}(\mathcal{R}_s)$ and $t$ is a transposition of $r$ then $t \in Cl_{tp}(\mathcal{R}_s)$
+
+This operator closes a set of rules under transposition; $Cl_{\mathcal{R}_s}$ in Definition 5.4 instead closes a set of formulas under strict inference. *(p.13; [page image](pngs/page-012.png))*
 
 ### Definition 5.3: Closure under Transposition (Systems)
-An argumentation system ($\mathcal{L}, \bar{}, \mathcal{R}_s, \leq$) is *closed under transposition* if $Cl_{\mathcal{R}_s}(\mathcal{R}_s) = \mathcal{R}_s$.
+An argumentation system ($\mathcal{L}, \bar{}, \mathcal{R}, \leq$) is *closed under transposition* if $Cl_{tp}(\mathcal{R}_s) = \mathcal{R}_s$. *(p.13; [page image](pngs/page-012.png))*
 
 ### Definition 5.5: Contraposition
-An argumentation theory is *closed under contraposition* if for all $S \subseteq \mathcal{L}$, all $\phi$ and all $\psi$, it holds that if $S \vdash \phi$ then $S \setminus \{-\psi\} \cup \{-\phi\} \vdash \psi$. An argumentation theory is closed under contraposition if its argumentation system is.
+An argumentation system is *closed under contraposition* if for all $S \subseteq \mathcal{L}$, all $s \in S$ and all $\phi$, if $S \vdash \phi$ then $(S \setminus \{s\}) \cup \{-\phi\} \vdash -s$. An argumentation theory is closed under contraposition if its argumentation system is. *(p.13; [page image](pngs/page-012.png))*
 
 ## Rationality Postulates
 
@@ -157,7 +166,7 @@ An argumentation theory is *closed under contraposition* if for all $S \subseteq
 Let $(\mathcal{A}, Def)$ be an argumentation framework as defined in Definition 3.22. Let $E$ be an extension under a given semantics $S$ subsumed by complete semantics. Then for all $A \in E$: if $A' \in Sub(A)$ then $A' \in E$.
 
 ### Proposition 6.2
-Let $(\mathcal{A}, Def)$ be an argumentation framework corresponding to an argumentation theory, and $E$ any of its extensions under a given semantics $S$ subsumed by complete semantics. Then $Conc(A) | A \in E \subseteq Cl_{\mathcal{R}_s}(Conc(A) | A \in E)$.
+Let $(\mathcal{A}, Def)$ be an argumentation framework corresponding to an argumentation theory, and $E$ any of its extensions under a given semantics $S$ subsumed by complete semantics. Then $\{Conc(A) \mid A \in E\} = Cl_{\mathcal{R}_s}(\{Conc(A) \mid A \in E\})$. The equality states closure, rather than only the inclusion every set has in its closure. *(p.14; [page image](pngs/page-013.png))*
 
 ### Definition 6.5: Maximal Fallible Subarguments
 For any argument $A$, an argument $A' \in Sub(A)$ is a *maximal fallible subargument of A* iff:
@@ -167,7 +176,7 @@ For any argument $A$, an argument $A' \in Sub(A)$ is a *maximal fallible subargu
 ### Definition 6.8: Well-Formed Argumentation Theory
 An argumentation theory is *well-formed* if:
 1. No consequent of a defeasible rule is a contrary of the consequent of a strict rule
-2. If $r \in \mathcal{K}_n$ and $\phi$ is a contrary of $r$, then $\phi$ is not the conclusion of a rule in $\mathcal{R}$ and $\phi$ is not in $\mathcal{K}$
+2. If $\phi \in \mathcal{K}_a$ and $\phi$ is a contrary of $\psi$, then $\psi \notin \mathcal{K}_n \cup \mathcal{K}_p$ and $\psi$ is not the conclusion of a rule in $\mathcal{R}$. *(pp.15-16; [page image for condition 2](pngs/page-015.png))*
 
 ### Theorem 6.10 (Main Rationality Result)
 Let $(\mathcal{A}, Def)$ be an argumentation framework corresponding to a well-formed argumentation theory that is closed under contraposition or transposition and has a reasonable argument ordering and a consistent $Cl_{\mathcal{R}_s}(\mathcal{K}_n)$, and let $E$ be any of its extensions under a given semantics subsumed by complete semantics. Then the set $Cl_{\mathcal{R}_s}(\{Conc(A) | A \in E\})$ is consistent.
@@ -179,9 +188,9 @@ If the conditions of Theorem 6.10 are satisfied, then for any extension $E$ unde
 
 Self-defeating arguments are possible and cause problems if argumentation systems are not carefully defined, particularly with grounded semantics.
 
-**Example 7.1** (Serial self-defeat): $\mathcal{R}_d = \{p \Rightarrow q\}$, $\mathcal{K} = \{p, \neg q, \neg r\}$. Then we have $A_1: p$, $A_2: p \Rightarrow q$, $A_3: \neg q$. Argument $A_2$ is self-defeating since it undermines itself via $A_3$.
+**Example 7.1** (Serial self-defeat): The paper gives $\mathcal{R}_d = \{p \Rightarrow q\}$, $\mathcal{R}_s = \{q \to \neg A_2\}$ and $\mathcal{K} = \{p,q\}$, with $A_1:p$, $A_2:A_1 \Rightarrow q$, and $A_3:A_2 \to \neg A_2$. Argument $A_3$ undercuts itself on $A_2$. The paper states that grounded and preferred semantics both have $E=\{A_1\}$ as their only extension. *(p.18; [page image](pngs/page-017.png); the displayed knowledge base and stated extension are transcribed as printed)*
 
-**Example 7.2** (Parallel self-defeat): $\mathcal{R}_d = \{p, q, \neg q, r_1 \Rightarrow s\}$ and $\mathcal{K} = \{p, r, t\}$ while $\mathcal{R}_s$ contains all propositionally valid inferences. Then all defeasible arguments get defeated.
+**Example 7.2** (Parallel self-defeat): $\mathcal{R}_d = \{p \Rightarrow q; r \Rightarrow \neg q; t \Rightarrow s\}$ and $\mathcal{K} = \{p,r,t\}$, while $\mathcal{R}_s$ contains all propositionally valid inferences. Arguments $A_2:p \Rightarrow q$ and $B_2:r \Rightarrow \neg q$ jointly support $C_1:A_2,B_2 \to \bot$ and $C_2:C_1 \to \neg s$, which can rebut the unrelated $D_2:t \Rightarrow s$. The paper distinguishes preferred/stable semantics, whose extensions contain $D_2$, from grounded semantics, which omits $D_2$ when neither $A_2$ nor $B_2$ strictly defeats the other. *(p.18; [page image](pngs/page-017.png))*
 
 The problem with grounded semantics: since self-defeating arguments are in no extension, any defeasible argument unrelated to the self-defeating one could be vulnerable. Caminada (personal communication) suggests disallowing arguments with contradictory sub-conclusions.
 
@@ -194,8 +203,10 @@ A deductive system is a pair $(\mathcal{L}, \mathcal{R})$ where:
 
 ### Theorem 8.9
 For all ABFs, any semantics $S$ subsumed by complete semantics and any set $E$:
-1. If $E$ is an $S$-extension of ABF then $E_{AF}$ is an $S$-extension of $AT$, where $E_{AF} = \{A | A \in S, A \text{ uses } E\}$
-2. If $E$ is an $S$-extension of $AT$ then $E_{ABF}$ is an $S$-extension of $ABF$, where $E_{ABF} = \{A | A_{AF} \text{ uses the assumptions in } E\}$
+1. If $E$ is an $S$-extension of ABF then $E_{AT}$ is an $S$-extension of $AT$, where $E_{AT} = \{A \vdash_{AT} \alpha \mid A \vdash_{ABF} \alpha \in E\}$.
+2. If $E$ is an $S$-extension of $AT$ then $E_{ABF}$ is an $S$-extension of $ABF$, where $E_{ABF} = \{A \vdash_{ABF} \alpha \mid A \vdash_{AT} \alpha \in E\}$.
+
+The mappings translate arguments with the same support and conclusion between the two formalisms. *(p.21; [page image](pngs/page-020.png))*
 
 ### Corollary 8.10
 For any ABF, any semantics $S$ subsumed by complete semantics, and for any formula $\phi$: $\phi$ is skeptically (credulously) $S$-acceptable in ABF iff $\phi$ is skeptically (credulously) $S$-acceptable in $AT_{ABF}$.
@@ -253,8 +264,8 @@ For each pair of arguments $(A, B)$:
 
 ### Defeat from Attack
 - Undercutting attacks always succeed (no preference comparison)
-- Rebutting attacks succeed unless attacker is strictly weaker ($A \not<' B'$)
-- Undermining attacks on contradictories succeed unless attacker is strictly weaker; on contraries always succeed
+- Contrary-rebutting attacks always succeed; contradictory rebutting succeeds unless the attacker is strictly weaker ($A \not\prec B'$). *(p.10; [page image](pngs/page-009.png))*
+- Contrary-undermining attacks always succeed, including attacks on assumptions; other undermining succeeds unless the attacker is strictly weaker. Defeat also requires that the attacker has no issue premise. *(pp.9-10; [definition](pngs/page-008.png), [defeat](pngs/page-009.png))*
 
 ## Results Summary
 - ASPIC framework satisfies closure under strict rules (Proposition 6.2)
@@ -276,8 +287,8 @@ For each pair of arguments $(A, B)$:
 - Under Theorem 6.10 conditions: the strict-rule closure of conclusions in any extension is consistent
 - If Theorem 6.10 conditions hold: the premises of arguments in any extension are consistent (Corollary 6.11)
 - For any ABF, skeptical/credulous acceptability is preserved when translating to the ASPIC AT (Corollary 8.10)
-- An argument cannot be stronger than its weakest sub-argument (closure under sub-arguments)
-- Strict arguments cannot be defeated by any other argument
+- The last-link principle can make an argument stronger than its weakest subargument; the paper explicitly does not impose Vreeswijk's contrary restriction. Closure of extensions under subarguments is a different property. *(p.8; [page image](pngs/page-007.png))*
+- Strict-and-firm arguments cannot be attacked on premises or defeasible steps; strict but plausible arguments can be undermined on their non-axiom premises. *(pp.8-9; [undercutting](pngs/page-007.png), [undermining](pngs/page-008.png))*
 - Firm and strict arguments are in every complete extension
 
 ## Relevance to Project

@@ -16,10 +16,10 @@ Dung's argumentation frameworks only support a single type of relationship betwe
 
 ## Key Contributions
 - Definition of Abstract Dialectical Frameworks (ADFs) with per-node acceptance conditions *(p.0)*
-- Generalization of Dung's grounded, complete, preferred, and stable semantics to ADFs *(p.1)*
+- Generalization of Dung's grounded semantics to ADFs, and preferred and stable semantics to bipolar ADFs; complete semantics is not defined in this paper. *(pp.1, 4-6; [semantics image](pngs/page-006.png))*
 - Identification of bipolar ADFs (BADFs) as the subclass where stable and preferred semantics generalize cleanly *(p.1)*
 - Representation of acceptance conditions via weights and priorities on links *(p.6)*
-- Modeling of legal proof standards (preponderance of evidence, clear and convincing, beyond reasonable doubt) using weighted ADFs *(p.6-7)*
+- Modeling of five legal proof standards: scintilla of evidence, preponderance of evidence, dialectical validity, beyond reasonable doubt, and beyond doubt. *(p.7; [page image](pngs/page-007.png))*
 - Connections to logic programming: ADFs subsume normal logic programs *(p.5)*
 - Complexity analysis of ADF reasoning *(p.7)*
 
@@ -70,22 +70,22 @@ The grounded interpretation is the least fixpoint of $\Gamma_D$, starting from t
 
 ### Stable Model via Reduced ADF
 
-For a two-valued model $M$ of ADF $D$, the reduced ADF $D^M$ is obtained by:
-1. Eliminating all nodes mapped to $f$ by $M$
-2. For remaining nodes, dropping all links from nodes not in $M$
-3. Replacing eliminated parents by their truth value in acceptance conditions
+For a model $M\subseteq S$ of a **bipolar** ADF $D$, the reduced ADF $D^M$ is obtained by:
+1. Eliminating all nodes outside $M$ and all incident links.
+2. Eliminating **all attacking links**.
+3. Restricting each remaining acceptance condition to its remaining parents.
 
-$M$ is a stable model of $D$ iff $M$ is the grounded extension of the reduced ADF $D^M$. *(p.4)*
+$M$ is stable iff it is the **least model** of $D^M$. The reduct has only supporting links, so Proposition 5 guarantees its least model. This is the original 2010 definition, which differs from the false-atom substitution/grounded reduct introduced in 2013. *(Definition 6, p.4; [page image](pngs/page-004.png))*
 
 ### Weighted ADF Acceptance
 
-For weighted ADFs with weights $w_1, \ldots, w_n$ on links and threshold $\alpha$:
+One numerical acceptance condition proposed for weighted ADFs is:
 
 $$
-C_s \text{ is accepted iff } \sum_{i: a_i \text{ is true}} w_i \geq \alpha
+C_s(R)=\mathit{in}\ \text{iff}\ \sum_{r\in R}w(r,s)>0
 $$
 
-Positive weight = support, negative weight = attack. *(p.6)*
+The paper also proposes comparing the strongest positive and negative weights, or requiring their magnitude difference to exceed a threshold. Numerical sum thresholds are examples, not the definition of every weighted ADF. Qualitative weights distinguish valid, strong, credible, and weak pro/con links. *(pp.6-7; [page image](pngs/page-007.png))*
 
 ## Parameters
 
@@ -93,10 +93,10 @@ Positive weight = support, negative weight = attack. *(p.6)*
 |------|--------|-------|---------|-------|------|-------|
 | Acceptance condition | $C_s$ | - | - | Any propositional formula over par(s) | 1 | One per node |
 | Link weight | $w_i$ | - | - | $\mathbb{R}$ (positive=support, negative=attack) | 6 | For weighted ADFs |
-| Acceptance threshold | $\alpha$ | - | - | $\mathbb{R}$ | 6 | Sum of weights of true parents must meet this |
-| Preponderance threshold | - | - | 0 | - | 7 | Net weight > 0 |
-| Clear and convincing threshold | - | - | - | higher than preponderance | 7 | Application-specific |
-| Beyond reasonable doubt threshold | - | - | - | highest | 7 | Requires near-certainty |
+| Qualitative link strengths | $v,s,c,w$ | - | - | valid, strong, credible, weak | 7 | Positive and negative versions encode pro/con links |
+| Numerical margin threshold | - | - | - | application-specific | 7 | Optional comparison of strongest positive and negative magnitudes |
+| Preponderance of evidence | - | - | - | qualitative condition | 7 | Some pro link, no valid con link, and every remaining con strength strictly outweighed |
+| Beyond reasonable doubt | - | - | - | qualitative condition | 7 | Some valid/strong pro link and no accepted con link |
 
 ## Implementation Details
 
@@ -113,53 +113,50 @@ Positive weight = support, negative weight = attack. *(p.6)*
 *(p.2-3)*
 
 ### Stable Model Check
-1. Given candidate two-valued model $M$
-2. Construct reduced ADF $D^M$: remove nodes where $M(s)=f$, simplify acceptance conditions
-3. Compute grounded extension of $D^M$
-4. $M$ is stable iff it equals the grounded extension of $D^M$
-*(p.4)*
+1. Given candidate model $M$ of a bipolar ADF, remove nodes outside $M$ and their incident links.
+2. Remove all attacking links and restrict remaining acceptance conditions to remaining parents.
+3. Compute the least model of this supporting-only reduct by iterating its monotone immediate-consequence operator from $\emptyset$.
+4. $M$ is stable iff it equals that least model.
+*(Definitions 5-6 and Proposition 5, p.4; [page image](pngs/page-004.png))*
 
 ### Bipolar ADF Classification
-- A link $(a,b)$ is **supporting** if: for all $V \subseteq par(b) \setminus \{a\}$, $V \cup \{a\}$ satisfies $C_b$ implies $V$ satisfies $C_b$ is false, OR equivalently flipping $a$ from false to true can only help acceptance *(p.4)*
+- A link $(a,b)$ is **supporting** iff there is no $R\subseteq par(b)$ with $C_b(R)=\mathit{in}$ and $C_b(R\cup\{a\})=\mathit{out}$: adding $a$ cannot turn acceptance into rejection. *(Definition 5, p.4; [page image](pngs/page-004.png))*
 - A link $(a,b)$ is **attacking** if: flipping $a$ from false to true can only hurt acceptance *(p.4)*
-- An ADF is **bipolar** (BADF) if every link is either purely supporting or purely attacking *(p.4)*
+- An ADF is **bipolar** (BADF) if every link is supporting or attacking; a redundant link may satisfy both definitions and has no influence. *(p.4)*
 - Dung AFs are bipolar (all links are attacking) *(p.4)*
 
-### Reduction from ADF to Dung AF
-- Not always possible to faithfully reduce
-- For BADFs, can introduce auxiliary nodes for support links *(p.5)*
-- For non-bipolar links, no clean reduction exists *(p.4-5)*
+### Reduction from ADF to Bipolar ADF
+- Every ADF $D=(S,L,C)$ can be transformed into a BADF $D'$ by adding nodes representing subsets of $S$.
+- A subset node accepts exactly its represented assignment, using supporting links from members and attacking links from nonmembers; ordinary nodes are supported by subset nodes satisfying their original conditions.
+- Each model of $D$ is contained in a model of $D'$, and each model of $D'$ projects to a model of $D$ by intersection with $S$. This is a model-preserving ADF-to-BADF construction, not a translation to a Dung AF, and can be exponential. *(p.5; [page image](pngs/page-005.png))*
 
 ## Figures of Interest
-- **Fig 1 (p.1):** Example ADF with 4 nodes {a,b,c,d} showing mixed support/attack. Node a: $C_a = \top$ (always accepted). Node b: $C_b = a$ (accepted if a is). Node c: $C_c = \neg a \wedge \neg b$ (attacked by both a and b). Node d: $C_d = b \vee c$ (supported by b or c).
-- **Fig in Example 3 (p.3):** Example illustrating grounded model computation.
-- **Fig in Example 4 (p.4):** Bipolar ADF illustrating stable models.
-- **Fig (p.5):** Logic program translation example showing ADF generalizing normal logic programs.
-- **Fig in Example 8 (p.5):** ADF where acceptance conditions involve non-bipolar links, demonstrating why BADF restriction matters for stable semantics.
-- **Fig (p.8):** Weighted ADF for legal proof standards — a graph where weights on links determine the acceptance threshold, modeling preponderance, clear and convincing, and beyond reasonable doubt.
+- **Example 1 (p.2):** Six-node legal ADF $\{l,w,s,k,m,i\}$: witness/liar evidence supports self-defense, killer and self-defense determine murderer, and innocence holds unless murder holds. *([page image](pngs/page-002.png))*
+- **Example 4 (p.4):** Exclusive-or acceptance of $c$ from $a,b$ makes both links neither supporting nor attacking. *([page image](pngs/page-004.png))*
+- **Example 5 (p.5):** $a$ and $b$ support each other and $b$ attacks $c$; the models are $\{a,b\}$ and $\{c\}$, but only $\{c\}$ is stable. *([page image](pngs/page-005.png))*
+- **Weighted version of Example 1 (p.6):** The same six-node graph is annotated with positive/negative link types. The five proof-standard definitions appear as text on p.7. *([graph image](pngs/page-006.png), [standards image](pngs/page-007.png))*
 
 ## Results Summary
 - Dung AFs are a special case of ADFs where all acceptance conditions are conjunctions of negated attackers *(p.1)*
-- Grounded semantics generalizes cleanly to all ADFs; complete semantics also generalizes *(p.2-3)*
+- Grounded (called well-founded) semantics generalizes to all ADFs. This paper does not define complete semantics. *(pp.2-3)*
 - Preferred and stable semantics require restriction to bipolar ADFs (BADFs) for clean generalization *(p.3-5)*
-- For BADFs, stable models exist and well-founded model coincides with grounded interpretation *(p.3-4)*
-- Normal logic programs can be faithfully represented as ADFs; stable models of ADF correspond to answer sets *(p.5)*
+- Every finite BADF has a preferred model (Proposition 10); stable models need not exist. Example 2's mixed attack/support cycle has no model at all. Well-founded is the paper's terminology for its generalization of grounded semantics. *([Example 2](pngs/page-002.png), [Proposition 10](pngs/page-006.png))*
+- Normal logic programs have a bipolar representation with extra rule-name nodes $N$: a program stable model $M$ maps to $M\cup N[M]$, and an ADF stable model projects back by removing $N$. The direct atom-only representation need not be bipolar. *(Proposition 8, p.5; [page image](pngs/page-005.png))*
 - Weighted ADFs provide a practical representation of acceptance conditions using numerical weights *(p.6-7)*
-- Deciding whether a statement is accepted in some (resp. all) stable/preferred models is in the complexity class $\Sigma_2^P$ (resp. $\Pi_2^P$) for general ADFs *(p.7)*
+- For BADFs with known supporting/attacking links: well-founded model checking is polynomial; stable credulous/skeptical acceptance is NP-complete/coNP-complete; preferred credulous/skeptical acceptance is NP-complete/$\Pi_2^P$-complete. For arbitrary ADFs, well-founded model checking and bipolarity recognition are coNP-hard. *(Propositions 13-17, pp.7-8; [page 7](pngs/page-007.png), [page 8](pngs/page-008.png))*
 
 ## Limitations
 - Stable and preferred semantics do not generalize cleanly beyond bipolar ADFs — the paper acknowledges this restriction is needed but limits expressiveness *(p.3-4)*
-- Complexity is higher than Dung AFs (second level of polynomial hierarchy vs first level) *(p.7)*
+- With link types known, the listed BADF acceptance tasks retain their Dung complexity. Arbitrary ADF well-founded checking is already coNP-hard. *(pp.7-8)*
 - The paper is an initial proposal; many details (algorithms, implementations) are left to future work *(p.8)*
-- The weighted ADF approach uses simple linear threshold functions; more complex acceptance conditions require full propositional formulas *(p.6)*
-- Translation to Dung frameworks is possible for BADFs but introduces auxiliary nodes that may be exponential *(p.5)*
+- Weight-based standards include qualitative comparisons and several numerical policies; they can be compiled to Boolean acceptance conditions and do not enlarge the ADF formalism. *(p.7)*
+- The general ADF-to-BADF model-preserving translation may introduce exponentially many subset nodes. *(p.5)*
 
 ## Arguments Against Prior Work
 - Dung AFs are too restrictive: only one link type (attack), so support, joint attack, and other dependencies cannot be directly modeled *(p.0)*
 - Bipolar AFs (Cayrol & Lagasquie-Schiex 2005) add support but in a limited, ad-hoc way — they don't allow arbitrary acceptance conditions *(p.0, 8)*
-- AFRA (Baroni, Cerutti, Giacomin 2009) models recursive attacks but not general dependencies *(p.8)*
-- Prakken (2005) showed translating bipolar AFs to Dung AFs requires auxiliary constructs, losing abstraction *(p.5)*
-- Prior approaches to support (Cayrol 2005, Odekerken) require separate treatment of support links rather than unifying attack and support in acceptance conditions *(p.0)*
+- Oren and Norman (2008) require evidential support ultimately grounded in an environment argument; ADF acceptance conditions allow a wider range of support and weight policies. *(p.9)*
+- Dunne et al. (2009) use attack weights for inconsistency handling, whereas this paper uses link weights to determine acceptance conditions. *(p.9)*
 
 ## Design Rationale
 - Acceptance conditions are placed on nodes rather than links because the same link may be supporting in some contexts and attacking in others — the node's condition determines the aggregate effect *(p.1)*
@@ -170,20 +167,20 @@ Positive weight = support, negative weight = attack. *(p.6)*
 ## Testable Properties
 - For any Dung AF translated to ADF, the grounded extension of the Dung AF must equal the grounded interpretation of the ADF *(p.2)*
 - For a BADF, every stable model must also be a preferred model *(p.4)*
-- For a BADF, every preferred model must be a complete model *(p.3)*
-- The grounded interpretation must be a subset (information-wise) of every complete interpretation *(p.3)*
-- For weighted ADFs: if all supporting parents are true and sum of positive weights >= threshold, node must be accepted *(p.6)*
+- Every finite BADF has at least one preferred model. *(Proposition 10, p.6)*
+- The well-founded accepted set is contained in every two-valued model. *(Proposition 2, p.3)*
+- A weighted acceptance condition must follow its selected proof standard; a sum threshold alone does not define all weighted ADFs. *(p.7)*
 - For Dung AFs viewed as ADFs: stable extensions of the Dung AF = stable models of the corresponding ADF *(p.2)*
 - If an ADF has no links (all conditions are $\top$ or $\bot$), grounded model assigns t to nodes with $C_s = \top$ and f to nodes with $C_s = \bot$ *(p.2)*
-- A node with $C_s = \top$ (no parents, self-accepting) must be in every complete/preferred/stable extension *(p.2)*
-- Translation of normal logic program to ADF: answer sets of the program = stable models of the ADF *(p.5)*
+- A constant-$\top$ node belongs to every model (and therefore every stable model). This paper does not establish the corresponding assertion for every preferred model; its original admissibility is defined through deletion. *(Definition 2 and Definition 7)*
+- In the rule-node translation, stable models correspond after adding applicable rule names in the forward direction and projecting them away in the reverse direction. *(Proposition 8, p.5)*
 
 ## Relevance to Project
 ADFs are directly relevant to propstore's argumentation layer. Where Dung AFs only model attack between arguments, ADFs allow modeling support relationships, evidential dependencies, and complex acceptance conditions. This is critical for:
 - Modeling claims that support other claims (not just attack)
 - Representing complex defeat conditions (e.g., a claim is defeated only if BOTH of two counterarguments hold)
 - Weighted acceptance conditions map to confidence/strength-based reasoning
-- Legal proof standards (preponderance, clear and convincing, beyond reasonable doubt) can be directly modeled as threshold parameters in the render layer
+- Legal proof standards can be represented as explicit acceptance policies; the paper's five qualitative standards are not all numerical threshold parameters
 - The bipolar subclass (BADFs) may be sufficient for most propstore use cases while keeping computational properties manageable
 
 ## Open Questions
@@ -216,14 +213,14 @@ ADFs are directly relevant to propstore's argumentation layer. Where Dung AFs on
 - [[Doutre_2018_ConstraintsChangesSurveyAbstract]] — References ADF revision work
 
 ## Related Work Worth Reading
-- Brewka, Ellmauthaler, Strass, Wallner, Woltran (2013) — "Abstract Dialectical Frameworks Revisited" — the journal-length follow-up with full technical details → NOW IN COLLECTION: [[Brewka_2013_AbstractDialecticalFrameworksRevisited]]
+- Brewka, Ellmauthaler, Strass, Wallner, Woltran (2013) — "Abstract Dialectical Frameworks Revisited" — IJCAI conference follow-up correcting and generalizing the semantics → NOW IN COLLECTION: [[Brewka_2013_AbstractDialecticalFrameworksRevisited]]
 - Strass (2013) — Approximating operators and semantics for ADFs
 - Cayrol and Lagasquie-Schiex (2005) — On the acceptability of arguments in bipolar argumentation frameworks (the bipolar AF paper ADFs generalize)
 - Pollock (2005) — Followed ADF-like approach with multiple link types before ADFs formalized it
 - Dung (1995) — The foundational AF paper that ADFs generalize
 - Prakken (2005) — On relating Dung frameworks to rule-based argumentation
 - Fazzinga, Flesca, and Furfaro (2016) — Probabilistic extension of ADFs
-- Dunne, Dvorak, and Woltran (2011) — Complexity of ADFs (cited in paper)
+- Later complexity work can be consulted separately; a 2011 paper cannot be a citation in this 2010 paper.
 
 ## Collection Cross-References
 
