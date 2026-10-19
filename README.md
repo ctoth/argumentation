@@ -406,7 +406,10 @@ and CQ11 choice-stage objections.
 pairs *uncertain*. Pairs over A × A are partitioned into `attacks`,
 `ignorance`, and `non_attacks`; reasoning is by enumerating *completions*. The
 module also provides three merge aggregations (`sum_merge_frameworks`,
-`max_merge_frameworks`, `leximax_merge_frameworks`) and `consensual_expand`.
+`max_merge_frameworks`, `leximax_merge_frameworks`) and
+`consensual_expand(framework, profile)`. Expansion preserves the source's
+commitments and imports uncontested attack and non-attack relations from the
+profile; conflicting outside pairs remain uncertain.
 
 `argumentation.dynamics.af_revision` adds arguments and attacks to an existing
 framework, or revises an extension state by a formula or by a target

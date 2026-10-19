@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from itertools import combinations, product
@@ -218,36 +219,38 @@ def _attack_relation(framework: ArgumentationFramework) -> frozenset[AttackPair]
 
 def consensual_expand(
     framework: ArgumentationFramework,
-    universe: frozenset[str],
+    profile: Mapping[str, ArgumentationFramework],
 ) -> PartialArgumentationFramework:
-    """Expand an AF to a shared universe using ignorance outside source scope.
+    """Expand an AF using the profile's uncontested attack commitments.
 
-    Coste-Marquis et al. 2007, Def. 11 takes the universe as the union of the
-    profile's argument sets, so it must contain the source arguments.
+    Coste-Marquis et al. 2007, Definition 12 preserves the source's attacks
+    and non-attacks, imports uncontested relations outside its scope, and
+    leaves only conflicting outside pairs ignorant. Pairs known to no source
+    become non-attacks. The universe includes the source and every profile AF.
     """
     source_arguments = frozenset(framework.arguments)
-    missing = source_arguments - universe
-    if missing:
-        raise ValueError(
-            f"universe must contain every source argument; missing {sorted(missing)!r}"
+    universe = set(source_arguments)
+    profile_attacks: set[AttackPair] = set()
+    profile_non_attacks: set[AttackPair] = set()
+    for source in profile.values():
+        universe.update(source.arguments)
+        relation = _attack_relation(source)
+        profile_attacks.update(relation)
+        profile_non_attacks.update(
+            set(product(source.arguments, source.arguments)) - relation
         )
-    attack_relation = _attack_relation(framework)
-    attacks: set[AttackPair] = set()
-    ignorance: set[AttackPair] = set()
-    non_attacks: set[AttackPair] = set()
 
-    for pair in product(universe, universe):
-        attacker, target = pair
-        if attacker in source_arguments and target in source_arguments:
-            if pair in attack_relation:
-                attacks.add(pair)
-            else:
-                non_attacks.add(pair)
-        else:
-            ignorance.add(pair)
+    source_attacks = _attack_relation(framework)
+    source_non_attacks = (
+        set(product(source_arguments, source_arguments)) - source_attacks
+    )
+    conflicts = profile_attacks & profile_non_attacks
+    attacks = source_attacks | ((profile_attacks - conflicts) - source_non_attacks)
+    ignorance = conflicts - (source_attacks | source_non_attacks)
+    non_attacks = set(product(universe, universe)) - (attacks | ignorance)
 
     return PartialArgumentationFramework(
-        arguments=universe,
+        arguments=frozenset(universe),
         attacks=frozenset(attacks),
         ignorance=frozenset(ignorance),
         non_attacks=frozenset(non_attacks),

@@ -115,7 +115,9 @@ wrappers live in `argumentation.solver`; CEL authoring, `ConditionIR`,
 and mapping-like claim metadata.
 
 `argumentation.partial_af` owns partial-framework completion enumeration,
-completion queries, exact edit-distance merge operators, and `consensual_expand`.
+completion queries, exact edit-distance merge operators, and
+`consensual_expand(framework, profile)`, which preserves source commitments and
+imports uncontested profile relations, leaving conflicting outside pairs ignorant.
 
 `argumentation.af_revision` owns AF-level revision and accepts formula-like
 extension constraints through an argumentation-owned protocol. Propstore
