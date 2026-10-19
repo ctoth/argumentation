@@ -170,11 +170,11 @@ Compare both `Prem_p` (ordinary premises) and `DefRules` (all defeasible rules) 
 
 Transposition closure (Def 12, p.13; Prakken 2010 Def 5.1) ensures that strict rules interact correctly with contrariness. For each strict rule `A1, ..., An -> C` and each antecedent index `i`, a transposed rule is generated: `A1, ..., ~C, ..., An -> ~Ai`. This process repeats until a fixpoint is reached.
 
-**Degenerate rule filtering**: transposed rules with contradictory antecedent pairs are discarded (they reference Thm 14, direct consistency). After the fixpoint, an axiom consistency check verifies that no literal's strict closure contains its own contrary.
+Prakken 2010 Definition 5.2 requires the closure to contain every input rule and every transposition. Rules with contradictory antecedents, and rules whose consequent also occurs among their antecedents, are retained. Consistency requirements for a particular knowledge base are separate from this rule-set closure.
 
 Transposition closure is required for the rationality postulates (Thms 12-15) to hold. Without it, the framework can produce inconsistent extensions — arguments that are jointly accepted but whose conclusions contradict each other under strict rules.
 
-`argumentation/src/argumentation/aspic.py:247` — `transposition_closure()`
+`src/argumentation/structured/aspic/aspic.py` — `transposition_closure()`
 
 ## Rationality Postulates
 

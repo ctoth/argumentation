@@ -4,7 +4,7 @@
 Correct the five confirmed implementation mismatches identified after the visual paper-note audit. Make each correction its own commit, then publish the complete series as one PR. Q authorized this on 2026-10-19; the earlier "make it so" remains in the session. Leave the PR open for review; do not merge it under the earlier notes-only integration instruction.
 
 ## State
-Branch `fix/paper-code-corrections` starts at origin/main `1e1029e5539c3783dcabca95b0e958761867814a` in `C:/Users/Q/code/argumentation-paper-code-corrections`. The impact correction is implemented and visually checked; the existing self-attack test now expects negative impact. Other corrections remain in progress. Preserve the primary checkout's uncommitted audit record and all unrelated artifacts. The failed old temporary-directory cleanup is outside this task.
+Branch `fix/paper-code-corrections` starts at origin/main `1e1029e5539c3783dcabca95b0e958761867814a` in `C:/Users/Q/code/argumentation-paper-code-corrections`. All five scoped corrections are implemented and checked against the original paper page images. Four separate commits already exist: `6a2a33a` (impact), `d308240` (distance), `152277f` (expansion), and `4682283` (classification). The fifth commit contains transposition closure and this record update. No local tests, typecheck, build, or other CI steps have run. Publication and hosted CI are next. Preserve the primary checkout's uncommitted audit record and all unrelated artifacts. The failed old temporary-directory cleanup is outside this task.
 
 ## Decisions and why
 - Smallest change: fix the existing functions and the existing assertions/generators that encode their incorrect contracts. Roughly 100-180 production lines and comparable or fewer test/doc lines across five commits; no new public framework, flags, compatibility facade, solver optimization, or new guards.
@@ -15,6 +15,8 @@ Branch `fix/paper-code-corrections` starts at origin/main `1e1029e5539c3783dcabc
 - Commit 5: transposition closure retains all seed strict rules and generated transpositions; remove unsupported pruning and revise existing generator restrictions. About 10-25 production lines removed/changed.
 - Paper evidence is exclusively original page images in the primary checkout. No extraction, OCR, or extracted-paper-text navigation. No local CI steps; use hosted PR CI. No new tests/guards; correct existing tests where they encode a wrong contract.
 - Workers own disjoint source/test/doc paths and do not commit. The primary stages only each correction's owned paths and commits them separately. PAF distance and expansion share files and therefore run sequentially.
+- Consensual expansion now takes the full profile as its second argument; all repository callers and API documentation were updated. Passing only a universe cannot determine the paper's consensual relations.
+- The closure correction removes unsupported pruning rather than adding machinery. Its existing nontrivial-argument property now excludes a rule whose consequent is already an antecedent, matching the argument builder's existing restriction to non-repeating conclusion paths. Changing argument enumeration is outside these five corrections.
 
 ## Source evidence
 - AlAnaissy 2024 original images 001,003-004: external incoming attacks, node/edge deletion, self-attack example.
@@ -23,7 +25,7 @@ Branch `fix/paper-code-corrections` starts at origin/main `1e1029e5539c3783dcabc
 - Prakken 2010 original image 012: Definitions 5.1-5.3, extensive closure under every transposition.
 
 ## Surprises
-The existing tests assert positive self-impact and whole-unit ignorance distance, and accept expansive classification with unequal family counts. Those expectations must change alongside the implementation.
+The existing tests asserted positive self-impact and whole-unit ignorance distance, accepted expansive classification with unequal family counts, and excluded valid transpositions. Those expectations and generator restrictions are corrected alongside the implementation. The argument builder still restricts repeated conclusions; this series does not claim to settle broader argument-enumeration completeness.
 
 ## Next step
-Implement the five scoped corrections, inspect each diff against original images, commit each separately, then push and open one PR for hosted validation. Stop and report any execution/check failure under the standing instructions.
+Commit closure as the fifth correction, then push and open one combined PR for hosted validation on its exact head. Leave the PR open. Stop and report any execution/check failure under the standing instructions.
